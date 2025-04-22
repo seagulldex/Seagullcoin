@@ -1,0 +1,90 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "SGLCN-X20 Minting API",
+    "version": "1.0.0",
+    "description": "API for minting NFTs using SeagullCoin (SGLCN-X20)."
+  },
+  "paths": {
+    "/pay": {
+      "post": {
+        "summary": "Create a payment payload for SeagullCoin (0.5 SGLCN)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wallet": {
+                    "type": "string",
+                    "example": "rXXXXXXXXXXXXXXXXXXXXXXX"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment payload created successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "uuid": "example-uuid-1234",
+                  "next": "https://xumm.app/payload/example-uuid-1234"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mint": {
+      "post": {
+        "summary": "Mint a new NFT",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wallet": {
+                    "type": "string",
+                    "example": "rXXXXXXXXXXXXXXXXXXXXXXX"
+                  },
+                  "name": {
+                    "type": "string",
+                    "example": "My NFT"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "This is an example NFT"
+                  },
+                  "fileUrl": {
+                    "type": "string",
+                    "example": "https://example.com/file.jpg"
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "NFT successfully minted",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "success": true,
+                    "nftId": "nft-123456789"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -7,14 +7,14 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^5.1.0",
     "xrpl": "^2.4.0",
     "cors": "^2.8.5",
     "multer": "^1.4.3",
     "file-api": "^1.0.0",
     "mime-types": "^2.1.27",
     "nft.storage": "^2.0.0",
-    "dotenv": "^16.0.0",
+    "dotenv": "^16.5.0",
     "xumm": "^2.8.2"
   },
   "devDependencies": {},

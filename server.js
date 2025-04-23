@@ -10,7 +10,7 @@ const swaggerJsdoc = require('swagger-jsdoc');
 
 dotenv.config();
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -33,7 +33,7 @@ const swaggerSpec = swaggerJsdoc({
       version: '1.0.0',
       description: 'Public API for minting NFTs using SeagullCoin (X20) on XRPL.',
     },
-    servers: [{ url: 'http://localhost:3000' }],
+    servers: [{ url: 'https://sglcn-x20-api.glitch.me' }], // Updated to Glitch URL
   },
   apis: ['./server.js'],
 });
@@ -240,5 +240,5 @@ async function getCollections() {
 }
 
 app.listen(PORT, () => {
-  console.log(`SGLCN-X20-API running on http://localhost:${PORT} — Swagger docs at /docs`);
+  console.log(`SGLCN-X20-API running on https://sglcn-x20-api.glitch.me — Swagger docs at /docs`);
 });

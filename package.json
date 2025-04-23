@@ -1,6 +1,6 @@
 {
   "name": "seagullcoin-minting-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Public API for minting NFTs using SeagullCoin (X20) on the XRPL.",
   "type": "module",
   "scripts": {
@@ -10,8 +10,8 @@
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "express": "^4.19.0",
-    "express-rate-limit": "^6.7.0",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.0.0",
     "mime-types": "^2.1.35",
     "multer": "^1.4.5-lts.1",
     "nft.storage": "^6.1.0",

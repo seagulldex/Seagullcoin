@@ -40,50 +40,21 @@ app.get('/login', async (req, res) => {
   }
 });
 
-app.get('/login-status/:uuid', async (req, res) => {
+// === Collections ===
+app.get('/collections', async (req, res) => {
   try {
-    const result = await xumm.payload.get(req.params.uuid);
-    if (result.meta.signed) {
-      req.session.walletAddress = result.response.account;
-      res.json({ loggedIn: true, wallet: result.response.account });
-    } else {
-      res.json({ loggedIn: false });
-    }
+    // Example: Fetch collections from a database or in-memory storage
+    const collections = [
+      { name: 'Seagull Art', logo: 'seagull_art_logo.png' },
+      { name: 'Wildlife NFT', logo: 'wildlife_logo.png' }
+    ];
+    
+    res.status(200).json(collections);
   } catch (err) {
-    res.status(500).json({ error: 'Error checking login status' });
+    console.error('Error fetching collections:', err);
+    res.status(500).json({ error: 'Failed to fetch collections' });
   }
 });
-
-app.get('/user', (req, res) => {
-  if (req.session.walletAddress) {
-    res.json({ loggedIn: true, wallet: req.session.walletAddress });
-  } else {
-    res.json({ loggedIn: false });
-  }
-});
-
-app.post('/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.json({ success: true });
-  });
-});
-
-// === Burn SeagullCoin ===
-async function burnSeagullCoin(wallet, amount) {
-  const payment = {
-    TransactionType: 'Payment',
-    Account: wallet,
-    Destination: BURN_WALLET,
-    Amount: {
-      currency: SEAGULLCOIN_CODE,
-      issuer: SEAGULLCOIN_ISSUER,
-      value: amount.toString(),
-    },
-  };
-  const prepared = await xrplClient.autofill(payment);
-  const signed = wallet.sign(prepared);
-  return await xrplClient.submit(signed.tx_blob);
-}
 
 // === Mint NFT ===
 async function mintNFT(wallet, nftData) {

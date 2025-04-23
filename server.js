@@ -17,6 +17,7 @@ const SERVICE_SECRET = process.env.SERVICE_SECRET;
 const SEAGULLCOIN_CODE = "SeagullCoin";
 const SEAGULLCOIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
 const MINT_COST = "0.5";
+const BURN_WALLET = process.env.BURN_WALLET;
 
 const xrplClient = new xrpl.Client("wss://s.altnet.rippletest.net:51233");
 
@@ -31,7 +32,8 @@ app.get('/', (req, res) => {
       "/collections", 
       "/user/:address", 
       "/buy-nft", 
-      "/sell-nft"
+      "/sell-nft",
+      "/burn"  // Added the burn endpoint
     ]
   });
 });
@@ -47,7 +49,8 @@ app.get('/status', (req, res) => {
       "/collections", 
       "/user/:address", 
       "/buy-nft", 
-      "/sell-nft"
+      "/sell-nft",
+      "/burn"  // Added the burn endpoint
     ]
   });
 });
@@ -219,6 +222,45 @@ app.post('/buy-nft', async (req, res) => {
   } catch (err) {
     console.error('Buy NFT error:', err);
     res.status(500).json({ success: false, error: 'Buying NFT failed' });
+  } finally {
+    await xrplClient.disconnect();
+  }
+});
+
+// /burn endpoint (burn SeagullCoin tokens)
+app.post('/burn', async (req, res) => {
+  const { wallet, amount } = req.body;
+  if (!wallet || !amount) return res.status(400).json({ success: false, error: 'Missing wallet or amount' });
+
+  try {
+    await xrplClient.connect();
+
+    const walletInstance = xrpl.Wallet.fromSeed(SERVICE_SECRET);
+
+    // Prepare the burn transaction (sending SeagullCoin to burn wallet)
+    const tx = {
+      TransactionType: "Payment",
+      Account: wallet,
+      Destination: BURN_WALLET,
+      Amount: {
+        currency: SEAGULLCOIN_CODE,
+        issuer: SEAGULLCOIN_ISSUER,
+        value: amount
+      }
+    };
+
+    const prepared = await xrplClient.autofill(tx);
+    const signed = walletInstance.sign(prepared);
+    const result = await xrplClient.submitAndWait(signed.tx_blob);
+
+    if (result.result.meta.TransactionResult === "tesSUCCESS") {
+      res.status(200).json({ success: true, txHash: result.result.tx_json.hash });
+    } else {
+      res.status(400).json({ success: false, error: result.result.meta.TransactionResult });
+    }
+  } catch (err) {
+    console.error('Burn error:', err);
+    res.status(500).json({ success: false, error: 'Burning failed' });
   } finally {
     await xrplClient.disconnect();
   }

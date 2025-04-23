@@ -153,6 +153,33 @@ app.post('/buy-nft', async (req, res) => {
   res.json({ uuid: payload.uuid, next: payload.next.always });
 });
 
+app.post('/sell-nft', async (req, res) => {
+  const { sellerAddress, tokenId, price } = req.body;
+
+  const tx = {
+    TransactionType: "NFTokenCreateOffer",
+    Account: sellerAddress,
+    NFTokenID: tokenId,
+    Amount: {
+      currency: SGLCN_HEX,
+      issuer: SGLCN_ISSUER,
+      value: price.toString()
+    },
+    Flags: 1
+  };
+
+  const payload = await fetch("https://xumm.app/api/v1/platform/payload", {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': xummApiKey
+    },
+    body: JSON.stringify({ txjson: tx, options: { submit: true } })
+  });
+
+  res.json({ uuid: payload.uuid, next: payload.next.always });
+});
+
 async function verifyPayment(walletAddress) {
   const accountTx = await client.request({
     command: "account_tx",

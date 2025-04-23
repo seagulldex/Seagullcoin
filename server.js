@@ -1,177 +1,201 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const { Client, xrpToDrops } = require('xrpl');
-const swaggerUi = require('swagger-ui-express');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import xrpl from 'xrpl';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
-const port = 3000;
+const PORT = 3000;
 
-const SEAGULLCOIN_CODE = "SGLCN-X20";
+app.use(cors());
+app.use(bodyParser.json());
+
+const SERVICE_WALLET = process.env.SERVICE_WALLET;
+const SERVICE_SECRET = process.env.SERVICE_SECRET;
+const SEAGULLCOIN_CODE = "SeagullCoin";
 const SEAGULLCOIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
 const MINT_COST = "0.5";
-const SERVICE_WALLET = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U";
 
-const xrpl = new Client('wss://s1.ripple.com');
+const xrplClient = new xrpl.Client("wss://s.altnet.rippletest.net:51233");
 
-// Home route
 app.get('/', (req, res) => {
   res.send('Welcome to the SeagullCoin NFT Minting API');
 });
 
-// Swagger definition
-const swaggerDocument = {
-  "swagger": "2.0",
-  "info": {
-    "title": "SGLCN-X20 Minting API",
-    "description": "API for minting SeagullCoin (SGLCN-X20) NFTs",
-    "version": "1.0.0"
-  },
-  "host": "localhost:3000",
-  "schemes": ["http"],
-  "paths": {
-    "/pay": {
-      "post": {
-        "summary": "Verify payment of SeagullCoin for minting",
-        "description": "Verifies if the user has paid the correct amount of SeagullCoin for minting an NFT.",
-        "parameters": [{
-          "in": "body",
-          "name": "wallet",
-          "description": "Wallet address of the user making the payment",
-          "required": true,
-          "schema": {
-            "type": "object",
-            "properties": {
-              "wallet": { "type": "string" }
-            }
-          }
-        }],
-        "responses": {
-          "200": {
-            "description": "Payment verified",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "success": { "type": "boolean" },
-                "txHash": { "type": "string" }
-              }
-            }
-          },
-          "400": { "description": "Invalid request" },
-          "402": { "description": "Insufficient balance" },
-          "403": { "description": "Payment not found" },
-          "500": { "description": "Internal server error" }
-        }
-      }
-    },
-    "/mint": {
-      "post": {
-        "summary": "Mint a SeagullCoin NFT",
-        "description": "Mints a new NFT using SeagullCoin as the currency.",
-        "parameters": [{
-          "in": "body",
-          "name": "wallet",
-          "required": true,
-          "schema": {
-            "type": "object",
-            "properties": {
-              "wallet": { "type": "string" },
-              "metadataUri": { "type": "string" }
-            }
-          }
-        }],
-        "responses": {
-          "200": {
-            "description": "NFT minted successfully",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "success": { "type": "boolean" },
-                "message": { "type": "string" },
-                "NFTokenID": { "type": "string" }
-              }
-            }
-          },
-          "400": { "description": "Invalid request" },
-          "500": { "description": "Internal server error" }
-        }
-      }
-    },
-    "/buy-nft": {
-      "post": {
-        "summary": "Buy an NFT with SeagullCoin",
-        "description": "Allows the user to buy an NFT using SeagullCoin.",
-        "parameters": [{
-          "in": "body",
-          "name": "transaction",
-          "required": true,
-          "schema": {
-            "type": "object",
-            "properties": {
-              "wallet": { "type": "string" },
-              "nftId": { "type": "string" },
-              "amount": { "type": "string" }
-            }
-          }
-        }],
-        "responses": {
-          "200": {
-            "description": "NFT purchase successful",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "success": { "type": "boolean" },
-                "message": { "type": "string" }
-              }
-            }
-          },
-          "400": { "description": "Invalid request" },
-          "500": { "description": "Internal server error" }
-        }
-      }
-    },
-    "/sell-nft": {
-      "post": {
-        "summary": "Sell an NFT for SeagullCoin",
-        "description": "List an NFT for sale with SeagullCoin as the price.",
-        "parameters": [{
-          "in": "body",
-          "name": "transaction",
-          "required": true,
-          "schema": {
-            "type": "object",
-            "properties": {
-              "wallet": { "type": "string" },
-              "nftId": { "type": "string" },
-              "price": { "type": "string" }
-            }
-          }
-        }],
-        "responses": {
-          "200": {
-            "description": "NFT listed for sale successfully",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "success": { "type": "boolean" },
-                "message": { "type": "string" }
-              }
-            }
-          },
-          "400": { "description": "Invalid request" },
-          "500": { "description": "Internal server error" }
-        }
-      }
-    }
+// /pay endpoint
+app.post('/pay', async (req, res) => {
+  const { wallet } = req.body;
+  if (!wallet) return res.status(400).json({ success: false, error: 'Missing wallet address' });
+
+  try {
+    await xrplClient.connect();
+
+    const transactions = await xrplClient.request({
+      command: 'account_tx',
+      account: wallet,
+      ledger_index_min: -1,
+      ledger_index_max: -1,
+      limit: 20,
+    });
+
+    const paymentTx = transactions.result.transactions.find(tx => {
+      const t = tx.tx;
+      return (
+        t.TransactionType === 'Payment' &&
+        t.Destination === SERVICE_WALLET &&
+        t.Amount?.currency === SEAGULLCOIN_CODE &&
+        t.Amount?.issuer === SEAGULLCOIN_ISSUER &&
+        parseFloat(t.Amount?.value) >= parseFloat(MINT_COST)
+      );
+    });
+
+    if (!paymentTx) return res.status(403).json({ success: false, error: 'Payment not found' });
+
+    res.status(200).json({
+      success: true,
+      txHash: paymentTx.tx.hash,
+    });
+
+  } catch (err) {
+    console.error('Payment check error:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  } finally {
+    await xrplClient.disconnect();
   }
-};
+});
 
-app.use(cors({ origin: ['https://bidds.com', 'https://xrp.cafe', '*'] }));
-app.use(bodyParser.json());
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// /mint endpoint
+app.post('/mint', async (req, res) => {
+  const { wallet, uri } = req.body;
+  if (!wallet || !uri) return res.status(400).json({ success: false, error: 'Missing wallet or uri' });
 
-// Start the server
-app.listen(port, () => {
-  console.log(`SGLCN-X20 API running on port ${port}`);
+  try {
+    await xrplClient.connect();
+
+    const walletInstance = xrpl.Wallet.fromSeed(SERVICE_SECRET);
+
+    const tx = {
+      TransactionType: "NFTokenMint",
+      Account: wallet,
+      URI: Buffer.from(uri).toString('hex').toUpperCase(),
+      Flags: 8,
+      TransferFee: 0,
+      NFTokenTaxon: 0
+    };
+
+    const prepared = await xrplClient.autofill(tx);
+    const signed = walletInstance.sign(prepared);
+    const result = await xrplClient.submitAndWait(signed.tx_blob);
+
+    if (result.result.meta.TransactionResult === "tesSUCCESS") {
+      const tokenId = result.result.meta.nftoken_id || 'Minted';
+      res.status(200).json({ success: true, tokenId });
+    } else {
+      res.status(400).json({ success: false, error: result.result.meta.TransactionResult });
+    }
+  } catch (err) {
+    console.error('Mint error:', err);
+    res.status(500).json({ success: false, error: 'Minting failed' });
+  } finally {
+    await xrplClient.disconnect();
+  }
+});
+
+// /sell-nft endpoint
+app.post('/sell-nft', async (req, res) => {
+  const { wallet, tokenId, amount } = req.body;
+  if (!wallet || !tokenId || !amount) return res.status(400).json({ success: false, error: 'Missing wallet, tokenId, or amount' });
+
+  try {
+    await xrplClient.connect();
+    const walletInstance = xrpl.Wallet.fromSeed(SERVICE_SECRET);
+
+    const tx = {
+      TransactionType: "NFTokenCreateOffer",
+      Account: wallet,
+      NFTokenID: tokenId,
+      Amount: {
+        currency: SEAGULLCOIN_CODE,
+        issuer: SEAGULLCOIN_ISSUER,
+        value: amount
+      },
+      Flags: 1 // Sell offer
+    };
+
+    const prepared = await xrplClient.autofill(tx);
+    const signed = walletInstance.sign(prepared);
+    const result = await xrplClient.submitAndWait(signed.tx_blob);
+
+    if (result.result.meta.TransactionResult === "tesSUCCESS") {
+      res.status(200).json({ success: true, offerId: result.result.tx_json.hash });
+    } else {
+      res.status(400).json({ success: false, error: result.result.meta.TransactionResult });
+    }
+  } catch (err) {
+    console.error('Sell error:', err);
+    res.status(500).json({ success: false, error: 'Creating sell offer failed' });
+  } finally {
+    await xrplClient.disconnect();
+  }
+});
+
+// /buy-nft endpoint
+app.post('/buy-nft', async (req, res) => {
+  const { buyerWallet, sellerWallet, tokenId, amount } = req.body;
+  if (!buyerWallet || !sellerWallet || !tokenId || !amount) {
+    return res.status(400).json({ success: false, error: 'Missing required fields' });
+  }
+
+  try {
+    await xrplClient.connect();
+    const buyer = xrpl.Wallet.fromSeed(SERVICE_SECRET);
+
+    // First send SeagullCoin payment to seller
+    const paymentTx = {
+      TransactionType: "Payment",
+      Account: buyer.address,
+      Destination: sellerWallet,
+      Amount: {
+        currency: SEAGULLCOIN_CODE,
+        issuer: SEAGULLCOIN_ISSUER,
+        value: amount
+      }
+    };
+
+    const prepared = await xrplClient.autofill(paymentTx);
+    const signed = buyer.sign(prepared);
+    const result = await xrplClient.submitAndWait(signed.tx_blob);
+
+    if (result.result.meta.TransactionResult !== "tesSUCCESS") {
+      return res.status(400).json({ success: false, error: 'Payment failed' });
+    }
+
+    // Then accept the NFT offer
+    const acceptTx = {
+      TransactionType: "NFTokenAcceptOffer",
+      Account: buyer.address,
+      NFTokenID: tokenId
+    };
+
+    const prepared2 = await xrplClient.autofill(acceptTx);
+    const signed2 = buyer.sign(prepared2);
+    const result2 = await xrplClient.submitAndWait(signed2.tx_blob);
+
+    if (result2.result.meta.TransactionResult === "tesSUCCESS") {
+      res.status(200).json({ success: true, tokenId });
+    } else {
+      res.status(400).json({ success: false, error: result2.result.meta.TransactionResult });
+    }
+  } catch (err) {
+    console.error('Buy NFT error:', err);
+    res.status(500).json({ success: false, error: 'Buying NFT failed' });
+  } finally {
+    await xrplClient.disconnect();
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`SGLCN-X20-API running on port ${PORT}`);
 });

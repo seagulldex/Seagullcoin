@@ -1,116 +1,151 @@
-const express = require("express");
-const cors = require("cors");
-const xrpl = require("xrpl");
-const { NFTStorage, File } = require("nft.storage");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-const axios = require("axios");
-const { XummSdk } = require("xumm-sdk");
-
-require("dotenv").config();
+require('dotenv').config();
+const express = require('express');
+const bodyParser = require('body-parser');
+const { XummSdk } = require('xumm-sdk');
+const xrpl = require('xrpl');
+const cors = require('cors');
+const { NFTStorage, File } = require('nft.storage');
+const fetch = require('node-fetch');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const upload = multer({ dest: 'uploads/' });
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(express.static('public'));
 
-const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
-const xumm = new XummSdk(process.env.XUMM_API_KEY);
+const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 
-const SERVICE_WALLET = process.env.SERVICE_WALLET;
-const SGLCN_ISSUER = process.env.SGLCN_ISSUER;
-const SGLCN_CURRENCY = "53656167756C6C436F696E000000000000000000"; // "SeagullCoin" in hex
-const MINT_COST = "0.5";
+const SERVICE_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U';
+const SGLCN_HEX = '53656167756C6C436F696E000000000000000000';
+const SGLCN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
+const MINT_COST = '0.5';
 
-const upload = multer({ dest: "uploads/" });
+let mintedNFTs = [];
 
-// Endpoint to upload file and metadata to NFT.Storage
-app.post("/mint", upload.single("file"), async (req, res) => {
+// Root route for the base URL
+app.get('/', (req, res) => {
+  res.json({
+    status: "live",
+    message: "Welcome to the SGLCN-X20 NFT Minting API!",
+    url: "https://sglcn-x20-api.glitch.me",
+    endpoints: [
+      "/pay",
+      "/mint",
+      "/collections",
+      "/user/:address",
+      "/buy-nft",
+      "/sell-nft"
+    ]
+  });
+});
+
+app.post('/pay', async (req, res) => {
+  const { wallet } = req.body;
+  if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
+
+  const tx = {
+    TransactionType: 'Payment',
+    Destination: SERVICE_WALLET,
+    Amount: {
+      currency: SGLCN_HEX,
+      issuer: SGLCN_ISSUER,
+      value: MINT_COST
+    }
+  };
+
+  const payload = await xumm.payload.createAndSubscribe({ txjson: tx }, event => {
+    if (event.data.signed === true) {
+      return event;
+    }
+  });
+
+  res.json({
+    uuid: payload.uuid,
+    next: payload.next.always,
+  });
+});
+
+app.post('/mint', upload.single('file'), async (req, res) => {
   try {
-    const { name, description, domain, properties, collection } = req.body;
-    const file = req.file;
+    const { wallet, name, description, domain, collection, properties } = req.body;
 
-    if (!file) return res.status(400).send("No file uploaded.");
+    if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
+
+    const filePath = req.file.path;
+    const fileData = await fs.promises.readFile(filePath);
+    const fileMime = req.file.mimetype;
+    const fileName = req.file.originalname;
 
     const metadata = {
       name,
       description,
-      image: new File([fs.readFileSync(file.path)], file.originalname, {
-        type: file.mimetype,
-      }),
-      properties: JSON.parse(properties || "{}"),
+      image: new File([fileData], fileName, { type: fileMime }),
+      properties: JSON.parse(properties || '{}'),
+      collection,
       domain,
-      collection: JSON.parse(collection || "{}"),
     };
 
     const metadataCID = await nftStorage.store(metadata);
 
-    fs.unlinkSync(file.path); // Clean up temp file
+    const client = new xrpl.Client('wss://xrplcluster.com');
+    await client.connect();
 
-    res.json({
-      success: true,
-      cid: metadataCID.ipnft,
-      uri: `ipfs://${metadataCID.ipnft}/metadata.json`,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Minting failed.");
-  }
-});
-
-// Endpoint to start XUMM payment for mint
-app.post("/pay", async (req, res) => {
-  try {
-    const { address } = req.body;
-    if (!address) return res.status(400).send("Wallet address required.");
-
-    const payload = {
-      TransactionType: "Payment",
-      Destination: SERVICE_WALLET,
-      Amount: {
-        currency: SGLCN_CURRENCY,
-        issuer: SGLCN_ISSUER,
-        value: MINT_COST,
-      },
+    const nftMintTx = {
+      TransactionType: 'NFTokenMint',
+      Account: wallet,
+      URI: xrpl.convertStringToHex(`ipfs://${metadataCID.url.split('/').pop()}`),
+      Flags: 8,
+      TransferFee: 0,
+      NFTokenTaxon: 0,
     };
 
-    const xummPayload = await xumm.payload.createAndSubscribe(payload, e => {
-      if (e.signed === false) {
-        res.status(400).json({ success: false, reason: "Payment rejected." });
-      }
+    const response = await client.autofill(nftMintTx);
+    const signed = await client.sign(response, { seed: process.env.SERVICE_WALLET_SEED });
+    const submit = await client.submitAndWait(signed.tx_blob);
+    const tokenId = submit.result.meta?.nftoken_id || null;
+
+    await client.disconnect();
+
+    mintedNFTs.push({
+      name,
+      description,
+      tokenId,
+      image: metadataCID.data.image.href,
+      collection,
+      domain,
     });
 
-    res.json({
-      success: true,
-      uuid: xummPayload.uuid,
-      next: xummPayload.next,
-    });
+    fs.unlinkSync(filePath);
+
+    res.json({ success: true, tokenId });
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Payment initiation failed.");
+    console.error('Mint error:', err);
+    res.status(500).json({ error: 'Minting failed' });
   }
 });
 
-// Public API to fetch all stored NFTs (stub for now)
-app.get("/nfts", async (req, res) => {
-  // Replace with actual DB or storage list logic later
-  res.json({ nfts: [] });
+app.get('/nfts', async (req, res) => {
+  res.json({ nfts: mintedNFTs });
 });
 
-// XUMM user auth info
-app.get("/user/:token", async (req, res) => {
-  try {
-    const result = await xumm.payload.get(req.params.token);
-    res.json({ account: result.response.account });
-  } catch (e) {
-    res.status(400).send("Invalid token.");
-  }
-});
-
-// Start server
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`SGLCN-X20-API running on https://${process.env.PROJECT_DOMAIN || "localhost"}:${PORT}`);
+  console.log(JSON.stringify({
+    status: "live",
+    message: "Welcome to the SGLCN-X20 NFT Minting API!",
+    url: "https://sglcn-x20-api.glitch.me",
+    endpoints: [
+      "/pay",
+      "/mint",
+      "/collections",
+      "/user/:address",
+      "/buy-nft",
+      "/sell-nft"
+    ]
+  }, null, 2));
 });

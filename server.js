@@ -23,6 +23,7 @@ const BURN_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U';
 const MINT_COST = 0.5;
 const USED_PAYMENTS = new Set(); // In-memory store to avoid double-spends
 
+// === Home Route ===
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Welcome to the SGLCN-X20 NFT Minting API!' });
 });
@@ -43,12 +44,10 @@ app.get('/login', async (req, res) => {
 // === Collections ===
 app.get('/collections', async (req, res) => {
   try {
-    // Example: Fetch collections from a database or in-memory storage
     const collections = [
       { name: 'Seagull Art', logo: 'seagull_art_logo.png' },
       { name: 'Wildlife NFT', logo: 'wildlife_logo.png' }
     ];
-    
     res.status(200).json(collections);
   } catch (err) {
     console.error('Error fetching collections:', err);
@@ -161,6 +160,101 @@ app.post('/mint', async (req, res) => {
   }
 });
 
+// === /buy-nft endpoint ===
+app.post('/buy-nft', async (req, res) => {
+  const { wallet, nftId, paymentAmount } = req.body;
+
+  if (!wallet || !nftId || !paymentAmount) {
+    return res.status(400).json({ error: 'Missing wallet, NFT ID or payment amount' });
+  }
+
+  try {
+    await xrplClient.connect();
+
+    // Fetch the NFT from your database
+    const nft = await getNFTById(nftId);
+    if (!nft) {
+      return res.status(404).json({ error: 'NFT not found' });
+    }
+
+    if (nft.owner === wallet) {
+      return res.status(400).json({ error: 'You already own this NFT' });
+    }
+
+    // Check if payment is SeagullCoin and matches the NFT price
+    if (parseFloat(paymentAmount) < nft.price) {
+      return res.status(400).json({ error: 'Insufficient funds to purchase NFT' });
+    }
+
+    // Process the payment transaction
+    const paymentTx = {
+      TransactionType: 'Payment',
+      Account: wallet,
+      Destination: nft.owner,
+      Amount: {
+        currency: SEAGULLCOIN_CODE,
+        issuer: SEAGULLCOIN_ISSUER,
+        value: paymentAmount.toString(),
+      },
+    };
+
+    const preparedTx = await xrplClient.autofill(paymentTx);
+    const signedTx = wallet.sign(preparedTx);
+    const txResult = await xrplClient.submit(signedTx.tx_blob);
+
+    // Transfer NFT ownership (you can implement this logic)
+    await transferNFTOwnership(nftId, wallet);
+
+    res.status(200).json({
+      success: true,
+      paymentTxHash: txResult.result.hash,
+      nftId: nftId,
+    });
+
+  } catch (err) {
+    console.error('Buy error:', err);
+    res.status(500).json({ error: 'Error processing purchase' });
+  } finally {
+    await xrplClient.disconnect();
+  }
+});
+
+// === /sell-nft endpoint ===
+app.post('/sell-nft', async (req, res) => {
+  const { wallet, nftId, salePrice } = req.body;
+
+  if (!wallet || !nftId || !salePrice) {
+    return res.status(400).json({ error: 'Missing wallet, NFT ID or sale price' });
+  }
+
+  try {
+    await xrplClient.connect();
+
+    // Fetch the NFT from your database
+    const nft = await getNFTById(nftId);
+    if (!nft || nft.owner !== wallet) {
+      return res.status(400).json({ error: 'You do not own this NFT' });
+    }
+
+    // Store the NFT sale details (price and listing)
+    await listNFTForSale(nftId, salePrice);
+
+    res.status(200).json({
+      success: true,
+      message: 'NFT listed for sale',
+      nftId: nftId,
+      salePrice: salePrice,
+    });
+
+  } catch (err) {
+    console.error('Sell error:', err);
+    res.status(500).json({ error: 'Error listing NFT for sale' });
+  } finally {
+    await xrplClient.disconnect();
+  }
+});
+
+// Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`SGLCN-X20 Minting API running on port ${port}`);

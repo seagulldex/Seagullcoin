@@ -1,118 +1,120 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
+import { Client, xrpToDrops } from 'xrpl';
 import multer from 'multer';
 import mime from 'mime-types';
-import dotenv from 'dotenv';
-import { NFTStorage, File } from 'nft.storage';
-import { XummSdk } from 'xumm-sdk';
-import { Client, Wallet, convertStringToHex } from 'xrpl';
+import { nftStorage } from 'nft.storage';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { xummSdk } from 'xumm-sdk';
 
-// Setup paths & env
 dotenv.config();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Setup server
 const app = express();
+const port = process.env.PORT || 3000;
+
+const client = new Client('wss://s2.ripple.com'); // XRPL WebSocket client
+const SEAGULLCOIN_CURRENCY_HEX = '53656167756C6C436F696E000000000000000000'; // SeagullCoin currency code (in hex)
+const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'; // SeagullCoin issuer address
+
+// Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Upload config
+// File Upload Setup
 const upload = multer({ dest: 'uploads/' });
 
-// Setup XUMM & NFT.Storage
-const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
+// XUMM SDK initialization (if you're using XUMM)
+const xumm = new xummSdk(process.env.XUMM_API_KEY);
 
-// Setup XRPL
-const client = new Client('wss://s1.ripple.com');
-const SERVICE_WALLET = Wallet.fromSeed(process.env.SERVICE_WALLET_SEED);
-const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER;
-const SEAGULLCOIN_CURRENCY_HEX = process.env.SEAGULLCOIN_CURRENCY_HEX;
-
-await client.connect();
-console.log("Connected to XRPL as:", SERVICE_WALLET.classicAddress);
-
-// Health check
-app.get('/', (req, res) => {
-  res.send('SGLCN-X20 Minting API is live.');
-});
-
-// Verify payment
+// Payment Verification Endpoint
 app.post('/pay', async (req, res) => {
   const { userWallet } = req.body;
 
-  if (!userWallet) {
-    return res.status(400).json({ success: false, error: 'Missing user wallet address' });
-  }
-
   try {
-    const { result } = await client.request({
+    const accountLines = await client.request({
       command: 'account_lines',
       account: userWallet
     });
 
-    const match = result.lines.find(
-      (line) =>
-        line.currency === Buffer.from(SEAGULLCOIN_CURRENCY_HEX, 'hex').toString().replace(/\0/g, '') &&
-        line.account === SEAGULLCOIN_ISSUER
+    // Find SeagullCoin line
+    const line = accountLines.result.lines.find(
+      (l) =>
+        l.currency === Buffer.from(SEAGULLCOIN_CURRENCY_HEX, 'hex').toString().replace(/\0/g, '') &&
+        l.account === SEAGULLCOIN_ISSUER
     );
 
-    if (!match || parseFloat(match.balance) < 0.5) {
-      return res.status(400).json({ success: false, error: 'Insufficient SeagullCoin balance' });
+    // Insufficient SeagullCoin balance
+    if (!line) {
+      const errorMessage = `No SeagullCoin trustline found for user ${userWallet}`;
+      console.error(errorMessage);
+      return res.status(400).json({ success: false, error: errorMessage });
     }
 
-    res.json({ success: true });
+    if (parseFloat(line.balance) < 0.5) {
+      const errorMessage = `Insufficient SeagullCoin balance for user ${userWallet}: ${line.balance} available`;
+      console.error(errorMessage);
+      return res.status(400).json({ success: false, error: errorMessage });
+    }
+
+    // If everything is good, respond with success
+    return res.json({ success: true });
+
   } catch (err) {
-    console.error('Payment check error:', err);
-    res.status(500).json({ success: false, error: 'Error verifying payment' });
+    // Handle network or other errors
+    const errorMessage = `Error verifying payment for user ${userWallet}: ${err.message || err}`;
+    console.error(errorMessage); // Log the full error
+    res.status(500).json({ success: false, error: errorMessage });
   }
 });
 
-// Mint NFT
+// Mint NFT Endpoint
 app.post('/mint', upload.single('file'), async (req, res) => {
-  try {
-    const { name, description } = req.body;
-    const filePath = path.join(__dirname, req.file.path);
-    const contentType = mime.lookup(filePath);
+  const { name, description, collection } = req.body;
+  const file = req.file;
 
+  if (!file || !name || !description || !collection) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required fields (name, description, collection, or file).'
+    });
+  }
+
+  try {
+    // Upload media to NFT.Storage
     const metadata = await nftStorage.store({
       name,
       description,
-      image: new File([fs.readFileSync(filePath)], req.file.originalname, { type: contentType })
+      collection,
+      file: new File([fs.readFileSync(file.path)], file.originalname, { type: mime.lookup(file.originalname) }),
     });
 
-    const tx = {
-      TransactionType: 'NFTokenMint',
-      Account: SERVICE_WALLET.classicAddress,
-      URI: convertStringToHex(metadata.url),
-      Flags: 8,
-      NFTokenTaxon: 0,
-      TransferFee: 0
-    };
+    // Save the metadata URL (return it in the response)
+    const nftMetadataUrl = metadata.url;
+    fs.unlinkSync(file.path); // Cleanup file after upload
 
-    const prepared = await client.autofill(tx);
-    const signed = SERVICE_WALLET.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
-
-    fs.unlinkSync(filePath); // Clean up uploaded file
-
-    res.json({
+    return res.json({
       success: true,
-      metadataUrl: metadata.url,
-      txHash: result.result.hash,
-      nftokenId: result.result.meta?.nftoken_id || null
+      nftMetadataUrl
     });
+
   } catch (err) {
-    console.error('Mint error:', err);
-    res.status(500).json({ success: false, error: 'Minting failed' });
+    console.error(`Error minting NFT: ${err.message || err}`);
+    return res.status(500).json({
+      success: false,
+      error: `Error minting NFT: ${err.message || err}`
+    });
   }
 });
 
+// Example GET endpoint to check if the API is live
+app.get('/', (req, res) => {
+  res.json({ message: 'SGLCN-X20 Minting API is live' });
+});
+
 // Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`SGLCN-X20 Minting API running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });

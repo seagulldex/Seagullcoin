@@ -4,10 +4,10 @@ import dotenv from 'dotenv';
 import { Client, xrpToDrops } from 'xrpl';
 import multer from 'multer';
 import mime from 'mime-types';
-import { nftStorage } from 'nft.storage';
+import { NFTStorage, File } from 'nft.storage'; // Correct import
 import fs from 'fs';
 import path from 'path';
-import { xummSdk } from 'xumm-sdk';
+import { XummSdk } from 'xumm-sdk'; // Correct import from xumm-sdk
 
 dotenv.config();
 
@@ -27,7 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 const upload = multer({ dest: 'uploads/' });
 
 // XUMM SDK initialization (if you're using XUMM)
-const xumm = new xummSdk(process.env.XUMM_API_KEY);
+const xumm = new XummSdk(process.env.XUMM_API_KEY); // No need to use 'new' here
 
 // Payment Verification Endpoint
 app.post('/pay', async (req, res) => {
@@ -84,7 +84,7 @@ app.post('/mint', upload.single('file'), async (req, res) => {
 
   try {
     // Upload media to NFT.Storage
-    const metadata = await nftStorage.store({
+    const metadata = await new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY }).store({
       name,
       description,
       collection,

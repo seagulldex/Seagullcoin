@@ -1,7 +1,5 @@
-// server.js
 import express from 'express'
 import dotenv from 'dotenv'
-import cors from 'cors'
 import { NFTStorage, File } from 'nft.storage'
 import { XummSdk } from 'xumm-sdk'
 import xrpl from 'xrpl'
@@ -19,12 +17,17 @@ const client = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY })
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET)
 const upload = multer({ dest: 'uploads/' })
 
-app.use(cors())
 app.use(express.json())
 
 // Helper for file path
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, 'uploads')
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir)
+}
 
 // Home route
 app.get('/', (req, res) => {

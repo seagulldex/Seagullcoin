@@ -1,151 +1,160 @@
-require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-const { XummSdk } = require('xumm-sdk');
 const xrpl = require('xrpl');
-const cors = require('cors');
-const { NFTStorage, File } = require('nft.storage');
 const fetch = require('node-fetch');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });
-
-app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('public'));
 
-const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
+const xrplClient = new xrpl.Client('wss://s1.ripple.com');
+const SEAGULLCOIN_CODE = 'SGLCN-X20'; // SeagullCoin currency code
+const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'; // SeagullCoin issuer address
+const BURN_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // The wallet that burns SeagullCoin
+const MINT_COST = 0.5; // Minting cost in SeagullCoin
 
-const SERVICE_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U';
-const SGLCN_HEX = '53656167756C6C436F696E000000000000000000';
-const SGLCN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
-const MINT_COST = '0.5';
-
-let mintedNFTs = [];
-
-// Root route for the base URL
+// Handle GET requests to the root path
 app.get('/', (req, res) => {
-  res.json({
-    status: "live",
-    message: "Welcome to the SGLCN-X20 NFT Minting API!",
-    url: "https://sglcn-x20-api.glitch.me",
-    endpoints: [
-      "/pay",
-      "/mint",
-      "/collections",
-      "/user/:address",
-      "/buy-nft",
-      "/sell-nft"
-    ]
-  });
+  res.status(200).json({ message: 'Welcome to the SGLCN-X20 NFT Minting API!' });
 });
 
-app.post('/pay', async (req, res) => {
-  const { wallet } = req.body;
-  if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
-
-  const tx = {
+// Utility function to burn SeagullCoin
+async function burnSeagullCoin(wallet, amount) {
+  const payment = {
     TransactionType: 'Payment',
-    Destination: SERVICE_WALLET,
+    Account: wallet,
+    Destination: BURN_WALLET,
     Amount: {
-      currency: SGLCN_HEX,
-      issuer: SGLCN_ISSUER,
-      value: MINT_COST
-    }
+      currency: SEAGULLCOIN_CODE,
+      issuer: SEAGULLCOIN_ISSUER,
+      value: amount.toString(),
+    },
   };
 
-  const payload = await xumm.payload.createAndSubscribe({ txjson: tx }, event => {
-    if (event.data.signed === true) {
-      return event;
-    }
-  });
+  const preparedTx = await xrplClient.autofill(payment);
+  const signedTx = wallet.sign(preparedTx);
+  const txResult = await xrplClient.submit(signedTx.tx_blob);
+  return txResult;
+}
 
-  res.json({
-    uuid: payload.uuid,
-    next: payload.next.always,
-  });
-});
+// Complete mintNFT function
+async function mintNFT(wallet, nftData) {
+  // Step 1: Upload NFT metadata to NFT.Storage
+  const metadata = {
+    name: nftData.name,
+    description: nftData.description,
+    image: nftData.image, // Assuming image is URL or IPFS URL
+    attributes: nftData.attributes || [], // Any additional metadata like properties
+    collection: nftData.collection || null, // Optional: Attach to a collection
+  };
 
-app.post('/mint', upload.single('file'), async (req, res) => {
   try {
-    const { wallet, name, description, domain, collection, properties } = req.body;
+    // Upload the metadata to NFT.Storage
+    const metadataRes = await fetch('https://api.nft.storage/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.NFT_STORAGE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(metadata),
+    });
+    
+    if (!metadataRes.ok) {
+      throw new Error('Failed to upload metadata');
+    }
 
-    if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
+    const metadataJson = await metadataRes.json();
+    const ipfsUrl = `https://ipfs.io/ipfs/${metadataJson.value.cid}`; // Metadata stored on IPFS
 
-    const filePath = req.file.path;
-    const fileData = await fs.promises.readFile(filePath);
-    const fileMime = req.file.mimetype;
-    const fileName = req.file.originalname;
-
-    const metadata = {
-      name,
-      description,
-      image: new File([fileData], fileName, { type: fileMime }),
-      properties: JSON.parse(properties || '{}'),
-      collection,
-      domain,
-    };
-
-    const metadataCID = await nftStorage.store(metadata);
-
-    const client = new xrpl.Client('wss://xrplcluster.com');
-    await client.connect();
-
-    const nftMintTx = {
+    // Step 2: Create the mint transaction
+    const mintTx = {
       TransactionType: 'NFTokenMint',
       Account: wallet,
-      URI: xrpl.convertStringToHex(`ipfs://${metadataCID.url.split('/').pop()}`),
-      Flags: 8,
-      TransferFee: 0,
-      NFTokenTaxon: 0,
+      Flags: 0, // Ensure the NFT is transferable (change to 0 for transferable)
+      TokenTaxon: 0, // For collection
+      URI: ipfsUrl, // IPFS metadata URL
+      Issuer: SEAGULLCOIN_ISSUER,
+      NFTokenName: nftData.name,
+      NFTokenDescription: nftData.description,
+      NFTokenProperties: nftData.attributes, // Optional additional properties
+      TransferFee: 0, // Prevent XRP royalties (set TransferFee to 0)
+      TokenType: 'NFT', // Defining NFT as a token
     };
 
-    const response = await client.autofill(nftMintTx);
-    const signed = await client.sign(response, { seed: process.env.SERVICE_WALLET_SEED });
-    const submit = await client.submitAndWait(signed.tx_blob);
-    const tokenId = submit.result.meta?.nftoken_id || null;
+    const preparedTx = await xrplClient.autofill(mintTx);
+    const signedTx = wallet.sign(preparedTx);
 
-    await client.disconnect();
+    // Step 3: Submit the transaction
+    const txResult = await xrplClient.submit(signedTx.tx_blob);
+    const nftTokenId = txResult.result.tx_json.NFTokenID; // ID of the newly minted NFT
 
-    mintedNFTs.push({
-      name,
-      description,
-      tokenId,
-      image: metadataCID.data.image.href,
-      collection,
-      domain,
+    // Step 4: Return mint result with transaction details
+    return {
+      nftTokenId,
+      ipfsUrl, // Return the IPFS URL for the NFT metadata
+      collection: nftData.collection || 'No Collection', // Return collection if applicable
+      mintTxHash: txResult.result.hash, // The transaction hash of the minting
+    };
+  } catch (err) {
+    console.error('Error minting NFT:', err);
+    throw new Error('Minting failed');
+  }
+}
+
+// /mint endpoint
+app.post('/mint', async (req, res) => {
+  const { wallet, nftData } = req.body;
+  if (!wallet || !nftData) return res.status(400).json({ success: false, error: 'Missing wallet address or NFT data' });
+
+  try {
+    await xrplClient.connect();
+
+    // Step 1: Verify SeagullCoin payment (similar to /pay logic)
+    const transactions = await xrplClient.request({
+      command: 'account_tx',
+      account: wallet,
+      ledger_index_min: -1,
+      ledger_index_max: -1,
+      limit: 20,
     });
 
-    fs.unlinkSync(filePath);
+    const paymentTx = transactions.result.transactions.find(tx => {
+      const t = tx.tx;
+      return (
+        t.TransactionType === 'Payment' &&
+        t.Destination === BURN_WALLET &&
+        t.Amount?.currency === SEAGULLCOIN_CODE &&
+        t.Amount?.issuer === SEAGULLCOIN_ISSUER &&
+        parseFloat(t.Amount?.value) >= parseFloat(MINT_COST)
+      );
+    });
 
-    res.json({ success: true, tokenId });
+    if (!paymentTx) return res.status(403).json({ success: false, error: 'Payment not found to burn wallet' });
+
+    // Step 2: Mint NFT
+    const mintResult = await mintNFT(wallet, nftData);
+
+    // Step 3: Burn SeagullCoin (send the mint cost to burn wallet)
+    const burnTx = await burnSeagullCoin(wallet, MINT_COST);
+
+    res.status(200).json({
+      success: true,
+      nftTokenId: mintResult.nftTokenId,
+      ipfsUrl: mintResult.ipfsUrl,
+      collection: mintResult.collection,
+      mintTxHash: mintResult.mintTxHash,
+      burnTxHash: burnTx.result.hash,
+    });
+
   } catch (err) {
-    console.error('Mint error:', err);
-    res.status(500).json({ error: 'Minting failed' });
+    console.error('Minting error:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  } finally {
+    await xrplClient.disconnect();
   }
 });
 
-app.get('/nfts', async (req, res) => {
-  res.json({ nfts: mintedNFTs });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(JSON.stringify({
-    status: "live",
-    message: "Welcome to the SGLCN-X20 NFT Minting API!",
-    url: "https://sglcn-x20-api.glitch.me",
-    endpoints: [
-      "/pay",
-      "/mint",
-      "/collections",
-      "/user/:address",
-      "/buy-nft",
-      "/sell-nft"
-    ]
-  }, null, 2));
+// Start the server
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });

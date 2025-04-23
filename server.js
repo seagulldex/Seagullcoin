@@ -23,15 +23,23 @@ const xummApiKey = process.env.XUMM_API_KEY;
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
 
 const client = new Client(XRPL_NODE);
-client.connect();
 
 let mintedNFTs = [];
 let collections = [];
 
+(async () => {
+  await client.connect();
+  app.listen(PORT, () => {
+    console.log(`SGLCN-X20 NFT Minting API running on port ${PORT}`);
+  });
+})();
+
+// Route for root URL to redirect to a specific endpoint (e.g., /collections)
 app.get('/', (req, res) => {
-  res.send('Welcome to SGLCN-X20 Minting API');
+  res.redirect('/collections');
 });
 
+// Route to verify SeagullCoin payment for minting
 app.post('/pay', async (req, res) => {
   const { walletAddress } = req.body;
   const txJson = {
@@ -45,19 +53,214 @@ app.post('/pay', async (req, res) => {
     Memos: [{ Memo: { MemoData: Buffer.from('Minting fee').toString('hex') } }]
   };
 
-  const payload = await fetch("https://xumm.app/api/v1/platform/payload", {
-    method: "POST",
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': xummApiKey
+  try {
+    const payload = await fetch("https://xumm.app/api/v1/platform/payload", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': xummApiKey
+      },
+      body: JSON.stringify({ txjson: txJson, options: { submit: true } })
+    });
+
+    const json = await payload.json();
+    res.json({ uuid: json.uuid, next: json.next.always });
+  } catch (error) {
+    res.status(500).json({ error: 'Payment verification failed' });
+  }
+});
+
+// Route to mint an NFT
+app.post('/mint', upload.single('file'), async (req, res) => {
+  try {
+    const { name, description, domain, properties, walletAddress, collectionName } = req.body;
+    const file = req.file;
+
+    if (!file) return res.status(400).json({ error: 'File required' });
+
+    const hasPaid = await verifyPayment(walletAddress);
+    if (!hasPaid) return res.status(403).json({ error: 'SeagullCoin payment not detected' });
+
+    const metadata = {
+      name,
+      description,
+      image: new File([file.buffer], file.originalname, { type: file.mimetype }),
+      properties: JSON.parse(properties || "{}"),
+      collection: collectionName || "Uncategorized",
+      domain
+    };
+
+    const ipnft = await nftStorage.store(metadata);
+    const uri = `ipfs://${ipnft.ipnft}/metadata.json`;
+
+    const tx = {
+      TransactionType: "NFTokenMint",
+      Account: walletAddress,
+      URI: Buffer.from(uri).toString('hex').toUpperCase(),
+      Flags: 8,
+      TransferFee: 0,
+      NFTokenTaxon: 0,
+      Memos: [{
+        Memo: {
+          MemoData: Buffer.from(`Minted with SGLCN`).toString("hex")
+        }
+      }]
+    };
+
+    const payload = await fetch("https://xumm.app/api/v1/platform/payload", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': xummApiKey
+      },
+      body: JSON.stringify({ txjson: tx, options: { submit: true } })
+    });
+
+    mintedNFTs.push({ name, image: metadata.image.name, uri, collection: collectionName, wallet: walletAddress });
+    if (collectionName && !collections.find(c => c.name === collectionName)) {
+      collections.push({ name: collectionName, icon: "/default-icon.png" });
+    }
+
+    res.json({ uuid: payload.uuid, next: payload.next.always });
+  } catch (err) {
+    console.error("Minting error:", err);
+    res.status(500).json({ error: "Mint failed" });
+  }
+});
+
+// Route to get NFT collections
+app.get('/collections', (req, res) => {
+  const grouped = collections.map(col => ({
+    name: col.name,
+    icon: col.icon,
+    nfts: mintedNFTs.filter(n => n.collection === col.name)
+  }));
+  res.json(grouped);
+});
+
+// Route to get user's NFTs
+app.get('/user/:address', (req, res) => {
+  const userNfts = mintedNFTs.filter(nft => nft.wallet === req.params.address);
+  res.json(userNfts);
+});
+
+// Route to create buy offer for NFT
+app.post('/buy-nft', async (req, res) => {
+  const { buyerAddress, sellerAddress, amount, tokenId } = req.body;
+
+  const tx = {
+    TransactionType: "NFTokenCreateOffer",
+    Account: buyerAddress,
+    Owner: sellerAddress,
+    NFTokenID: tokenId,
+    Amount: {
+      currency: SGLCN_HEX,
+      issuer: SGLCN_ISSUER,
+      value: amount.toString()
     },
-    body: JSON.stringify({ txjson: txJson, options: { submit: true } })
-  });
+    Flags: 1
+  };
 
-  const json = await payload.json();
-  res.json({ uuid: json.uuid, next: json.next.always });
+  try {
+    const payload = await fetch("https://xumm.app/api/v1/platform/payload", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': xummApiKey
+      },
+      body: JSON.stringify({ txjson: tx, options: { submit: true } })
+    });
+
+    res.json({ uuid: payload.uuid, next: payload.next.always });
+  } catch (error) {
+    res.status(500).json({ error: 'Offer creation failed' });
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`SGLCN-X20 Minting API running on port ${PORT}`);
+// Route to create sell offer for NFT
+app.post('/sell-nft', async (req, res) => {
+  const { sellerAddress, tokenId, price } = req.body;
+
+  const tx = {
+    TransactionType: "NFTokenCreateOffer",
+    Account: sellerAddress,
+    NFTokenID: tokenId,
+    Amount: {
+      currency: SGLCN_HEX,
+      issuer: SGLCN_ISSUER,
+      value: price.toString()
+    },
+    Flags: 1
+  };
+
+  try {
+    const payload = await fetch("https://xumm.app/api/v1/platform/payload", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': xummApiKey
+      },
+      body: JSON.stringify({ txjson: tx, options: { submit: true } })
+    });
+
+    res.json({ uuid: payload.uuid, next: payload.next.always });
+  } catch (error) {
+    res.status(500).json({ error: 'Offer creation failed' });
+  }
 });
+
+// Function to verify SeagullCoin payment before minting
+async function verifyPayment(walletAddress) {
+  try {
+    let hasPaid = false;
+    let marker = null;
+
+    // Loop to handle pagination in case there are more than 10 transactions
+    do {
+      const accountTx = await client.request({
+        command: "account_tx",
+        account: walletAddress,
+        ledger_index_min: -1,
+        ledger_index_max: -1,
+        binary: false,
+        limit: 10,
+        marker: marker  // Set marker to fetch the next page of results
+      });
+
+      // Check if any transaction meets the payment criteria
+      hasPaid = accountTx.result.transactions.some(tx =>
+        tx.tx.TransactionType === "Payment" &&
+        tx.tx.Amount?.currency === SGLCN_HEX &&
+        tx.tx.Amount?.issuer === SGLCN_ISSUER &&
+        parseFloat(tx.tx.Amount?.value || 0) >= 0.5 &&
+        tx.tx.Destination === SERVICE_WALLET
+      );
+
+      // Update the marker to fetch the next page of transactions
+      marker = accountTx.result.marker;
+
+    } while (marker && !hasPaid);  // Continue pagination until payment is found or no more transactions
+
+    return hasPaid;
+  } catch (err) {
+    console.error("Error verifying payment:", err);
+    return false;
+  }
+}
+
+// Regularly cancel unauthorized XRP sell offers
+setInterval(async () => {
+  const offers = await client.request({ command: "account_nft_sell_offers", account: SERVICE_WALLET });
+  if (offers.result.offers) {
+    for (const offer of offers.result.offers) {
+      if (offer.amount && (typeof offer.amount === "string" || offer.amount.currency === "XRP")) {
+        // XRP offer - cancel it
+        await client.submitAndWait({
+          TransactionType: "NFTokenCancelOffer",
+          Account: SERVICE_WALLET,
+          NFTokenOffers: [offer.nft_offer_index]
+        });
+      }
+    }
+  }
+}, 30000);

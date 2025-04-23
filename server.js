@@ -1,94 +1,82 @@
-// server.js
-import express from 'express'
-import dotenv from 'dotenv'
-import cors from 'cors'
-import { NFTStorage, File } from 'nft.storage'
-import { XummSdk } from 'xumm-sdk'
-import xrpl from 'xrpl'
-import fetch from 'node-fetch'
-import multer from 'multer'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
+const express = require("express");
+const multer = require("multer");
+const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
+const { NFTStorage, File } = require("nft.storage");
+const { RippleAPI } = require("ripple-lib");
+const mime = require("mime-types");
 
-// Init
-dotenv.config()
-const app = express()
-const PORT = process.env.PORT || 3000
-const client = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY })
-const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET)
-const upload = multer({ dest: 'uploads/' })
+require("dotenv").config();
 
-app.use(cors())
-app.use(express.json())
+const app = express();
+const upload = multer({ dest: "uploads/" });
+const port = 3000;
 
-// Helper for file path
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const NFT_STORAGE_KEY = process.env.NFT_STORAGE_KEY;
+const SERVICE_WALLET = process.env.SERVICE_WALLET;
+const api = new RippleAPI({ server: "wss://xrplcluster.com" });
 
-// Home route
-app.get('/', (req, res) => {
-  res.json({ message: 'SGLCN-X20 Minting API is live.' })
-})
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Mint route
-app.post('/mint', upload.single('file'), async (req, res) => {
+app.get("/", (req, res) => {
+  res.json({ message: "SGLCN-X20 Minting API is live." });
+});
+
+// Serve mint.html from the root directory
+app.get("/mint.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "mint.html"));
+});
+
+app.post("/mint", upload.single("file"), async (req, res) => {
   try {
-    const { name, description, collection } = req.body
-    const filePath = req.file?.path
+    const { name, description, collection } = req.body;
+    const file = req.file;
 
-    if (!name || !description || !filePath) {
+    if (!name || !description || !file) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: name, description, or file.',
-      })
+        error: "Missing required fields: name, description, or file.",
+      });
     }
 
-    const fileData = await fs.promises.readFile(filePath)
-    const nftFile = new File([fileData], req.file.originalname, {
-      type: req.file.mimetype,
-    })
+    const fileData = fs.readFileSync(file.path);
+    const nftFile = new File(
+      [fileData],
+      file.originalname,
+      { type: mime.lookup(file.originalname) || "application/octet-stream" }
+    );
 
-    const metadata = await client.store({
+    const nftStorage = new NFTStorage({ token: NFT_STORAGE_KEY });
+
+    const metadata = await nftStorage.store({
       name,
       description,
       image: nftFile,
       properties: {
-        collection,
+        collection: collection || "Uncategorized",
       },
-    })
+    });
 
-    // XRPL Mint Transaction Payload
-    const txJson = {
-      TransactionType: 'NFTokenMint',
-      Account: process.env.XUMM_ACCOUNT,
-      URI: Buffer.from(metadata.url).toString('hex').toUpperCase(),
-      Flags: 0,
-      TransferFee: 0,
-      NFTokenTaxon: 0,
-    }
+    // Clean up uploaded file
+    fs.unlinkSync(file.path);
 
-    const payload = await xumm.payload.create({ txjson: txJson })
-
-    // Cleanup uploaded file
-    fs.unlink(filePath, () => {})
-
-    res.json({
+    // Return metadata for now
+    return res.json({
       success: true,
-      message: 'NFT mint payload created.',
-      payload_url: payload.next.always,
-      metadata_url: metadata.url,
-    })
+      metadata: metadata.url,
+    });
   } catch (err) {
-    console.error('Minting error:', err)
+    console.error("Minting error:", err);
     res.status(500).json({
       success: false,
-      error: 'Error minting NFT. Please try again later.',
-    })
+      error: "Error minting NFT. Please try again later.",
+    });
   }
-})
+});
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`SGLCN-X20 API running on port ${PORT}`)
-})
+app.listen(port, () => {
+  console.log(`SGLCN-X20 API running on port ${port}`);
+});

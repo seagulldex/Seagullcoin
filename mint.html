@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mint SeagullCoin NFT</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    input, textarea, button {
+      display: block;
+      margin-top: 10px;
+      width: 100%;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Mint a SeagullCoin NFT</h2>
+  <form id="mintForm" enctype="multipart/form-data">
+    <input type="text" name="name" placeholder="NFT Name" required />
+    <textarea name="description" placeholder="Description" required></textarea>
+    <input type="text" name="collection" placeholder="Collection" required />
+    <input type="file" name="file" accept="image/*,video/*" required />
+    <button type="submit">Mint NFT</button>
+  </form>
+  <p id="response"></p>
+
+  <script>
+    document.getElementById('mintForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const resEl = document.getElementById('response');
+
+      try {
+        const res = await fetch('/mint', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          resEl.textContent = 'NFT Minted! Token ID: ' + data.tokenId;
+        } else {
+          resEl.textContent = 'Error: ' + data.error;
+        }
+      } catch (err) {
+        resEl.textContent = 'Unexpected error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

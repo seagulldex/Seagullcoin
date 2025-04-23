@@ -57,7 +57,7 @@ async function mintNFT(wallet, nftData) {
       },
       body: JSON.stringify(metadata),
     });
-    
+
     if (!metadataRes.ok) {
       throw new Error('Failed to upload metadata');
     }

@@ -126,5 +126,4 @@ const nftStorage = new NFTStorage({ token: NFT_STORAGE_KEY });
 
   // Launch
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`SGLCN API running on port ${PORT}`));
-})();
+  app.listen(PORT, ()

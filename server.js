@@ -3,6 +3,10 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const xrpl = require('xrpl');
 const dotenv = require('dotenv');
+const { NFTStorage, File } = require('nft.storage');
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios'); // For XUMM wallet authentication
 
 dotenv.config();
 
@@ -21,6 +25,8 @@ const BURN_WALLET = "r9ByKdPsDznUPPEsmLKvjPdS5qfBSWHEBL"; // hardcoded burn wall
 
 const xrplClient = new xrpl.Client("wss://s.altnet.rippletest.net:51233");
 
+const nftStorageClient = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.status(200).json({
@@ -30,6 +36,7 @@ app.get('/', (req, res) => {
   });
 });
 
+// Status endpoint
 app.get('/status', (req, res) => {
   res.status(200).json({
     status: "live",
@@ -38,7 +45,7 @@ app.get('/status', (req, res) => {
   });
 });
 
-// PAY endpoint — now checks BURN_WALLET
+// PAY endpoint — checks for SeagullCoin payment to burn wallet
 app.post('/pay', async (req, res) => {
   const { wallet } = req.body;
   if (!wallet) return res.status(400).json({ success: false, error: 'Missing wallet address' });
@@ -80,8 +87,140 @@ app.post('/pay', async (req, res) => {
   }
 });
 
-// Remaining endpoints stay unchanged — using SERVICE_SECRET to mint or transact
-// ... (mint, sell-nft, buy-nft, burn) — already correct
+// /mint - Mint a new NFT after successful payment verification
+app.post('/mint', async (req, res) => {
+  const { wallet, metadata, xummPayload } = req.body;
+  if (!wallet || !metadata || !xummPayload) return res.status(400).json({ success: false, error: 'Missing wallet address, metadata or XUMM payload' });
+
+  try {
+    // Verify XUMM Wallet authentication
+    const xummResponse = await axios.get(`https://xumm.app/api/v1/platform/payload/${xummPayload}`, {
+      headers: { Authorization: `Bearer ${process.env.XUMM_API_KEY}` }
+    });
+
+    if (!xummResponse.data?.authenticated) {
+      return res.status(401).json({ success: false, error: 'XUMM authentication failed' });
+    }
+
+    // Check if the wallet from the payload matches the provided wallet
+    if (xummResponse.data?.user.wallet !== wallet) {
+      return res.status(401).json({ success: false, error: 'Wallet mismatch with XUMM payload' });
+    }
+
+    // Handle NFT minting (e.g., create an NFT on XRPL and store metadata in NFT.Storage)
+    const metadataFile = new File([JSON.stringify(metadata)], 'metadata.json', { type: 'application/json' });
+    const metadataCID = await nftStorageClient.storeBlob(metadataFile);
+
+    // Mint the NFT
+    const nft = await mintNFT(wallet, metadata, metadataCID); // Assume you implement mintNFT()
+
+    res.status(200).json({ success: true, nft });
+
+  } catch (err) {
+    console.error('Minting error:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// /collections - Return all NFT collections
+app.get('/collections', async (req, res) => {
+  try {
+    // Retrieve all collections from your database/storage (implement getCollections())
+    const collections = await getCollections();
+    res.status(200).json({ success: true, collections });
+  } catch (err) {
+    console.error('Error retrieving collections:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// /user/{wallet} - Return user-specific data (NFTs, transactions, etc.)
+app.get('/user/:wallet', async (req, res) => {
+  const { wallet } = req.params;
+  try {
+    // Fetch user data such as NFTs, wallet transactions, etc.
+    const userData = await getUserData(wallet);
+    res.status(200).json({ success: true, userData });
+  } catch (err) {
+    console.error('Error fetching user data:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// /buy-nft - Handle NFT purchase logic
+app.post('/buy-nft', async (req, res) => {
+  const { wallet, nftId, price } = req.body;
+  if (!wallet || !nftId || !price) return res.status(400).json({ success: false, error: 'Missing wallet address, NFT ID, or price' });
+
+  try {
+    const purchaseResult = await handleNFTPurchase(wallet, nftId, price);
+    res.status(200).json({ success: true, purchaseResult });
+  } catch (err) {
+    console.error('Purchase error:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// /sell-nft - List NFT for sale
+app.post('/sell-nft', async (req, res) => {
+  const { wallet, nftId, price } = req.body;
+  if (!wallet || !nftId || !price) return res.status(400).json({ success: false, error: 'Missing wallet address, NFT ID, or price' });
+
+  try {
+    const sellResult = await listNFTForSale(wallet, nftId, price);
+    res.status(200).json({ success: true, sellResult });
+  } catch (err) {
+    console.error('Sell error:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// /burn - Handle burning an NFT (transfer to burn wallet)
+app.post('/burn', async (req, res) => {
+  const { nftId } = req.body;
+  if (!nftId) return res.status(400).json({ success: false, error: 'Missing NFT ID' });
+
+  try {
+    const burnResult = await burnNFT(nftId);
+    res.status(200).json({ success: true, burnResult });
+  } catch (err) {
+    console.error('Burn error:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Helper functions (you need to implement these)
+async function mintNFT(wallet, metadata, metadataCID) {
+  // Implement minting logic on XRPL
+  // You should create the NFToken here using the xrpl library
+  // Assuming successful minting:
+  return { wallet, metadata, metadataCID, mintStatus: 'success' }; // Dummy return
+}
+
+async function getCollections() {
+  // Implement logic to fetch collections
+  return [];
+}
+
+async function getUserData(wallet) {
+  // Implement logic to fetch user data (e.g., NFTs)
+  return { wallet, nfts: [] };
+}
+
+async function handleNFTPurchase(wallet, nftId, price) {
+  // Implement purchase logic here (verify payment, transfer NFT)
+  return { wallet, nftId, price, success: true };
+}
+
+async function listNFTForSale(wallet, nftId, price) {
+  // Implement listing NFT for sale logic
+  return { wallet, nftId, price, listed: true };
+}
+
+async function burnNFT(nftId) {
+  // Implement burning NFT logic
+  return { nftId, burned: true };
+}
 
 app.listen(PORT, () => {
   console.log(`SGLCN-X20-API running on port ${PORT}`);

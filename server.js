@@ -1,127 +1,118 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { NFTStorage, File } from 'nft.storage';
-import { Xumm } from 'xumm';
-import xrpl from 'xrpl';
-import fs from 'fs';
+import mime from 'mime-types';
 import dotenv from 'dotenv';
+import { NFTStorage, File } from 'nft.storage';
+import { XummSdk } from 'xumm-sdk';
+import { Client, Wallet, convertStringToHex } from 'xrpl';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+// Setup paths & env
 dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Setup server
 const app = express();
-app.use(cors({
-  origin: process.env.CORS_ALLOWED_ORIGINS.split(','),
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 
+// Upload config
 const upload = multer({ dest: 'uploads/' });
 
-const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
-const client = new xrpl.Client("wss://xrplcluster.com");
+// Setup XUMM & NFT.Storage
+const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 
-const SERVICE_WALLET = process.env.SERVICE_WALLET;
-const SGLCN_ISSUER = process.env.SGLCN_ISSUER;
-const SGLCN_CURRENCY_HEX = process.env.SGLCN_CURRENCY_HEX;
-const MINT_FEE = 0.5;
+// Setup XRPL
+const client = new Client('wss://s1.ripple.com');
+const SERVICE_WALLET = Wallet.fromSeed(process.env.SERVICE_WALLET_SEED);
+const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER;
+const SEAGULLCOIN_CURRENCY_HEX = process.env.SEAGULLCOIN_CURRENCY_HEX;
 
+await client.connect();
+console.log("Connected to XRPL as:", SERVICE_WALLET.classicAddress);
+
+// Health check
+app.get('/', (req, res) => {
+  res.send('SGLCN-X20 Minting API is live.');
+});
+
+// Verify payment
 app.post('/pay', async (req, res) => {
-  const { wallet } = req.body;
+  const { userWallet } = req.body;
+
+  if (!userWallet) {
+    return res.status(400).json({ success: false, error: 'Missing user wallet address' });
+  }
 
   try {
-    const payload = await xumm.payload.create({
-      TransactionType: 'Payment',
-      Destination: SERVICE_WALLET,
-      Amount: {
-        currency: SGLCN_CURRENCY_HEX,
-        issuer: SGLCN_ISSUER,
-        value: MINT_FEE.toString()
-      }
+    const { result } = await client.request({
+      command: 'account_lines',
+      account: userWallet
     });
 
-    res.json({
-      uuid: payload.uuid,
-      next: payload.next.always
-    });
+    const match = result.lines.find(
+      (line) =>
+        line.currency === Buffer.from(SEAGULLCOIN_CURRENCY_HEX, 'hex').toString().replace(/\0/g, '') &&
+        line.account === SEAGULLCOIN_ISSUER
+    );
+
+    if (!match || parseFloat(match.balance) < 0.5) {
+      return res.status(400).json({ success: false, error: 'Insufficient SeagullCoin balance' });
+    }
+
+    res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Payment check error:', err);
+    res.status(500).json({ success: false, error: 'Error verifying payment' });
   }
 });
 
+// Mint NFT
 app.post('/mint', upload.single('file'), async (req, res) => {
-  const { wallet, name, description, domain } = req.body;
-  const file = req.file;
-
-  if (!wallet || !file) {
-    return res.status(400).json({ error: 'Missing wallet or file' });
-  }
-
-  await client.connect();
-
   try {
-    // Check payment
-    const accountTx = await client.request({
-      command: 'account_tx',
-      account: wallet,
-      ledger_index_min: -1,
-      ledger_index_max: -1,
-      binary: false,
-      limit: 20
-    });
-
-    const paid = accountTx.result.transactions.some(tx =>
-      tx.tx.TransactionType === 'Payment' &&
-      tx.tx.Destination === SERVICE_WALLET &&
-      tx.tx.Amount?.currency === SGLCN_CURRENCY_HEX &&
-      tx.tx.Amount?.issuer === SGLCN_ISSUER &&
-      parseFloat(tx.tx.Amount?.value) >= MINT_FEE
-    );
-
-    if (!paid) {
-      return res.status(402).json({ error: 'No SeagullCoin payment found' });
-    }
-
-    // Upload to IPFS
-    const fileData = await fs.promises.readFile(file.path);
-    const ipfsFile = new File([fileData], file.originalname, { type: file.mimetype });
+    const { name, description } = req.body;
+    const filePath = path.join(__dirname, req.file.path);
+    const contentType = mime.lookup(filePath);
 
     const metadata = await nftStorage.store({
       name,
       description,
-      image: ipfsFile,
-      properties: { domain: domain || '', creator: wallet }
+      image: new File([fs.readFileSync(filePath)], req.file.originalname, { type: contentType })
     });
 
-    // Mint NFT
-    const tx = await client.autofill({
+    const tx = {
       TransactionType: 'NFTokenMint',
-      Account: SERVICE_WALLET,
-      URI: xrpl.convertStringToHex(metadata.url),
+      Account: SERVICE_WALLET.classicAddress,
+      URI: convertStringToHex(metadata.url),
       Flags: 8,
-      TransferFee: 0,
-      NFTokenTaxon: 0
-    });
+      NFTokenTaxon: 0,
+      TransferFee: 0
+    };
 
-    const walletInstance = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SECRET);
-    const signed = walletInstance.sign(tx);
+    const prepared = await client.autofill(tx);
+    const signed = SERVICE_WALLET.sign(prepared);
     const result = await client.submitAndWait(signed.tx_blob);
 
-    const nftokenId = result.result.meta?.nftoken_id || 'Unknown';
+    fs.unlinkSync(filePath); // Clean up uploaded file
 
     res.json({
       success: true,
-      metadata: metadata.url,
-      nftokenId
+      metadataUrl: metadata.url,
+      txHash: result.result.hash,
+      nftokenId: result.result.meta?.nftoken_id || null
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  } finally {
-    client.disconnect();
-    fs.unlink(file.path, () => {});
+    console.error('Mint error:', err);
+    res.status(500).json({ success: false, error: 'Minting failed' });
   }
 });
 
-app.listen(3000, () => console.log("SGLCN-X20 Minting API running on port 3000"));
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`SGLCN-X20 Minting API running on port ${PORT}`);
+});

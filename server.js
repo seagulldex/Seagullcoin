@@ -1,41 +1,43 @@
-require('dotenv').config();
-const express = require('express');
-const multer = require('multer');
-const { NFTStorage, File } = require('nft.storage');
-const { Client, xrpToDrops, convertHexToString, convertStringToHex } = require('xrpl');
-const fetch = require('node-fetch');
-const cors = require('cors');
-const { readFileSync } = require('fs');
-const path = require('path');
-const app = express();
-const upload = multer();
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
+require('dotenv').config();  // Load environment variables from .env
+const express = require('express');  // Express framework
+const multer = require('multer');  // Multer for file uploads
+const { NFTStorage, File } = require('nft.storage');  // For NFT metadata storage
+const { Client, xrpToDrops, convertHexToString, convertStringToHex } = require('xrpl');  // XRP Ledger client
+const fetch = require('node-fetch');  // For making HTTP requests
+const cors = require('cors');  // For handling CORS
+const { readFileSync } = require('fs');  // File system operations
+const path = require('path');  // For path operations
+const app = express();  // Initialize Express app
+const upload = multer();  // Set up multer for file upload handling
+app.use(cors());  // Allow cross-origin requests
+app.use(express.json());  // Parse incoming JSON requests
+app.use(express.static('public'));  // Serve static files from 'public' directory
 
-const PORT = process.env.PORT || 3000;
-const XRPL_NODE = "wss://s.altnet.rippletest.net:51233"; // Change for mainnet
-const SERVICE_WALLET = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U";
-const SGLCN_HEX = "53656167756C6C436F696E000000000000000000"; // SeagullCoin currency code
-const SGLCN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
+const PORT = process.env.PORT || 3000;  // Port to listen on
+const XRPL_NODE = "wss://s.altnet.rippletest.net:51233";  // XRP Ledger node (change to mainnet for production)
+const SERVICE_WALLET = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U";  // Service wallet address
+const SGLCN_HEX = "53656167756C6C436F696E000000000000000000";  // SeagullCoin currency code in hex
+const SGLCN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";  // SeagullCoin issuer address
 
-const xummApiKey = process.env.XUMM_API_KEY;
-const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
+const xummApiKey = process.env.XUMM_API_KEY;  // XUMM API key from environment variable
+const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });  // NFT.Storage API client
 
-const client = new Client(XRPL_NODE);
+const client = new Client(XRPL_NODE);  // Connect to the XRP Ledger node
 
-let mintedNFTs = [];
-let collections = [];
+let mintedNFTs = [];  // Array to store minted NFTs
+let collections = [];  // Array to store NFT collections
 
+// Start the server
 (async () => {
-  await client.connect();
+  await client.connect();  // Connect to the XRP Ledger
   app.listen(PORT, () => {
     console.log(`SGLCN-X20 NFT Minting API running on port ${PORT}`);
   });
 })();
 
+// Endpoint to handle payment via SeagullCoin
 app.post('/pay', async (req, res) => {
-  const { walletAddress } = req.body;
+  const { walletAddress } = req.body;  // Get wallet address from the request body
   const txJson = {
     TransactionType: 'Payment',
     Destination: SERVICE_WALLET,
@@ -60,6 +62,7 @@ app.post('/pay', async (req, res) => {
   res.json({ uuid: json.uuid, next: json.next.always });
 });
 
+// Endpoint to mint an NFT
 app.post('/mint', upload.single('file'), async (req, res) => {
   try {
     const { name, description, domain, properties, walletAddress, collectionName } = req.body;
@@ -70,6 +73,7 @@ app.post('/mint', upload.single('file'), async (req, res) => {
     const hasPaid = await verifyPayment(walletAddress);
     if (!hasPaid) return res.status(403).json({ error: 'SeagullCoin payment not detected' });
 
+    // Prepare metadata for the NFT
     const metadata = {
       name,
       description,
@@ -79,9 +83,11 @@ app.post('/mint', upload.single('file'), async (req, res) => {
       domain
     };
 
+    // Store the NFT metadata on NFT.Storage
     const ipnft = await nftStorage.store(metadata);
     const uri = `ipfs://${ipnft.ipnft}/metadata.json`;
 
+    // Create the transaction to mint the NFT
     const tx = {
       TransactionType: "NFTokenMint",
       Account: walletAddress,
@@ -117,6 +123,7 @@ app.post('/mint', upload.single('file'), async (req, res) => {
   }
 });
 
+// Endpoint to get all collections
 app.get('/collections', (req, res) => {
   const grouped = collections.map(col => ({
     name: col.name,
@@ -126,11 +133,13 @@ app.get('/collections', (req, res) => {
   res.json(grouped);
 });
 
+// Endpoint to get NFTs by user address
 app.get('/user/:address', (req, res) => {
   const userNfts = mintedNFTs.filter(nft => nft.wallet === req.params.address);
   res.json(userNfts);
 });
 
+// Endpoint for buying an NFT
 app.post('/buy-nft', async (req, res) => {
   const { buyerAddress, sellerAddress, amount, tokenId } = req.body;
 
@@ -159,6 +168,7 @@ app.post('/buy-nft', async (req, res) => {
   res.json({ uuid: payload.uuid, next: payload.next.always });
 });
 
+// Endpoint for selling an NFT
 app.post('/sell-nft', async (req, res) => {
   const { sellerAddress, tokenId, price } = req.body;
 
@@ -186,6 +196,7 @@ app.post('/sell-nft', async (req, res) => {
   res.json({ uuid: payload.uuid, next: payload.next.always });
 });
 
+// Verify payment of SeagullCoin to the service wallet
 async function verifyPayment(walletAddress) {
   try {
     let hasPaid = false;
@@ -224,6 +235,7 @@ async function verifyPayment(walletAddress) {
   }
 }
 
+// Periodic check for unauthorized XRP offers
 setInterval(async () => {
   const offers = await client.request({ command: "account_nft_sell_offers", account: SERVICE_WALLET });
   if (offers.result.offers) {
@@ -238,4 +250,5 @@ setInterval(async () => {
       }
     }
   }
-}, 30000);
+}, 30000);  // Run every 30 seconds
+

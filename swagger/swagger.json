@@ -3,12 +3,12 @@
   "info": {
     "title": "SGLCN-X20 Minting API",
     "version": "1.0.0",
-    "description": "API for minting NFTs using SeagullCoin (SGLCN-X20)."
+    "description": "Public API to mint NFTs using SeagullCoin (SGLCN-X20) on XRPL"
   },
   "paths": {
     "/pay": {
       "post": {
-        "summary": "Create a payment payload for SeagullCoin (0.5 SGLCN)",
+        "summary": "Verify SeagullCoin payment",
         "requestBody": {
           "required": true,
           "content": {
@@ -16,33 +16,22 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "wallet": {
-                    "type": "string",
-                    "example": "rXXXXXXXXXXXXXXXXXXXXXXX"
-                  }
-                }
+                  "wallet": { "type": "string" }
+                },
+                "required": ["wallet"]
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Payment payload created successfully",
-            "content": {
-              "application/json": {
-                "example": {
-                  "uuid": "example-uuid-1234",
-                  "next": "https://xumm.app/payload/example-uuid-1234"
-                }
-              }
-            }
-          }
+          "200": { "description": "Payment verified" },
+          "402": { "description": "No valid SeagullCoin payment found" }
         }
       }
     },
     "/mint": {
       "post": {
-        "summary": "Mint a new NFT",
+        "summary": "Mint NFT after SeagullCoin payment",
         "requestBody": {
           "required": true,
           "content": {
@@ -50,38 +39,45 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "wallet": {
-                    "type": "string",
-                    "example": "rXXXXXXXXXXXXXXXXXXXXXXX"
-                  },
-                  "name": {
-                    "type": "string",
-                    "example": "My NFT"
-                  },
-                  "description": {
-                    "type": "string",
-                    "example": "This is an example NFT"
-                  },
-                  "fileUrl": {
-                    "type": "string",
-                    "example": "https://example.com/file.jpg"
-                  }
-                }
+                  "wallet": { "type": "string" },
+                  "token_uri": { "type": "string" },
+                  "collection": { "type": "string" }
+                },
+                "required": ["wallet", "token_uri"]
               }
             }
-          },
-          "responses": {
-            "200": {
-              "description": "NFT successfully minted",
-              "content": {
-                "application/json": {
-                  "example": {
-                    "success": true,
-                    "nftId": "nft-123456789"
-                  }
-                }
-              }
-            }
+          }
+        },
+        "responses": {
+          "200": { "description": "NFT minted successfully" },
+          "402": { "description": "SeagullCoin payment not found" },
+          "500": { "description": "Minting failed" }
+        }
+      }
+    },
+    "/user": {
+      "get": {
+        "summary": "Get SeagullCoin balance and NFTs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "wallet",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Returns balance and NFTs" },
+          "500": { "description": "XRPL error" }
+        }
+      }
+    },
+    "/info": {
+      "get": {
+        "summary": "Returns API and token info",
+        "responses": {
+          "200": {
+            "description": "Returns issuer, currency, fee, etc."
           }
         }
       }

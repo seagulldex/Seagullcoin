@@ -3,11 +3,167 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { Client, xrpToDrops } = require('xrpl');
 const swaggerUi = require('swagger-ui-express');
-const swaggerDocument = require('./swagger.json');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Define Swagger specification directly in server.js
+const swaggerDocument = {
+  "swagger": "2.0",
+  "info": {
+    "title": "SGLCN-X20 Minting API",
+    "description": "API for minting SeagullCoin (SGLCN-X20) NFTs",
+    "version": "1.0.0"
+  },
+  "host": "localhost:3000",
+  "schemes": ["http"],
+  "paths": {
+    "/pay": {
+      "post": {
+        "summary": "Verify payment of SeagullCoin for minting",
+        "description": "Verifies if the user has paid the correct amount of SeagullCoin for minting an NFT.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "wallet",
+            "description": "Wallet address of the user making the payment",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "wallet": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment verified",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "txHash": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "402": {
+            "description": "Insufficient balance"
+          },
+          "403": {
+            "description": "Payment not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/mint": {
+      "post": {
+        "summary": "Mint a SeagullCoin NFT",
+        "description": "Mints a new NFT using SeagullCoin as the currency.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "wallet",
+            "description": "Wallet address of the user requesting the mint",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "wallet": {
+                  "type": "string"
+                },
+                "metadataUri": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NFT minted successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "NFTokenID": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/user/{wallet}": {
+      "get": {
+        "summary": "Get user information",
+        "description": "Fetches information about the user such as trustlines and balance.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "wallet",
+            "required": true,
+            "type": "string",
+            "description": "Wallet address of the user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User information fetched",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "wallet": {
+                  "type": "string"
+                },
+                "trustlines": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "balance": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid wallet address"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  }
+};
 
 app.use(cors({
   origin: ['https://bidds.com', 'https://xrp.cafe', '*']
@@ -15,13 +171,10 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-const SERVICE_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U';
-const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
-const SEAGULLCOIN_CODE = '53656167756C6C436F696E000000000000000000';
-const MINT_COST = '0.5';
-
-const xrpl = new Client('wss://s1.ripple.com');
-xrpl.connect();
+// Serve a basic welcome message at the root route
+app.get('/', (req, res) => {
+  res.send('Welcome to the SGLCN-X20 Minting API! Visit /api-docs for API documentation.');
+});
 
 // Payment verification endpoint
 app.post('/pay', async (req, res) => {

@@ -15,7 +15,10 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const PORT = process.env.PORT || 3000;
-const XRPL_NODE = "wss://s.altnet.rippletest.net:51233";
+
+// Update the XRPL node to Mainnet URL
+const XRPL_NODE = "wss://s1.ripple.com"; // Mainnet URL
+
 const SERVICE_WALLET = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U";
 const SGLCN_HEX = "53656167756C6C436F696E000000000000000000";
 const SGLCN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";

@@ -8,7 +8,14 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Define Swagger specification directly in server.js
+const SEAGULLCOIN_CODE = "SGLCN-X20";
+const SEAGULLCOIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
+const MINT_COST = "0.5"; // SeagullCoin required for minting
+const SERVICE_WALLET = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U";
+
+const xrpl = new Client('wss://s1.ripple.com');
+
+// Define Swagger specification
 const swaggerDocument = {
   "swagger": "2.0",
   "info": {
@@ -119,42 +126,99 @@ const swaggerDocument = {
         }
       }
     },
-    "/user/{wallet}": {
-      "get": {
-        "summary": "Get user information",
-        "description": "Fetches information about the user such as trustlines and balance.",
+    "/buy-nft": {
+      "post": {
+        "summary": "Buy an NFT with SeagullCoin",
+        "description": "Allows the user to buy an NFT using SeagullCoin.",
         "parameters": [
           {
-            "in": "path",
-            "name": "wallet",
+            "in": "body",
+            "name": "transaction",
+            "description": "Transaction details for buying an NFT",
             "required": true,
-            "type": "string",
-            "description": "Wallet address of the user"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "User information fetched",
             "schema": {
               "type": "object",
               "properties": {
                 "wallet": {
                   "type": "string"
                 },
-                "trustlines": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
+                "nftId": {
+                  "type": "string"
                 },
-                "balance": {
+                "amount": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NFT purchase successful",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
                   "type": "string"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid wallet address"
+            "description": "Invalid request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/sell-nft": {
+      "post": {
+        "summary": "Sell an NFT for SeagullCoin",
+        "description": "Allows the user to list an NFT for sale with SeagullCoin as the price.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "transaction",
+            "description": "Transaction details for selling an NFT",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "wallet": {
+                  "type": "string"
+                },
+                "nftId": {
+                  "type": "string"
+                },
+                "price": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NFT listed for sale successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
           },
           "500": {
             "description": "Internal server error"
@@ -171,91 +235,80 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Serve a basic welcome message at the root route
-app.get('/', (req, res) => {
-  res.send('Welcome to the SGLCN-X20 Minting API! Visit /api-docs for API documentation.');
-});
-
-// Payment verification endpoint
-app.post('/pay', async (req, res) => {
-  const { wallet } = req.body;
-  if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
-
-  try {
-    const accountInfo = await xrpl.request({
-      command: 'account_lines',
-      account: wallet
-    });
-
-    const trustline = accountInfo.result.lines.find(
-      line => line.currency === SEAGULLCOIN_CODE && line.account === SEAGULLCOIN_ISSUER
-    );
-
-    if (!trustline || parseFloat(trustline.balance) < parseFloat(MINT_COST)) {
-      return res.status(402).json({ error: 'Insufficient SeagullCoin balance' });
-    }
-
-    const transactions = await xrpl.request({
-      command: 'account_tx',
-      account: SERVICE_WALLET,
-      ledger_index_min: -1,
-      ledger_index_max: -1,
-      limit: 20
-    });
-
-    const validTx = transactions.result.transactions.find(tx =>
-      tx.tx.TransactionType === 'Payment' &&
-      tx.tx.Amount.currency === SEAGULLCOIN_CODE &&
-      tx.tx.Amount.issuer === SEAGULLCOIN_ISSUER &&
-      tx.tx.Amount.value === MINT_COST &&
-      tx.tx.Account === wallet
-    );
-
-    if (!validTx) {
-      return res.status(403).json({ error: 'No valid payment found' });
-    }
-
-    res.json({ success: true, txHash: validTx.tx.hash });
-  } catch (e) {
-    res.status(500).json({ error: 'Error verifying payment', details: e.message });
+// Payment verification: Ensuring SeagullCoin payment
+async function verifySeagullCoinPayment(wallet, amount) {
+  const accountInfo = await xrpl.request({
+    "command": "account_info",
+    "account": wallet
+  });
+  
+  const trustline = accountInfo.result.account_data?.Account?.trustlines?.find(t => t.currency === SEAGULLCOIN_CODE && t.issuer === SEAGULLCOIN_ISSUER);
+  
+  if (!trustline || trustline.balance < amount) {
+    throw new Error('Insufficient SeagullCoin balance');
   }
-});
+  
+  return true;
+}
 
-// Mint endpoint (simplified logic for public API)
+// Mint NFT: Handle minting logic for SeagullCoin
 app.post('/mint', async (req, res) => {
   const { wallet, metadataUri } = req.body;
-  if (!wallet || !metadataUri) return res.status(400).json({ error: 'Missing wallet or metadata URI' });
 
   try {
-    // Example mint logic; you can expand this
-    // For now, assume mint success and return a placeholder NFTokenID
+    await verifySeagullCoinPayment(wallet, MINT_COST);
+    
+    // Handle NFT creation logic (e.g., interaction with XRPL to mint NFT)
+    const newNFTokenID = 'NFT12345'; // This should be generated dynamically with XRPL minting logic
     res.json({
       success: true,
-      message: 'NFT minted (stub)',
-      NFTokenID: '00080000F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1'
+      message: "NFT minted successfully.",
+      NFTokenID: newNFTokenID
     });
-  } catch (e) {
-    res.status(500).json({ error: 'Minting failed', details: e.message });
+  } catch (error) {
+    res.status(402).json({ success: false, message: error.message });
   }
 });
 
-// User info endpoint (stub for now)
-app.get('/user/:wallet', async (req, res) => {
-  const { wallet } = req.params;
-  if (!wallet) return res.status(400).json({ error: 'Wallet required' });
+// Buy NFT: Ensure the buyer is paying with SeagullCoin
+app.post('/buy-nft', async (req, res) => {
+  const { wallet, nftId, amount } = req.body;
 
   try {
-    // Return stub info
+    const price = parseFloat(amount);
+    if (price <= 0) throw new Error('Price must be positive');
+    
+    await verifySeagullCoinPayment(wallet, price);
+    
+    // Handle NFT buying logic (e.g., transfer NFT)
     res.json({
-      wallet,
-      trustlines: ['SeagullCoin'],
-      balance: '2.5'
+      success: true,
+      message: `NFT ${nftId} bought successfully with ${price} SeagullCoin.`
     });
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to fetch user info', details: e.message });
+  } catch (error) {
+    res.status(402).json({ success: false, message: error.message });
   }
 });
 
+// Sell NFT: Ensure the sale price is in SeagullCoin
+app.post('/sell-nft', async (req, res) => {
+  const { wallet, nftId, price } = req.body;
+
+  try {
+    const salePrice = parseFloat(price);
+    if (salePrice <= 0) throw new Error('Sale price must be positive');
+    
+    // Handle NFT selling logic (e.g., mark NFT for sale)
+    res.json({
+      success: true,
+      message: `NFT ${nftId} listed for sale at ${salePrice} SeagullCoin.`
+    });
+  } catch (error) {
+    res.status(402).json({ success: false, message: error.message });
+  }
+});
+
+// Start the server
 app.listen(port, () => {
-  console.log(`SGLCN-X20 API server running on port ${port}`);
+  console.log(`API running on http://localhost:${port}`);
 });

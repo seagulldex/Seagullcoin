@@ -22,7 +22,18 @@ const xrplClient = new xrpl.Client("wss://s.altnet.rippletest.net:51233");
 
 // Root endpoint to test server
 app.get('/', (req, res) => {
-  res.send('Welcome to the SeagullCoin NFT Minting API');
+  res.status(200).json({
+    status: "live",
+    message: "Welcome to the SGLCN-X20 NFT Minting API!",
+    endpoints: [
+      "/pay", 
+      "/mint", 
+      "/collections", 
+      "/user/:address", 
+      "/buy-nft", 
+      "/sell-nft"
+    ]
+  });
 });
 
 // /status endpoint to show API status

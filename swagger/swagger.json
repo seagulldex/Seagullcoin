@@ -3,8 +3,13 @@
   "info": {
     "title": "SGLCN-X20 Minting API",
     "version": "1.0.0",
-    "description": "Public API to mint NFTs using SeagullCoin (SGLCN-X20) on XRPL"
+    "description": "Public API to mint SeagullCoin (SGLCN-X20) NFTs on XRPL"
   },
+  "servers": [
+    {
+      "url": "https://outgoing-destiny-bladder.glitch.me"
+    }
+  ],
   "paths": {
     "/pay": {
       "post": {
@@ -24,14 +29,21 @@
           }
         },
         "responses": {
-          "200": { "description": "Payment verified" },
-          "402": { "description": "No valid SeagullCoin payment found" }
+          "200": {
+            "description": "Payment verified"
+          },
+          "402": {
+            "description": "Insufficient balance"
+          },
+          "403": {
+            "description": "No valid payment found"
+          }
         }
       }
     },
     "/mint": {
       "post": {
-        "summary": "Mint NFT after SeagullCoin payment",
+        "summary": "Mint a new NFT using SeagullCoin",
         "requestBody": {
           "required": true,
           "content": {
@@ -40,44 +52,36 @@
                 "type": "object",
                 "properties": {
                   "wallet": { "type": "string" },
-                  "token_uri": { "type": "string" },
-                  "collection": { "type": "string" }
+                  "metadataUri": { "type": "string" }
                 },
-                "required": ["wallet", "token_uri"]
+                "required": ["wallet", "metadataUri"]
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "NFT minted successfully" },
-          "402": { "description": "SeagullCoin payment not found" },
-          "500": { "description": "Minting failed" }
+          "200": {
+            "description": "NFT minted"
+          }
         }
       }
     },
-    "/user": {
+    "/user/{wallet}": {
       "get": {
-        "summary": "Get SeagullCoin balance and NFTs",
+        "summary": "Get wallet trustlines and info",
         "parameters": [
           {
-            "in": "query",
             "name": "wallet",
+            "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
-          "200": { "description": "Returns balance and NFTs" },
-          "500": { "description": "XRPL error" }
-        }
-      }
-    },
-    "/info": {
-      "get": {
-        "summary": "Returns API and token info",
-        "responses": {
           "200": {
-            "description": "Returns issuer, currency, fee, etc."
+            "description": "Wallet info returned"
           }
         }
       }

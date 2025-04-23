@@ -23,10 +23,16 @@ const xummApiKey = process.env.XUMM_API_KEY;
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
 
 const client = new Client(XRPL_NODE);
-client.connect();
 
 let mintedNFTs = [];
 let collections = [];
+
+(async () => {
+  await client.connect();
+  app.listen(PORT, () => {
+    console.log(`SGLCN-X20 NFT Minting API running on port ${PORT}`);
+  });
+})();
 
 app.post('/pay', async (req, res) => {
   const { walletAddress } = req.body;
@@ -99,7 +105,7 @@ app.post('/mint', upload.single('file'), async (req, res) => {
       body: JSON.stringify({ txjson: tx, options: { submit: true } })
     });
 
-    mintedNFTs.push({ name, image: metadata.image.name, uri, collection: collectionName });
+    mintedNFTs.push({ name, image: metadata.image.name, uri, collection: collectionName, wallet: walletAddress });
     if (collectionName && !collections.find(c => c.name === collectionName)) {
       collections.push({ name: collectionName, icon: "/default-icon.png" });
     }
@@ -181,29 +187,48 @@ app.post('/sell-nft', async (req, res) => {
 });
 
 async function verifyPayment(walletAddress) {
-  const accountTx = await client.request({
-    command: "account_tx",
-    account: walletAddress,
-    ledger_index_min: -1,
-    ledger_index_max: -1,
-    binary: false,
-    limit: 10
-  });
+  try {
+    let hasPaid = false;
+    let marker = null;
 
-  return accountTx.result.transactions.some(tx =>
-    tx.tx.TransactionType === "Payment" &&
-    tx.tx.Amount?.currency === SGLCN_HEX &&
-    tx.tx.Amount?.issuer === SGLCN_ISSUER &&
-    parseFloat(tx.tx.Amount?.value || 0) >= 0.5 &&
-    tx.tx.Destination === SERVICE_WALLET
-  );
+    // Loop to handle pagination in case there are more than 10 transactions
+    do {
+      const accountTx = await client.request({
+        command: "account_tx",
+        account: walletAddress,
+        ledger_index_min: -1,
+        ledger_index_max: -1,
+        binary: false,
+        limit: 10,
+        marker: marker  // Set marker to fetch the next page of results
+      });
+
+      // Check if any transaction meets the payment criteria
+      hasPaid = accountTx.result.transactions.some(tx =>
+        tx.tx.TransactionType === "Payment" &&
+        tx.tx.Amount?.currency === SGLCN_HEX &&
+        tx.tx.Amount?.issuer === SGLCN_ISSUER &&
+        parseFloat(tx.tx.Amount?.value || 0) >= 0.5 &&
+        tx.tx.Destination === SERVICE_WALLET
+      );
+
+      // Update the marker to fetch the next page of transactions
+      marker = accountTx.result.marker;
+
+    } while (marker && !hasPaid);  // Continue pagination until payment is found or no more transactions
+
+    return hasPaid;
+  } catch (err) {
+    console.error("Error verifying payment:", err);
+    return false;
+  }
 }
 
 setInterval(async () => {
   const offers = await client.request({ command: "account_nft_sell_offers", account: SERVICE_WALLET });
   if (offers.result.offers) {
     for (const offer of offers.result.offers) {
-      if (offer.amount && typeof offer.amount === "string") {
+      if (offer.amount && (typeof offer.amount === "string" || offer.amount.currency === "XRP")) {
         // XRP offer - cancel it
         await client.submitAndWait({
           TransactionType: "NFTokenCancelOffer",
@@ -214,7 +239,3 @@ setInterval(async () => {
     }
   }
 }, 30000);
-
-app.listen(PORT, () => {
-  console.log(`SGLCN-X20 NFT Minting API running on port ${PORT}`);
-});

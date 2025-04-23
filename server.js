@@ -1,8 +1,8 @@
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import xrpl from 'xrpl';
-import dotenv from 'dotenv';
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const xrpl = require('xrpl');
+const dotenv = require('dotenv');
 
 dotenv.config();
 
@@ -20,11 +20,28 @@ const MINT_COST = "0.5";
 
 const xrplClient = new xrpl.Client("wss://s.altnet.rippletest.net:51233");
 
+// Root endpoint to test server
 app.get('/', (req, res) => {
   res.send('Welcome to the SeagullCoin NFT Minting API');
 });
 
-// /pay endpoint
+// /status endpoint to show API status
+app.get('/status', (req, res) => {
+  res.status(200).json({
+    status: "live",
+    message: "Welcome to the SGLCN-X20 NFT Minting API!",
+    endpoints: [
+      "/pay", 
+      "/mint", 
+      "/collections", 
+      "/user/:address", 
+      "/buy-nft", 
+      "/sell-nft"
+    ]
+  });
+});
+
+// /pay endpoint (check SeagullCoin payment)
 app.post('/pay', async (req, res) => {
   const { wallet } = req.body;
   if (!wallet) return res.status(400).json({ success: false, error: 'Missing wallet address' });
@@ -66,7 +83,7 @@ app.post('/pay', async (req, res) => {
   }
 });
 
-// /mint endpoint
+// /mint endpoint (mint NFTs)
 app.post('/mint', async (req, res) => {
   const { wallet, uri } = req.body;
   if (!wallet || !uri) return res.status(400).json({ success: false, error: 'Missing wallet or uri' });
@@ -103,7 +120,7 @@ app.post('/mint', async (req, res) => {
   }
 });
 
-// /sell-nft endpoint
+// /sell-nft endpoint (create sell offer)
 app.post('/sell-nft', async (req, res) => {
   const { wallet, tokenId, amount } = req.body;
   if (!wallet || !tokenId || !amount) return res.status(400).json({ success: false, error: 'Missing wallet, tokenId, or amount' });
@@ -141,7 +158,7 @@ app.post('/sell-nft', async (req, res) => {
   }
 });
 
-// /buy-nft endpoint
+// /buy-nft endpoint (buy NFT)
 app.post('/buy-nft', async (req, res) => {
   const { buyerWallet, sellerWallet, tokenId, amount } = req.body;
   if (!buyerWallet || !sellerWallet || !tokenId || !amount) {

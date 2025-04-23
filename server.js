@@ -2,11 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const { NFTStorage, File } = require('nft.storage');
-const { Client, xrpToDrops, convertHexToString, convertStringToHex } = require('xrpl');
+const { Client } = require('xrpl');
 const fetch = require('node-fetch');
 const cors = require('cors');
 const { readFileSync } = require('fs');
 const path = require('path');
+
 const app = express();
 const upload = multer();
 app.use(cors());
@@ -14,16 +15,14 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const PORT = process.env.PORT || 3000;
-const XRPL_NODE = "wss://s.altnet.rippletest.net:51233"; // Change for mainnet
+const XRPL_NODE = "wss://s.altnet.rippletest.net:51233";
 const SERVICE_WALLET = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U";
-const SGLCN_HEX = "53656167756C6C436F696E000000000000000000"; // SeagullCoin currency code
+const SGLCN_HEX = "53656167756C6C436F696E000000000000000000";
 const SGLCN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
-
 const xummApiKey = process.env.XUMM_API_KEY;
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
 
 const client = new Client(XRPL_NODE);
-
 let mintedNFTs = [];
 let collections = [];
 
@@ -34,12 +33,15 @@ let collections = [];
   });
 })();
 
-// Route for root URL to redirect to a specific endpoint (e.g., /collections)
+// Friendly root route
 app.get('/', (req, res) => {
-  res.redirect('/collections');
+  res.send({
+    status: "live",
+    message: "Welcome to the SGLCN-X20 NFT Minting API!",
+    endpoints: ["/pay", "/mint", "/collections", "/user/:address", "/buy-nft", "/sell-nft"]
+  });
 });
 
-// Route to verify SeagullCoin payment for minting
 app.post('/pay', async (req, res) => {
   const { walletAddress } = req.body;
   const txJson = {
@@ -70,12 +72,10 @@ app.post('/pay', async (req, res) => {
   }
 });
 
-// Route to mint an NFT
 app.post('/mint', upload.single('file'), async (req, res) => {
   try {
     const { name, description, domain, properties, walletAddress, collectionName } = req.body;
     const file = req.file;
-
     if (!file) return res.status(400).json({ error: 'File required' });
 
     const hasPaid = await verifyPayment(walletAddress);
@@ -101,9 +101,7 @@ app.post('/mint', upload.single('file'), async (req, res) => {
       TransferFee: 0,
       NFTokenTaxon: 0,
       Memos: [{
-        Memo: {
-          MemoData: Buffer.from(`Minted with SGLCN`).toString("hex")
-        }
+        Memo: { MemoData: Buffer.from(`Minted with SGLCN`).toString("hex") }
       }]
     };
 
@@ -121,14 +119,14 @@ app.post('/mint', upload.single('file'), async (req, res) => {
       collections.push({ name: collectionName, icon: "/default-icon.png" });
     }
 
-    res.json({ uuid: payload.uuid, next: payload.next.always });
+    const json = await payload.json();
+    res.json({ uuid: json.uuid, next: json.next.always });
   } catch (err) {
     console.error("Minting error:", err);
     res.status(500).json({ error: "Mint failed" });
   }
 });
 
-// Route to get NFT collections
 app.get('/collections', (req, res) => {
   const grouped = collections.map(col => ({
     name: col.name,
@@ -138,13 +136,11 @@ app.get('/collections', (req, res) => {
   res.json(grouped);
 });
 
-// Route to get user's NFTs
 app.get('/user/:address', (req, res) => {
   const userNfts = mintedNFTs.filter(nft => nft.wallet === req.params.address);
   res.json(userNfts);
 });
 
-// Route to create buy offer for NFT
 app.post('/buy-nft', async (req, res) => {
   const { buyerAddress, sellerAddress, amount, tokenId } = req.body;
 
@@ -171,13 +167,13 @@ app.post('/buy-nft', async (req, res) => {
       body: JSON.stringify({ txjson: tx, options: { submit: true } })
     });
 
-    res.json({ uuid: payload.uuid, next: payload.next.always });
+    const json = await payload.json();
+    res.json({ uuid: json.uuid, next: json.next.always });
   } catch (error) {
     res.status(500).json({ error: 'Offer creation failed' });
   }
 });
 
-// Route to create sell offer for NFT
 app.post('/sell-nft', async (req, res) => {
   const { sellerAddress, tokenId, price } = req.body;
 
@@ -203,32 +199,62 @@ app.post('/sell-nft', async (req, res) => {
       body: JSON.stringify({ txjson: tx, options: { submit: true } })
     });
 
-    res.json({ uuid: payload.uuid, next: payload.next.always });
+    const json = await payload.json();
+    res.json({ uuid: json.uuid, next: json.next.always });
   } catch (error) {
     res.status(500).json({ error: 'Offer creation failed' });
   }
 });
 
-// Function to verify SeagullCoin payment before minting
+// Cancel unauthorized XRP offers every 30s
+setInterval(async () => {
+  try {
+    const tokens = await client.request({ command: "account_nfts", account: SERVICE_WALLET });
+    for (const token of tokens.result.account_nfts) {
+      const offers = await client.request({
+        command: "nft_sell_offers",
+        nft_id: token.NFTokenID
+      });
+
+      if (offers.result.offers) {
+        for (const offer of offers.result.offers) {
+          if (
+            typeof offer.amount === "string" || 
+            (offer.amount?.currency === "XRP")
+          ) {
+            await client.submitAndWait({
+              TransactionType: "NFTokenCancelOffer",
+              Account: SERVICE_WALLET,
+              NFTokenOffers: [offer.nft_offer_index]
+            });
+            console.log(`Cancelled unauthorized XRP offer: ${offer.nft_offer_index}`);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Error cancelling unauthorized offers:", err);
+  }
+}, 30000);
+
+// Payment verification
 async function verifyPayment(walletAddress) {
   try {
     let hasPaid = false;
     let marker = null;
 
-    // Loop to handle pagination in case there are more than 10 transactions
     do {
-      const accountTx = await client.request({
+      const txs = await client.request({
         command: "account_tx",
         account: walletAddress,
         ledger_index_min: -1,
         ledger_index_max: -1,
         binary: false,
         limit: 10,
-        marker: marker  // Set marker to fetch the next page of results
+        marker
       });
 
-      // Check if any transaction meets the payment criteria
-      hasPaid = accountTx.result.transactions.some(tx =>
+      hasPaid = txs.result.transactions.some(tx =>
         tx.tx.TransactionType === "Payment" &&
         tx.tx.Amount?.currency === SGLCN_HEX &&
         tx.tx.Amount?.issuer === SGLCN_ISSUER &&
@@ -236,10 +262,8 @@ async function verifyPayment(walletAddress) {
         tx.tx.Destination === SERVICE_WALLET
       );
 
-      // Update the marker to fetch the next page of transactions
-      marker = accountTx.result.marker;
-
-    } while (marker && !hasPaid);  // Continue pagination until payment is found or no more transactions
+      marker = txs.result.marker;
+    } while (marker && !hasPaid);
 
     return hasPaid;
   } catch (err) {
@@ -247,20 +271,3 @@ async function verifyPayment(walletAddress) {
     return false;
   }
 }
-
-// Regularly cancel unauthorized XRP sell offers
-setInterval(async () => {
-  const offers = await client.request({ command: "account_nft_sell_offers", account: SERVICE_WALLET });
-  if (offers.result.offers) {
-    for (const offer of offers.result.offers) {
-      if (offer.amount && (typeof offer.amount === "string" || offer.amount.currency === "XRP")) {
-        // XRP offer - cancel it
-        await client.submitAndWait({
-          TransactionType: "NFTokenCancelOffer",
-          Account: SERVICE_WALLET,
-          NFTokenOffers: [offer.nft_offer_index]
-        });
-      }
-    }
-  }
-}, 30000);

@@ -279,63 +279,111 @@ app.post('/mint', async (req, res) => {
   }
 });
 
-// === /verify-payment endpoint ===
-app.get('/verify-payment', async (req, res) => {
-  const { hash, full } = req.query;
+// === /buy-nft endpoint ===
+/**
+ * @swagger
+ * /buy-nft:
+ *   post:
+ *     summary: "Buy an NFT using SeagullCoin"
+ *     description: "Allows users to purchase an NFT using SeagullCoin."
+ *     parameters:
+ *       - in: body
+ *         name: nftTokenId
+ *         description: "The NFT token ID."
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: body
+ *         name: amount
+ *         description: "Amount of SeagullCoin to pay."
+ *         required: true
+ *         schema:
+ *           type: number
+ *           format: float
+ *     responses:
+ *       200:
+ *         description: "NFT successfully purchased"
+ *       400:
+ *         description: "Invalid input"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.post('/buy-nft', async (req, res) => {
+  const { nftTokenId, amount } = req.body;
 
-  if (!hash) return res.status(400).json({ error: 'Missing transaction hash' });
+  if (!nftTokenId || !amount || amount <= 0) {
+    return res.status(400).json({ error: 'Invalid NFT token ID or amount' });
+  }
 
   try {
-    const tx = await xrplClient.request({
-      command: 'tx',
-      transaction: hash
-    });
-
-    const result = tx.result;
-    const isValidated = result.validated;
-    const txMeta = result.meta;
-
-    const success = isValidated && txMeta && txMeta.TransactionResult === 'tesSUCCESS';
-
-    const response = {
-      hash,
-      validated: isValidated,
-      status: success ? 'Confirmed' : 'Failed',
-      result: txMeta?.TransactionResult,
-      ledger_index: result.ledger_index
+    // Assume that a smart contract or database verifies NFT availability and price.
+    // Placeholder logic for purchasing NFT
+    const purchaseResult = {
+      success: true,
+      nftTokenId,
+      amountPaid: amount,
     };
 
-    if (full === 'true') {
-      response.full = result;
-    }
-
-    res.json(response);
+    res.status(200).json(purchaseResult);
   } catch (err) {
-    res.status(500).json({ error: 'Error verifying transaction', details: err.message });
+    console.error('Error purchasing NFT:', err);
+    res.status(500).json({ error: 'Failed to purchase NFT' });
   }
 });
 
-// === /status/:transactionHash endpoint ===
-app.get('/status/:transactionHash', async (req, res) => {
-  const { transactionHash } = req.params;
+// === /sell-nft endpoint ===
+/**
+ * @swagger
+ * /sell-nft:
+ *   post:
+ *     summary: "Sell an NFT"
+ *     description: "Allows users to list an NFT for sale at a specified price."
+ *     parameters:
+ *       - in: body
+ *         name: nftTokenId
+ *         description: "The NFT token ID."
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: body
+ *         name: amount
+ *         description: "Price to sell the NFT in SeagullCoin."
+ *         required: true
+ *         schema:
+ *           type: number
+ *           format: float
+ *     responses:
+ *       200:
+ *         description: "NFT successfully listed for sale"
+ *       400:
+ *         description: "Invalid input"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.post('/sell-nft', async (req, res) => {
+  const { nftTokenId, amount } = req.body;
+
+  if (!nftTokenId || !amount || amount <= 0) {
+    return res.status(400).json({ error: 'Invalid NFT token ID or amount' });
+  }
 
   try {
-    await xrplClient.connect();
-    const txStatus = await xrplClient.request({
-      command: 'tx',
-      txn: transactionHash,
-    });
-    res.status(200).json(txStatus);
+    // Placeholder logic for listing NFT for sale
+    const sellResult = {
+      success: true,
+      nftTokenId,
+      price: amount,
+    };
+
+    res.status(200).json(sellResult);
   } catch (err) {
-    console.error('Transaction status error:', err);
-    res.status(500).json({ error: 'Failed to fetch transaction status' });
-  } finally {
-    await xrplClient.disconnect();
+    console.error('Error selling NFT:', err);
+    res.status(500).json({ error: 'Failed to list NFT for sale' });
   }
 });
 
 // Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server running on port ${port}`);
 });

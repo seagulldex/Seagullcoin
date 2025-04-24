@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import swaggerJSDoc from 'swagger-jsdoc';
+import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
 // Load environment variables
@@ -64,7 +64,7 @@ const options = {
   apis: ['./server.js'], // Path to the API specs
 };
 
-const swaggerSpec = swaggerJSDoc(options);
+const swaggerSpec = swaggerJsdoc(options);
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const xrplClient = new xrpl.Client('wss://s1.ripple.com');
@@ -337,5 +337,5 @@ app.get('/status/:transactionHash', async (req, res) => {
 // Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });

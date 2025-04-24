@@ -123,6 +123,17 @@ app.post('/update-nft-metadata', async (req, res) => {
   }
 });
 
+app.post('/cancel-offer', async (req, res) => {
+  const { offerId, buyerWallet } = req.body;
+  try {
+    // Implement your logic to cancel the offer (e.g., remove from marketplace)
+    console.log(`Canceling offer with ID: ${offerId}`);
+    res.status(200).json({ message: 'Offer canceled successfully' });
+  } catch (err) {
+    console.error('Error canceling offer:', err);
+    res.status(500).json({ error: 'Failed to cancel offer' });
+  }
+});
 
 app.delete('/delete-nft', async (req, res) => {
   const { nftId, wallet } = req.body;
@@ -140,6 +151,25 @@ app.get('/nft-history', async (req, res) => {
   const { nftId } = req.query;
   // Return transaction history
 });
+
+app.get('/get/nft/offers/:nftId', async (req, res) => {
+  const { nftId } = req.params;
+  try {
+    const offers = await getNFTOffers(nftId);
+    res.status(200).json(offers);
+  } catch (err) {
+    console.error('Error fetching offers for NFT:', err);
+    res.status(500).json({ error: 'Failed to fetch offers for NFT' });
+  }
+});
+
+async function getNFTOffers(nftId) {
+  // Mock function to get offers for a specific NFT
+  return [
+    { offerId: 'offer123', buyer: 'rwXYHjcLfVoe43kAhg3k2xx5EsJf9gSeAG', price: 0.5 },
+  ];
+}
+
 
 
 app.put('/update-nft', async (req, res) => {

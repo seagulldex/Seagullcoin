@@ -279,6 +279,42 @@ app.post('/mint', async (req, res) => {
   }
 });
 
+// === /verify-payment endpoint ===
+app.get('/verify-payment', async (req, res) => {
+  const { hash, full } = req.query;
+
+  if (!hash) return res.status(400).json({ error: 'Missing transaction hash' });
+
+  try {
+    const tx = await xrplClient.request({
+      command: 'tx',
+      transaction: hash
+    });
+
+    const result = tx.result;
+    const isValidated = result.validated;
+    const txMeta = result.meta;
+
+    const success = isValidated && txMeta && txMeta.TransactionResult === 'tesSUCCESS';
+
+    const response = {
+      hash,
+      validated: isValidated,
+      status: success ? 'Confirmed' : 'Failed',
+      result: txMeta?.TransactionResult,
+      ledger_index: result.ledger_index
+    };
+
+    if (full === 'true') {
+      response.full = result;
+    }
+
+    res.json(response);
+  } catch (err) {
+    res.status(500).json({ error: 'Error verifying transaction', details: err.message });
+  }
+});
+
 // === /status/:transactionHash endpoint ===
 app.get('/status/:transactionHash', async (req, res) => {
   const { transactionHash } = req.params;

@@ -202,6 +202,73 @@ async function getNFTDetails(nftId) {
   };
 }
 
+const listNFTForSale = async (NFTokenID, price, seller) => {
+  try {
+    // Verify price is in SeagullCoin
+    if (!price || price <= 0 || !Number.isFinite(price)) {
+      throw new Error("Invalid price");
+    }
+
+    // Check that the seller has the NFT in their wallet
+    const isNFTOwned = await checkNFTokenOwnership(seller, NFTokenID);
+    if (!isNFTOwned) {
+      throw new Error("NFT not owned by seller");
+    }
+
+    // Store the NFT listing in the database (e.g., MongoDB)
+    const listing = {
+      NFTokenID,
+      price,
+      seller,
+      status: "listed",
+      timestamp: new Date(),
+    };
+    await storeListingInDatabase(listing); // Placeholder for database insertion
+
+    return listing; // Return the stored listing
+  } catch (error) {
+    console.error("Error listing NFT for sale:", error);
+    throw new Error("Unable to list NFT for sale");
+  }
+};
+
+const transferNFTOwnership = async (NFTokenID, buyer, seller, price) => {
+  try {
+    // Verify buyer's balance (check if they have enough SeagullCoin)
+    const buyerBalance = await checkSeagullCoinBalance(buyer);
+    if (buyerBalance < price) {
+      throw new Error("Buyer does not have enough SeagullCoin");
+    }
+
+    // Initiate the transaction to transfer the NFT from seller to buyer
+    const transferSuccess = await sendNFTokenTransferTransaction(NFTokenID, seller, buyer);
+    if (!transferSuccess) {
+      throw new Error("Failed to transfer NFT ownership");
+    }
+
+    // Process the payment in SeagullCoin (handling the payment transaction)
+    const paymentSuccess = await processSeagullCoinPayment(buyer, seller, price);
+    if (!paymentSuccess) {
+      throw new Error("Payment failed");
+    }
+
+    // Update the database to reflect the sale and transfer
+    await updateNFTOwnershipInDatabase(NFTokenID, buyer);
+
+    // Optionally, mark the listing as "sold" in the database
+    await markListingAsSold(NFTokenID);
+
+    return {
+      success: true,
+      message: "NFT ownership transferred successfully",
+    };
+  } catch (error) {
+    console.error("Error transferring NFT ownership:", error);
+    throw new Error("Unable to transfer NFT ownership");
+  }
+};
+
+
 // Mock function to simulate transferring NFT ownership
 async function transferNFTOwnership(nftId, buyerAddress) {
   // Implement your logic to transfer ownership of the NFT (e.g., via XRPL transaction)

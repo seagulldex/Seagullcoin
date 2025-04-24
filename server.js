@@ -82,6 +82,17 @@ async function searchNFTs({ name, collectionId, minPrice, maxPrice, owner }) {
   ];
 }
 
+app.get('/nft-history', async (req, res) => {
+  const { nftId } = req.query;
+  // Return transaction history
+});
+
+
+app.put('/update-nft', async (req, res) => {
+  const { nftId, updatedMetadata } = req.body;
+  // Validate and update the metadata on NFT.Storage or XRPL
+});
+
 
 app.get('/get/nfts', async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
@@ -135,6 +146,12 @@ async function searchCollections({ name, description }) {
   ];
 }
 
+app.get('/check-ownership', async (req, res) => {
+  const { nftId, wallet } = req.query;
+  // Validate ownership
+});
+
+
 app.get('/get/user/nfts', async (req, res) => {
   const userWallet = req.query.wallet; // Assume wallet address is passed as a query parameter
 
@@ -153,6 +170,12 @@ async function getUserNFTs(wallet) {
     { nftId: '12345', name: 'Seagull NFT #12345', owner: wallet },
   ];
 }
+
+app.post('/transfer-nft', async (req, res) => {
+  const { nftId, toWallet } = req.body;
+  // Validate and transfer NFT ownership
+});
+
 
 // Mock function to simulate transferring NFT ownership
 async function transferNFTOwnership(nftId, buyerAddress) {

@@ -1,15 +1,16 @@
-import express from 'express'; // Use 'import' for ES modules
+import express from 'express';
 import bodyParser from 'body-parser';
 import xrpl from 'xrpl';
-import fetch from 'node-fetch';
+import fetch from 'node-fetch';  // Added this line
 import session from 'express-session';
 import { XummSdk } from 'xumm-sdk';
-import dotenv from 'dotenv'; // Using ES import for dotenv
-import { fileURLToPath } from 'url';  // Handling ES module file paths
-import { dirname } from 'path';        // Handling ES module file paths
-import cors from 'cors'; // Import CORS
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 
-// Ensure environment variables are loaded
+// Load environment variables
 dotenv.config();
 
 const app = express();
@@ -20,7 +21,7 @@ const __dirname = dirname(__filename);
 
 // Middleware
 app.use(bodyParser.json());
-app.use(cors()); // Allow all origins by default, adjust if necessary
+app.use(cors());
 app.use(
   session({
     secret: 'seagullcoin-secret',
@@ -29,14 +30,23 @@ app.use(
   })
 );
 
+// Rate-Limiting Middleware (100 requests per hour per IP)
+const limiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 100, // Limit each IP to 100 requests per hour
+  message: 'Too many requests, please try again later.',
+});
+
+app.use(limiter);
+
 const xrplClient = new xrpl.Client('wss://s1.ripple.com');
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-const SEAGULLCOIN_CODE = process.env.SEAGULLCOIN_CODE; // Loaded from env
-const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER; // Loaded from env
-const BURN_WALLET = process.env.BURN_WALLET; // Loaded from env
+const SEAGULLCOIN_CODE = process.env.SEAGULLCOIN_CODE;
+const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER;
+const BURN_WALLET = process.env.BURN_WALLET;
 const MINT_COST = 0.5;
-const USED_PAYMENTS = new Set(); // In-memory store to avoid double-spends
+const USED_PAYMENTS = new Set(); // Consider replacing with Redis for production
 
 // === Home Route ===
 app.get('/', (req, res) => {
@@ -51,7 +61,6 @@ app.get('/login', async (req, res) => {
     });
     req.session.xummPayloadUuid = payload.uuid;
 
-    // Store wallet address in session after login
     const walletAddress = payload?.meta?.account;
     req.session.walletAddress = walletAddress;
 
@@ -78,7 +87,7 @@ async function mintNFT(wallet, nftData) {
     const metadataRes = await fetch('https://api.nft.storage/upload', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`, // Loaded from env
+        Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(metadata),
@@ -123,7 +132,6 @@ async function mintNFT(wallet, nftData) {
 app.post('/mint', async (req, res) => {
   const { wallet, nftData } = req.body;
 
-  // Ensure the wallet address in session matches the wallet address sent with the mint request
   if (!req.session.walletAddress || req.session.walletAddress !== wallet) {
     return res.status(401).json({ error: 'Unauthorized: Wallet mismatch or not logged in via XUMM' });
   }
@@ -135,7 +143,6 @@ app.post('/mint', async (req, res) => {
   try {
     await xrplClient.connect();
 
-    // Check for valid SeagullCoin payment
     const txs = await xrplClient.request({
       command: 'account_tx',
       account: wallet,
@@ -181,7 +188,7 @@ app.post('/mint', async (req, res) => {
 });
 
 // === Server Listen ===
-const PORT = process.env.PORT || 3000; // Make sure to use the correct port, 3000 for Glitch
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

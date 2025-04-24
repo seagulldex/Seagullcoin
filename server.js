@@ -170,6 +170,59 @@ async function mintNFT(wallet, nftData) {
 }
 
 // === /mint endpoint ===
+/**
+ * @swagger
+ * /mint:
+ *   post:
+ *     summary: "Mint an NFT using SeagullCoin"
+ *     description: "Allows users to mint NFTs after confirming SeagullCoin payment."
+ *     parameters:
+ *       - in: body
+ *         name: wallet
+ *         description: "The user's wallet address."
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: body
+ *         name: nftData
+ *         description: "NFT metadata including name, description, etc."
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             name:
+ *               type: string
+ *             description:
+ *               type: string
+ *             image:
+ *               type: string
+ *             attributes:
+ *               type: array
+ *               items:
+ *                 type: object
+ *             collection:
+ *               type: string
+ *     responses:
+ *       200:
+ *         description: "Minting successful"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 nftTokenId:
+ *                   type: string
+ *                 mintTxHash:
+ *                   type: string
+ *       401:
+ *         description: "Unauthorized"
+ *       403:
+ *         description: "Forbidden - Payment not found"
+ *       500:
+ *         description: "Internal Server Error"
+ */
 app.post('/mint', async (req, res) => {
   const { wallet, nftData } = req.body;
 
@@ -226,93 +279,74 @@ app.post('/mint', async (req, res) => {
   }
 });
 
-// === /buy-nft endpoint ===
-app.post('/buy-nft', async (req, res) => {
-  const { nftTokenId, amount } = req.body;
-
-  if (!nftTokenId || !amount || amount <= 0) {
-    return res.status(400).json({ error: 'Invalid NFT token ID or amount' });
-  }
-
-  try {
-    // Assume that a smart contract or database verifies NFT availability and price.
-    // Placeholder logic for purchasing NFT
-    const purchaseResult = {
-      success: true,
-      nftTokenId,
-      amountPaid: amount,
-    };
-
-    res.status(200).json(purchaseResult);
-  } catch (err) {
-    console.error('Error purchasing NFT:', err);
-    res.status(500).json({ error: 'Failed to purchase NFT' });
-  }
-});
-
 // === /sell-nft endpoint ===
 /**
  * @swagger
  * /sell-nft:
  *   post:
- *     summary: "Sell an NFT"
- *     description: "Allows users to list an NFT for sale at a specified price using only SeagullCoin."
+ *     summary: "Sell an NFT with a specified SeagullCoin price"
+ *     description: "Allows users to list an NFT for sale with a specified price in SeagullCoin."
  *     parameters:
  *       - in: body
  *         name: nftTokenId
- *         description: "The NFT token ID."
+ *         description: "The NFT Token ID"
  *         required: true
  *         schema:
  *           type: string
  *       - in: body
- *         name: amount
- *         description: "Price to sell the NFT in SeagullCoin."
+ *         name: price
+ *         description: "Price in SeagullCoin (must be greater than 0)"
  *         required: true
  *         schema:
  *           type: number
  *           format: float
  *     responses:
  *       200:
- *         description: "NFT successfully listed for sale"
+ *         description: "NFT listed successfully for sale"
  *       400:
- *         description: "Invalid input"
- *       403:
- *         description: "Forbidden - Only SeagullCoin transactions are allowed"
+ *         description: "Invalid NFT token or price"
  *       500:
  *         description: "Internal Server Error"
  */
 app.post('/sell-nft', async (req, res) => {
-  const { nftTokenId, amount } = req.body;
+  const { nftTokenId, price } = req.body;
 
-  if (!nftTokenId || !amount || amount.value <= 0 || !amount.currency || !amount.issuer) {
-    return res.status(400).json({ error: 'Invalid NFT token ID or amount' });
-  }
-
-  // Validate that the price is in SeagullCoin (SGLCN-X20)
-  if (amount.currency !== SEAGULLCOIN_CODE || amount.issuer !== SEAGULLCOIN_ISSUER) {
-    return res.status(403).json({ error: 'Only SeagullCoin transactions are allowed for selling NFTs' });
+  if (!nftTokenId || !price || price <= 0) {
+    return res.status(400).json({ error: 'Invalid NFT token ID or price' });
   }
 
   try {
-    // Placeholder logic for listing NFT for sale
-    const sellResult = {
-      success: true,
-      nftTokenId,
-      price: amount,
+    await xrplClient.connect();
+    const sellTx = {
+      TransactionType: 'NFTokenCreateOffer',
+      Account: req.session.walletAddress,
+      NFTokenID: nftTokenId,
+      Amount: {
+        currency: SEAGULLCOIN_CODE,
+        issuer: SEAGULLCOIN_ISSUER,
+        value: price.toString(),
+      },
+      Flags: 0,
     };
 
-    // Logic to add the NFT to the marketplace for sale (if applicable)
-    // This would typically involve database updates or smart contract interactions.
+    const preparedTx = await xrplClient.autofill(sellTx);
+    const signedTx = req.session.walletAddress.sign(preparedTx);
+    const txResult = await xrplClient.submit(signedTx.tx_blob);
 
-    res.status(200).json(sellResult);
+    res.status(200).json({
+      success: true,
+      nftTokenId,
+      txHash: txResult.result.hash,
+      price: price,
+    });
   } catch (err) {
     console.error('Error selling NFT:', err);
     res.status(500).json({ error: 'Failed to list NFT for sale' });
+  } finally {
+    await xrplClient.disconnect();
   }
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(process.env.PORT || 3000, () => {
+  console.log('Server is running...');
 });

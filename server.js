@@ -161,60 +161,6 @@ app.post('/mint', async (req, res) => {
   }
 });
 
-// === /buy-nft endpoint ===
-app.post('/buy-nft', async (req, res) => {
-  const { wallet, nftId, paymentAmount } = req.body;
-
-  if (!wallet || !nftId || !paymentAmount) {
-    return res.status(400).json({ error: 'Missing wallet, NFT ID or payment amount' });
-  }
-
-  try {
-    await xrplClient.connect();
-
-    const nft = await getNFTById(nftId);
-    if (!nft) {
-      return res.status(404).json({ error: 'NFT not found' });
-    }
-
-    if (nft.owner === wallet) {
-      return res.status(400).json({ error: 'You already own this NFT' });
-    }
-
-    if (parseFloat(paymentAmount) < nft.price) {
-      return res.status(400).json({ error: 'Insufficient funds to purchase NFT' });
-    }
-
-    const paymentTx = {
-      TransactionType: 'Payment',
-      Account: wallet,
-      Destination: nft.owner,
-      Amount: {
-        currency: SEAGULLCOIN_CODE,
-        issuer: SEAGULLCOIN_ISSUER,
-        value: paymentAmount.toString(),
-      },
-    };
-
-    const preparedTx = await xrplClient.autofill(paymentTx);
-    const signedTx = wallet.sign(preparedTx);
-    const txResult = await xrplClient.submit(signedTx.tx_blob);
-
-    await transferNFTOwnership(nftId, wallet);
-
-    res.status(200).json({
-      success: true,
-      paymentTxHash: txResult.result.hash,
-      nftId,
-    });
-  } catch (err) {
-    console.error('Buy error:', err);
-    res.status(500).json({ error: 'Error processing purchase' });
-  } finally {
-    await xrplClient.disconnect();
-  }
-});
-
 // === /sell-nft endpoint ===
 app.post('/sell-nft', async (req, res) => {
   const { wallet, nftId, salePrice } = req.body;
@@ -226,11 +172,13 @@ app.post('/sell-nft', async (req, res) => {
   try {
     await xrplClient.connect();
 
+    // Placeholder function to get NFT by ID (replace with your logic)
     const nft = await getNFTById(nftId);
     if (!nft || nft.owner !== wallet) {
       return res.status(400).json({ error: 'You do not own this NFT' });
     }
 
+    // Add the logic to list the NFT for sale, for example by storing it in your database or a smart contract
     await listNFTForSale(nftId, salePrice);
 
     res.status(200).json({

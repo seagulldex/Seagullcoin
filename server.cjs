@@ -5,7 +5,14 @@ import fetch from 'node-fetch';
 import session from 'express-session';
 import { XummSdk } from 'xumm-sdk';
 import dotenv from 'dotenv'; // Using ES import for dotenv
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
 dotenv.config(); // Make sure to load environment variables
+
+// Workaround for ES Module __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 app.use(bodyParser.json());

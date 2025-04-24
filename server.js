@@ -135,6 +135,24 @@ async function searchCollections({ name, description }) {
   ];
 }
 
+app.get('/get/user/nfts', async (req, res) => {
+  const userWallet = req.query.wallet; // Assume wallet address is passed as a query parameter
+
+  try {
+    const userNFTs = await getUserNFTs(userWallet);
+    res.status(200).json(userNFTs);
+  } catch (err) {
+    console.error('Error fetching user NFTs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+async function getUserNFTs(wallet) {
+  // Mock function to get NFTs based on user wallet address
+  return [
+    { nftId: '12345', name: 'Seagull NFT #12345', owner: wallet },
+  ];
+}
 
 // Mock function to simulate transferring NFT ownership
 async function transferNFTOwnership(nftId, buyerAddress) {

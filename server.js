@@ -55,31 +55,92 @@ async function getNFTDetails(nftId) {
 }
 
 app.get('/get/nfts/search', async (req, res) => {
-  const { name, collectionId, minPrice, maxPrice, owner } = req.query;
+  const { name, collectionId, minPrice, maxPrice, owner, sortBy, sortOrder, page = 1, limit = 10 } = req.query;
 
   try {
-    // Implement search logic based on query params
-    const searchResults = await searchNFTs({ name, collectionId, minPrice, maxPrice, owner });
+    // Build the search criteria based on the query parameters
+    const searchCriteria = {
+      name,
+      collectionId,
+      minPrice: parseFloat(minPrice),
+      maxPrice: parseFloat(maxPrice),
+      owner,
+    };
 
-    res.status(200).json(searchResults);
+    // Call the searchNFTs function with pagination, sorting, and filtering
+    const searchResults = await searchNFTs({
+      searchCriteria,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+    });
+
+    // Return the search results as a response
+    res.status(200).json({
+      nfts: searchResults.nfts,
+      total: searchResults.total,
+      page: searchResults.page,
+      limit: searchResults.limit,
+    });
   } catch (err) {
     console.error('Error searching NFTs:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-async function searchNFTs({ name, collectionId, minPrice, maxPrice, owner }) {
-  // Search logic (this is a mock implementation)
-  return [
-    {
-      nftId: '12345',
-      name: 'Seagull NFT #12345',
-      description: 'A rare SeagullCoin NFT',
-      collectionId: '6789',
-      price: 0.5,
-      owner: 'rwXYHjcLfVoe43kAhg3k2xx5EsJf9gSeAG',
-    },
+// Modify the searchNFTs function to include sorting and pagination logic
+async function searchNFTs({ searchCriteria, sortBy, sortOrder, page, limit }) {
+  // Mock NFT database query, normally you'd query a database here
+  let nfts = [
+    { nftId: '12345', name: 'Seagull NFT #12345', description: 'A rare SeagullCoin NFT', collectionId: '6789', price: 0.5, owner: 'rwXYHjcLfVoe43kAhg3k2xx5EsJf9gSeAG', date: '2023-01-01T00:00:00Z' },
+    { nftId: '12346', name: 'Seagull NFT #12346', description: 'Another SeagullCoin NFT', collectionId: '6789', price: 0.3, owner: 'rwXYHjcLfVoe43kAhg3k2xx5EsJf9gSeAG', date: '2023-02-01T00:00:00Z' },
+    { nftId: '12347', name: 'Seagull NFT #12347', description: 'Limited edition SeagullCoin NFT', collectionId: '6790', price: 0.8, owner: 'rwXYHjcLfVoe43kAhg3k2xx5EsJf9gSeAG', date: '2023-03-01T00:00:00Z' },
   ];
+
+  // Filter NFTs based on search criteria
+  if (searchCriteria.name) {
+    nfts = nfts.filter(nft => nft.name.toLowerCase().includes(searchCriteria.name.toLowerCase()));
+  }
+  if (searchCriteria.collectionId) {
+    nfts = nfts.filter(nft => nft.collectionId === searchCriteria.collectionId);
+  }
+  if (searchCriteria.minPrice) {
+    nfts = nfts.filter(nft => nft.price >= searchCriteria.minPrice);
+  }
+  if (searchCriteria.maxPrice) {
+    nfts = nfts.filter(nft => nft.price <= searchCriteria.maxPrice);
+  }
+  if (searchCriteria.owner) {
+    nfts = nfts.filter(nft => nft.owner === searchCriteria.owner);
+  }
+
+  // Sort NFTs based on the provided sort criteria
+  if (sortBy && sortOrder) {
+    nfts = nfts.sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'price') {
+        comparison = a.price - b.price;
+      } else if (sortBy === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortBy === 'date') {
+        comparison = new Date(a.date) - new Date(b.date);
+      }
+      
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+  }
+
+  // Pagination: Slice the results based on the page and limit
+  const offset = (page - 1) * limit;
+  const paginatedResults = nfts.slice(offset, offset + limit);
+
+  return {
+    nfts: paginatedResults,
+    total: nfts.length,
+    page,
+    limit,
+  };
 }
 
 app.get('/get/nft/:nftId', async (req, res) => {

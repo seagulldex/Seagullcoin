@@ -54,6 +54,69 @@ async function getNFTDetails(nftId) {
   };
 }
 
+app.get('/get/nfts/search', async (req, res) => {
+  const { name, collectionId, minPrice, maxPrice, owner } = req.query;
+
+  try {
+    // Implement search logic based on query params
+    const searchResults = await searchNFTs({ name, collectionId, minPrice, maxPrice, owner });
+
+    res.status(200).json(searchResults);
+  } catch (err) {
+    console.error('Error searching NFTs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+async function searchNFTs({ name, collectionId, minPrice, maxPrice, owner }) {
+  // Search logic (this is a mock implementation)
+  return [
+    {
+      nftId: '12345',
+      name: 'Seagull NFT #12345',
+      description: 'A rare SeagullCoin NFT',
+      collectionId: '6789',
+      price: 0.5,
+      owner: 'rwXYHjcLfVoe43kAhg3k2xx5EsJf9gSeAG',
+    },
+  ];
+}
+
+
+app.get('/get/nfts', async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+
+  try {
+    const offset = (page - 1) * limit;
+    const nftList = await getNFTList({ offset, limit });
+    const totalNFTs = await getTotalNFTsCount();
+
+    res.status(200).json({
+      nfts: nftList,
+      total: totalNFTs,
+      page,
+      limit,
+    });
+  } catch (err) {
+    console.error('Error fetching NFTs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+async function getNFTList({ offset, limit }) {
+  // Mock database query logic to fetch NFTs based on pagination
+  return [
+    { nftId: '12345', name: 'Seagull NFT #12345' },
+    { nftId: '12346', name: 'Seagull NFT #12346' },
+  ];
+}
+
+async function getTotalNFTsCount() {
+  // Mock function to count total NFTs
+  return 100;
+}
+
+
 // Mock function to simulate transferring NFT ownership
 async function transferNFTOwnership(nftId, buyerAddress) {
   // Implement your logic to transfer ownership of the NFT (e.g., via XRPL transaction)

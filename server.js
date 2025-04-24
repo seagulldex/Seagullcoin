@@ -279,74 +279,76 @@ app.post('/mint', async (req, res) => {
   }
 });
 
-// === /sell-nft endpoint ===
+// === /cancel-xrp-offers endpoint ===
 /**
  * @swagger
- * /sell-nft:
+ * /cancel-xrp-offers:
  *   post:
- *     summary: "Sell an NFT with a specified SeagullCoin price"
- *     description: "Allows users to list an NFT for sale with a specified price in SeagullCoin."
+ *     summary: "Cancel unauthorized XRP offers"
+ *     description: "Automatically cancels any unauthorized XRP-based offers for SeagullCoin NFTs."
  *     parameters:
  *       - in: body
- *         name: nftTokenId
- *         description: "The NFT Token ID"
+ *         name: wallet
+ *         description: "The user's wallet address."
  *         required: true
  *         schema:
  *           type: string
- *       - in: body
- *         name: price
- *         description: "Price in SeagullCoin (must be greater than 0)"
- *         required: true
- *         schema:
- *           type: number
- *           format: float
  *     responses:
  *       200:
- *         description: "NFT listed successfully for sale"
+ *         description: "Offers canceled successfully"
  *       400:
- *         description: "Invalid NFT token or price"
+ *         description: "Invalid wallet address"
  *       500:
  *         description: "Internal Server Error"
  */
-app.post('/sell-nft', async (req, res) => {
-  const { nftTokenId, price } = req.body;
+app.post('/cancel-xrp-offers', async (req, res) => {
+  const { wallet } = req.body;
 
-  if (!nftTokenId || !price || price <= 0) {
-    return res.status(400).json({ error: 'Invalid NFT token ID or price' });
+  if (!wallet) {
+    return res.status(400).json({ error: 'Missing wallet address' });
   }
 
   try {
     await xrplClient.connect();
-    const sellTx = {
-      TransactionType: 'NFTokenCreateOffer',
-      Account: req.session.walletAddress,
-      NFTokenID: nftTokenId,
-      Amount: {
-        currency: SEAGULLCOIN_CODE,
-        issuer: SEAGULLCOIN_ISSUER,
-        value: price.toString(),
-      },
-      Flags: 0,
-    };
-
-    const preparedTx = await xrplClient.autofill(sellTx);
-    const signedTx = req.session.walletAddress.sign(preparedTx);
-    const txResult = await xrplClient.submit(signedTx.tx_blob);
-
-    res.status(200).json({
-      success: true,
-      nftTokenId,
-      txHash: txResult.result.hash,
-      price: price,
+    const offers = await xrplClient.request({
+      command: 'account_nfts',
+      account: wallet,
     });
+
+    // Filter out offers made in XRP (we only want SeagullCoin offers)
+    const xrpOffers = offers.result.filter((offer) => {
+      return (
+        offer?.Amount?.currency === 'XRP'
+      );
+    });
+
+    if (xrpOffers.length > 0) {
+      const cancelTxs = xrpOffers.map((offer) => {
+        return {
+          TransactionType: 'NFTokenCancelOffer',
+          Account: wallet,
+          NFTokenID: offer.NFTokenID,
+        };
+      });
+
+      // Submit cancellation transactions for each XRP offer
+      for (let cancelTx of cancelTxs) {
+        const preparedTx = await xrplClient.autofill(cancelTx);
+        const signedTx = wallet.sign(preparedTx);
+        await xrplClient.submit(signedTx.tx_blob);
+      }
+    }
+
+    res.status(200).json({ success: true, message: 'Canceled unauthorized XRP offers' });
   } catch (err) {
-    console.error('Error selling NFT:', err);
-    res.status(500).json({ error: 'Failed to list NFT for sale' });
+    console.error('Error canceling XRP offers:', err);
+    res.status(500).json({ error: 'Failed to cancel XRP offers' });
   } finally {
     await xrplClient.disconnect();
   }
 });
 
+// Start the API server
 app.listen(process.env.PORT || 3000, () => {
-  console.log('Server is running...');
+  console.log(`Server is running on port ${process.env.PORT || 3000}`);
 });

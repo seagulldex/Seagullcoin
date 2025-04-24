@@ -9,6 +9,8 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import swaggerJSDoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
 
 // Load environment variables
 dotenv.config();
@@ -42,6 +44,29 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
+// Swagger setup
+const swaggerDefinition = {
+  openapi: '3.0.0',
+  info: {
+    title: 'SGLCN-X20 Minting API',
+    version: '1.0.0',
+    description: 'API for minting and managing SeagullCoin NFTs',
+  },
+  servers: [
+    {
+      url: 'https://sglcn-x20-api.glitch.me',
+    },
+  ],
+};
+
+const options = {
+  swaggerDefinition,
+  apis: ['./server.js'], // Path to the API specs
+};
+
+const swaggerSpec = swaggerJSDoc(options);
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 const xrplClient = new xrpl.Client('wss://s1.ripple.com');
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
@@ -63,12 +88,8 @@ app.get('/login', async (req, res) => {
       txjson: { TransactionType: 'SignIn' },
     });
     req.session.xummPayloadUuid = payload.uuid;
-
     const walletAddress = payload?.meta?.account;
     req.session.walletAddress = walletAddress;
-
-    console.log('XUMM login successful. Wallet address:', walletAddress);
-
     res.json({ qr: payload.refs.qr_png, uuid: payload.uuid });
   } catch (err) {
     console.error('Error during XUMM login:', err);
@@ -76,22 +97,8 @@ app.get('/login', async (req, res) => {
   }
 });
 
-// === Retry Logic Function ===
-async function fetchDataWithRetry(url, options, retries = 3) {
-  try {
-    const response = await fetch(url, options);
-    if (!response.ok) throw new Error('Failed to fetch data');
-    return await response.json();
-  } catch (error) {
-    if (retries === 0) throw error;
-    console.log(`Retrying... (${retries} retries left)`);
-    return fetchDataWithRetry(url, options, retries - 1);
-  }
-}
-
 // === Mint NFT ===
 async function mintNFT(wallet, nftData) {
-  // Validate nftData
   if (!nftData.name || !nftData.description || !nftData.image) {
     throw new Error('Missing required NFT data: name, description, or image');
   }
@@ -116,8 +123,6 @@ async function mintNFT(wallet, nftData) {
 
     const metadataJson = metadataRes;
     const ipfsUrl = `https://ipfs.io/ipfs/${metadataJson.value.cid}`;
-
-    console.log('Metadata uploaded to IPFS:', ipfsUrl);
 
     const mintTx = {
       TransactionType: 'NFTokenMint',
@@ -146,23 +151,72 @@ async function mintNFT(wallet, nftData) {
 }
 
 // === /mint endpoint ===
+/**
+ * @swagger
+ * /mint:
+ *   post:
+ *     summary: "Mint an NFT using SeagullCoin"
+ *     description: "Allows users to mint NFTs after confirming SeagullCoin payment."
+ *     parameters:
+ *       - in: body
+ *         name: wallet
+ *         description: "The user's wallet address."
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: body
+ *         name: nftData
+ *         description: "NFT metadata including name, description, etc."
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             name:
+ *               type: string
+ *             description:
+ *               type: string
+ *             image:
+ *               type: string
+ *             attributes:
+ *               type: array
+ *               items:
+ *                 type: object
+ *             collection:
+ *               type: string
+ *     responses:
+ *       200:
+ *         description: "Minting successful"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 nftTokenId:
+ *                   type: string
+ *                 mintTxHash:
+ *                   type: string
+ *       401:
+ *         description: "Unauthorized"
+ *       403:
+ *         description: "Forbidden - Payment not found"
+ *       500:
+ *         description: "Internal Server Error"
+ */
 app.post('/mint', async (req, res) => {
   const { wallet, nftData } = req.body;
 
-  // Ensure user is logged in and wallet matches session
   if (!req.session.walletAddress || req.session.walletAddress !== wallet) {
     return res.status(401).json({ error: 'Unauthorized: Wallet mismatch or not logged in via XUMM' });
   }
 
-  // Ensure wallet and nftData are provided
   if (!wallet || !nftData) {
     return res.status(400).json({ error: 'Missing wallet or NFT data' });
   }
 
   try {
     await xrplClient.connect();
-
-    // Fetch recent transactions for the user's wallet
     const txs = await xrplClient.request({
       command: 'account_tx',
       account: wallet,
@@ -171,29 +225,24 @@ app.post('/mint', async (req, res) => {
       limit: 30,
     });
 
-    // Find a valid SeagullCoin payment transaction
     const paymentTx = txs.result.transactions.find((tx) => {
       const t = tx.tx;
       return (
         tx.validated &&
-        t.TransactionType === 'Payment' && // Check it's a Payment transaction
-        t.Destination === BURN_WALLET && // Payment must go to the burn wallet
-        t.Amount?.currency === SEAGULLCOIN_CODE && // SeagullCoin must be the currency
-        t.Amount?.issuer === SEAGULLCOIN_ISSUER && // SeagullCoin issuer must match
-        parseFloat(t.Amount?.value) >= MINT_COST && // Payment must be at least 0.5 SeagullCoin
-        !USED_PAYMENTS.has(t.hash) // Ensure we haven't already used this payment
+        t.TransactionType === 'Payment' &&
+        t.Destination === BURN_WALLET &&
+        t.Amount?.currency === SEAGULLCOIN_CODE &&
+        t.Amount?.issuer === SEAGULLCOIN_ISSUER &&
+        parseFloat(t.Amount?.value) >= MINT_COST &&
+        !USED_PAYMENTS.has(t.hash)
       );
     });
 
-    // If no valid payment found
     if (!paymentTx) {
       return res.status(403).json({ success: false, error: 'No valid SeagullCoin payment found for minting' });
     }
 
-    // Mark this payment as used to prevent duplicates
     USED_PAYMENTS.add(paymentTx.tx.hash);
-
-    // Proceed with minting the NFT
     const mintResult = await mintNFT(wallet, nftData);
     res.status(200).json({
       success: true,
@@ -211,74 +260,59 @@ app.post('/mint', async (req, res) => {
   }
 });
 
-// === /buy-nft endpoint ===
-app.post('/buy-nft', async (req, res) => {
-  const { nftTokenId, wallet } = req.body;
-
-  // Ensure user is logged in and wallet matches session
-  if (!req.session.walletAddress || req.session.walletAddress !== wallet) {
-    return res.status(401).json({ error: 'Unauthorized: Wallet mismatch or not logged in via XUMM' });
-  }
-
-  // Ensure nftTokenId and wallet are provided
-  if (!nftTokenId || !wallet) {
-    return res.status(400).json({ error: 'Missing nftTokenId or wallet' });
-  }
+// === /status/:transactionHash endpoint ===
+app.get('/status/:transactionHash', async (req, res) => {
+  const { transactionHash } = req.params;
 
   try {
     await xrplClient.connect();
-
-    // Fetch recent transactions for the user's wallet
-    const txs = await xrplClient.request({
-      command: 'account_tx',
-      account: wallet,
-      ledger_index_min: -1000,
-      ledger_index_max: -1,
-      limit: 30,
+    const txStatus = await xrplClient.request({
+      command: 'tx',
+      transaction: transactionHash,
     });
 
-    // Find a valid SeagullCoin payment transaction
-    const paymentTx = txs.result.transactions.find((tx) => {
-      const t = tx.tx;
-      return (
-        tx.validated &&
-        t.TransactionType === 'Payment' && // Check it's a Payment transaction
-        t.Destination === BURN_WALLET && // Payment must go to the burn wallet
-        t.Amount?.currency === SEAGULLCOIN_CODE && // SeagullCoin must be the currency
-        t.Amount?.issuer === SEAGULLCOIN_ISSUER && // SeagullCoin issuer must match
-        parseFloat(t.Amount?.value) >= MINT_COST && // Payment must be at least 0.5 SeagullCoin
-        !USED_PAYMENTS.has(t.hash) // Ensure we haven't already used this payment
-      );
-    });
-
-    // If no valid payment found
-    if (!paymentTx) {
-      return res.status(403).json({ success: false, error: 'No valid SeagullCoin payment found for buying NFT' });
+    if (txStatus.result.engine_result === 'tesSUCCESS') {
+      return res.json({
+        success: true,
+        status: 'Transaction successful',
+        transaction: txStatus.result,
+      });
+    } else {
+      return res.json({
+        success: false,
+        status: 'Transaction failed',
+        error: txStatus.result.engine_result_message,
+      });
     }
-
-    // Mark this payment as used to prevent duplicates
-    USED_PAYMENTS.add(paymentTx.tx.hash);
-
-    // Proceed with buying NFT
-    res.status(200).json({
-      success: true,
-      message: `Successfully purchased NFT with Token ID: ${nftTokenId}`,
-    });
   } catch (err) {
-    console.error('Buy NFT error:', err);
-    res.status(500).json({ error: 'NFT purchase failed internally' });
+    console.error('Error fetching transaction status:', err);
+    res.status(500).json({ error: 'Error fetching transaction status' });
   } finally {
     await xrplClient.disconnect();
   }
 });
 
-// Global error handler (catch-all)
-app.use((err, req, res, next) => {
-  console.error('Unexpected error:', err);
-  res.status(500).json({ error: 'An unexpected error occurred. Please try again later.' });
+// === /buy-nft endpoint ===
+app.post('/buy-nft', async (req, res) => {
+  // Simplified logic for demonstration
+  const { nftTokenId, amount, wallet } = req.body;
+
+  if (!wallet || !nftTokenId || !amount) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    // Process buying the NFT (You could add offer creation and validation here)
+    const offerTx = await xrplClient.submit(wallet, nftTokenId, amount);
+    res.json({ success: true, transactionHash: offerTx.hash });
+  } catch (err) {
+    console.error('Error buying NFT:', err);
+    res.status(500).json({ error: 'Error buying NFT' });
+  }
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// Start Server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

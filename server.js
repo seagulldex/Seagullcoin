@@ -116,6 +116,25 @@ async function getTotalNFTsCount() {
   return 100;
 }
 
+app.get('/get/collections/search', async (req, res) => {
+  const { name, description } = req.query;
+
+  try {
+    const searchResults = await searchCollections({ name, description });
+    res.status(200).json(searchResults);
+  } catch (err) {
+    console.error('Error searching collections:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+async function searchCollections({ name, description }) {
+  // Mock search function
+  return [
+    { collectionId: '6789', name: 'SeagullCoin Collection', description: 'A collection of SeagullCoin NFTs' },
+  ];
+}
+
 
 // Mock function to simulate transferring NFT ownership
 async function transferNFTOwnership(nftId, buyerAddress) {

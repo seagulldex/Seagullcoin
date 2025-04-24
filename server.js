@@ -47,6 +47,11 @@ app.get('/login', async (req, res) => {
       txjson: { TransactionType: 'SignIn' },
     });
     req.session.xummPayloadUuid = payload.uuid;
+
+    // Store wallet address in session after login
+    const walletAddress = payload?.meta?.account;
+    req.session.walletAddress = walletAddress;
+
     res.json({ qr: payload.refs.qr_png, uuid: payload.uuid });
   } catch (err) {
     res.status(500).json({ error: 'Failed to create login payload' });
@@ -102,6 +107,7 @@ async function mintNFT(wallet, nftData) {
 app.post('/mint', async (req, res) => {
   const { wallet, nftData } = req.body;
 
+  // Ensure the wallet address in session matches the wallet address sent with the mint request
   if (!req.session.walletAddress || req.session.walletAddress !== wallet) {
     return res.status(401).json({ error: 'Unauthorized: Wallet mismatch or not logged in via XUMM' });
   }
@@ -113,6 +119,7 @@ app.post('/mint', async (req, res) => {
   try {
     await xrplClient.connect();
 
+    // Check for valid SeagullCoin payment
     const txs = await xrplClient.request({
       command: 'account_tx',
       account: wallet,

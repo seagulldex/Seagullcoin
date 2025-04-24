@@ -1,7 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import xrpl from 'xrpl';
-import fetch from 'node-fetch';  // Added this line
+import fetch from 'node-fetch';
 import session from 'express-session';
 import { XummSdk } from 'xumm-sdk';
 import dotenv from 'dotenv';
@@ -34,7 +34,10 @@ app.use(
 const limiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 100, // Limit each IP to 100 requests per hour
-  message: 'Too many requests, please try again later.',
+  message: {
+    error: 'Too many requests, please try again later.',
+    statusCode: 429,
+  },
 });
 
 app.use(limiter);
@@ -73,8 +76,26 @@ app.get('/login', async (req, res) => {
   }
 });
 
+// === Retry Logic Function ===
+async function fetchDataWithRetry(url, options, retries = 3) {
+  try {
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error('Failed to fetch data');
+    return await response.json();
+  } catch (error) {
+    if (retries === 0) throw error;
+    console.log(`Retrying... (${retries} retries left)`);
+    return fetchDataWithRetry(url, options, retries - 1);
+  }
+}
+
 // === Mint NFT ===
 async function mintNFT(wallet, nftData) {
+  // Validate nftData
+  if (!nftData.name || !nftData.description || !nftData.image) {
+    throw new Error('Missing required NFT data: name, description, or image');
+  }
+
   const metadata = {
     name: nftData.name,
     description: nftData.description,
@@ -84,7 +105,7 @@ async function mintNFT(wallet, nftData) {
   };
 
   try {
-    const metadataRes = await fetch('https://api.nft.storage/upload', {
+    const metadataRes = await fetchDataWithRetry('https://api.nft.storage/upload', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`,
@@ -93,11 +114,7 @@ async function mintNFT(wallet, nftData) {
       body: JSON.stringify(metadata),
     });
 
-    if (!metadataRes.ok) {
-      throw new Error('Failed to upload metadata to IPFS');
-    }
-
-    const metadataJson = await metadataRes.json();
+    const metadataJson = metadataRes;
     const ipfsUrl = `https://ipfs.io/ipfs/${metadataJson.value.cid}`;
 
     console.log('Metadata uploaded to IPFS:', ipfsUrl);
@@ -226,6 +243,7 @@ app.post('/buy-nft', async (req, res) => {
       return (
         tx.validated &&
         t.TransactionType === 'Payment' && // Check it's a Payment transaction
+        t.Destination === BURN_WALLET && // Payment must go to the burn wallet
         t.Amount?.currency === SEAGULLCOIN_CODE && // SeagullCoin must be the currency
         t.Amount?.issuer === SEAGULLCOIN_ISSUER && // SeagullCoin issuer must match
         parseFloat(t.Amount?.value) >= MINT_COST && // Payment must be at least 0.5 SeagullCoin
@@ -235,28 +253,32 @@ app.post('/buy-nft', async (req, res) => {
 
     // If no valid payment found
     if (!paymentTx) {
-      return res.status(403).json({ success: false, error: 'No valid SeagullCoin payment found for purchase' });
+      return res.status(403).json({ success: false, error: 'No valid SeagullCoin payment found for buying NFT' });
     }
 
     // Mark this payment as used to prevent duplicates
     USED_PAYMENTS.add(paymentTx.tx.hash);
 
-    // Proceed with buying the NFT (your specific buy logic will go here)
-
+    // Proceed with buying NFT
     res.status(200).json({
       success: true,
-      message: 'NFT purchase successful',
-      paymentTxHash: paymentTx.tx.hash,
+      message: `Successfully purchased NFT with Token ID: ${nftTokenId}`,
     });
   } catch (err) {
-    console.error('Purchase error:', err);
+    console.error('Buy NFT error:', err);
     res.status(500).json({ error: 'NFT purchase failed internally' });
   } finally {
     await xrplClient.disconnect();
   }
 });
 
-// Start the server
-app.listen(process.env.PORT || 5000, () => {
-  console.log('Server running on port', process.env.PORT || 5000);
+// Global error handler (catch-all)
+app.use((err, req, res, next) => {
+  console.error('Unexpected error:', err);
+  res.status(500).json({ error: 'An unexpected error occurred. Please try again later.' });
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });

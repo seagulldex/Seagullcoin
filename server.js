@@ -1,11 +1,14 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const xrpl = require('xrpl');
-const fetch = require('node-fetch');
-const session = require('express-session');
-const { XummSdk } = require('xumm-sdk');
-const { MongoClient } = require('mongodb');
-require('dotenv').config(); // Make sure to load environment variables
+import express from 'express';
+import bodyParser from 'body-parser';
+import xrpl from 'xrpl';
+import fetch from 'node-fetch';
+import session from 'express-session';
+import { XummSdk } from 'xumm-sdk';
+import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 app.use(bodyParser.json());

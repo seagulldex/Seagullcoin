@@ -207,6 +207,137 @@ async function mintNFT(wallet, nftData) {
   }
 }
 
+// list-nft-for-sale route
+/**
+ * @swagger
+ * /list-nft-for-sale:
+ *   post:
+ *     summary: "List an NFT for sale"
+ *     description: "Allows users to list their NFTs for sale by specifying the price in SeagullCoin."
+ *     tags: [NFTs]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftId:
+ *                 type: string
+ *                 description: The ID of the NFT to list
+ *               price:
+ *                 type: integer
+ *                 description: Price in SeagullCoin
+ *             required:
+ *               - nftId
+ *               - price
+ *     responses:
+ *       200:
+ *         description: "NFT successfully listed for sale"
+ *       400:
+ *         description: "Invalid input or NFT ownership"
+ *       500:
+ *         description: "Internal server error"
+ */
+
+// buy-nft route
+/**
+ * @swagger
+ * /buy-nft:
+ *   post:
+ *     summary: "Buy an NFT"
+ *     description: "Allows users to buy an NFT by providing the NFT ID and the amount in SeagullCoin."
+ *     tags: [NFTs]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftId:
+ *                 type: string
+ *                 description: The ID of the NFT to buy
+ *               buyerWallet:
+ *                 type: string
+ *                 description: The wallet address of the buyer
+ *               price:
+ *                 type: integer
+ *                 description: The amount in SeagullCoin
+ *             required:
+ *               - nftId
+ *               - buyerWallet
+ *               - price
+ *     responses:
+ *       200:
+ *         description: "NFT successfully purchased"
+ *       400:
+ *         description: "Invalid input or insufficient funds"
+ *       500:
+ *         description: "Internal server error"
+ */
+
+// nfts route
+/**
+ * @swagger
+ * /nfts:
+ *   get:
+ *     summary: "Get all NFTs"
+ *     description: "Fetches all NFTs that have been minted on the platform."
+ *     tags: [NFTs]
+ *     responses:
+ *       200:
+ *         description: "A list of NFTs"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   nftId:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   creator:
+ *                     type: string
+ *                   price:
+ *                     type: integer
+ *       500:
+ *         description: "Internal server error"
+ */
+
+// collections route
+/**
+ * @swagger
+ * /collections:
+ *   get:
+ *     summary: "Get all NFT collections"
+ *     description: "Fetches all NFT collections available on the platform."
+ *     tags: [NFTs]
+ *     responses:
+ *       200:
+ *         description: "A list of NFT collections"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   collectionId:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   logo:
+ *                     type: string
+ *       500:
+ *         description: "Internal server error"
+ */
+
+
 // === /mint endpoint ===
 /**
  * @swagger

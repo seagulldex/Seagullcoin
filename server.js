@@ -4,6 +4,7 @@ const xrpl = require('xrpl');
 const fetch = require('node-fetch');
 const session = require('express-session');
 const { XummSdk } = require('xumm-sdk');
+const { MongoClient } = require('mongodb');
 require('dotenv').config(); // Make sure to load environment variables
 
 const app = express();
@@ -24,6 +25,18 @@ const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER; // Loaded from env
 const BURN_WALLET = process.env.BURN_WALLET; // Loaded from env
 const MINT_COST = 0.5;
 const USED_PAYMENTS = new Set(); // In-memory store to avoid double-spends
+
+// === MongoDB Setup ===
+const mongoUri = process.env.MONGO_URI; // MongoDB URI from .env
+let db;
+MongoClient.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then((client) => {
+    db = client.db('sglcn-nft'); // Database name
+    console.log('Connected to MongoDB');
+  })
+  .catch((err) => {
+    console.error('MongoDB connection failed:', err);
+  });
 
 // === Home Route ===
 app.get('/', (req, res) => {
@@ -46,10 +59,7 @@ app.get('/login', async (req, res) => {
 // === Collections ===
 app.get('/collections', async (req, res) => {
   try {
-    const collections = [
-      { name: 'Seagull Art', logo: 'seagull_art_logo.png' },
-      { name: 'Wildlife NFT', logo: 'wildlife_logo.png' },
-    ];
+    const collections = await db.collection('collections').find().toArray();
     res.status(200).json(collections);
   } catch (err) {
     console.error('Error fetching collections:', err);
@@ -161,120 +171,7 @@ app.post('/mint', async (req, res) => {
   }
 });
 
-// === /sell-nft endpoint ===
-app.post('/sell-nft', async (req, res) => {
-  const { wallet, nftId, salePrice } = req.body;
-
-  if (!wallet || !nftId || !salePrice) {
-    return res.status(400).json({ error: 'Missing wallet, NFT ID or sale price' });
-  }
-
-  try {
-    await xrplClient.connect();
-
-    // Placeholder function to get NFT by ID (replace with your logic)
-    const nft = await getNFTById(nftId);
-    if (!nft || nft.owner !== wallet) {
-      return res.status(400).json({ error: 'You do not own this NFT' });
-    }
-
-    // Add the logic to list the NFT for sale, for example by storing it in your database or a smart contract
-    await listNFTForSale(nftId, salePrice);
-
-    res.status(200).json({
-      success: true,
-      message: 'NFT listed for sale',
-      nftId,
-      salePrice,
-    });
-  } catch (err) {
-    console.error('Sell error:', err);
-    res.status(500).json({ error: 'Error listing NFT for sale' });
-  } finally {
-    await xrplClient.disconnect();
-  }
-});
-
-// === /nft/:id endpoint (Get NFT details by ID) ===
-app.get('/nft/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const nft = await getNFTById(id);
-    if (!nft) {
-      return res.status(404).json({ error: 'NFT not found' });
-    }
-    res.status(200).json(nft);
-  } catch (err) {
-    console.error('Error fetching NFT details:', err);
-    res.status(500).json({ error: 'Failed to fetch NFT details' });
-  }
-});
-
-// === /nft/:id/cancel endpoint (Cancel NFT sale) ===
-app.post('/nft/:id/cancel', async (req, res) => {
-  const { id } = req.params;
-  const { wallet } = req.body;
-
-  if (!wallet) {
-    return res.status(400).json({ error: 'Missing wallet address' });
-  }
-
-  try {
-    const nft = await getNFTById(id);
-    if (!nft || nft.owner !== wallet) {
-      return res.status(403).json({ error: 'You are not the owner of this NFT' });
-    }
-
-    // Cancel the sale logic (e.g., remove from sale list)
-    await cancelNFTSale(id);
-
-    res.status(200).json({ success: true, message: 'NFT sale cancelled' });
-  } catch (err) {
-    console.error('Cancel sale error:', err);
-    res.status(500).json({ error: 'Error cancelling sale' });
-  }
-});
-
-// === /collections/:name/nfts endpoint (Get NFTs in collection by name) ===
-app.get('/collections/:name/nfts', async (req, res) => {
-  const { name } = req.params;
-  try {
-    const nfts = await getNFTsInCollection(name);
-    res.status(200).json(nfts);
-  } catch (err) {
-    console.error('Error fetching NFTs from collection:', err);
-    res.status(500).json({ error: 'Failed to fetch NFTs from collection' });
-  }
-});
-
-// === Utility Functions ===
-
-// Placeholder for getting NFT by ID
-async function getNFTById(nftId) {
-  // Retrieve the NFT data from your database or storage
-  return { id: nftId, owner: 'some-wallet-address', price: 1.0 };
-}
-
-// Placeholder for listing NFT for sale
-async function listNFTForSale(nftId, salePrice) {
-  console.log(`Listing NFT ${nftId} for sale at ${salePrice}`);
-}
-
-// Placeholder for cancelling NFT sale
-async function cancelNFTSale(nftId) {
-  console.log(`Canceling sale for NFT ${nftId}`);
-}
-
-// Placeholder for transferring NFT ownership
-async function transferNFTOwnership(nftId, buyerWallet) {
-  console.log(`Transferring NFT ${nftId} to ${buyerWallet}`);
-}
-
-// Placeholder for getting NFTs in a collection
-async function getNFTsInCollection(collectionName) {
-  // This should fetch NFTs from a database or storage, filtered by collection name
-  return [{ id: '1', name: 'NFT #1', collection: collectionName }];
-}
+// MongoDB models and other API endpoints can be added as needed
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

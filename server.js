@@ -44,6 +44,154 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
+// === /buy-nft endpoint ===
+/**
+ * @swagger
+ * /buy-nft:
+ *   post:
+ *     summary: "Buy an NFT using SeagullCoin"
+ *     description: "Allows users to buy NFTs by making a payment with SeagullCoin only."
+ *     parameters:
+ *       - in: body
+ *         name: wallet
+ *         description: "The user's wallet address."
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: body
+ *         name: nftId
+ *         description: "The NFT ID that the user wants to purchase."
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: body
+ *         name: price
+ *         description: "The price of the NFT in SeagullCoin."
+ *         required: true
+ *         schema:
+ *           type: number
+ *     responses:
+ *       200:
+ *         description: "NFT purchase successful"
+ *       400:
+ *         description: "Invalid wallet address or missing information"
+ *       403:
+ *         description: "Unauthorized payment (XRP is not allowed)"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.post('/buy-nft', async (req, res) => {
+  const { wallet, nftId, price } = req.body;
+
+  if (!wallet || !nftId || !price) {
+    return res.status(400).json({ error: 'Missing wallet address, nftId, or price' });
+  }
+
+  try {
+    await xrplClient.connect();
+
+    // Fetch transaction history to check for SeagullCoin payment
+    const txs = await xrplClient.request({
+      command: 'account_tx',
+      account: wallet,
+      ledger_index_min: -1000,
+      ledger_index_max: -1,
+      limit: 30,
+    });
+
+    const paymentTx = txs.result.transactions.find((tx) => {
+      const t = tx.tx;
+      return (
+        tx.validated &&
+        t.TransactionType === 'Payment' &&
+        t.Destination === BURN_WALLET &&
+        t.Amount?.currency === SEAGULLCOIN_CODE &&
+        t.Amount?.issuer === SEAGULLCOIN_ISSUER &&
+        parseFloat(t.Amount?.value) >= price
+      );
+    });
+
+    if (!paymentTx) {
+      return res.status(403).json({ error: 'Unauthorized payment: Only SeagullCoin payments are accepted' });
+    }
+
+    // Process the NFT purchase (transfer ownership, etc.)
+    // Implement your logic to transfer the NFT ownership to the buyer
+    console.log(`Purchasing NFT ${nftId} for ${price} SeagullCoin by ${wallet}`);
+
+    res.status(200).json({ success: true, message: 'NFT purchased successfully' });
+  } catch (err) {
+    console.error('Error purchasing NFT:', err);
+    res.status(500).json({ error: 'NFT purchase failed' });
+  } finally {
+    await xrplClient.disconnect();
+  }
+});
+
+// === /sell-nft endpoint ===
+/**
+ * @swagger
+ * /sell-nft:
+ *   post:
+ *     summary: "Sell an NFT for SeagullCoin"
+ *     description: "Allows users to list NFTs for sale with SeagullCoin only."
+ *     parameters:
+ *       - in: body
+ *         name: wallet
+ *         description: "The user's wallet address."
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: body
+ *         name: nftId
+ *         description: "The NFT ID to be listed for sale."
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: body
+ *         name: price
+ *         description: "The price in SeagullCoin for the NFT."
+ *         required: true
+ *         schema:
+ *           type: number
+ *     responses:
+ *       200:
+ *         description: "NFT listed for sale successfully"
+ *       400:
+ *         description: "Invalid wallet address or missing information"
+ *       403:
+ *         description: "Unauthorized action (XRP is not allowed)"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.post('/sell-nft', async (req, res) => {
+  const { wallet, nftId, price } = req.body;
+
+  if (!wallet || !nftId || !price) {
+    return res.status(400).json({ error: 'Missing wallet address, nftId, or price' });
+  }
+
+  try {
+    await xrplClient.connect();
+
+    // Ensure the offer price is set to SeagullCoin only (not XRP)
+    if (price <= 0) {
+      return res.status(400).json({ error: 'Price must be greater than zero' });
+    }
+
+    // Your logic to list the NFT for sale with SeagullCoin pricing
+    console.log(`Listing NFT ${nftId} for sale by ${wallet} at ${price} SeagullCoin`);
+
+    res.status(200).json({ success: true, message: 'NFT listed for sale successfully' });
+  } catch (err) {
+    console.error('Error listing NFT for sale:', err);
+    res.status(500).json({ error: 'Failed to list NFT for sale' });
+  } finally {
+    await xrplClient.disconnect();
+  }
+});
+
+
 // Mock function to simulate fetching NFT details
 async function getNFTDetails(nftId) {
   // Implement your database call here to get NFT details

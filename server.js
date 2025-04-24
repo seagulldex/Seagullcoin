@@ -207,49 +207,6 @@ async function mintNFT(wallet, nftData) {
   }
 }
 
-// Add the necessary imports for the new functionalities
-const axios = require('axios');
-
-// POST /pay: Verify SeagullCoin payment before minting
-app.post('/pay', async (req, res) => {
-    const { walletAddress, amount } = req.body;
-
-    try {
-        // Make sure SeagullCoin payment has been made to the specified wallet
-        const paymentInfo = await axios.get(`https://xrplapi.com/payments/${walletAddress}`);
-        if (paymentInfo.data.amount >= amount) {
-            res.status(200).send({ message: 'Payment verified.' });
-        } else {
-            res.status(400).send({ message: 'Insufficient funds for minting.' });
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).send({ message: 'Error verifying payment.' });
-    }
-});
-
-// GET /user: Retrieve XUMM user wallet information
-app.get('/user', async (req, res) => {
-    const xummToken = req.headers['x-xumm-token'];
-    if (!xummToken) {
-        return res.status(400).send({ message: 'XUMM token is required.' });
-    }
-
-    try {
-        // Fetch user wallet info from XUMM API
-        const userData = await axios.get(`${XUMM_API_URL}/payloads/${xummToken}`, {
-            headers: {
-                Authorization: `Bearer ${XUMM_API_KEY}:${XUMM_API_SECRET}`,
-            },
-        });
-        res.status(200).json(userData.data);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send({ message: 'Error fetching user data.' });
-    }
-});
-
-
 // list-nft-for-sale route
 /**
  * @swagger

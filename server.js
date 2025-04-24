@@ -256,7 +256,7 @@ app.post('/buy-nft', async (req, res) => {
   }
 });
 
-// Server start
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
+// Start the server
+app.listen(process.env.PORT || 5000, () => {
+  console.log('Server running on port', process.env.PORT || 5000);
 });

@@ -4,11 +4,8 @@ import xrpl from 'xrpl';
 import fetch from 'node-fetch';
 import session from 'express-session';
 import { XummSdk } from 'xumm-sdk';
-import { MongoClient } from 'mongodb';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
+import dotenv from 'dotenv'; // Using ES import for dotenv
+dotenv.config(); // Make sure to load environment variables
 
 const app = express();
 app.use(bodyParser.json());
@@ -29,18 +26,6 @@ const BURN_WALLET = process.env.BURN_WALLET; // Loaded from env
 const MINT_COST = 0.5;
 const USED_PAYMENTS = new Set(); // In-memory store to avoid double-spends
 
-// === MongoDB Setup ===
-const mongoUri = process.env.MONGO_URI; // MongoDB URI from .env
-let db;
-MongoClient.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then((client) => {
-    db = client.db('sglcn-nft'); // Database name
-    console.log('Connected to MongoDB');
-  })
-  .catch((err) => {
-    console.error('MongoDB connection failed:', err);
-  });
-
 // === Home Route ===
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Welcome to the SGLCN-X20 NFT Minting API!' });
@@ -56,17 +41,6 @@ app.get('/login', async (req, res) => {
     res.json({ qr: payload.refs.qr_png, uuid: payload.uuid });
   } catch (err) {
     res.status(500).json({ error: 'Failed to create login payload' });
-  }
-});
-
-// === Collections ===
-app.get('/collections', async (req, res) => {
-  try {
-    const collections = await db.collection('collections').find().toArray();
-    res.status(200).json(collections);
-  } catch (err) {
-    console.error('Error fetching collections:', err);
-    res.status(500).json({ error: 'Failed to fetch collections' });
   }
 });
 
@@ -174,8 +148,7 @@ app.post('/mint', async (req, res) => {
   }
 });
 
-// MongoDB models and other API endpoints can be added as needed
-
+// === Server Listen ===
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

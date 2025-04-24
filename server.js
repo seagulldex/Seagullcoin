@@ -8,11 +8,13 @@ require('dotenv').config();
 
 const app = express();
 app.use(bodyParser.json());
-app.use(session({
-  secret: 'seagullcoin-secret',
-  resave: false,
-  saveUninitialized: true
-}));
+app.use(
+  session({
+    secret: 'seagullcoin-secret',
+    resave: false,
+    saveUninitialized: true,
+  })
+);
 
 const xrplClient = new xrpl.Client('wss://s1.ripple.com');
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
@@ -32,7 +34,7 @@ app.get('/', (req, res) => {
 app.get('/login', async (req, res) => {
   try {
     const payload = await xumm.payload.create({
-      txjson: { TransactionType: 'SignIn' }
+      txjson: { TransactionType: 'SignIn' },
     });
     req.session.xummPayloadUuid = payload.uuid;
     res.json({ qr: payload.refs.qr_png, uuid: payload.uuid });
@@ -46,7 +48,7 @@ app.get('/collections', async (req, res) => {
   try {
     const collections = [
       { name: 'Seagull Art', logo: 'seagull_art_logo.png' },
-      { name: 'Wildlife NFT', logo: 'wildlife_logo.png' }
+      { name: 'Wildlife NFT', logo: 'wildlife_logo.png' },
     ];
     res.status(200).json(collections);
   } catch (err) {
@@ -62,13 +64,13 @@ async function mintNFT(wallet, nftData) {
     description: nftData.description,
     image: nftData.image,
     attributes: nftData.attributes || [],
-    collection: nftData.collection || null
+    collection: nftData.collection || null,
   };
 
   const metadataRes = await fetch('https://api.nft.storage/upload', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.NFT_STORAGE_KEY}`,
+      Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(metadata),
@@ -96,7 +98,7 @@ async function mintNFT(wallet, nftData) {
     nftTokenId,
     ipfsUrl,
     collection: nftData.collection || 'No Collection',
-    mintTxHash: txResult.result.hash
+    mintTxHash: txResult.result.hash,
   };
 }
 
@@ -120,10 +122,10 @@ app.post('/mint', async (req, res) => {
       account: wallet,
       ledger_index_min: -1000,
       ledger_index_max: -1,
-      limit: 30
+      limit: 30,
     });
 
-    const paymentTx = txs.result.transactions.find(tx => {
+    const paymentTx = txs.result.transactions.find((tx) => {
       const t = tx.tx;
       return (
         tx.validated &&
@@ -140,7 +142,7 @@ app.post('/mint', async (req, res) => {
       return res.status(403).json({ success: false, error: 'No valid SeagullCoin payment found to burn wallet' });
     }
 
-    USED_PAYMENTS.add(paymentTx.tx.hash); // Prevent reuse
+    USED_PAYMENTS.add(paymentTx.tx.hash);
 
     const mintResult = await mintNFT(wallet, nftData);
     res.status(200).json({
@@ -149,9 +151,8 @@ app.post('/mint', async (req, res) => {
       ipfsUrl: mintResult.ipfsUrl,
       collection: mintResult.collection,
       mintTxHash: mintResult.mintTxHash,
-      paymentTxHash: paymentTx.tx.hash
+      paymentTxHash: paymentTx.tx.hash,
     });
-
   } catch (err) {
     console.error('Mint error:', err);
     res.status(500).json({ error: 'Minting failed internally' });
@@ -171,7 +172,6 @@ app.post('/buy-nft', async (req, res) => {
   try {
     await xrplClient.connect();
 
-    // Fetch the NFT from your database
     const nft = await getNFTById(nftId);
     if (!nft) {
       return res.status(404).json({ error: 'NFT not found' });
@@ -181,12 +181,10 @@ app.post('/buy-nft', async (req, res) => {
       return res.status(400).json({ error: 'You already own this NFT' });
     }
 
-    // Check if payment is SeagullCoin and matches the NFT price
     if (parseFloat(paymentAmount) < nft.price) {
       return res.status(400).json({ error: 'Insufficient funds to purchase NFT' });
     }
 
-    // Process the payment transaction
     const paymentTx = {
       TransactionType: 'Payment',
       Account: wallet,
@@ -202,15 +200,13 @@ app.post('/buy-nft', async (req, res) => {
     const signedTx = wallet.sign(preparedTx);
     const txResult = await xrplClient.submit(signedTx.tx_blob);
 
-    // Transfer NFT ownership (you can implement this logic)
     await transferNFTOwnership(nftId, wallet);
 
     res.status(200).json({
       success: true,
       paymentTxHash: txResult.result.hash,
-      nftId: nftId,
+      nftId,
     });
-
   } catch (err) {
     console.error('Buy error:', err);
     res.status(500).json({ error: 'Error processing purchase' });
@@ -230,22 +226,19 @@ app.post('/sell-nft', async (req, res) => {
   try {
     await xrplClient.connect();
 
-    // Fetch the NFT from your database
     const nft = await getNFTById(nftId);
     if (!nft || nft.owner !== wallet) {
       return res.status(400).json({ error: 'You do not own this NFT' });
     }
 
-    // Store the NFT sale details (price and listing)
     await listNFTForSale(nftId, salePrice);
 
     res.status(200).json({
       success: true,
       message: 'NFT listed for sale',
-      nftId: nftId,
-      salePrice: salePrice,
+      nftId,
+      salePrice,
     });
-
   } catch (err) {
     console.error('Sell error:', err);
     res.status(500).json({ error: 'Error listing NFT for sale' });
@@ -254,8 +247,28 @@ app.post('/sell-nft', async (req, res) => {
   }
 });
 
-// Start the server
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`SGLCN-X20 Minting API running on port ${port}`);
+// === Utility Functions ===
+
+// Placeholder for getting NFT by ID
+async function getNFTById(nftId) {
+  // Retrieve the NFT data from your database or storage
+  // Example:
+  return { id: nftId, owner: 'some-wallet-address', price: 1.0 };
+}
+
+// Placeholder for listing NFT for sale
+async function listNFTForSale(nftId, salePrice) {
+  // Logic for listing the NFT for sale in your marketplace
+  console.log(`Listing NFT ${nftId} for sale at ${salePrice}`);
+}
+
+// Placeholder for transferring NFT ownership
+async function transferNFTOwnership(nftId, buyerWallet) {
+  // Logic for transferring NFT ownership
+  console.log(`Transferring NFT ${nftId} to ${buyerWallet}`);
+}
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

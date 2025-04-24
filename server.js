@@ -4,18 +4,15 @@ import xrpl from 'xrpl';
 import fetch from 'node-fetch';
 import session from 'express-session';
 import { XummSdk } from 'xumm-sdk';
-import dotenv from 'dotenv'; // Using ES import for dotenv
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-dotenv.config(); // Make sure to load environment variables
-
-// Workaround for ES Module __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import dotenv from 'dotenv'; 
+dotenv.config(); // Load environment variables
 
 const app = express();
 app.use(bodyParser.json());
+
+// Serve static files from the "public" directory
+app.use(express.static('public'));
+
 app.use(
   session({
     secret: 'seagullcoin-secret',
@@ -27,11 +24,11 @@ app.use(
 const xrplClient = new xrpl.Client('wss://s1.ripple.com');
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-const SEAGULLCOIN_CODE = process.env.SEAGULLCOIN_CODE; // Loaded from env
-const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER; // Loaded from env
-const BURN_WALLET = process.env.BURN_WALLET; // Loaded from env
+const SEAGULLCOIN_CODE = process.env.SEAGULLCOIN_CODE; 
+const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER; 
+const BURN_WALLET = process.env.BURN_WALLET; 
 const MINT_COST = 0.5;
-const USED_PAYMENTS = new Set(); // In-memory store to avoid double-spends
+const USED_PAYMENTS = new Set(); 
 
 // === Home Route ===
 app.get('/', (req, res) => {
@@ -64,7 +61,7 @@ async function mintNFT(wallet, nftData) {
   const metadataRes = await fetch('https://api.nft.storage/upload', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`, // Loaded from env
+      Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`, 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(metadata),

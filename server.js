@@ -1,18 +1,23 @@
-import express from 'express';
+import express from 'express'; // Use 'import' for ES modules
 import bodyParser from 'body-parser';
 import xrpl from 'xrpl';
 import fetch from 'node-fetch';
 import session from 'express-session';
 import { XummSdk } from 'xumm-sdk';
-import dotenv from 'dotenv'; 
-dotenv.config(); // Load environment variables
+import dotenv from 'dotenv'; // Using ES import for dotenv
+import { fileURLToPath } from 'url';  // Handling ES module file paths
+import { dirname } from 'path';        // Handling ES module file paths
+
+// Ensure environment variables are loaded
+dotenv.config();
 
 const app = express();
+
+// ES Module Compatibility for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 app.use(bodyParser.json());
-
-// Serve static files from the "public" directory
-app.use(express.static('public'));
-
 app.use(
   session({
     secret: 'seagullcoin-secret',
@@ -24,11 +29,11 @@ app.use(
 const xrplClient = new xrpl.Client('wss://s1.ripple.com');
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-const SEAGULLCOIN_CODE = process.env.SEAGULLCOIN_CODE; 
-const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER; 
-const BURN_WALLET = process.env.BURN_WALLET; 
+const SEAGULLCOIN_CODE = process.env.SEAGULLCOIN_CODE; // Loaded from env
+const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER; // Loaded from env
+const BURN_WALLET = process.env.BURN_WALLET; // Loaded from env
 const MINT_COST = 0.5;
-const USED_PAYMENTS = new Set(); 
+const USED_PAYMENTS = new Set(); // In-memory store to avoid double-spends
 
 // === Home Route ===
 app.get('/', (req, res) => {
@@ -61,7 +66,7 @@ async function mintNFT(wallet, nftData) {
   const metadataRes = await fetch('https://api.nft.storage/upload', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`, 
+      Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`, // Loaded from env
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(metadata),
@@ -153,7 +158,7 @@ app.post('/mint', async (req, res) => {
 });
 
 // === Server Listen ===
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000; // Make sure to use the correct port, 3000 for Glitch
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

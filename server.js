@@ -82,6 +82,60 @@ async function searchNFTs({ name, collectionId, minPrice, maxPrice, owner }) {
   ];
 }
 
+app.get('/get/nft/:nftId', async (req, res) => {
+  const { nftId } = req.params;
+  try {
+    const nftDetails = await getNFTDetails(nftId);
+    res.status(200).json(nftDetails);
+  } catch (err) {
+    console.error('Error fetching NFT details:', err);
+    res.status(500).json({ error: 'Failed to fetch NFT details' });
+  }
+});
+
+app.get('/get/user/offers', async (req, res) => {
+  const userWallet = req.query.wallet;
+  try {
+    const userOffers = await getUserOffers(userWallet);
+    res.status(200).json(userOffers);
+  } catch (err) {
+    console.error('Error fetching user offers:', err);
+    res.status(500).json({ error: 'Failed to fetch user offers' });
+  }
+});
+
+async function getUserOffers(wallet) {
+  // Mock function to get offers based on user wallet address
+  return [
+    { offerId: 'offer123', nftId: '12345', price: 0.5, status: 'pending' },
+  ];
+}
+
+app.post('/update-nft-metadata', async (req, res) => {
+  const { nftId, metadata } = req.body;
+  try {
+    // Implement your logic to update the NFT's metadata on XRPL or IPFS
+    console.log(`Updating metadata for NFT with ID: ${nftId}`);
+    res.status(200).json({ message: 'NFT metadata updated successfully' });
+  } catch (err) {
+    console.error('Error updating NFT metadata:', err);
+    res.status(500).json({ error: 'Failed to update NFT metadata' });
+  }
+});
+
+
+app.delete('/delete-nft', async (req, res) => {
+  const { nftId, wallet } = req.body;
+  try {
+    // Implement your logic to delete or burn the NFT (e.g., via XRPL)
+    console.log(`Burning or deleting NFT with ID: ${nftId}`);
+    res.status(200).json({ message: 'NFT deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting NFT:', err);
+    res.status(500).json({ error: 'Failed to delete NFT' });
+  }
+});
+
 app.get('/nft-history', async (req, res) => {
   const { nftId } = req.query;
   // Return transaction history
@@ -170,6 +224,18 @@ async function getUserNFTs(wallet) {
     { nftId: '12345', name: 'Seagull NFT #12345', owner: wallet },
   ];
 }
+
+app.post('/offer-nft-sale', async (req, res) => {
+  const { nftId, sellerWallet, price } = req.body;
+  try {
+    await listNFTForSale(nftId, sellerWallet, price);
+    res.status(200).json({ message: 'NFT listed for sale successfully' });
+  } catch (err) {
+    console.error('Error listing NFT for sale:', err);
+    res.status(500).json({ error: 'Failed to list NFT for sale' });
+  }
+});
+
 
 app.post('/transfer-nft', async (req, res) => {
   const { nftId, toWallet } = req.body;

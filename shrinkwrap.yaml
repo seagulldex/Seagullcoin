@@ -4,6 +4,7 @@ dependencies:
   cors: 2.8.5
   dotenv: 16.5.0
   express: 4.21.2
+  express-rate-limit: 5.5.1
   express-session: 1.18.1
   mime-types: 2.1.35
   multer: 1.4.5-lts.2
@@ -948,6 +949,10 @@ packages:
       node: '>=0.8.x'
     resolution:
       integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==
+  /express-rate-limit/5.5.1:
+    dev: false
+    resolution:
+      integrity: sha512-MTjE2eIbHv5DyfuFz4zLYWxpqVhEhkTiwFGuB74Q9CSou2WHO52nlE5y3Zlg6SIsiYUIPj6ifFxnkPz6O3sIUg==
   /express-session/1.18.1:
     dependencies:
       cookie: 0.7.2
@@ -2971,6 +2976,7 @@ specifiers:
   cors: ^2.8.5
   dotenv: ^16.5.0
   express: ^4.19.0
+  express-rate-limit: ^5.3.0
   express-session: ^1.17.3
   mime-types: ^2.1.35
   multer: ^1.4.5-lts.1

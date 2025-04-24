@@ -132,10 +132,12 @@ async function mintNFT(wallet, nftData) {
 app.post('/mint', async (req, res) => {
   const { wallet, nftData } = req.body;
 
+  // Ensure user is logged in and wallet matches session
   if (!req.session.walletAddress || req.session.walletAddress !== wallet) {
     return res.status(401).json({ error: 'Unauthorized: Wallet mismatch or not logged in via XUMM' });
   }
 
+  // Ensure wallet and nftData are provided
   if (!wallet || !nftData) {
     return res.status(400).json({ error: 'Missing wallet or NFT data' });
   }
@@ -143,6 +145,7 @@ app.post('/mint', async (req, res) => {
   try {
     await xrplClient.connect();
 
+    // Fetch recent transactions for the user's wallet
     const txs = await xrplClient.request({
       command: 'account_tx',
       account: wallet,
@@ -151,25 +154,29 @@ app.post('/mint', async (req, res) => {
       limit: 30,
     });
 
+    // Find a valid SeagullCoin payment transaction
     const paymentTx = txs.result.transactions.find((tx) => {
       const t = tx.tx;
       return (
         tx.validated &&
-        t.TransactionType === 'Payment' &&
-        t.Destination === BURN_WALLET &&
-        t.Amount?.currency === SEAGULLCOIN_CODE &&
-        t.Amount?.issuer === SEAGULLCOIN_ISSUER &&
-        parseFloat(t.Amount?.value) >= MINT_COST &&
-        !USED_PAYMENTS.has(t.hash)
+        t.TransactionType === 'Payment' && // Check it's a Payment transaction
+        t.Destination === BURN_WALLET && // Payment must go to the burn wallet
+        t.Amount?.currency === SEAGULLCOIN_CODE && // SeagullCoin must be the currency
+        t.Amount?.issuer === SEAGULLCOIN_ISSUER && // SeagullCoin issuer must match
+        parseFloat(t.Amount?.value) >= MINT_COST && // Payment must be at least 0.5 SeagullCoin
+        !USED_PAYMENTS.has(t.hash) // Ensure we haven't already used this payment
       );
     });
 
+    // If no valid payment found
     if (!paymentTx) {
-      return res.status(403).json({ success: false, error: 'No valid SeagullCoin payment found to burn wallet' });
+      return res.status(403).json({ success: false, error: 'No valid SeagullCoin payment found for minting' });
     }
 
+    // Mark this payment as used to prevent duplicates
     USED_PAYMENTS.add(paymentTx.tx.hash);
 
+    // Proceed with minting the NFT
     const mintResult = await mintNFT(wallet, nftData);
     res.status(200).json({
       success: true,

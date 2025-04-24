@@ -4,7 +4,7 @@ const xrpl = require('xrpl');
 const fetch = require('node-fetch');
 const session = require('express-session');
 const { XummSdk } = require('xumm-sdk');
-require('dotenv').config();
+require('dotenv').config(); // Make sure to load environment variables
 
 const app = express();
 app.use(bodyParser.json());
@@ -19,9 +19,9 @@ app.use(
 const xrplClient = new xrpl.Client('wss://s1.ripple.com');
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-const SEAGULLCOIN_CODE = 'SGLCN-X20';
-const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
-const BURN_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U';
+const SEAGULLCOIN_CODE = process.env.SEAGULLCOIN_CODE; // Loaded from env
+const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER; // Loaded from env
+const BURN_WALLET = process.env.BURN_WALLET; // Loaded from env
 const MINT_COST = 0.5;
 const USED_PAYMENTS = new Set(); // In-memory store to avoid double-spends
 
@@ -70,7 +70,7 @@ async function mintNFT(wallet, nftData) {
   const metadataRes = await fetch('https://api.nft.storage/upload', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`,
+      Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`, // Loaded from env
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(metadata),
@@ -247,25 +247,85 @@ app.post('/sell-nft', async (req, res) => {
   }
 });
 
+// === /nft/:id endpoint (Get NFT details by ID) ===
+app.get('/nft/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const nft = await getNFTById(id);
+    if (!nft) {
+      return res.status(404).json({ error: 'NFT not found' });
+    }
+    res.status(200).json(nft);
+  } catch (err) {
+    console.error('Error fetching NFT details:', err);
+    res.status(500).json({ error: 'Failed to fetch NFT details' });
+  }
+});
+
+// === /nft/:id/cancel endpoint (Cancel NFT sale) ===
+app.post('/nft/:id/cancel', async (req, res) => {
+  const { id } = req.params;
+  const { wallet } = req.body;
+
+  if (!wallet) {
+    return res.status(400).json({ error: 'Missing wallet address' });
+  }
+
+  try {
+    const nft = await getNFTById(id);
+    if (!nft || nft.owner !== wallet) {
+      return res.status(403).json({ error: 'You are not the owner of this NFT' });
+    }
+
+    // Cancel the sale logic (e.g., remove from sale list)
+    await cancelNFTSale(id);
+
+    res.status(200).json({ success: true, message: 'NFT sale cancelled' });
+  } catch (err) {
+    console.error('Cancel sale error:', err);
+    res.status(500).json({ error: 'Error cancelling sale' });
+  }
+});
+
+// === /collections/:name/nfts endpoint (Get NFTs in collection by name) ===
+app.get('/collections/:name/nfts', async (req, res) => {
+  const { name } = req.params;
+  try {
+    const nfts = await getNFTsInCollection(name);
+    res.status(200).json(nfts);
+  } catch (err) {
+    console.error('Error fetching NFTs from collection:', err);
+    res.status(500).json({ error: 'Failed to fetch NFTs from collection' });
+  }
+});
+
 // === Utility Functions ===
 
 // Placeholder for getting NFT by ID
 async function getNFTById(nftId) {
   // Retrieve the NFT data from your database or storage
-  // Example:
   return { id: nftId, owner: 'some-wallet-address', price: 1.0 };
 }
 
 // Placeholder for listing NFT for sale
 async function listNFTForSale(nftId, salePrice) {
-  // Logic for listing the NFT for sale in your marketplace
   console.log(`Listing NFT ${nftId} for sale at ${salePrice}`);
+}
+
+// Placeholder for cancelling NFT sale
+async function cancelNFTSale(nftId) {
+  console.log(`Canceling sale for NFT ${nftId}`);
 }
 
 // Placeholder for transferring NFT ownership
 async function transferNFTOwnership(nftId, buyerWallet) {
-  // Logic for transferring NFT ownership
   console.log(`Transferring NFT ${nftId} to ${buyerWallet}`);
+}
+
+// Placeholder for getting NFTs in a collection
+async function getNFTsInCollection(collectionName) {
+  // This should fetch NFTs from a database or storage, filtered by collection name
+  return [{ id: '1', name: 'NFT #1', collection: collectionName }];
 }
 
 const PORT = process.env.PORT || 5000;

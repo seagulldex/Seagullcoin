@@ -7,6 +7,7 @@ import { XummSdk } from 'xumm-sdk';
 import dotenv from 'dotenv'; // Using ES import for dotenv
 import { fileURLToPath } from 'url';  // Handling ES module file paths
 import { dirname } from 'path';        // Handling ES module file paths
+import cors from 'cors'; // Import CORS
 
 // Ensure environment variables are loaded
 dotenv.config();
@@ -17,7 +18,9 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Middleware
 app.use(bodyParser.json());
+app.use(cors()); // Allow all origins by default, adjust if necessary
 app.use(
   session({
     secret: 'seagullcoin-secret',
@@ -52,8 +55,11 @@ app.get('/login', async (req, res) => {
     const walletAddress = payload?.meta?.account;
     req.session.walletAddress = walletAddress;
 
+    console.log('XUMM login successful. Wallet address:', walletAddress);
+
     res.json({ qr: payload.refs.qr_png, uuid: payload.uuid });
   } catch (err) {
+    console.error('Error during XUMM login:', err);
     res.status(500).json({ error: 'Failed to create login payload' });
   }
 });
@@ -68,39 +74,49 @@ async function mintNFT(wallet, nftData) {
     collection: nftData.collection || null,
   };
 
-  const metadataRes = await fetch('https://api.nft.storage/upload', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`, // Loaded from env
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(metadata),
-  });
+  try {
+    const metadataRes = await fetch('https://api.nft.storage/upload', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`, // Loaded from env
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(metadata),
+    });
 
-  if (!metadataRes.ok) throw new Error('Failed to upload metadata');
-  const metadataJson = await metadataRes.json();
-  const ipfsUrl = `https://ipfs.io/ipfs/${metadataJson.value.cid}`;
+    if (!metadataRes.ok) {
+      throw new Error('Failed to upload metadata to IPFS');
+    }
 
-  const mintTx = {
-    TransactionType: 'NFTokenMint',
-    Account: wallet,
-    URI: xrpl.convertStringToHex(ipfsUrl),
-    Flags: 0,
-    TokenTaxon: 0,
-    TransferFee: 0,
-  };
+    const metadataJson = await metadataRes.json();
+    const ipfsUrl = `https://ipfs.io/ipfs/${metadataJson.value.cid}`;
 
-  const preparedTx = await xrplClient.autofill(mintTx);
-  const signedTx = wallet.sign(preparedTx);
-  const txResult = await xrplClient.submit(signedTx.tx_blob);
-  const nftTokenId = txResult.result.tx_json?.NFTokenID;
+    console.log('Metadata uploaded to IPFS:', ipfsUrl);
 
-  return {
-    nftTokenId,
-    ipfsUrl,
-    collection: nftData.collection || 'No Collection',
-    mintTxHash: txResult.result.hash,
-  };
+    const mintTx = {
+      TransactionType: 'NFTokenMint',
+      Account: wallet,
+      URI: xrpl.convertStringToHex(ipfsUrl),
+      Flags: 0,
+      TokenTaxon: 0,
+      TransferFee: 0,
+    };
+
+    const preparedTx = await xrplClient.autofill(mintTx);
+    const signedTx = wallet.sign(preparedTx);
+    const txResult = await xrplClient.submit(signedTx.tx_blob);
+    const nftTokenId = txResult.result.tx_json?.NFTokenID;
+
+    return {
+      nftTokenId,
+      ipfsUrl,
+      collection: nftData.collection || 'No Collection',
+      mintTxHash: txResult.result.hash,
+    };
+  } catch (err) {
+    console.error('Error during minting process:', err);
+    throw err;
+  }
 }
 
 // === /mint endpoint ===

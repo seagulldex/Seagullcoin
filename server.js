@@ -76,6 +76,25 @@ const BURN_WALLET = process.env.BURN_WALLET;
 const MINT_COST = 0.5;
 const USED_PAYMENTS = new Set(); // Consider replacing with Redis for production
 
+// === Fetch Data with Retry Helper Function ===
+async function fetchDataWithRetry(url, options, retries = 3, delay = 1000) {
+  try {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    if (retries > 0) {
+      console.log(`Retrying... ${retries} attempts left`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return fetchDataWithRetry(url, options, retries - 1, delay);
+    } else {
+      throw new Error(`Fetch failed after ${3 - retries + 1} attempts: ${error.message}`);
+    }
+  }
+}
+
 // === Home Route ===
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Welcome to the SGLCN-X20 NFT Minting API!' });
@@ -268,51 +287,19 @@ app.get('/status/:transactionHash', async (req, res) => {
     await xrplClient.connect();
     const txStatus = await xrplClient.request({
       command: 'tx',
-      transaction: transactionHash,
+      txn: transactionHash,
     });
-
-    if (txStatus.result.engine_result === 'tesSUCCESS') {
-      return res.json({
-        success: true,
-        status: 'Transaction successful',
-        transaction: txStatus.result,
-      });
-    } else {
-      return res.json({
-        success: false,
-        status: 'Transaction failed',
-        error: txStatus.result.engine_result_message,
-      });
-    }
+    res.status(200).json(txStatus);
   } catch (err) {
-    console.error('Error fetching transaction status:', err);
-    res.status(500).json({ error: 'Error fetching transaction status' });
+    console.error('Transaction status error:', err);
+    res.status(500).json({ error: 'Failed to fetch transaction status' });
   } finally {
     await xrplClient.disconnect();
   }
 });
 
-// === /buy-nft endpoint ===
-app.post('/buy-nft', async (req, res) => {
-  // Simplified logic for demonstration
-  const { nftTokenId, amount, wallet } = req.body;
-
-  if (!wallet || !nftTokenId || !amount) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-
-  try {
-    // Process buying the NFT (You could add offer creation and validation here)
-    const offerTx = await xrplClient.submit(wallet, nftTokenId, amount);
-    res.json({ success: true, transactionHash: offerTx.hash });
-  } catch (err) {
-    console.error('Error buying NFT:', err);
-    res.status(500).json({ error: 'Error buying NFT' });
-  }
-});
-
-// Start Server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Start the server
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
 });

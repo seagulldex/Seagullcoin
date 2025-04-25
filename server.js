@@ -1,3 +1,12 @@
+
+
+
+
+
+
+
+
+
 import express from 'express';
 import bodyParser from 'body-parser';
 import xrpl from 'xrpl';
@@ -98,6 +107,133 @@ app.get('/check-ownership', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// === /metrics endpoint ===
+/**
+ * @swagger
+ * /metrics:
+ *   get:
+ *     summary: "Retrieve platform usage statistics"
+ *     description: "Get the platform's usage statistics, such as the number of NFTs minted and transactions processed."
+ *     tags: [Metrics]
+ *     responses:
+ *       200:
+ *         description: "Platform metrics retrieved successfully"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalNftsMinted:
+ *                   type: integer
+ *                   description: "Total number of NFTs minted"
+ *                 totalTransactionsProcessed:
+ *                   type: integer
+ *                   description: "Total number of transactions processed"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.get('/metrics', async (req, res) => {
+  try {
+    // Fetch platform metrics (replace with actual data gathering logic)
+    const metrics = await getPlatformMetrics();
+    res.status(200).json(metrics);
+  } catch (err) {
+    console.error('Error fetching metrics:', err);
+    res.status(500).json({ error: 'Failed to retrieve platform metrics' });
+  }
+});
+
+// Mock function to get platform metrics (replace with actual implementation)
+async function getPlatformMetrics() {
+  // Example logic to gather platform statistics
+  const totalNftsMinted = 1000; // Replace with actual logic to fetch the total number of NFTs minted
+  const totalTransactionsProcessed = 2500; // Replace with actual logic to count the number of transactions
+
+  return {
+    totalNftsMinted,
+    totalTransactionsProcessed,
+  };
+}
+
+// === /login endpoint ===
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: "User login"
+ *     description: "Authenticates the user by verifying their XUMM wallet address."
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: "The XUMM wallet address to authenticate."
+ *                 example: "rEXAMPLE1234567890"
+ *     responses:
+ *       200:
+ *         description: "User successfully authenticated"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Login successful"
+ *                 wallet:
+ *                   type: string
+ *                   example: "rEXAMPLE1234567890"
+ *       400:
+ *         description: "Invalid input"
+ *       401:
+ *         description: "Unauthorized: Invalid wallet address"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.post('/login', async (req, res) => {
+  const { wallet } = req.body;
+
+  if (!wallet) {
+    return res.status(400).json({ error: 'Missing wallet address' });
+  }
+
+  try {
+    // Verify the wallet address (replace with actual XUMM API validation logic)
+    const isValidWallet = await validateWalletAddress(wallet);
+
+    if (!isValidWallet) {
+      return res.status(401).json({ error: 'Invalid wallet address' });
+    }
+
+    // Store the wallet address in the session or JWT token
+    req.session.walletAddress = wallet;
+
+    // Respond with a success message
+    res.status(200).json({
+      message: 'Login successful',
+      wallet: wallet,
+    });
+  } catch (err) {
+    console.error('Error during login:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Mock function to validate wallet address (replace with actual XUMM API logic)
+async function validateWalletAddress(wallet) {
+  // Example validation (replace with actual validation logic, e.g., via XUMM API)
+  const validWallets = ['rEXAMPLE1234567890', 'rEXAMPLE0987654321']; // Replace with actual valid wallet check
+
+  return validWallets.includes(wallet); // Replace with your actual wallet verification logic
+}
+
+
 
 // Mock function to get NFT owner (replace with actual implementation)
 async function getNFTOwner(nftId) {

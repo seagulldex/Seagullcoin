@@ -147,6 +147,96 @@ async function getPlatformMetrics() {
   };
 }
 
+// === /create-collection endpoint ===
+/**
+ * @swagger
+ * /create-collection:
+ *   post:
+ *     summary: "Create a new NFT collection"
+ *     description: "Creates a new collection of NFTs with a name, description, and optional icon."
+ *     tags: [Collections]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: "The name of the collection."
+ *               description:
+ *                 type: string
+ *                 description: "A brief description of the collection."
+ *               icon:
+ *                 type: string
+ *                 description: "URL to the icon image for the collection (optional)."
+ *     responses:
+ *       201:
+ *         description: "Collection successfully created"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 collectionId:
+ *                   type: string
+ *                   description: "ID of the newly created collection."
+ *                 name:
+ *                   type: string
+ *                   description: "Name of the collection."
+ *                 description:
+ *                   type: string
+ *                   description: "Description of the collection."
+ *                 icon:
+ *                   type: string
+ *                   description: "Icon URL of the collection."
+ *       400:
+ *         description: "Invalid input"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.post('/create-collection', async (req, res) => {
+  const { name, description, icon } = req.body;
+
+  // Validate input
+  if (!name || !description) {
+    return res.status(400).json({ error: 'Name and description are required' });
+  }
+
+  try {
+    // Save the collection data (replace with your actual logic to store collections)
+    const collectionId = generateCollectionId(); // Replace with your actual ID generation logic
+
+    const newCollection = {
+      collectionId,
+      name,
+      description,
+      icon: icon || '', // Optional icon
+    };
+
+    // Store the collection in your database or storage system (e.g., NFT.Storage, SQL database)
+    await saveCollectionToDatabase(newCollection); // Replace with your actual save logic
+
+    // Return the newly created collection data
+    res.status(201).json(newCollection);
+  } catch (err) {
+    console.error('Error creating collection:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Mock function to generate a collection ID (replace with actual implementation)
+function generateCollectionId() {
+  return 'col-' + Math.random().toString(36).substr(2, 9); // Simple random ID for demo purposes
+}
+
+// Mock function to save the collection (replace with actual implementation)
+async function saveCollectionToDatabase(collection) {
+  // Example: Store the collection in a database or a file
+  console.log('Saving collection:', collection);
+  return true; // Simulate success
+}
 
 // Mock function to get NFT owner (replace with actual implementation)
 async function getNFTOwner(nftId) {
@@ -415,6 +505,40 @@ app.post('/update-nft-metadata', async (req, res) => {
   } catch (err) {
     console.error('Error updating NFT metadata:', err);
     res.status(500).json({ error: 'Failed to update NFT metadata' });
+  }
+});
+
+// === /logout endpoint ===
+/**
+ * @swagger
+ * /logout:
+ *   post:
+ *     summary: "User logout"
+ *     description: "Logs out the user by clearing their session."
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: "User successfully logged out"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.post('/logout', (req, res) => {
+  try {
+    // Clear the session or authentication token
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Error during logout:', err);
+        return res.status(500).json({ error: 'Failed to log out' });
+      }
+
+      // Respond with a success message
+      res.status(200).json({
+        message: 'Logout successful',
+      });
+    });
+  } catch (err) {
+    console.error('Error during logout:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1023,6 +1147,84 @@ app.post('/cancel-xrp-offers', async (req, res) => {
     await xrplClient.disconnect();
   }
 });
+
+// === /login endpoint ===
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: "User login"
+ *     description: "Authenticates the user by verifying their XUMM wallet address."
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: "The XUMM wallet address to authenticate."
+ *                 example: "rEXAMPLE1234567890"
+ *     responses:
+ *       200:
+ *         description: "User successfully authenticated"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Login successful"
+ *                 wallet:
+ *                   type: string
+ *                   example: "rEXAMPLE1234567890"
+ *       400:
+ *         description: "Invalid input"
+ *       401:
+ *         description: "Unauthorized: Invalid wallet address"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.post('/login', async (req, res) => {
+  const { wallet } = req.body;
+
+  if (!wallet) {
+    return res.status(400).json({ error: 'Missing wallet address' });
+  }
+
+  try {
+    // Verify the wallet address (replace with actual XUMM API validation logic)
+    const isValidWallet = await validateWalletAddress(wallet);
+
+    if (!isValidWallet) {
+      return res.status(401).json({ error: 'Invalid wallet address' });
+    }
+
+    // Store the wallet address in the session or JWT token
+    req.session.walletAddress = wallet;
+
+    // Respond with a success message
+    res.status(200).json({
+      message: 'Login successful',
+      wallet: wallet,
+    });
+  } catch (err) {
+    console.error('Error during login:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Mock function to validate wallet address (replace with actual XUMM API logic)
+async function validateWalletAddress(wallet) {
+  // Example validation (replace with actual validation logic, e.g., via XUMM API)
+  const validWallets = ['rEXAMPLE1234567890', 'rEXAMPLE0987654321']; // Replace with actual valid wallet check
+
+  return validWallets.includes(wallet); // Replace with your actual wallet verification logic
+}
+
 
 // Start the API server
 app.listen(process.env.PORT || 3000, () => {

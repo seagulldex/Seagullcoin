@@ -54,6 +54,126 @@ app.get('/api/info', (req, res) => {
     res.send('SeagullCoin NFT Minting API is up and running!');
 });
 
+// Root route
+app.get('/', (req, res) => {
+    res.send('Welcome to the SeagullCoin NFT Minting API! Access the documentation at /docs');
+});
+
+/**
+ * @swagger
+ * /api/info:
+ *   get:
+ *     summary: Get API status
+ *     description: Returns a message confirming that the SeagullCoin NFT Minting API is running.
+ *     responses:
+ *       200:
+ *         description: API is running
+ */
+
+/**
+ * @swagger
+ * /api/mint:
+ *   post:
+ *     summary: Mint a new SeagullCoin NFT
+ *     description: Mints a new NFT on the SeagullCoin network with the provided metadata.
+ *     parameters:
+ *       - in: body
+ *         name: nftMetadata
+ *         description: Metadata of the NFT to be minted
+ *         required: true
+ *         schema:
+ *           type: object
+ *           required:
+ *             - wallet
+ *             - nftMetadata
+ *           properties:
+ *             wallet:
+ *               type: string
+ *               description: The wallet address of the user minting the NFT
+ *             nftMetadata:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                   description: Name of the NFT
+ *                 description:
+ *                   type: string
+ *                   description: Description of the NFT
+ *                 file:
+ *                   type: string
+ *                   description: File for the NFT image
+ *                 collection:
+ *                   type: string
+ *                   description: Collection to which the NFT belongs
+ *     responses:
+ *       200:
+ *         description: NFT minted successfully
+ *       400:
+ *         description: Missing required parameters or insufficient balance
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/buy-nft:
+ *   post:
+ *     summary: Buy an NFT with SeagullCoin
+ *     description: Allows a user to buy an NFT with SeagullCoin. The payment will be sent to the seller's wallet.
+ *     parameters:
+ *       - in: body
+ *         name: buyDetails
+ *         description: Details of the NFT purchase
+ *         required: true
+ *         schema:
+ *           type: object
+ *           required:
+ *             - wallet
+ *             - nftId
+ *             - price
+ *           properties:
+ *             wallet:
+ *               type: string
+ *               description: The wallet address of the user buying the NFT
+ *             nftId:
+ *               type: string
+ *               description: The ID of the NFT being purchased
+ *             price:
+ *               type: string
+ *               description: Price of the NFT in SeagullCoin
+ *     responses:
+ *       200:
+ *         description: NFT bought successfully
+ *       400:
+ *         description: Missing required parameters
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/mint:
+ *   post:
+ *     summary: Mint an NFT
+ *     description: Mints a new NFT on the SeagullCoin network after verifying wallet balance.
+ *     parameters:
+ *       - name: wallet
+ *         in: body
+ *         required: true
+ *         description: The wallet address of the user minting the NFT
+ *       - name: nftMetadata
+ *         in: body
+ *         required: true
+ *         description: Metadata of the NFT to be minted (e.g., name, description, image, collection)
+ *     responses:
+ *       200:
+ *         description: NFT minted successfully
+ *       400:
+ *         description: Missing required parameters or insufficient balance
+ *       500:
+ *         description: Internal server error
+ */
+
 // Helper function to check SeagullCoin balance
 async function checkSeagullCoinBalance(wallet) {
     const accountInfo = await client.request({
@@ -63,11 +183,6 @@ async function checkSeagullCoinBalance(wallet) {
     const balance = accountInfo.result.account_data.Balance;
     return balance;
 }
-
-// Root route
-app.get('/', (req, res) => {
-    res.send('Welcome to the SeagullCoin NFT Minting API! Access the documentation at /docs');
-});
 
 // Helper function to mint NFT (SeagullCoin-only)
 async function mintNFT(wallet, nftMetadata) {

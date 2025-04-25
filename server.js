@@ -1,5 +1,3 @@
-
-
 import express from 'express';
 import bodyParser from 'body-parser';
 import xrpl from 'xrpl';
@@ -13,19 +11,18 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import Queue from 'bull';
 
 // Load environment variables
 dotenv.config();
-
-const app = express();
 
 // ES Module Compatibility for __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Middleware
-app.use(bodyParser.json());
-app.use(cors());
+const app = express();
+app.use(bodyParser.json()); // Body parser middleware
+app.use(cors()); // CORS middleware
 app.use(
   session({
     secret: 'seagullcoin-secret',
@@ -45,6 +42,390 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
+
+// Create a queue for minting jobs
+const mintQueue = new Queue('mintQueue');
+
+// Mock function for minting (replace with your actual minting logic)
+async function mintNFT(userAddress, nftData) {
+  console.log(`Minting NFT for user: ${userAddress} with data:`, nftData);
+  await new Promise(resolve => setTimeout(resolve, 2000)); // Simulating blockchain delay
+  return { status: 'success', nftId: '12345' }; // Example response
+}
+
+// POST endpoint for minting
+app.post('/mint', async (req, res) => {
+  const { userAddress, nftData } = req.body;
+
+  // Validate the input
+  if (!userAddress || !nftData) {
+    return res.status(400).json({ error: "Invalid input" });
+  }
+
+  try {
+    // Add the minting job to the queue
+    const job = await mintQueue.add({ userAddress, nftData });
+
+    // Respond with the job ID and status
+    job.finished().then(result => {
+      res.status(200).json({ message: "Minting in progress", jobId: job.id });
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to add minting job to the queue" });
+  }
+});
+
+// Process the jobs in the queue (mint NFTs)
+mintQueue.process(async (job) => {
+  const { userAddress, nftData } = job.data;
+
+  try {
+    const mintResult = await mintNFT(userAddress, nftData);
+    console.log(`Minting completed:`, mintResult);
+    return mintResult;
+  } catch (error) {
+    console.error("Minting failed:", error);
+    throw error; // Let Bull know the job failed
+  }
+});
+
+// Mock function to simulate fetching NFT details
+async function getNFTDetails(nftId) {
+  // Implement your database call here to get NFT details
+  return {
+    nftId,
+    price: 0.5, // Price in SeagullCoin (replace with your actual NFT price fetching logic)
+    owner: 'existing-owner-address', // Owner address (replace with actual logic)
+  };
+}
+
+// GET endpoint to search NFTs (mockup)
+app.get('/get/nfts/search', async (req, res) => {
+  const { name, collectionId, minPrice, maxPrice, owner, sortBy, sortOrder, page = 1, limit = 10 } = req.query;
+
+  try {
+    // Build the search criteria based on the query parameters
+    const searchCriteria = {
+      name,
+      collectionId,
+      minPrice: parseFloat(minPrice),
+      maxPrice: parseFloat(maxPrice),
+      owner,
+    };
+
+    // Mock logic for fetching NFTs (replace with actual database call)
+    const nfts = [
+      {
+        nftId: '12345',
+        name: 'Test NFT',
+        collectionId: 'test-collection',
+        price: 0.5,
+        owner: 'existing-owner-address',
+      },
+    ];
+
+    // Return filtered NFTs
+    const filteredNFTs = nfts.filter(nft => {
+      return (
+        (!searchCriteria.name || nft.name.includes(searchCriteria.name)) &&
+        (!searchCriteria.collectionId || nft.collectionId === searchCriteria.collectionId) &&
+        (!searchCriteria.minPrice || nft.price >= searchCriteria.minPrice) &&
+        (!searchCriteria.maxPrice || nft.price <= searchCriteria.maxPrice) &&
+        (!searchCriteria.owner || nft.owner === searchCriteria.owner)
+      );
+    });
+
+    // Pagination
+    const paginatedNFTs = filteredNFTs.slice((page - 1) * limit, page * limit);
+
+    res.status(200).json({ nfts: paginatedNFTs, total: filteredNFTs.length });
+  } catch (error) {
+    console.error("Search failed:", error);
+    res.status(500).json({ error: "Failed to fetch NFTs" });
+  }
+});
+
+   // Return the search results as a response
+    
+  } catch (err) {
+    console.error('Error searching NFTs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Modify the searchNFTs function to include sorting and pagination logic
+async function searchNFTs({ searchCriteria, sortBy, sortOrder, page, limit }) {
+  // Mock NFT database query, normally you'd query a database here
+  let nfts = [
+    { nftId: '12345', name: 'Seagull NFT #12345', description: 'A rare SeagullCoin NFT', collectionId: '6789', price: 0.5, owner: 'rwXYHjcLfVoe43kAhg3k2xx5EsJf9gSeAG', date: '2023-01-01T00:00:00Z' },
+    { nftId: '12346', name: 'Seagull NFT #12346', description: 'Another SeagullCoin NFT', collectionId: '6789', price: 0.3, owner: 'rwXYHjcLfVoe43kAhg3k2xx5EsJf9gSeAG', date: '2023-02-01T00:00:00Z' },
+    { nftId: '12347', name: 'Seagull NFT #12347', description: 'Limited edition SeagullCoin NFT', collectionId: '6790', price: 0.8, owner: 'rwXYHjcLfVoe43kAhg3k2xx5EsJf9gSeAG', date: '2023-03-01T00:00:00Z' },
+  ];
+
+  // Filter NFTs based on search criteria
+  if (searchCriteria.name) {
+    nfts = nfts.filter(nft => nft.name.toLowerCase().includes(searchCriteria.name.toLowerCase()));
+  }
+  if (searchCriteria.collectionId) {
+    nfts = nfts.filter(nft => nft.collectionId === searchCriteria.collectionId);
+  }
+  if (searchCriteria.minPrice) {
+    nfts = nfts.filter(nft => nft.price >= searchCriteria.minPrice);
+  }
+  if (searchCriteria.maxPrice) {
+    nfts = nfts.filter(nft => nft.price <= searchCriteria.maxPrice);
+  }
+  if (searchCriteria.owner) {
+    nfts = nfts.filter(nft => nft.owner === searchCriteria.owner);
+  }
+
+  // Sort NFTs based on the provided sort criteria
+  if (sortBy && sortOrder) {
+    nfts = nfts.sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'price') {
+        comparison = a.price - b.price;
+      } else if (sortBy === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortBy === 'date') {
+        comparison = new Date(a.date) - new Date(b.date);
+      }
+      
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+  }
+
+  // Pagination: Slice the results based on the page and limit
+  const offset = (page - 1) * limit;
+  const paginatedResults = nfts.slice(offset, offset + limit);
+
+  return {
+    nfts: paginatedResults,
+    total: nfts.length,
+    page,
+    limit,
+  };
+}
+
+app.get('/get/nft/:nftId', async (req, res) => {
+  const { nftId } = req.params;
+  try {
+    const nftDetails = await getNFTDetails(nftId);
+    res.status(200).json(nftDetails);
+  } catch (err) {
+    console.error('Error fetching NFT details:', err);
+    res.status(500).json({ error: 'Failed to fetch NFT details' });
+  }
+});
+
+app.get('/get/user/offers', async (req, res) => {
+  const userWallet = req.query.wallet;
+  try {
+    const userOffers = await getUserOffers(userWallet);
+    res.status(200).json(userOffers);
+  } catch (err) {
+    console.error('Error fetching user offers:', err);
+    res.status(500).json({ error: 'Failed to fetch user offers' });
+  }
+});
+
+async function getUserOffers(wallet) {
+  // Mock function to get offers based on user wallet address
+  return [
+    { offerId: 'offer123', nftId: '12345', price: 0.5, status: 'pending' },
+  ];
+}
+
+app.post('/update-nft-metadata', async (req, res) => {
+  const { nftId, metadata } = req.body;
+  try {
+    // Implement your logic to update the NFT's metadata on XRPL or IPFS
+    console.log(`Updating metadata for NFT with ID: ${nftId}`);
+    res.status(200).json({ message: 'NFT metadata updated successfully' });
+  } catch (err) {
+    console.error('Error updating NFT metadata:', err);
+    res.status(500).json({ error: 'Failed to update NFT metadata' });
+  }
+});
+
+app.post('/cancel-offer', async (req, res) => {
+  const { offerId, buyerWallet } = req.body;
+  try {
+    // Implement your logic to cancel the offer (e.g., remove from marketplace)
+    console.log(`Canceling offer with ID: ${offerId}`);
+    res.status(200).json({ message: 'Offer canceled successfully' });
+  } catch (err) {
+    console.error('Error canceling offer:', err);
+    res.status(500).json({ error: 'Failed to cancel offer' });
+  }
+});
+
+app.delete('/delete-nft', async (req, res) => {
+  const { nftId, wallet } = req.body;
+  try {
+    // Implement your logic to delete or burn the NFT (e.g., via XRPL)
+    console.log(`Burning or deleting NFT with ID: ${nftId}`);
+    res.status(200).json({ message: 'NFT deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting NFT:', err);
+    res.status(500).json({ error: 'Failed to delete NFT' });
+  }
+});
+
+app.get('/nft-history', async (req, res) => {
+  const { nftId } = req.query;
+  // Return transaction history
+});
+
+app.get('/get/nft/offers/:nftId', async (req, res) => {
+  const { nftId } = req.params;
+  try {
+    const offers = await getNFTOffers(nftId);
+    res.status(200).json(offers);
+  } catch (err) {
+    console.error('Error fetching offers for NFT:', err);
+    res.status(500).json({ error: 'Failed to fetch offers for NFT' });
+  }
+});
+
+async function getNFTOffers(nftId) {
+  // Mock function to get offers for a specific NFT
+  return [
+    { offerId: 'offer123', buyer: 'rwXYHjcLfVoe43kAhg3k2xx5EsJf9gSeAG', price: 0.5 },
+  ];
+}
+
+
+
+app.put('/update-nft', async (req, res) => {
+  const { nftId, updatedMetadata } = req.body;
+  // Validate and update the metadata on NFT.Storage or XRPL
+});
+
+
+app.get('/get/nfts', async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+
+  try {
+    const offset = (page - 1) * limit;
+    const nftList = await getNFTList({ offset, limit });
+    const totalNFTs = await getTotalNFTsCount();
+
+    res.status(200).json({
+      nfts: nftList,
+      total: totalNFTs,
+      page,
+      limit,
+    });
+  } catch (err) {
+    console.error('Error fetching NFTs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+async function getNFTList({ offset, limit }) {
+  // Mock database query logic to fetch NFTs based on pagination
+  return [
+    { nftId: '12345', name: 'Seagull NFT #12345' },
+    { nftId: '12346', name: 'Seagull NFT #12346' },
+  ];
+}
+
+async function getTotalNFTsCount() {
+  // Mock function to count total NFTs
+  return 100;
+}
+
+app.get('/get/collections/search', async (req, res) => {
+  const { name, description } = req.query;
+
+  try {
+    const searchResults = await searchCollections({ name, description });
+    res.status(200).json(searchResults);
+  } catch (err) {
+    console.error('Error searching collections:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+async function searchCollections({ name, description }) {
+  // Mock search function
+  return [
+    { collectionId: '6789', name: 'SeagullCoin Collection', description: 'A collection of SeagullCoin NFTs' },
+  ];
+}
+
+app.get('/check-ownership', async (req, res) => {
+  const { nftId, wallet } = req.query;
+  // Validate ownership
+});
+
+
+app.get('/get/user/nfts', async (req, res) => {
+  const userWallet = req.query.wallet; // Assume wallet address is passed as a query parameter
+
+  try {
+    const userNFTs = await getUserNFTs(userWallet);
+    res.status(200).json(userNFTs);
+  } catch (err) {
+    console.error('Error fetching user NFTs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+async function getUserNFTs(wallet) {
+  // Mock function to get NFTs based on user wallet address
+  return [
+    { nftId: '12345', name: 'Seagull NFT #12345', owner: wallet },
+  ];
+}
+
+app.post('/offer-nft-sale', async (req, res) => {
+  const { nftId, sellerWallet, price } = req.body;
+  try {
+    await listNFTForSale(nftId, sellerWallet, price);
+    res.status(200).json({ message: 'NFT listed for sale successfully' });
+  } catch (err) {
+    console.error('Error listing NFT for sale:', err);
+    res.status(500).json({ error: 'Failed to list NFT for sale' });
+  }
+});
+
+
+app.post('/transfer-nft', async (req, res) => {
+  const { nftId, toWallet } = req.body;
+  // Validate and transfer NFT ownership
+});
+
+
+// Mock function to simulate transferring NFT ownership
+async function transferNFTOwnership(nftId, buyerAddress) {
+  // Implement your logic to transfer ownership of the NFT (e.g., via XRPL transaction)
+  console.log(`Transferring ownership of NFT ${nftId} to ${buyerAddress}`);
+  // Add your actual transfer logic here
+}
+
+// Mock function to simulate listing an NFT for sale
+async function listNFTForSale(nftId, sellerAddress, price) {
+  // Implement your logic to list the NFT for sale (e.g., storing it in a marketplace database)
+  console.log(`Listing NFT ${nftId} for sale by ${sellerAddress} at price ${price}`);
+  // Add your actual listing logic here
+}
+
+
+// Mock function to simulate fetching a payment transaction
+async function getPaymentTransaction(buyerAddress, price) {
+  // Simulate fetching a payment transaction from the ledger
+  return {
+    Amount: {
+      currency: SEAGULLCOIN_CODE,
+      issuer: SEAGULLCOIN_ISSUER,
+      value: price,
+    },
+  };
+}
+
 
 // Swagger setup
 const swaggerDefinition = {
@@ -170,6 +551,137 @@ async function mintNFT(wallet, nftData) {
     throw err;
   }
 }
+
+// list-nft-for-sale route
+/**
+ * @swagger
+ * /list-nft-for-sale:
+ *   post:
+ *     summary: "List an NFT for sale"
+ *     description: "Allows users to list their NFTs for sale by specifying the price in SeagullCoin."
+ *     tags: [NFTs]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftId:
+ *                 type: string
+ *                 description: The ID of the NFT to list
+ *               price:
+ *                 type: integer
+ *                 description: Price in SeagullCoin
+ *             required:
+ *               - nftId
+ *               - price
+ *     responses:
+ *       200:
+ *         description: "NFT successfully listed for sale"
+ *       400:
+ *         description: "Invalid input or NFT ownership"
+ *       500:
+ *         description: "Internal server error"
+ */
+
+// buy-nft route
+/**
+ * @swagger
+ * /buy-nft:
+ *   post:
+ *     summary: "Buy an NFT"
+ *     description: "Allows users to buy an NFT by providing the NFT ID and the amount in SeagullCoin."
+ *     tags: [NFTs]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftId:
+ *                 type: string
+ *                 description: The ID of the NFT to buy
+ *               buyerWallet:
+ *                 type: string
+ *                 description: The wallet address of the buyer
+ *               price:
+ *                 type: integer
+ *                 description: The amount in SeagullCoin
+ *             required:
+ *               - nftId
+ *               - buyerWallet
+ *               - price
+ *     responses:
+ *       200:
+ *         description: "NFT successfully purchased"
+ *       400:
+ *         description: "Invalid input or insufficient funds"
+ *       500:
+ *         description: "Internal server error"
+ */
+
+// nfts route
+/**
+ * @swagger
+ * /nfts:
+ *   get:
+ *     summary: "Get all NFTs"
+ *     description: "Fetches all NFTs that have been minted on the platform."
+ *     tags: [NFTs]
+ *     responses:
+ *       200:
+ *         description: "A list of NFTs"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   nftId:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   creator:
+ *                     type: string
+ *                   price:
+ *                     type: integer
+ *       500:
+ *         description: "Internal server error"
+ */
+
+// collections route
+/**
+ * @swagger
+ * /collections:
+ *   get:
+ *     summary: "Get all NFT collections"
+ *     description: "Fetches all NFT collections available on the platform."
+ *     tags: [NFTs]
+ *     responses:
+ *       200:
+ *         description: "A list of NFT collections"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   collectionId:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   logo:
+ *                     type: string
+ *       500:
+ *         description: "Internal server error"
+ */
+
 
 // === /mint endpoint ===
 /**

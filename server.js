@@ -44,6 +44,191 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
+// === /check-ownership endpoint ===
+/**
+ * @swagger
+ * /check-ownership:
+ *   get:
+ *     summary: "Check NFT Ownership"
+ *     description: "Check whether a user owns a specific NFT."
+ *     tags: [NFTs]
+ *     parameters:
+ *       - in: query
+ *         name: nftId
+ *         description: "NFT ID to check ownership for"
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: wallet
+ *         description: "Wallet address of the user"
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: "Ownership verified"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 owned:
+ *                   type: boolean
+ *                   description: "True if the wallet owns the NFT"
+ *       400:
+ *         description: "Invalid input"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.get('/check-ownership', async (req, res) => {
+  const { nftId, wallet } = req.query;
+  
+  if (!nftId || !wallet) {
+    return res.status(400).json({ error: 'Missing nftId or wallet parameter' });
+  }
+
+  try {
+    const nftOwner = await getNFTOwner(nftId); // Replace with actual method to get owner of the NFT from ledger or database
+    const owned = nftOwner === wallet;
+
+    res.status(200).json({ owned });
+  } catch (err) {
+    console.error('Error checking ownership:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Mock function to get NFT owner (replace with actual implementation)
+async function getNFTOwner(nftId) {
+  // Example logic to fetch the NFT owner
+  return 'rWalletAddress'; // Replace this with the actual owner address logic
+}
+
+// === /transfer-nft endpoint ===
+/**
+ * @swagger
+ * /transfer-nft:
+ *   post:
+ *     summary: "Transfer NFT Ownership"
+ *     description: "Transfers an NFT to another wallet address."
+ *     tags: [NFTs]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftId:
+ *                 type: string
+ *               toWallet:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: "NFT successfully transferred"
+ *       400:
+ *         description: "Invalid input or NFT ownership"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.post('/transfer-nft', async (req, res) => {
+  const { nftId, toWallet } = req.body;
+
+  if (!nftId || !toWallet) {
+    return res.status(400).json({ error: 'Missing nftId or toWallet' });
+  }
+
+  try {
+    // Get the current owner of the NFT
+    const nftOwner = await getNFTOwner(nftId); // Replace with actual method to get owner of the NFT from ledger or database
+
+    // Ensure the current user is the owner of the NFT
+    if (nftOwner !== req.session.walletAddress) {
+      return res.status(400).json({ error: 'You are not the owner of this NFT' });
+    }
+
+    // Transfer the NFT (implement actual transfer logic here, e.g., XRPL transaction)
+    const transferResult = await transferNFTOwnership(nftId, toWallet);
+    res.status(200).json({ message: 'NFT transferred successfully', transferResult });
+  } catch (err) {
+    console.error('Error transferring NFT:', err);
+    res.status(500).json({ error: 'Failed to transfer NFT' });
+  }
+});
+
+// Mock function to transfer NFT ownership (replace with actual implementation)
+async function transferNFTOwnership(nftId, toWallet) {
+  // Example logic to transfer NFT ownership (this would be an XRPL transaction or database update)
+  console.log(`Transferring NFT ${nftId} to ${toWallet}`);
+  return { nftId, toWallet }; // Return result or success status
+}
+
+// === /cancel-xrp-offers endpoint ===
+/**
+ * @swagger
+ * /cancel-xrp-offers:
+ *   post:
+ *     summary: "Cancel unauthorized XRP offers"
+ *     description: "Automatically cancels any unauthorized XRP-based offers for SeagullCoin NFTs."
+ *     parameters:
+ *       - in: body
+ *         name: wallet
+ *         description: "The user's wallet address."
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: "Offers canceled successfully"
+ *       400:
+ *         description: "Invalid wallet address"
+ *       500:
+ *         description: "Internal Server Error"
+ */
+app.post('/cancel-xrp-offers', async (req, res) => {
+  const { wallet } = req.body;
+
+  if (!wallet) {
+    return res.status(400).json({ error: 'Missing wallet address' });
+  }
+
+  try {
+    // Get the offers from the marketplace (replace with actual logic)
+    const offers = await getXRPOffers(wallet); // Replace with actual logic to fetch XRP offers
+
+    // Loop through the offers and cancel the unauthorized ones
+    const cancelledOffers = [];
+    for (const offer of offers) {
+      if (offer.currency === 'XRP') {
+        // Cancel the offer (replace with actual logic to cancel offers)
+        await cancelOffer(offer);
+        cancelledOffers.push(offer);
+      }
+    }
+
+    res.status(200).json({ message: 'Unauthorized XRP offers cancelled', cancelledOffers });
+  } catch (err) {
+    console.error('Error cancelling XRP offers:', err);
+    res.status(500).json({ error: 'Failed to cancel offers' });
+  }
+});
+
+// Mock function to get XRP offers (replace with actual implementation)
+async function getXRPOffers(wallet) {
+  // Example logic to fetch XRP offers for the wallet
+  return [
+    { offerId: '123', currency: 'XRP', amount: 50 },
+    { offerId: '124', currency: 'SGLCN-X20', amount: 100 },
+  ]; // Return mock data for testing
+}
+
+// Mock function to cancel an offer (replace with actual implementation)
+async function cancelOffer(offer) {
+  console.log(`Cancelling offer with ID ${offer.offerId}`);
+  // Replace with actual logic to cancel offer (e.g., XRPL cancel transaction)
+}
+
 // Mock function to simulate fetching NFT details
 async function getNFTDetails(nftId) {
   // Implement your database call here to get NFT details
@@ -333,13 +518,6 @@ app.post('/transfer-nft', async (req, res) => {
   // Validate and transfer NFT ownership
 });
 
-
-// Mock function to simulate transferring NFT ownership
-async function transferNFTOwnership(nftId, buyerAddress) {
-  // Implement your logic to transfer ownership of the NFT (e.g., via XRPL transaction)
-  console.log(`Transferring ownership of NFT ${nftId} to ${buyerAddress}`);
-  // Add your actual transfer logic here
-}
 
 // Mock function to simulate listing an NFT for sale
 async function listNFTForSale(nftId, sellerAddress, price) {
@@ -801,5 +979,3 @@ app.post('/cancel-xrp-offers', async (req, res) => {
 app.listen(process.env.PORT || 3000, () => {
   console.log(`Server is running on port ${process.env.PORT || 3000}`);
 });
-
-

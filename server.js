@@ -632,6 +632,57 @@ app.get('/nft-history', async (req, res) => {
   // Return transaction history
 });
 
+const express = require('express');
+const xrpl = require('xrpl');
+const app = express();
+app.use(express.json());
+
+// Your existing routes (login, collections, etc.)
+
+app.post('/mint', async (req, res) => {
+  const { wallet, nftMetadata } = req.body;
+
+  if (!wallet || !nftMetadata) {
+    return res.status(400).json({ error: 'Missing wallet address or NFT metadata' });
+  }
+
+  try {
+    // Verify wallet address using XUMM API (replace with actual logic)
+    const isValidWallet = await validateWalletAddress(wallet);
+    if (!isValidWallet) {
+      return res.status(401).json({ error: 'Invalid wallet address' });
+    }
+
+    // Verify SeagullCoin balance for minting fee (check wallet balance)
+    const hasEnoughBalance = await checkSeagullCoinBalance(wallet);
+    if (!hasEnoughBalance) {
+      return res.status(400).json({ error: 'Insufficient SeagullCoin balance to mint NFT' });
+    }
+
+    // Prepare the NFT creation transaction (mint NFT)
+    const nftTx = await prepareMintNFTTransaction(wallet, nftMetadata);
+
+    // Submit the minting transaction to XRPL
+    const txResponse = await submitTransaction(nftTx);
+
+    // Respond with success
+    res.status(200).json({
+      success: true,
+      message: 'NFT successfully minted',
+      nftTxID: txResponse.tx_json.hash,
+    });
+  } catch (err) {
+    console.error('Error during minting:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Your existing validation, minting, and XRPL functions (checkSeagullCoinBalance, etc.)
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`Server is running on port ${process.env.PORT || 3000}`);
+});
+
 app.get('/get/nft/offers/:nftId', async (req, res) => {
   const { nftId } = req.params;
   try {
@@ -1267,44 +1318,4 @@ app.post('/login', async (req, res) => {
 
   try {
     // Verify the wallet address (replace with actual XUMM API validation logic)
-    const isValidWallet = await validateWalletAddress(wallet);
-
-    if (!isValidWallet) {
-      return res.status(401).json({ error: 'Invalid wallet address' });
-    }
-
-    // Store the wallet address in the session or JWT token
-    req.session.walletAddress = wallet;
-
-    // Respond with a success message
-    res.status(200).json({
-      message: 'Login successful',
-      wallet: wallet,
-    });
-  } catch (err) {
-    console.error('Error during login:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Mock function to validate wallet address (replace with actual XUMM API logic)
-async function validateWalletAddress(wallet) {
-  // Example validation (replace with actual validation logic, e.g., via XUMM API)
-  const validWallets = ['rEXAMPLE1234567890', 'rEXAMPLE0987654321']; // Replace with actual valid wallet check
-
-  return validWallets.includes(wallet); // Replace with your actual wallet verification logic
-}
-
-app.get('/collections', async (req, res) => {
-  const collections = await getCollectionsFromDatabase();
-
-  // Filter collections to only include those with SeagullCoin NFTs
-  const seagullCoinCollections = collections.filter(collection => collection.currency === "SeagullCoin");
-
-  res.json(seagullCoinCollections);
-});
-
-// Start the API server
-app.listen(process.env.PORT || 3000, () => {
-  console.log(`Server is running on port ${process.env.PORT || 3000}`);
-});
+  

@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { XummSdk } from 'xumm-sdk';
-import { Client, ApiError } from 'xrpl';  // Import XRPL client
+import { Client } from 'xrpl';  // Import XRPL client
 
 dotenv.config();
 
@@ -29,7 +29,6 @@ export async function checkSeagullCoinPayment(wallet, amount) {
       (balance) => balance.currency === 'SGLCN'
     );
 
-    // Check if the wallet has enough SeagullCoin balance
     if (!balance) {
       throw new Error('SeagullCoin balance not found.');
     }
@@ -62,29 +61,6 @@ export async function mintNFT(wallet, metadata) {
   } catch (error) {
     console.error('Error minting NFT:', error);
     throw new Error('Error minting NFT');
-  }
-}
-
-// Function to transfer an NFT
-export async function transferNFT(wallet, nftId, destinationWallet) {
-  try {
-    const transferTransaction = {
-      Account: wallet,
-      TransactionType: 'NFTokenTransfer',
-      NFTokenID: nftId,
-      Destination: destinationWallet,  // Transfer to the recipient wallet address
-      Flags: 0,
-    };
-
-    const response = await client.submit(transferTransaction);
-    if (response.result && response.result.transaction) {
-      return response.result.transaction.hash;
-    } else {
-      throw new Error('Failed to transfer NFT.');
-    }
-  } catch (error) {
-    console.error('Error transferring NFT:', error);
-    throw new Error('Error transferring NFT');
   }
 }
 

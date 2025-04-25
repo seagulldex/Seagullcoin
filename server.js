@@ -184,6 +184,247 @@ async function checkSeagullCoinBalance(wallet) {
     return balance;
 }
 
+// Swagger: Get SeagullCoin balance for a given wallet
+/**
+ * @swagger
+ * /api/balance/{wallet}:
+ *   get:
+ *     summary: "Retrieve the SeagullCoin balance for a given wallet address"
+ *     parameters:
+ *       - in: path
+ *         name: wallet
+ *         required: true
+ *         description: The wallet address to check the balance.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: "Wallet balance retrieved successfully"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 wallet:
+ *                   type: string
+ *                 balance:
+ *                   type: string
+ *       500:
+ *         description: "Error retrieving balance"
+ */
+app.get('/api/balance/:wallet', async (req, res) => {
+    const { wallet } = req.params;
+    try {
+        const balance = await checkSeagullCoinBalance(wallet);
+        res.status(200).json({ wallet, balance });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Swagger: Get NFT metadata by ID
+/**
+ * @swagger
+ * /api/nft/{id}:
+ *   get:
+ *     summary: "Retrieve the metadata for a specific NFT by ID"
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: The ID of the NFT to retrieve.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: "NFT metadata retrieved successfully"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 nftId:
+ *                   type: string
+ *                 metadata:
+ *                   type: object
+ *       500:
+ *         description: "Error retrieving NFT metadata"
+ */
+app.get('/api/nft/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const nft = await nftStorageClient.get(id);
+        res.status(200).json(nft);
+    } catch (error) {
+        res.status(500).json({ error: 'NFT not found' });
+    }
+});
+
+// Swagger: List all NFTs
+/**
+ * @swagger
+ * /api/nfts:
+ *   get:
+ *     summary: "List all NFTs on the platform"
+ *     responses:
+ *       200:
+ *         description: "List of all NFTs"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *       500:
+ *         description: "Error retrieving NFTs"
+ */
+app.get('/api/nfts', async (req, res) => {
+    try {
+        const nfts = await nftStorageClient.list();
+        res.status(200).json(nfts);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Swagger: Create a new NFT collection
+/**
+ * @swagger
+ * /api/collections:
+ *   post:
+ *     summary: "Create a new NFT collection"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               logo:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: "Collection created successfully"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 logo:
+ *                   type: string
+ *       400:
+ *         description: "Missing required parameters"
+ *       500:
+ *         description: "Error creating collection"
+ */
+app.post('/api/collections', async (req, res) => {
+    const { name, description, logo } = req.body;
+    if (!name || !description || !logo) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    try {
+        const collection = {
+            name,
+            description,
+            logo,
+        };
+        // Save collection logic here
+        res.status(201).json(collection);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Swagger: List all NFT collections
+/**
+ * @swagger
+ * /api/collections:
+ *   get:
+ *     summary: "List all NFT collections on the platform"
+ *     responses:
+ *       200:
+ *         description: "List of all NFT collections"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *       500:
+ *         description: "Error retrieving collections"
+ */
+app.get('/api/collections', async (req, res) => {
+    try {
+        // Replace with your logic to fetch collections from storage
+        const collections = []; // Placeholder for collection data
+        res.status(200).json(collections);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Swagger: Transfer NFT to another wallet
+/**
+ * @swagger
+ * /api/transfer-nft:
+ *   post:
+ *     summary: "Transfer an NFT to another wallet"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *               nftId:
+ *                 type: string
+ *               recipient:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: "NFT transferred successfully"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 nftId:
+ *                   type: string
+ *                 recipient:
+ *                   type: string
+ *       400:
+ *         description: "Missing required parameters"
+ *       500:
+ *         description: "Error transferring NFT"
+ */
+app.post('/api/transfer-nft', async (req, res) => {
+    const { wallet, nftId, recipient } = req.body;
+    if (!wallet || !nftId || !recipient) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    try {
+        // Transfer NFT logic here
+        const transferResult = { success: true, nftId, recipient };
+        res.status(200).json(transferResult);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Helper function to mint NFT (SeagullCoin-only)
 async function mintNFT(wallet, nftMetadata) {
     const { name, description, file, collection } = nftMetadata;

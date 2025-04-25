@@ -1,51 +1,42 @@
 import express from 'express';
-import cors from 'cors';
-import xrpl from 'xrpl';
 import swaggerUi from 'swagger-ui-express';
-import swaggerJsDoc from 'swagger-jsdoc';
-import { XummSdk } from 'xumm-sdk';
-import bodyParser from 'body-parser';
-import dotenv from 'dotenv';
+import swaggerJsdoc from 'swagger-jsdoc';
 
-dotenv.config();
+// Assuming you have a function to check SeagullCoin payment
+import { checkSeagullCoinPayment, mintNFT, transferNFT, listNFTForSale } from './xrp-utils';
 
 const app = express();
-const port = process.env.PORT || 3000;
-
-// XUMM integration
-const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_SECRET_KEY);
-
-// XRPL client setup
-const xrplClient = new xrpl.Client('wss://s.altnet.rippletest.net:51233'); // Or the appropriate XRPL network URL
-const serviceWallet = process.env.SERVICE_WALLET; // SeagullCoin wallet
-
-app.use(cors());
 app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
-// Swagger setup
+// Swagger definition
 const swaggerOptions = {
-  swaggerDefinition: {
+  definition: {
+    openapi: '3.0.0',
     info: {
       title: 'SeagullCoin NFT Minting API',
       version: '1.0.0',
-      description: 'API for minting and managing SeagullCoin NFTs',
+      description: 'API for minting SeagullCoin NFTs, buying, and selling',
     },
-    basePath: '/',
+    servers: [
+      {
+        url: 'http://localhost:3000', // Change to your live URL in production
+      },
+    ],
   },
   apis: ['./server.js'],
 };
 
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
 
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+// Sample /mint endpoint
 /**
  * @swagger
  * /mint:
  *   post:
- *     summary: "Mint a new NFT with SeagullCoin only"
- *     description: "Mints a new SeagullCoin-only NFT after checking the SeagullCoin payment"
- *     tags: [Minting]
+ *     summary: "Mint a SeagullCoin NFT"
+ *     description: "Mint a SeagullCoin NFT after paying the minting fee in SeagullCoin."
  *     requestBody:
  *       required: true
  *       content:
@@ -55,78 +46,41 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
  *             properties:
  *               wallet:
  *                 type: string
- *                 description: "The wallet address submitting the minting request"
- *               fileURL:
+ *                 description: "XUMM wallet address"
+ *                 example: "rEXAMPLE1234567890"
+ *               metadata:
  *                 type: string
- *                 description: "The URL of the file to be used as the NFT"
- *               collection:
- *                 type: string
- *                 description: "The collection the NFT belongs to"
+ *                 description: "Metadata for the NFT"
+ *                 example: "http://link.to/metadata.json"
  *     responses:
  *       200:
  *         description: "NFT minted successfully"
  *       400:
- *         description: "Bad Request - Payment validation failed"
+ *         description: "Invalid or insufficient SeagullCoin payment"
  *       500:
- *         description: "Internal Server Error"
+ *         description: "Internal server error"
  */
 app.post('/mint', async (req, res) => {
-  const { wallet, fileURL, collection } = req.body;
+  const { wallet, metadata } = req.body;
 
-  if (!wallet || !fileURL || !collection) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  // Enforce SeagullCoin payment for minting
+  const isPaymentValid = await checkSeagullCoinPayment(wallet, 0.5); // Ensure 0.5 SeagullCoin
+  if (!isPaymentValid) {
+    return res.status(400).json({ error: 'Invalid or insufficient SeagullCoin payment' });
   }
 
-  try {
-    await xrplClient.connect();
-    
-    // Verify SeagullCoin payment (0.5 SeagullCoin)
-    const isPaymentValid = await validateSeagullCoinPayment(wallet);
-    if (!isPaymentValid) {
-      return res.status(400).json({ error: 'Invalid payment. Ensure you have 0.5 SeagullCoin for minting' });
-    }
-
-    // Prepare the NFT metadata
-    const metadata = {
-      name: `NFT ${Date.now()}`,
-      description: 'A SeagullCoin NFT',
-      fileURL: fileURL,
-      collection: collection,
-      issuer: serviceWallet,
-      currency: 'SeagullCoin',
-    };
-
-    // Mint the NFT (Example of how to mint, adapt according to your logic)
-    const mintTx = {
-      TransactionType: 'NFTokenMint',
-      Account: wallet,
-      URI: fileURL, // Ensure file URL is a valid IPFS or storage URL
-      NFTokenTaxon: 1, // Optional, define taxon for the collection
-    };
-
-    const preparedTx = await xrplClient.autofill(mintTx);
-    const signedTx = wallet.sign(preparedTx);
-    const result = await xrplClient.submit(signedTx.tx_blob);
-
-    res.status(200).json({
-      message: 'NFT minted successfully',
-      mintTransaction: result,
-    });
-  } catch (error) {
-    console.error('Minting error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  } finally {
-    await xrplClient.disconnect();
-  }
+  // Mint the NFT
+  const nftId = await mintNFT(wallet, metadata);
+  res.status(200).json({ success: true, nftId });
 });
 
+// Sample /buy endpoint
 /**
  * @swagger
- * /buy-nft:
+ * /buy:
  *   post:
- *     summary: "Buy an NFT with SeagullCoin"
- *     description: "Enables purchasing an NFT with SeagullCoin."
- *     tags: [Buying]
+ *     summary: "Buy a SeagullCoin NFT"
+ *     description: "Buy an NFT listed for sale with SeagullCoin."
  *     requestBody:
  *       required: true
  *       content:
@@ -134,73 +88,93 @@ app.post('/mint', async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               nftID:
+ *               wallet:
  *                 type: string
- *                 description: "NFT ID to be bought"
- *               buyerWallet:
+ *                 description: "XUMM wallet address"
+ *                 example: "rEXAMPLE1234567890"
+ *               nftId:
  *                 type: string
- *                 description: "Wallet address of the buyer"
+ *                 description: "NFT ID to buy"
+ *                 example: "12345"
  *               price:
- *                 type: number
+ *                 type: string
  *                 description: "Price in SeagullCoin"
+ *                 example: "0.5"
  *     responses:
  *       200:
- *         description: "NFT purchased successfully"
+ *         description: "NFT bought successfully"
  *       400:
- *         description: "Bad Request - Invalid payment or transaction"
+ *         description: "Invalid or insufficient SeagullCoin payment"
  *       500:
- *         description: "Internal Server Error"
+ *         description: "Internal server error"
  */
-app.post('/buy-nft', async (req, res) => {
-  const { nftID, buyerWallet, price } = req.body;
+app.post('/buy', async (req, res) => {
+  const { wallet, nftId, price } = req.body;
 
-  if (!nftID || !buyerWallet || !price) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  // Enforce SeagullCoin payment for buying (check if the payment is in SeagullCoin)
+  const isPaymentValid = await checkSeagullCoinPayment(wallet, price);
+  if (!isPaymentValid) {
+    return res.status(400).json({ error: 'Invalid SeagullCoin payment' });
   }
 
-  try {
-    // Verify SeagullCoin payment before proceeding with purchase
-    const isPaymentValid = await validateSeagullCoinPayment(buyerWallet, price);
-    if (!isPaymentValid) {
-      return res.status(400).json({ error: 'Invalid payment. Ensure sufficient SeagullCoin for purchase' });
-    }
+  // Transfer the NFT to the buyer
+  await transferNFT(wallet, nftId);
 
-    // Proceed with NFT transfer (Assuming NFT transfer logic)
-    const transferTx = {
-      TransactionType: 'NFTokenTransfer',
-      Account: buyerWallet,
-      NFTokenID: nftID,
-      Destination: buyerWallet,
-    };
-
-    const preparedTx = await xrplClient.autofill(transferTx);
-    const signedTx = buyerWallet.sign(preparedTx);
-    const result = await xrplClient.submit(signedTx.tx_blob);
-
-    res.status(200).json({
-      message: 'NFT purchased successfully',
-      transferTransaction: result,
-    });
-  } catch (error) {
-    console.error('Error in purchasing NFT:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  } finally {
-    await xrplClient.disconnect();
-  }
+  res.status(200).json({ success: true, message: 'NFT bought successfully' });
 });
 
-// Helper function to validate SeagullCoin payment (just checks for sufficient balance)
-async function validateSeagullCoinPayment(wallet, amount = 0.5) {
-  const accountInfo = await xrplClient.request({
-    command: 'account_info',
-    account: wallet,
-  });
+// Sample /sell endpoint
+/**
+ * @swagger
+ * /sell:
+ *   post:
+ *     summary: "Sell a SeagullCoin NFT"
+ *     description: "Sell an NFT for a specified price in SeagullCoin."
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: "XUMM wallet address"
+ *                 example: "rEXAMPLE1234567890"
+ *               nftId:
+ *                 type: string
+ *                 description: "NFT ID to sell"
+ *                 example: "12345"
+ *               price:
+ *                 type: string
+ *                 description: "Price in SeagullCoin"
+ *                 example: "0.5"
+ *     responses:
+ *       200:
+ *         description: "NFT listed for sale successfully"
+ *       400:
+ *         description: "Invalid request or insufficient SeagullCoin"
+ *       500:
+ *         description: "Internal server error"
+ */
+app.post('/sell', async (req, res) => {
+  const { wallet, nftId, price } = req.body;
 
-  // Check if wallet has enough SeagullCoin (0.5 SeagullCoin)
-  const balance = accountInfo.result.account_data.Balance / 1000000; // Convert drops to XRPC
-  return balance >= amount;
-}
+  // Enforce SeagullCoin pricing for selling
+  if (isNaN(price) || parseFloat(price) <= 0) {
+    return res.status(400).json({ error: 'Price must be in SeagullCoin and greater than 0' });
+  }
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  // List the NFT for sale
+  await listNFTForSale(wallet, nftId, price);
+
+  res.status(200).json({ success: true, message: 'NFT listed for sale successfully' });
+});
+
+// Swagger setup
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+// Start the server
+app.listen(3000, () => {
+  console.log('Server is running on http://localhost:3000');
 });

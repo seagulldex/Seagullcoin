@@ -45,21 +45,44 @@ const swaggerSpec = swaggerJSDoc(swaggerOptions);
 // Serve Swagger docs at /docs
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Default route for root (fixing the "Cannot GET /" issue)
+// **Root Route** - This will ensure the "Cannot GET /" error doesn't occur
 app.get('/', (req, res) => {
     res.send('Welcome to the SeagullCoin NFT Minting API. Access the API documentation at /docs');
 });
 
-// Info route to check if API is running
-app.get('/api/info', (req, res) => {
-    res.send('SeagullCoin NFT Minting API is up and running!');
+// **Metrics Endpoints** 
+
+/**
+ * @swagger
+ * /api/metrics:
+ *   get:
+ *     description: Get the metrics of minted NFTs and total transactions
+ *     responses:
+ *       200:
+ *         description: Metrics fetched successfully
+ *       500:
+ *         description: Server error
+ */
+app.get('/api/metrics', async (req, res) => {
+    try {
+        // Placeholder for NFT metrics, could fetch from a DB or blockchain directly
+        const metrics = {
+            totalMintedNFTs: 123, // Example metric
+            totalTransactions: 456, // Example metric
+            totalSeagullCoinSpent: 7890, // Example metric (total amount of SeagullCoin used in transactions)
+        };
+
+        res.status(200).json(metrics);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 /**
  * @swagger
  * /api/mint:
  *   post:
- *     description: Mint an NFT using SeagullCoin
+ *     description: Mint an NFT using SeagullCoin only (SGLCN-X20)
  *     parameters:
  *       - name: wallet
  *         in: body
@@ -69,7 +92,7 @@ app.get('/api/info', (req, res) => {
  *           type: string
  *       - name: nftMetadata
  *         in: body
- *         description: Metadata for the NFT
+ *         description: Metadata for the NFT (name, description, file, collection)
  *         required: true
  *         schema:
  *           type: object
@@ -86,7 +109,7 @@ app.get('/api/info', (req, res) => {
  *       200:
  *         description: NFT minted successfully
  *       400:
- *         description: Invalid input or insufficient balance
+ *         description: Insufficient balance or invalid input
  *       500:
  *         description: Server error
  */
@@ -141,7 +164,7 @@ async function mintNFT(wallet, nftMetadata) {
  * @swagger
  * /api/buy-nft:
  *   post:
- *     description: Buy an NFT using SeagullCoin
+ *     description: Buy an NFT using SeagullCoin (SGLCN-X20)
  *     parameters:
  *       - name: wallet
  *         in: body
@@ -157,7 +180,7 @@ async function mintNFT(wallet, nftMetadata) {
  *           type: string
  *       - name: price
  *         in: body
- *         description: Price of the NFT in SeagullCoin
+ *         description: Price of the NFT in SeagullCoin (SGLCN-X20)
  *         required: true
  *         schema:
  *           type: number
@@ -165,7 +188,7 @@ async function mintNFT(wallet, nftMetadata) {
  *       200:
  *         description: NFT bought successfully
  *       400:
- *         description: Invalid input
+ *         description: Invalid input or insufficient funds
  *       500:
  *         description: Server error
  */
@@ -193,11 +216,11 @@ async function buyNFT(wallet, nftId, price) {
         Destination: process.env.SERVICE_WALLET, // The wallet of the NFT seller
     };
 
-    const paymentResult = await client.submitAndWait(payment);
-    return paymentResult;
+    const buyResult = await client.submitAndWait(payment);
+    return buyResult;
 }
 
-// Start the server
+// Start server
 app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    console.log(`Server running at http://localhost:${port}`);
 });

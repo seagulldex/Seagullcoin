@@ -1,42 +1,43 @@
 import express from 'express';
-import swaggerUi from 'swagger-ui-express';
+import bodyParser from 'body-parser';
 import swaggerJsdoc from 'swagger-jsdoc';
-
-// Assuming you have a function to check SeagullCoin payment
-import { checkSeagullCoinPayment, mintNFT, transferNFT, listNFTForSale } from './xrp-utils';
+import swaggerUi from 'swagger-ui-express';
+import { checkSeagullCoinPayment, mintNFT, transferNFT, listNFTForSale } from './xrp-utils.js';  // Import the utility functions
 
 const app = express();
-app.use(express.json());
+const port = process.env.PORT || 3000;
 
-// Swagger definition
+// Body parser middleware
+app.use(bodyParser.json());
+
+// Swagger setup
 const swaggerOptions = {
-  definition: {
+  swaggerDefinition: {
     openapi: '3.0.0',
     info: {
-      title: 'SeagullCoin NFT Minting API',
+      title: 'SGLCN-X20 NFT Minting API',
       version: '1.0.0',
-      description: 'API for minting SeagullCoin NFTs, buying, and selling',
+      description: 'API for minting and managing SeagullCoin-only NFTs',
     },
     servers: [
       {
-        url: 'http://localhost:3000', // Change to your live URL in production
+        url: 'http://localhost:3000',
       },
     ],
   },
-  apis: ['./server.js'],
+  apis: ['./server.js'], // Specify the location of the Swagger docs
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
-
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Sample /mint endpoint
+// Swagger docs for /mint endpoint
 /**
  * @swagger
  * /mint:
  *   post:
- *     summary: "Mint a SeagullCoin NFT"
- *     description: "Mint a SeagullCoin NFT after paying the minting fee in SeagullCoin."
+ *     summary: Mint a new NFT using SeagullCoin
+ *     description: Mint a new NFT by paying with SeagullCoin (0.5 SGLCN-X20).
  *     requestBody:
  *       required: true
  *       content:
@@ -46,41 +47,48 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
  *             properties:
  *               wallet:
  *                 type: string
- *                 description: "XUMM wallet address"
- *                 example: "rEXAMPLE1234567890"
+ *                 description: User's wallet address
  *               metadata:
- *                 type: string
- *                 description: "Metadata for the NFT"
- *                 example: "http://link.to/metadata.json"
+ *                 type: object
+ *                 description: Metadata for the NFT
  *     responses:
  *       200:
- *         description: "NFT minted successfully"
+ *         description: Successfully minted NFT
  *       400:
- *         description: "Invalid or insufficient SeagullCoin payment"
- *       500:
- *         description: "Internal server error"
+ *         description: Insufficient balance or error in minting
  */
 app.post('/mint', async (req, res) => {
   const { wallet, metadata } = req.body;
 
-  // Enforce SeagullCoin payment for minting
-  const isPaymentValid = await checkSeagullCoinPayment(wallet, 0.5); // Ensure 0.5 SeagullCoin
-  if (!isPaymentValid) {
-    return res.status(400).json({ error: 'Invalid or insufficient SeagullCoin payment' });
-  }
+  try {
+    // Check if the wallet has enough SeagullCoin balance
+    const hasEnoughBalance = await checkSeagullCoinPayment(wallet, 0.5);  // 0.5 SeagullCoin for minting
 
-  // Mint the NFT
-  const nftId = await mintNFT(wallet, metadata);
-  res.status(200).json({ success: true, nftId });
+    if (!hasEnoughBalance) {
+      return res.status(400).json({ error: 'Not enough SeagullCoin to mint NFT' });
+    }
+
+    // Mint the NFT
+    const nftId = await mintNFT(wallet, metadata);
+
+    if (nftId) {
+      return res.status(200).json({ message: 'NFT minted successfully', nftId });
+    } else {
+      return res.status(500).json({ error: 'Error minting NFT' });
+    }
+  } catch (error) {
+    console.error('Minting error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-// Sample /buy endpoint
+// Swagger docs for /buy-nft endpoint
 /**
  * @swagger
- * /buy:
+ * /buy-nft:
  *   post:
- *     summary: "Buy a SeagullCoin NFT"
- *     description: "Buy an NFT listed for sale with SeagullCoin."
+ *     summary: Buy an NFT using SeagullCoin
+ *     description: Buy an NFT by making an offer with SeagullCoin.
  *     requestBody:
  *       required: true
  *       content:
@@ -90,46 +98,51 @@ app.post('/mint', async (req, res) => {
  *             properties:
  *               wallet:
  *                 type: string
- *                 description: "XUMM wallet address"
- *                 example: "rEXAMPLE1234567890"
+ *                 description: User's wallet address
  *               nftId:
  *                 type: string
- *                 description: "NFT ID to buy"
- *                 example: "12345"
+ *                 description: ID of the NFT to purchase
  *               price:
- *                 type: string
- *                 description: "Price in SeagullCoin"
- *                 example: "0.5"
+ *                 type: number
+ *                 description: The price for the NFT in SeagullCoin
  *     responses:
  *       200:
- *         description: "NFT bought successfully"
+ *         description: Successfully bought NFT
  *       400:
- *         description: "Invalid or insufficient SeagullCoin payment"
- *       500:
- *         description: "Internal server error"
+ *         description: Error in buying NFT
  */
-app.post('/buy', async (req, res) => {
+app.post('/buy-nft', async (req, res) => {
   const { wallet, nftId, price } = req.body;
 
-  // Enforce SeagullCoin payment for buying (check if the payment is in SeagullCoin)
-  const isPaymentValid = await checkSeagullCoinPayment(wallet, price);
-  if (!isPaymentValid) {
-    return res.status(400).json({ error: 'Invalid SeagullCoin payment' });
+  try {
+    // Check if the wallet has enough SeagullCoin balance to buy the NFT
+    const hasEnoughBalance = await checkSeagullCoinPayment(wallet, price);
+
+    if (!hasEnoughBalance) {
+      return res.status(400).json({ error: 'Not enough SeagullCoin to buy NFT' });
+    }
+
+    // Transfer the NFT to the buyer
+    const transferResult = await transferNFT(wallet, nftId);
+
+    if (transferResult) {
+      return res.status(200).json({ message: 'NFT bought successfully', transferId: transferResult });
+    } else {
+      return res.status(500).json({ error: 'Error in transferring NFT' });
+    }
+  } catch (error) {
+    console.error('Buying error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-
-  // Transfer the NFT to the buyer
-  await transferNFT(wallet, nftId);
-
-  res.status(200).json({ success: true, message: 'NFT bought successfully' });
 });
 
-// Sample /sell endpoint
+// Swagger docs for /sell-nft endpoint
 /**
  * @swagger
- * /sell:
+ * /sell-nft:
  *   post:
- *     summary: "Sell a SeagullCoin NFT"
- *     description: "Sell an NFT for a specified price in SeagullCoin."
+ *     summary: List an NFT for sale using SeagullCoin
+ *     description: List an NFT for sale by setting a price in SeagullCoin.
  *     requestBody:
  *       required: true
  *       content:
@@ -139,42 +152,39 @@ app.post('/buy', async (req, res) => {
  *             properties:
  *               wallet:
  *                 type: string
- *                 description: "XUMM wallet address"
- *                 example: "rEXAMPLE1234567890"
+ *                 description: User's wallet address
  *               nftId:
  *                 type: string
- *                 description: "NFT ID to sell"
- *                 example: "12345"
+ *                 description: ID of the NFT to list for sale
  *               price:
- *                 type: string
- *                 description: "Price in SeagullCoin"
- *                 example: "0.5"
+ *                 type: number
+ *                 description: The price for the NFT in SeagullCoin
  *     responses:
  *       200:
- *         description: "NFT listed for sale successfully"
+ *         description: Successfully listed NFT for sale
  *       400:
- *         description: "Invalid request or insufficient SeagullCoin"
- *       500:
- *         description: "Internal server error"
+ *         description: Error in listing NFT for sale
  */
-app.post('/sell', async (req, res) => {
+app.post('/sell-nft', async (req, res) => {
   const { wallet, nftId, price } = req.body;
 
-  // Enforce SeagullCoin pricing for selling
-  if (isNaN(price) || parseFloat(price) <= 0) {
-    return res.status(400).json({ error: 'Price must be in SeagullCoin and greater than 0' });
+  try {
+    // List the NFT for sale
+    const listResult = await listNFTForSale(wallet, nftId, price);
+
+    if (listResult) {
+      return res.status(200).json({ message: 'NFT listed for sale successfully', listId: listResult });
+    } else {
+      return res.status(500).json({ error: 'Error listing NFT for sale' });
+    }
+  } catch (error) {
+    console.error('Selling error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-
-  // List the NFT for sale
-  await listNFTForSale(wallet, nftId, price);
-
-  res.status(200).json({ success: true, message: 'NFT listed for sale successfully' });
 });
 
-// Swagger setup
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
-// Start the server
-app.listen(3000, () => {
-  console.log('Server is running on http://localhost:3000');
+// Start server
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
+

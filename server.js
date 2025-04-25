@@ -372,6 +372,365 @@ app.get('/api/collections', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/nft/{id}/history:
+ *   get:
+ *     summary: Get transaction history for a specific NFT
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the NFT
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Transaction history of the NFT
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 history:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       transactionId:
+ *                         type: string
+ *                         description: "Unique transaction ID"
+ *                       timestamp:
+ *                         type: string
+ *                         format: date-time
+ *                         description: "Timestamp of the transaction"
+ *                       from:
+ *                         type: string
+ *                         description: "Wallet address of the sender"
+ *                       to:
+ *                         type: string
+ *                         description: "Wallet address of the recipient"
+ *                       amount:
+ *                         type: number
+ *                         format: float
+ *                         description: "Amount transferred in SeagullCoin"
+ *       404:
+ *         description: NFT not found
+ */
+app.get('/api/nft/:id/history', async (req, res) => {
+    const nftId = req.params.id;
+    // Logic to retrieve transaction history
+    res.json(history);
+});
+
+/**
+ * @swagger
+ * /api/sell-nft:
+ *   post:
+ *     summary: Create a sale listing for an NFT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: The wallet address of the user selling the NFT
+ *               nftId:
+ *                 type: string
+ *                 description: The ID of the NFT to sell
+ *               price:
+ *                 type: number
+ *                 format: float
+ *                 description: The price in SeagullCoin
+ *     responses:
+ *       200:
+ *         description: Success, NFT listed for sale
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 saleResult:
+ *                   type: string
+ *                   description: "Result of the sale offer creation"
+ *       400:
+ *         description: Invalid parameters
+ */
+app.post('/api/sell-nft', async (req, res) => {
+    const { wallet, nftId, price } = req.body;
+    // Logic to create a sell offer for the NFT
+    res.json(sellResult);
+});
+
+/**
+ * @swagger
+ * /api/cancel-sale:
+ *   post:
+ *     summary: Cancel a sale offer for an NFT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: The wallet address of the seller
+ *               nftId:
+ *                 type: string
+ *                 description: The ID of the NFT to cancel sale for
+ *     responses:
+ *       200:
+ *         description: Sale offer successfully canceled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 cancelResult:
+ *                   type: string
+ *                   description: "Result of canceling the sale offer"
+ *       400:
+ *         description: Invalid parameters
+ */
+app.post('/api/cancel-sale', async (req, res) => {
+    const { wallet, nftId } = req.body;
+    // Logic to cancel the sale offer for the NFT
+    res.json(cancelResult);
+});
+
+/**
+ * @swagger
+ * /api/bid-nft:
+ *   post:
+ *     summary: Place a bid on an NFT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: The wallet address of the bidder
+ *               nftId:
+ *                 type: string
+ *                 description: The ID of the NFT to bid on
+ *               bidAmount:
+ *                 type: number
+ *                 format: float
+ *                 description: The bid amount in SeagullCoin
+ *     responses:
+ *       200:
+ *         description: Success, bid placed on the NFT
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 bidResult:
+ *                   type: string
+ *                   description: "Result of placing the bid"
+ *       400:
+ *         description: Invalid parameters
+ */
+app.post('/api/bid-nft', async (req, res) => {
+    const { wallet, nftId, bidAmount } = req.body;
+    // Logic to handle NFT bidding
+    res.json(bidResult);
+});
+
+/**
+ * @swagger
+ * /api/accept-bid:
+ *   post:
+ *     summary: Accept a bid on an NFT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: The wallet address of the seller accepting the bid
+ *               nftId:
+ *                 type: string
+ *                 description: The ID of the NFT to accept a bid for
+ *               bidAmount:
+ *                 type: number
+ *                 format: float
+ *                 description: The amount of the accepted bid in SeagullCoin
+ *     responses:
+ *       200:
+ *         description: Success, bid accepted and NFT transferred
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 acceptBidResult:
+ *                   type: string
+ *                   description: "Result of accepting the bid"
+ *       400:
+ *         description: Invalid parameters
+ */
+app.post('/api/accept-bid', async (req, res) => {
+    const { wallet, nftId, bidAmount } = req.body;
+    // Logic to accept the bid and transfer NFT ownership
+    res.json(acceptBidResult);
+});
+
+/**
+ * @swagger
+ * /api/user/{wallet}/nfts:
+ *   get:
+ *     summary: Get all NFTs owned by a wallet
+ *     parameters:
+ *       - name: wallet
+ *         in: path
+ *         required: true
+ *         description: The wallet address of the user
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of NFTs owned by the user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   nftId:
+ *                     type: string
+ *                     description: "ID of the NFT"
+ *                   name:
+ *                     type: string
+ *                     description: "Name of the NFT"
+ *                   description:
+ *                     type: string
+ *                     description: "Description of the NFT"
+ *       404:
+ *         description: Wallet not found
+ */
+app.get('/api/user/:wallet/nfts', async (req, res) => {
+    const wallet = req.params.wallet;
+    // Logic to retrieve NFTs owned by the wallet
+    res.json(userNFTs);
+});
+
+/**
+ * @swagger
+ * /api/approve-nft-sale:
+ *   post:
+ *     summary: Approve or reject an NFT sale offer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               wallet:
+ *                 type: string
+ *                 description: The wallet address of the seller
+ *               nftId:
+ *                 type: string
+ *                 description: The ID of the NFT for sale
+ *               approve:
+ *                 type: boolean
+ *                 description: Whether to approve or reject the sale offer
+ *     responses:
+ *       200:
+ *         description: Sale offer approved or rejected
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 approvalResult:
+ *                   type: string
+ *                   description: "Result of approving or rejecting the sale offer"
+ *       400:
+ *         description: Invalid parameters
+ */
+app.post('/api/approve-nft-sale', async (req, res) => {
+    const { wallet, nftId, approve } = req.body;
+    // Logic to approve or reject a sale offer
+    res.json(approvalResult);
+});
+
+/**
+ * @swagger
+ * /api/marketplace:
+ *   get:
+ *     summary: Get all NFTs for sale in the marketplace
+ *     responses:
+ *       200:
+ *         description: List of all NFTs for sale
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   nftId:
+ *                     type: string
+ *                     description: "ID of the NFT"
+ *                   name:
+ *                     type: string
+ *                     description: "Name of the NFT"
+ *                   price:
+ *                     type: number
+ *                     format: float
+ *                     description: "Sale price in SeagullCoin"
+ */
+app.get('/api/marketplace', async (req, res) => {
+    // Logic to retrieve all NFTs for sale in the marketplace
+    res.json(availableNFTs);
+});
+
+/**
+ * @swagger
+ * /api/nft/{id}/owner:
+ *   get:
+ *     summary: Get the current owner of an NFT
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the NFT
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: The current owner of the NFT
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 owner:
+ *                   type: string
+ *                   description: Wallet address of the current owner
+ *       404:
+ *         description: NFT not found
+ */
+app.get('/api/nft/:id/owner', async (req, res) => {
+    const nftId = req.params.id;
+    // Logic to get the current owner of the NFT
+    res.json({ owner });
+});
+
 // Swagger: Transfer NFT to another wallet
 /**
  * @swagger
@@ -469,361 +828,6 @@ app.post('/api/mint', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-});
-
-/**
- * @swagger
- * /api/nft/{id}/history:
- *   get:
- *     summary: Get transaction history for a specific NFT
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         description: The ID of the NFT
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Transaction history of the NFT
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 history:
- *                   type: array
- *                   items:
- *                     type: object
- *       404:
- *         description: NFT not found
- */
-app.get('/api/nft/:id/history', async (req, res) => {
-    const nftId = req.params.id;
-    // Logic to retrieve transaction history
-    res.json(history);
-});
-
-/**
- * @swagger
- * /api/sell-nft:
- *   post:
- *     summary: Create a sale listing for an NFT
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               wallet:
- *                 type: string
- *                 description: The wallet address of the user selling the NFT
- *               nftId:
- *                 type: string
- *                 description: The ID of the NFT to sell
- *               price:
- *                 type: number
- *                 format: float
- *                 description: The price in SeagullCoin
- *     responses:
- *       200:
- *         description: Success, NFT listed for sale
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 saleResult:
- *                   type: string
- *       400:
- *         description: Invalid parameters
- */
-app.post('/api/sell-nft', async (req, res) => {
-    const { wallet, nftId, price } = req.body;
-    // Logic to create a sell offer for the NFT
-    res.json(sellResult);
-});
-
-/**
- * @swagger
- * /api/cancel-sale:
- *   post:
- *     summary: Cancel a sale offer for an NFT
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               wallet:
- *                 type: string
- *                 description: The wallet address of the seller
- *               nftId:
- *                 type: string
- *                 description: The ID of the NFT to cancel sale for
- *     responses:
- *       200:
- *         description: Sale offer successfully canceled
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 cancelResult:
- *                   type: string
- *       400:
- *         description: Invalid parameters
- */
-app.post('/api/cancel-sale', async (req, res) => {
-    const { wallet, nftId } = req.body;
-    // Logic to cancel the sale offer for the NFT
-    res.json(cancelResult);
-});
-
-/**
- * @swagger
- * /api/bid-nft:
- *   post:
- *     summary: Place a bid on an NFT
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               wallet:
- *                 type: string
- *                 description: The wallet address of the bidder
- *               nftId:
- *                 type: string
- *                 description: The ID of the NFT to bid on
- *               bidAmount:
- *                 type: number
- *                 format: float
- *                 description: The bid amount in SeagullCoin
- *     responses:
- *       200:
- *         description: Success, bid placed on the NFT
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 bidResult:
- *                   type: string
- *       400:
- *         description: Invalid parameters
- */
-app.post('/api/bid-nft', async (req, res) => {
-    const { wallet, nftId, bidAmount } = req.body;
-    // Logic to handle NFT bidding
-    res.json(bidResult);
-});
-
-/**
- * @swagger
- * /api/accept-bid:
- *   post:
- *     summary: Accept a bid on an NFT
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               wallet:
- *                 type: string
- *                 description: The wallet address of the seller accepting the bid
- *               nftId:
- *                 type: string
- *                 description: The ID of the NFT to accept a bid for
- *               bidAmount:
- *                 type: number
- *                 format: float
- *                 description: The amount of the accepted bid in SeagullCoin
- *     responses:
- *       200:
- *         description: Success, bid accepted and NFT transferred
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 acceptBidResult:
- *                   type: string
- *       400:
- *         description: Invalid parameters
- */
-app.post('/api/accept-bid', async (req, res) => {
-    const { wallet, nftId, bidAmount } = req.body;
-    // Logic to accept the bid and transfer NFT ownership
-    res.json(acceptBidResult);
-});
-
-/**
- * @swagger
- * /api/user/{wallet}/nfts:
- *   get:
- *     summary: Get all NFTs owned by a wallet
- *     parameters:
- *       - name: wallet
- *         in: path
- *         required: true
- *         description: The wallet address of the user
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: List of NFTs owned by the user
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *       404:
- *         description: Wallet not found
- */
-app.get('/api/user/:wallet/nfts', async (req, res) => {
-    const wallet = req.params.wallet;
-    // Logic to retrieve NFTs owned by the wallet
-    res.json(userNFTs);
-});
-
-/**
- * @swagger
- * /api/approve-nft-sale:
- *   post:
- *     summary: Approve or reject an NFT sale offer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               wallet:
- *                 type: string
- *                 description: The wallet address of the seller
- *               nftId:
- *                 type: string
- *                 description: The ID of the NFT for sale
- *               approve:
- *                 type: boolean
- *                 description: Whether to approve or reject the sale offer
- *     responses:
- *       200:
- *         description: Sale offer approved or rejected
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 approvalResult:
- *                   type: string
- *       400:
- *         description: Invalid parameters
- */
-app.post('/api/approve-nft-sale', async (req, res) => {
-    const { wallet, nftId, approve } = req.body;
-    // Logic to approve or reject a sale offer
-    res.json(approvalResult);
-});
-
-/**
- * @swagger
- * /api/marketplace:
- *   get:
- *     summary: Get all NFTs for sale in the marketplace
- *     responses:
- *       200:
- *         description: List of all NFTs for sale
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- */
-app.get('/api/marketplace', async (req, res) => {
-    // Logic to retrieve all NFTs for sale in the marketplace
-    res.json(availableNFTs);
-});
-
-/**
- * @swagger
- * /api/nft/{id}/owner:
- *   get:
- *     summary: Get the current owner of an NFT
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         description: The ID of the NFT
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: The current owner of the NFT
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 owner:
- *                   type: string
- *                   description: Wallet address of the current owner
- *       404:
- *         description: NFT not found
- */
-app.get('/api/nft/:id/owner', async (req, res) => {
-    const nftId = req.params.id;
-    // Logic to get the current owner of the NFT
-    res.json(owner);
-});
-
-/**
- * @swagger
- * /api/transfer-ownership:
- *   post:
- *     summary: Transfer ownership of an NFT
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               wallet:
- *                 type: string
- *                 description: The wallet address of the current owner
- *               nftId:
- *                 type: string
- *                 description: The ID of the NFT
- *               recipient:
- *                 type: string
- *                 description: The wallet address of the recipient
- *     responses:
- *       200:
- *         description: Ownership successfully transferred
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 transferResult:
- *                   type: string
- *       400:
- *         description: Invalid parameters
- */
-app.post('/api/transfer-ownership', async (req, res) => {
-    const { wallet, nftId, recipient } = req.body;
-    // Logic to transfer ownership of an NFT
-    res.json(transferResult);
 });
 
 // Buying NFT route

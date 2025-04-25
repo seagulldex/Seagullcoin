@@ -1,5 +1,5 @@
 dependencies:
-  axios: 1.8.4
+  axios: 1.9.0
   body-parser: 1.20.3
   cors: 2.8.5
   dotenv: 16.5.0
@@ -176,7 +176,7 @@ packages:
       integrity: sha512-9rE6EOVeIQzt5TSu4v+K523F8u6DhBsoZWPGKlnCshhlDhy0kJzUX4V+tr2dWmzF1GdekvThABoEQBGBQI7xZw==
   /@types/brorand/1.0.33:
     dependencies:
-      '@types/node': 22.14.1
+      '@types/node': 22.15.2
     dev: false
     resolution:
       integrity: sha512-KmNsWYtzKXpmxjecvYWUEGK5biJB/1kpHRObHZD8eme1tz/TvbESbZeNAHPRNd5qyCJiHk2ztbNzKbPC6TuPFg==
@@ -200,12 +200,12 @@ packages:
     dev: false
     resolution:
       integrity: sha512-fh+pAqt4xRzPfqA6eh3Z2y6fyZavRIumvjhaCL753+TVkGKGhpPeyrJG2JftD0T9q4GF00KjefsQ+PQNDdWQaQ==
-  /@types/node/22.14.1:
+  /@types/node/22.15.2:
     dependencies:
       undici-types: 6.21.0
     dev: false
     resolution:
-      integrity: sha512-u0HuPQwe/dHrItgHHpmw3N2fYCR6x4ivMNbPHRkBVP4CvN+kiRrKHWk3i8tXiO/joPwXLMYvF9TTF0eqgHIuOw==
+      integrity: sha512-uKXqKN9beGoMdBfcaTY1ecwz6ctxuJAcUlwE55938g0ZJ8lRxwAZqRz2AJ4pzpt5dHdTPMB863UZ0ESiFUcP7A==
   /@types/normalize-package-data/2.4.4:
     dev: false
     resolution:
@@ -216,7 +216,7 @@ packages:
       integrity: sha512-wWKOClTTiizcZhXnPY4wikVAwmdYHp8q6DmC+EJUzAMsycb7HB32Kh9RN4+0gExjmPmZSAQjgURXIGATPegAvA==
   /@types/websocket/1.0.10:
     dependencies:
-      '@types/node': 22.14.1
+      '@types/node': 22.15.2
     dev: false
     resolution:
       integrity: sha512-svjGZvPB7EzuYS94cI7a+qhwgGU1y89wUgjT6E2wVUfmAGIvRfT7obBvRtnhXCSsoMdlG4gBFGE7MfkIXZLoww==
@@ -360,14 +360,14 @@ packages:
       node: '>= 0.4'
     resolution:
       integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==
-  /axios/1.8.4:
+  /axios/1.9.0:
     dependencies:
       follow-redirects: 1.15.9
       form-data: 4.0.2
       proxy-from-env: 1.1.0
     dev: false
     resolution:
-      integrity: sha512-eBSYY4Y68NNlHbHBMdeDmKNtDgXWhQsJcGqzO3iLUM0GraQFSS9cVgPX5I9b3lbdFKyYoAEGAZF1DwhTaljNAw==
+      integrity: sha512-re4CqKTJaURpzbLHtIi6XpDv20/CnpXOtjRY5/CU32L8gU8ek9UIivcfvSWvmKEngmVbrUtPpdDwWDWL7DNHvg==
   /balanced-match/1.0.2:
     resolution:
       integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
@@ -2367,7 +2367,7 @@ packages:
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
       '@types/long': 4.0.2
-      '@types/node': 22.14.1
+      '@types/node': 22.15.2
       long: 4.0.0
     dev: false
     hasBin: true
@@ -3197,7 +3197,7 @@ shrinkwrapMinorVersion: 9
 shrinkwrapVersion: 3
 specifiers:
   axios: ^1.6.8
-  body-parser: ^1.20.0
+  body-parser: ^1.20.1
   cors: ^2.8.5
   dotenv: ^16.5.0
   express: ^4.19.0
@@ -3206,7 +3206,7 @@ specifiers:
   mime-types: ^2.1.35
   multer: ^1.4.5-lts.1
   nft.storage: ^6.1.0
-  node-fetch: ^3.2.0
+  node-fetch: ^3.2.10
   nodemon: ^2.0.22
   swagger-jsdoc: ^6.0.0
   swagger-ui-express: ^4.6.3

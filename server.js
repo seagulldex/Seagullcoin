@@ -1,12 +1,3 @@
-
-
-
-
-
-
-
-
-
 import express from 'express';
 import bodyParser from 'body-parser';
 import xrpl from 'xrpl';
@@ -155,84 +146,6 @@ async function getPlatformMetrics() {
     totalTransactionsProcessed,
   };
 }
-
-// === /login endpoint ===
-/**
- * @swagger
- * /login:
- *   post:
- *     summary: "User login"
- *     description: "Authenticates the user by verifying their XUMM wallet address."
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               wallet:
- *                 type: string
- *                 description: "The XUMM wallet address to authenticate."
- *                 example: "rEXAMPLE1234567890"
- *     responses:
- *       200:
- *         description: "User successfully authenticated"
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Login successful"
- *                 wallet:
- *                   type: string
- *                   example: "rEXAMPLE1234567890"
- *       400:
- *         description: "Invalid input"
- *       401:
- *         description: "Unauthorized: Invalid wallet address"
- *       500:
- *         description: "Internal Server Error"
- */
-app.post('/login', async (req, res) => {
-  const { wallet } = req.body;
-
-  if (!wallet) {
-    return res.status(400).json({ error: 'Missing wallet address' });
-  }
-
-  try {
-    // Verify the wallet address (replace with actual XUMM API validation logic)
-    const isValidWallet = await validateWalletAddress(wallet);
-
-    if (!isValidWallet) {
-      return res.status(401).json({ error: 'Invalid wallet address' });
-    }
-
-    // Store the wallet address in the session or JWT token
-    req.session.walletAddress = wallet;
-
-    // Respond with a success message
-    res.status(200).json({
-      message: 'Login successful',
-      wallet: wallet,
-    });
-  } catch (err) {
-    console.error('Error during login:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Mock function to validate wallet address (replace with actual XUMM API logic)
-async function validateWalletAddress(wallet) {
-  // Example validation (replace with actual validation logic, e.g., via XUMM API)
-  const validWallets = ['rEXAMPLE1234567890', 'rEXAMPLE0987654321']; // Replace with actual valid wallet check
-
-  return validWallets.includes(wallet); // Replace with your actual wallet verification logic
-}
-
 
 
 // Mock function to get NFT owner (replace with actual implementation)

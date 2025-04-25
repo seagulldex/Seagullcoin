@@ -1,138 +1,143 @@
 import dotenv from 'dotenv';
-dotenv.config()// Log API keys to ensure they are loaded properly
-console.log('XUMM API Key:', process.env.XUMM_API_KEY);
-console.log('XUMM API Secret:', process.env.XUMM_API_SECRET);
+import { XummSdk } from 'xumm-sdk';
+import { Client, ApiError } from 'xrpl';  // Import XRPL client
 
-if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
-  throw new Error('Invalid API Key and/or API Secret. Please check your .env file.');
-}
-;  // Loads the environment variables from .env
-import { XummSdk } from 'xumm-sdk';  // Assuming you have xumm-sdk installed
-import pkg from 'xrpl';  // XRP Client import
-const { XRPClient } = pkg;
+dotenv.config();
 
-// Log API keys to ensure they are loaded properly
-console.log('XUMM API Key:', process.env.XUMM_API_KEY);
-console.log('XUMM API Secret:', process.env.XUMM_API_SECRET);
+// Initialize XUMM SDK with API keys
+const xumm = new XummSdk({
+  apiKey: process.env.XUMM_API_KEY,
+  apiSecret: process.env.XUMM_API_SECRET,
+});
 
-if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
-  throw new Error('Invalid API Key and/or API Secret. Please check your .env file.');
-}
-
-// Initialize XUMM SDK with the API keys
-const XUMM = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
-// Define constants for SeagullCoin
-const SGLCN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';  // SeagullCoin issuer address
-const SGLCN_CURRENCY = '53656167756C6C436F696E000000000000000000';  // SeagullCoin currency code (hex)
-
-// Initialize XRP Client
-const client = new XRPClient('wss://s1.ripple.com');  // Connect to the XRP Ledger
+// XRPL Client setup
+const client = new Client('wss://s2.ripple.com'); // XRP Ledger client connection
 
 // Function to check if the wallet has enough SeagullCoin
-export const checkSeagullCoinPayment = async (wallet, amount) => {
+export async function checkSeagullCoinPayment(wallet, amount) {
   try {
+    await client.connect();
+
+    // Retrieve the account's SeagullCoin balance
     const response = await client.request({
-      method: 'account_lines',
-      params: [{ account: wallet }],
+      command: 'account_info',
+      account: wallet,
+      ledger_index: 'validated',
     });
 
-    const seagullCoinBalance = response.result.lines.find(line => line.currency === SGLCN_CURRENCY && line.account === SGLCN_ISSUER);
+    const balance = response.result.account_data.Balances.find(
+      (balance) => balance.currency === 'SGLCN'
+    );
 
-    if (!seagullCoinBalance || parseFloat(seagullCoinBalance.balance) < amount) {
-      return false;  // Not enough balance
+    // Check if the wallet has enough SeagullCoin balance
+    if (!balance) {
+      throw new Error('SeagullCoin balance not found.');
     }
-    return true;
-  } catch (error) {
-    console.error('Error checking SeagullCoin balance:', error);
-    return false;
-  }
-};
 
-// Function to mint NFT
-export const mintNFT = async (wallet, metadata) => {
+    return parseFloat(balance.value) >= parseFloat(amount);
+  } catch (error) {
+    console.error('Error checking SeagullCoin payment:', error);
+    throw new Error('Error checking SeagullCoin payment');
+  } finally {
+    client.disconnect();
+  }
+}
+
+// Function to mint an NFT
+export async function mintNFT(wallet, metadata) {
   try {
-    const payload = {
-      tx_json: {
-        TransactionType: 'NFTokenMint',
-        Account: wallet,
-        NFTokenTaxon: 0,
-        Flags: 131072, // Non-fungible token flag
-      },
-      metadata: metadata,
+    const mintTransaction = {
+      Account: wallet,
+      TransactionType: 'NFTokenMint',
+      URI: metadata.uri,  // URI to the NFT metadata
+      Flags: 0,
     };
 
-    const response = await XUMM.payload.create(payload);
-    return response?.meta?.txn_id;  // Return the transaction ID as the NFT ID
+    const response = await client.submit(mintTransaction);
+    if (response.result && response.result.transaction) {
+      return response.result.transaction.hash;
+    } else {
+      throw new Error('Failed to mint NFT.');
+    }
   } catch (error) {
     console.error('Error minting NFT:', error);
-    return null;
+    throw new Error('Error minting NFT');
   }
-};
+}
 
-// Function to list NFT for sale with SeagullCoin only
-export const listNFTForSale = async (wallet, nftId, price) => {
+// Function to transfer an NFT
+export async function transferNFT(wallet, nftId, destinationWallet) {
   try {
-    const payload = {
-      tx_json: {
-        TransactionType: 'NFTokenCreateOffer',
-        Account: wallet,
-        NFTokenID: nftId,
-        Amount: {
-          currency: SGLCN_CURRENCY,
-          value: price.toString(),
-          issuer: SGLCN_ISSUER,
-        },
-      },
+    const transferTransaction = {
+      Account: wallet,
+      TransactionType: 'NFTokenTransfer',
+      NFTokenID: nftId,
+      Destination: destinationWallet,  // Transfer to the recipient wallet address
+      Flags: 0,
     };
 
-    const response = await XUMM.payload.create(payload);
-    return response?.meta?.txn_id;  // Return the transaction ID for listing the NFT
-  } catch (error) {
-    console.error('Error listing NFT for sale:', error);
-    return null;
-  }
-};
-
-// Function to transfer NFT to a buyer (SeagullCoin only)
-export const transferNFT = async (wallet, nftId) => {
-  try {
-    const payload = {
-      tx_json: {
-        TransactionType: 'NFTokenCreateOffer',
-        Account: wallet,
-        NFTokenID: nftId,
-        Amount: {
-          currency: SGLCN_CURRENCY,
-          value: '0.5',
-          issuer: SGLCN_ISSUER,
-        },
-      },
-    };
-
-    const response = await XUMM.payload.create(payload);
-    return response?.meta?.txn_id;  // Return the transaction ID of the transfer
+    const response = await client.submit(transferTransaction);
+    if (response.result && response.result.transaction) {
+      return response.result.transaction.hash;
+    } else {
+      throw new Error('Failed to transfer NFT.');
+    }
   } catch (error) {
     console.error('Error transferring NFT:', error);
-    return null;
+    throw new Error('Error transferring NFT');
   }
-};
+}
 
-// Function to cancel XRP offers if detected
-export const cancelXrpOffer = async (wallet, nftId) => {
+// Function to list an NFT for sale with SeagullCoin price
+export async function listNFTForSale(wallet, nftId, price) {
   try {
-    const payload = {
-      tx_json: {
-        TransactionType: 'NFTokenCancelOffer',
-        Account: wallet,
-        NFTokenID: nftId,
+    if (isNaN(price) || price <= 0) {
+      throw new Error('Price must be a valid number greater than 0.');
+    }
+
+    const listTransaction = {
+      Account: wallet,
+      TransactionType: 'NFTokenCreateOffer',
+      NFTokenID: nftId,
+      TakerGets: {
+        currency: 'SGLCN',
+        value: price,
+      },
+      TakerPays: {
+        currency: 'XRP',
+        value: '0',
       },
     };
 
-    const response = await XUMM.payload.create(payload);
-    return response?.meta?.txn_id;  // Return the transaction ID of the cancellation
+    const response = await client.submit(listTransaction);
+    if (response.result && response.result.transaction) {
+      return response.result.transaction.hash;
+    } else {
+      throw new Error('Failed to list NFT for sale.');
+    }
   } catch (error) {
-    console.error('Error cancelling XRP offer:', error);
-    return null;
+    console.error('Error listing NFT for sale:', error);
+    throw new Error('Error listing NFT for sale');
   }
-};
+}
+
+// Function to cancel any XRP offers for the given NFT
+export async function cancelXrpOffer(wallet, nftId) {
+  try {
+    const cancelTransaction = {
+      Account: wallet,
+      TransactionType: 'NFTokenCancelOffer',
+      NFTokenID: nftId,
+    };
+
+    const response = await client.submit(cancelTransaction);
+    if (response.result && response.result.transaction) {
+      return response.result.transaction.hash;
+    } else {
+      throw new Error('Failed to cancel XRP offer.');
+    }
+  } catch (error) {
+    console.error('Error canceling XRP offer:', error);
+    throw new Error('Error canceling XRP offer');
+  }
+}

@@ -59,6 +59,46 @@ app.post('/mint', express.json(), async (req, res) => {
   if (!walletAddress || !metadata) {
     return res.status(400).send({ error: 'Missing walletAddress or metadata' });
   }
+  
+  const express = require('express');
+const XummSdk = require('xumm-sdk');
+const xumm = new XummSdk({
+    apiKey: process.env.XUMM_API_KEY,
+    apiSecret: process.env.XUMM_API_SECRET
+});
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(express.json());
+
+// Example: Validate if the payment is in SeagullCoin (SGLCN-X20)
+const validateSeagullCoinPayment = async (walletAddress, amount) => {
+    // Get the transactions for the wallet using XUMM or any other API
+    const transactionDetails = await xumm.getAccountInfo(walletAddress);
+    
+    // Check if the transaction currency is SeagullCoin (SGLCN-X20) and if the amount matches
+    const paymentTransaction = transactionDetails.transactions.find(tx => tx.currency === 'SGLCN-X20' && tx.amount >= amount);
+    
+    return paymentTransaction ? true : false;
+};
+
+app.post('/mint', async (req, res) => {
+    const { wallet, metadata } = req.body;
+    const mintFee = 0.5; // Set mint fee in SeagullCoin
+
+    // Validate SeagullCoin payment before minting
+    const isPaymentValid = await validateSeagullCoinPayment(wallet, mintFee);
+    if (!isPaymentValid) {
+        return res.status(400).send('Only SeagullCoin (SGLCN-X20) is allowed for minting, and the payment amount must be 0.5');
+    }
+
+    // Minting logic (e.g., create an NFT, store it, etc.)
+    // Your minting logic here...
+    
+    return res.status(200).send({ message: 'Minting successful' });
+});
+
+
 
   // Check SeagullCoin balance before proceeding with minting
   const balance = await checkSeagullCoinBalance(walletAddress);

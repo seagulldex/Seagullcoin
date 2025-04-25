@@ -678,28 +678,6 @@ app.get('/get/nfts', async (req, res) => {
   }
 });
 
-const enforcement = {
-  minting: {
-    currency: 'SeagullCoin',
-    cost: 0.5,
-    enforced: true
-  },
-  buy: {
-    allowed: false,
-    currency: 'SeagullCoin'
-  },
-  sell: {
-    allowed: false,
-    currency: 'SeagullCoin'
-  },
-  acceptsXRP: false,
-  transferFee: 0
-};
-
-app.get('/enforcement', (req, res) => {
-  res.json(enforcement);
-});
-
 app.get('/nfts', async (req, res) => {
   const nfts = await getNFTsFromDatabase();
 
@@ -1327,4 +1305,6 @@ app.get('/collections', async (req, res) => {
 });
 
 // Start the API server
-ap
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`Server is running on port ${process.env.PORT || 3000}`);
+});

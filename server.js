@@ -1,174 +1,108 @@
 import express from 'express';
+import { Client } from 'xrpl';
+import { XummSdk } from 'xumm-sdk';  // Corrected import
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import { XummSdk } from 'xumm-sdk';
-import { Client, AccountInfoRequest, NFTokenMint, Payment, TrustSet } from 'xrpl';
 import dotenv from 'dotenv';
-import nftStorage from 'nft.storage';
-import { nanoid } from 'nanoid';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Initialize XUMM SDK
+// Initialize XummSdk correctly as per version 2.0 and above
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_SECRET_KEY);
 
-// Initialize XRPL Client
+// XRPL Client setup
 const client = new Client(process.env.XRPL_NODE_URL);
 
-// Initialize NFT.Storage
-const { NFTStorage, File } = nftStorage;
-const nftStorageClient = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
-
-// Middleware
+// Middleware for JSON parsing and CORS
 app.use(bodyParser.json());
 app.use(cors());
 
-// Routes
-app.get('/', (req, res) => {
-  res.send('Welcome to the SeagullCoin Minting API');
+// Info route to check if API is running
+app.get('/api/info', (req, res) => {
+    res.send('SeagullCoin NFT Minting API is up and running!');
 });
 
-// Mint endpoint
-app.post('/mint', async (req, res) => {
-  try {
-    const { nftData, collectionName, description, file } = req.body;
-    const wallet = req.body.wallet;  // Wallet address of the user
+// Minting Endpoint - Ensure SeagullCoin-only minting
+app.post('/api/mint', async (req, res) => {
+    const { wallet, nftMetadata } = req.body;
 
-    // Validate the mint cost (SeagullCoin)
-    const balance = await checkSeagullCoinBalance(wallet);
-    if (balance < process.env.MINT_COST) {
-      return res.status(400).json({ error: 'Insufficient SeagullCoin balance' });
+    if (!wallet || !nftMetadata) {
+        return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    // Verify the mint payment through XUMM
-    const mintTransaction = await createXummPayload(wallet, process.env.MINT_COST, process.env.SEAGULLCOIN_CODE);
-    if (!mintTransaction) {
-      return res.status(500).json({ error: 'Minting payment failed' });
+    try {
+        const balance = await checkSeagullCoinBalance(wallet);
+
+        if (balance < parseFloat(process.env.MINT_COST)) {
+            return res.status(400).json({ error: 'Insufficient balance for minting' });
+        }
+
+        const mintResult = await mintNFT(wallet, nftMetadata);
+        res.status(200).json(mintResult);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
-
-    // Upload the NFT to NFT.Storage
-    const fileUpload = new File([file], 'nft-file', { type: 'image/jpeg' });
-    const metadata = await nftStorageClient.store({
-      name: nftData.name,
-      description: description,
-      image: fileUpload,
-      collection: collectionName,
-      walletAddress: wallet,
-    });
-
-    // Create the SeagullCoin-only NFT mint transaction
-    const mintTransactionDetails = await mintNFT(wallet, metadata.url);
-    res.status(200).json(mintTransactionDetails);
-  } catch (error) {
-    console.error('Error during minting process:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
 });
 
-// Verify SeagullCoin balance
+// Helper function to check SeagullCoin balance
 async function checkSeagullCoinBalance(wallet) {
-  const accountInfo = await client.request(AccountInfoRequest(wallet));
-  const balance = accountInfo.result.account_data.Balance;
-  return balance; // In drops (1 SeagullCoin = 1,000,000 drops)
+    const accountInfo = await client.request({
+        command: 'account_info',
+        account: wallet,
+    });
+    const balance = accountInfo.result.account_data.Balance;
+    return balance;
 }
 
-// Create XUMM payload for mint payment
-async function createXummPayload(wallet, amount, currency) {
-  const payload = {
-    transaction: {
-      TransactionType: 'Payment',
-      Account: wallet,
-      Amount: amount * 1000000,  // Convert to drops
-      Destination: process.env.SERVICE_WALLET,
-      Currency: currency,
-    },
-  };
+// Helper function to mint NFT (SeagullCoin-only)
+async function mintNFT(wallet, nftMetadata) {
+    const { name, description, file, collection } = nftMetadata;
 
-  try {
-    const createdPayload = await xumm.payload.create(payload);
-    return createdPayload;
-  } catch (error) {
-    console.error('Error creating XUMM payload:', error);
-    return null;
-  }
+    const mintTransaction = {
+        TransactionType: 'NFTokenMint',
+        Account: wallet,
+        TokenTaxon: 0,
+        URI: file, // Typically, this would be a URL to the file on IPFS
+        Flags: 8, // Set this for non-fungible tokens
+    };
+
+    const mintResult = await client.submitAndWait(mintTransaction);
+    return mintResult;
 }
 
-// Mint the NFT on XRPL
-async function mintNFT(wallet, metadataUrl) {
-  const nftMintTransaction = {
-    TransactionType: 'NFTokenMint',
-    Account: wallet,
-    URI: metadataUrl,
-    Flags: 0,
-  };
+// Buy NFT Endpoint (SeagullCoin only)
+app.post('/api/buy-nft', async (req, res) => {
+    const { wallet, nftId, price } = req.body;
 
-  try {
-    const preparedTx = await client.autofill(nftMintTransaction);
-    const signedTx = await client.sign(preparedTx.tx_json, process.env.SERVICE_WALLET_SEED);
-    const txResult = await client.submit(signedTx.signedTransaction);
-    return { success: true, transactionHash: txResult.result.tx_json.hash };
-  } catch (error) {
-    console.error('Error minting NFT:', error);
-    return { success: false, error: 'Error during NFT minting' };
-  }
-}
-
-// Buy endpoint (Buy an NFT using SeagullCoin)
-app.post('/buy', async (req, res) => {
-  const { nftId, buyerWallet } = req.body;
-
-  try {
-    const nftDetails = await getNFTDetails(nftId);
-    const price = nftDetails.price;
-
-    // Verify if buyer has enough SeagullCoin
-    const balance = await checkSeagullCoinBalance(buyerWallet);
-    if (balance < price) {
-      return res.status(400).json({ error: 'Insufficient SeagullCoin balance' });
+    if (!wallet || !nftId || !price) {
+        return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    // Initiate the transfer of the NFT
-    const transferTx = await transferNFT(buyerWallet, nftDetails.owner, nftId);
-    res.status(200).json({ success: true, transactionHash: transferTx.transactionHash });
-  } catch (error) {
-    console.error('Error during buy process:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+    try {
+        const buyResult = await buyNFT(wallet, nftId, price);
+        res.status(200).json(buyResult);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Get NFT details (for buying process)
-async function getNFTDetails(nftId) {
-  // Fetch details of the NFT (this is just an example, you need to implement your own logic)
-  return {
-    price: process.env.MINT_COST,  // Just a placeholder, this should come from your database
-    owner: 'nft_owner_wallet_address',
-  };
+// Helper function to handle buying NFTs
+async function buyNFT(wallet, nftId, price) {
+    const payment = {
+        TransactionType: 'Payment',
+        Account: wallet,
+        Amount: price, // Amount in SeagullCoin
+        Destination: process.env.SERVICE_WALLET, // The wallet of the NFT seller
+    };
+
+    const paymentResult = await client.submitAndWait(payment);
+    return paymentResult;
 }
 
-// Transfer NFT ownership
-async function transferNFT(buyerWallet, sellerWallet, nftId) {
-  const transferTransaction = {
-    TransactionType: 'NFTokenTransfer',
-    Account: buyerWallet,
-    NFTokenID: nftId,
-    Destination: sellerWallet,
-  };
-
-  try {
-    const preparedTx = await client.autofill(transferTransaction);
-    const signedTx = await client.sign(preparedTx.tx_json, process.env.SERVICE_WALLET_SEED);
-    const txResult = await client.submit(signedTx.signedTransaction);
-    return { success: true, transactionHash: txResult.result.tx_json.hash };
-  } catch (error) {
-    console.error('Error during NFT transfer:', error);
-    return { success: false, error: 'Error during NFT transfer' };
-  }
-}
-
-// Listen on the designated port
+// Start the server
 app.listen(port, () => {
-  console.log(`SeagullCoin Minting API running on port ${port}`);
+    console.log(`Server running on port ${port}`);
 });

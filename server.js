@@ -645,17 +645,6 @@ app.put('/update-nft', async (req, res) => {
   // Validate and update the metadata on NFT.Storage or XRPL
 });
 
-app.get('/metrics', async (req, res) => {
-  const metrics = await getPlatformMetrics();
-
-  // Filter metrics for SeagullCoin-related transactions
-  const seagullCoinMetrics = {
-    nftsMinted: metrics.nftsMinted.filter(nft => nft.token === "SeagullCoin").length,
-    transactionsProcessed: metrics.transactionsProcessed.filter(tx => tx.currency === "SeagullCoin").length,
-  };
-
-  res.json(seagullCoinMetrics);
-});
 
 app.get('/get/nfts', async (req, res) => {
   const { page = 1, limit = 10 } = req.query;

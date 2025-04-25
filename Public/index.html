@@ -1,147 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SGLCN-X20 Minting Platform</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .btn {
-      background-color: #4CAF50;
-      color: white;
-      padding: 15px 32px;
-      text-align: center;
-      font-size: 16px;
-      cursor: pointer;
-      border: none;
-      margin: 10px;
-    }
-    .btn:hover {
-      background-color: #45a049;
-    }
-    .error {
-      color: red;
-    }
-    .result {
-      margin-top: 20px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeagullCoin NFT Minting Platform</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        .btn {
+            padding: 15px 30px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Welcome to the SGLCN-X20 NFT Minting Platform</h1>
-    
-    <!-- Login Section -->
-    <button id="loginBtn" class="btn">Login with XUMM</button>
-
-    <!-- NFT Minting Form -->
-    <div id="mintingForm" style="display:none;">
-      <h3>Mint your NFT</h3>
-      <label for="nftName">NFT Name:</label>
-      <input type="text" id="nftName" required /><br><br>
-      <label for="nftDescription">Description:</label>
-      <textarea id="nftDescription" required></textarea><br><br>
-      <label for="nftImage">Image URL:</label>
-      <input type="text" id="nftImage" required /><br><br>
-      <label for="nftCollection">Collection (optional):</label>
-      <input type="text" id="nftCollection" /><br><br>
-
-      <button id="mintBtn" class="btn">Mint NFT</button>
-    </div>
-
-    <!-- Error message -->
-    <div id="errorMsg" class="error"></div>
-
-    <!-- Minted NFT Results -->
-    <div id="mintResult" class="result"></div>
-  </div>
-
-  <script>
-    const loginBtn = document.getElementById('loginBtn');
-    const mintBtn = document.getElementById('mintBtn');
-    const mintingForm = document.getElementById('mintingForm');
-    const errorMsg = document.getElementById('errorMsg');
-    const mintResult = document.getElementById('mintResult');
-    let walletAddress = null;
-
-    // Login via XUMM
-    loginBtn.addEventListener('click', async () => {
-      try {
-        const res = await fetch('/login');
-        const data = await res.json();
-        if (data.qr) {
-          const qrImage = new Image();
-          qrImage.src = data.qr;
-          qrImage.alt = 'Scan this QR code in your XUMM app';
-          document.body.appendChild(qrImage);
-        }
-        if (data.uuid) {
-          // Watch for XUMM user login confirmation (you can set up your own polling logic here)
-          const checkStatus = setInterval(async () => {
-            const statusRes = await fetch(`/status/${data.uuid}`);
-            const statusData = await statusRes.json();
-            if (statusData.loggedIn) {
-              walletAddress = statusData.walletAddress;
-              mintingForm.style.display = 'block';
-              loginBtn.style.display = 'none';
-              clearInterval(checkStatus);
-            }
-          }, 5000); // Check every 5 seconds
-        }
-      } catch (err) {
-        errorMsg.textContent = 'Login failed. Please try again later.';
-      }
-    });
-
-    // Mint NFT
-    mintBtn.addEventListener('click', async () => {
-      const nftName = document.getElementById('nftName').value;
-      const nftDescription = document.getElementById('nftDescription').value;
-      const nftImage = document.getElementById('nftImage').value;
-      const nftCollection = document.getElementById('nftCollection').value;
-
-      if (!nftName || !nftDescription || !nftImage) {
-        errorMsg.textContent = 'Please fill in all required fields!';
-        return;
-      }
-
-      const nftData = {
-        name: nftName,
-        description: nftDescription,
-        image: nftImage,
-        collection: nftCollection,
-      };
-
-      try {
-        const res = await fetch('/mint', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wallet: walletAddress, nftData })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-          mintResult.innerHTML = `
-            <h4>Minted NFT:</h4>
-            <p><strong>Token ID:</strong> ${data.nftTokenId}</p>
-            <p><strong>IPFS URL:</strong> <a href="${data.ipfsUrl}" target="_blank">${data.ipfsUrl}</a></p>
-            <p><strong>Transaction Hash:</strong> <a href="https://bithomp.com/explorer/${data.mintTxHash}" target="_blank">${data.mintTxHash}</a></p>
-            <p><strong>Payment Transaction:</strong> <a href="https://bithomp.com/explorer/${data.paymentTxHash}" target="_blank">${data.paymentTxHash}</a></p>
-          `;
-        } else {
-          errorMsg.textContent = data.error || 'Minting failed. Please try again later.';
-        }
-      } catch (err) {
-        errorMsg.textContent = 'Minting failed. Please try again later.';
-      }
-    });
-  </script>
+    <h1>Welcome to the SeagullCoin NFT Minting Platform!</h1>
+    <p>Explore the <a href="/docs" class="btn">API Documentation</a> for more details.</p>
 </body>
 </html>

@@ -516,6 +516,18 @@ async function searchNFTs({ searchCriteria, sortBy, sortOrder, page, limit }) {
   };
 }
 
+app.get('/enforcement', (req, res) => {
+  res.json({
+    mintingCurrency: 'SeagullCoin',
+    mintingCost: '0.5 SeagullCoin',
+    mintingEnforced: true,
+    acceptsXRP: false,
+    transferFee: 0,
+    buyingWithSeagullCoinOnly: false, // Update when you add this
+    sellingForSeagullCoinOnly: false, // Update when you add this
+  });
+});
+
 app.get('/get/nft/:nftId', async (req, res) => {
   const { nftId } = req.params;
   try {
@@ -664,6 +676,28 @@ app.get('/get/nfts', async (req, res) => {
     console.error('Error fetching NFTs:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+const enforcement = {
+  minting: {
+    currency: 'SeagullCoin',
+    cost: 0.5,
+    enforced: true
+  },
+  buy: {
+    allowed: false,
+    currency: 'SeagullCoin'
+  },
+  sell: {
+    allowed: false,
+    currency: 'SeagullCoin'
+  },
+  acceptsXRP: false,
+  transferFee: 0
+};
+
+app.get('/enforcement', (req, res) => {
+  res.json(enforcement);
 });
 
 app.get('/nfts', async (req, res) => {
@@ -1293,6 +1327,4 @@ app.get('/collections', async (req, res) => {
 });
 
 // Start the API server
-app.listen(process.env.PORT || 3000, () => {
-  console.log(`Server is running on port ${process.env.PORT || 3000}`);
-});
+ap

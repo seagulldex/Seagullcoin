@@ -1,190 +1,225 @@
 import express from 'express';
+import cors from 'cors';
 import bodyParser from 'body-parser';
-import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
-import { checkSeagullCoinPayment, mintNFT, transferNFT, listNFTForSale } from './xrp-utils.js';  // Import the utility functions
+import swaggerJsdoc from 'swagger-jsdoc';
+import dotenv from 'dotenv';
+import { checkSeagullCoinPayment, mintNFT, transferNFT, listNFTForSale, cancelXrpOffer } from './xrp-utils.js';
+
+dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
-// Body parser middleware
+// Middleware
+app.use(cors());
 app.use(bodyParser.json());
 
 // Swagger setup
 const swaggerOptions = {
-  swaggerDefinition: {
+  definition: {
     openapi: '3.0.0',
     info: {
-      title: 'SGLCN-X20 NFT Minting API',
+      title: 'SeagullCoin Minting API',
       version: '1.0.0',
-      description: 'API for minting and managing SeagullCoin-only NFTs',
+      description: 'API for minting and trading SeagullCoin-only NFTs on the XRPL',
     },
-    servers: [
-      {
-        url: 'http://localhost:3000',
-      },
-    ],
   },
-  apis: ['./server.js'], // Specify the location of the Swagger docs
+  apis: ['./server.js'],
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Swagger docs for /mint endpoint
+// Routes
 /**
  * @swagger
  * /mint:
  *   post:
- *     summary: Mint a new NFT using SeagullCoin
- *     description: Mint a new NFT by paying with SeagullCoin (0.5 SGLCN-X20).
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               wallet:
- *                 type: string
- *                 description: User's wallet address
- *               metadata:
- *                 type: object
- *                 description: Metadata for the NFT
+ *     summary: Mint a SeagullCoin-only NFT
+ *     description: Mint a new NFT using SeagullCoin only.
+ *     parameters:
+ *       - in: body
+ *         name: metadata
+ *         description: Metadata for the NFT
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             name:
+ *               type: string
+ *               description: Name of the NFT
+ *             description:
+ *               type: string
+ *               description: Description of the NFT
+ *             image:
+ *               type: string
+ *               description: URL of the image for the NFT
  *     responses:
  *       200:
  *         description: Successfully minted NFT
  *       400:
- *         description: Insufficient balance or error in minting
+ *         description: Invalid input
  */
 app.post('/mint', async (req, res) => {
   const { wallet, metadata } = req.body;
 
-  try {
-    // Check if the wallet has enough SeagullCoin balance
-    const hasEnoughBalance = await checkSeagullCoinPayment(wallet, 0.5);  // 0.5 SeagullCoin for minting
+  if (!wallet || !metadata) {
+    return res.status(400).send('Missing wallet or metadata');
+  }
 
-    if (!hasEnoughBalance) {
-      return res.status(400).json({ error: 'Not enough SeagullCoin to mint NFT' });
-    }
+  // Check SeagullCoin balance
+  const hasSglcn = await checkSeagullCoinPayment(wallet, 0.5);
+  if (!hasSglcn) {
+    return res.status(400).send('Insufficient SeagullCoin balance');
+  }
 
-    // Mint the NFT
-    const nftId = await mintNFT(wallet, metadata);
-
-    if (nftId) {
-      return res.status(200).json({ message: 'NFT minted successfully', nftId });
-    } else {
-      return res.status(500).json({ error: 'Error minting NFT' });
-    }
-  } catch (error) {
-    console.error('Minting error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+  // Mint the NFT
+  const nftId = await mintNFT(wallet, metadata);
+  if (nftId) {
+    return res.status(200).send({ nftId });
+  } else {
+    return res.status(500).send('Failed to mint NFT');
   }
 });
 
-// Swagger docs for /buy-nft endpoint
 /**
  * @swagger
  * /buy-nft:
  *   post:
- *     summary: Buy an NFT using SeagullCoin
- *     description: Buy an NFT by making an offer with SeagullCoin.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               wallet:
- *                 type: string
- *                 description: User's wallet address
- *               nftId:
- *                 type: string
- *                 description: ID of the NFT to purchase
- *               price:
- *                 type: number
- *                 description: The price for the NFT in SeagullCoin
+ *     summary: Buy a SeagullCoin-only NFT
+ *     description: Buy an NFT listed for sale using SeagullCoin only.
+ *     parameters:
+ *       - in: body
+ *         name: nft
+ *         description: NFT details to purchase
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             nftId:
+ *               type: string
+ *               description: The ID of the NFT
+ *             price:
+ *               type: number
+ *               description: Price of the NFT in SeagullCoin
+ *             buyerWallet:
+ *               type: string
+ *               description: Wallet address of the buyer
  *     responses:
  *       200:
- *         description: Successfully bought NFT
+ *         description: Successfully purchased NFT
  *       400:
- *         description: Error in buying NFT
+ *         description: Invalid input or insufficient balance
  */
 app.post('/buy-nft', async (req, res) => {
-  const { wallet, nftId, price } = req.body;
+  const { nftId, price, buyerWallet } = req.body;
 
-  try {
-    // Check if the wallet has enough SeagullCoin balance to buy the NFT
-    const hasEnoughBalance = await checkSeagullCoinPayment(wallet, price);
+  if (!nftId || !price || !buyerWallet) {
+    return res.status(400).send('Missing nftId, price, or buyerWallet');
+  }
 
-    if (!hasEnoughBalance) {
-      return res.status(400).json({ error: 'Not enough SeagullCoin to buy NFT' });
-    }
+  const hasSglcn = await checkSeagullCoinPayment(buyerWallet, price);
+  if (!hasSglcn) {
+    return res.status(400).send('Insufficient SeagullCoin balance');
+  }
 
-    // Transfer the NFT to the buyer
-    const transferResult = await transferNFT(wallet, nftId);
-
-    if (transferResult) {
-      return res.status(200).json({ message: 'NFT bought successfully', transferId: transferResult });
-    } else {
-      return res.status(500).json({ error: 'Error in transferring NFT' });
-    }
-  } catch (error) {
-    console.error('Buying error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+  // Transfer the NFT
+  const transactionId = await transferNFT(buyerWallet, nftId);
+  if (transactionId) {
+    return res.status(200).send({ transactionId });
+  } else {
+    return res.status(500).send('Failed to transfer NFT');
   }
 });
 
-// Swagger docs for /sell-nft endpoint
 /**
  * @swagger
  * /sell-nft:
  *   post:
- *     summary: List an NFT for sale using SeagullCoin
- *     description: List an NFT for sale by setting a price in SeagullCoin.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               wallet:
- *                 type: string
- *                 description: User's wallet address
- *               nftId:
- *                 type: string
- *                 description: ID of the NFT to list for sale
- *               price:
- *                 type: number
- *                 description: The price for the NFT in SeagullCoin
+ *     summary: List a SeagullCoin-only NFT for sale
+ *     description: List an NFT for sale using SeagullCoin only.
+ *     parameters:
+ *       - in: body
+ *         name: nft
+ *         description: NFT details to list for sale
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             nftId:
+ *               type: string
+ *               description: The ID of the NFT
+ *             price:
+ *               type: number
+ *               description: Price of the NFT in SeagullCoin
+ *             sellerWallet:
+ *               type: string
+ *               description: Wallet address of the seller
  *     responses:
  *       200:
  *         description: Successfully listed NFT for sale
  *       400:
- *         description: Error in listing NFT for sale
+ *         description: Invalid input
  */
 app.post('/sell-nft', async (req, res) => {
-  const { wallet, nftId, price } = req.body;
+  const { nftId, price, sellerWallet } = req.body;
 
-  try {
-    // List the NFT for sale
-    const listResult = await listNFTForSale(wallet, nftId, price);
+  if (!nftId || !price || !sellerWallet) {
+    return res.status(400).send('Missing nftId, price, or sellerWallet');
+  }
 
-    if (listResult) {
-      return res.status(200).json({ message: 'NFT listed for sale successfully', listId: listResult });
-    } else {
-      return res.status(500).json({ error: 'Error listing NFT for sale' });
-    }
-  } catch (error) {
-    console.error('Selling error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+  // List the NFT for sale
+  const transactionId = await listNFTForSale(sellerWallet, nftId, price);
+  if (transactionId) {
+    return res.status(200).send({ transactionId });
+  } else {
+    return res.status(500).send('Failed to list NFT');
   }
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+/**
+ * @swagger
+ * /cancel-xrp-offer:
+ *   post:
+ *     summary: Cancel any XRP offer for an NFT
+ *     description: Cancel any XRP-related offer for an NFT.
+ *     parameters:
+ *       - in: body
+ *         name: nft
+ *         description: NFT offer to cancel
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             nftId:
+ *               type: string
+ *               description: The ID of the NFT
+ *             wallet:
+ *               type: string
+ *               description: Wallet address of the user
+ *     responses:
+ *       200:
+ *         description: Successfully canceled XRP offer
+ *       400:
+ *         description: Invalid input
+ */
+app.post('/cancel-xrp-offer', async (req, res) => {
+  const { nftId, wallet } = req.body;
+
+  if (!nftId || !wallet) {
+    return res.status(400).send('Missing nftId or wallet');
+  }
+
+  const txnId = await cancelXrpOffer(wallet, nftId);
+  if (txnId) {
+    return res.status(200).send({ txnId });
+  } else {
+    return res.status(500).send('Failed to cancel XRP offer');
+  }
 });
 
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});

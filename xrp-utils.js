@@ -1,19 +1,37 @@
-import { XummSdk } from 'xumm-sdk';  // Assuming XUMM SDK is installed
-import xrpl from 'xrpl';    // Correct way to import the xrpl package
+import dotenv from 'dotenv';
+dotenv.config()// Log API keys to ensure they are loaded properly
+console.log('XUMM API Key:', process.env.XUMM_API_KEY);
+console.log('XUMM API Secret:', process.env.XUMM_API_SECRET);
 
-const XUMM_API_KEY = process.env.XUMM_API_KEY;
-const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
-const XUMM = new XummSdk(XUMM_API_KEY, XUMM_API_SECRET);
+if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
+  throw new Error('Invalid API Key and/or API Secret. Please check your .env file.');
+}
+;  // Loads the environment variables from .env
+import { XummSdk } from 'xumm-sdk';  // Assuming you have xumm-sdk installed
+import pkg from 'xrpl';  // XRP Client import
+const { XRPClient } = pkg;
 
+// Log API keys to ensure they are loaded properly
+console.log('XUMM API Key:', process.env.XUMM_API_KEY);
+console.log('XUMM API Secret:', process.env.XUMM_API_SECRET);
+
+if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
+  throw new Error('Invalid API Key and/or API Secret. Please check your .env file.');
+}
+
+// Initialize XUMM SDK with the API keys
+const XUMM = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+
+// Define constants for SeagullCoin
 const SGLCN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';  // SeagullCoin issuer address
 const SGLCN_CURRENCY = '53656167756C6C436F696E000000000000000000';  // SeagullCoin currency code (hex)
 
-const client = new xrpl.Client('wss://s1.ripple.com');  // Connect to the XRP Ledger
+// Initialize XRP Client
+const client = new XRPClient('wss://s1.ripple.com');  // Connect to the XRP Ledger
 
-// Check if the wallet has enough SeagullCoin balance
+// Function to check if the wallet has enough SeagullCoin
 export const checkSeagullCoinPayment = async (wallet, amount) => {
   try {
-    // Fetch the account's trustline balance for SeagullCoin
     const response = await client.request({
       method: 'account_lines',
       params: [{ account: wallet }],
@@ -31,17 +49,15 @@ export const checkSeagullCoinPayment = async (wallet, amount) => {
   }
 };
 
-// Mint the NFT (this is a simplified version)
+// Function to mint NFT
 export const mintNFT = async (wallet, metadata) => {
   try {
-    // Create a transaction to mint an NFT on the XRP Ledger (using XUMM)
     const payload = {
       tx_json: {
         TransactionType: 'NFTokenMint',
         Account: wallet,
-        // Other fields like metadata, transfer fee, etc.
         NFTokenTaxon: 0,
-        Flags: 131072, // to make the token non-fungible
+        Flags: 131072, // Non-fungible token flag
       },
       metadata: metadata,
     };
@@ -54,31 +70,7 @@ export const mintNFT = async (wallet, metadata) => {
   }
 };
 
-// Transfer the NFT to a buyer
-export const transferNFT = async (wallet, nftId) => {
-  try {
-    const payload = {
-      tx_json: {
-        TransactionType: 'NFTokenCreateOffer',
-        Account: wallet,
-        NFTokenID: nftId,
-        Amount: {
-          currency: SGLCN_CURRENCY,
-          value: '0.5',
-          issuer: SGLCN_ISSUER,
-        },
-      },
-    };
-    
-    const response = await XUMM.payload.create(payload);
-    return response?.meta?.txn_id;  // Return the transaction ID of the transfer
-  } catch (error) {
-    console.error('Error transferring NFT:', error);
-    return null;
-  }
-};
-
-// List the NFT for sale
+// Function to list NFT for sale with SeagullCoin only
 export const listNFTForSale = async (wallet, nftId, price) => {
   try {
     const payload = {
@@ -93,11 +85,54 @@ export const listNFTForSale = async (wallet, nftId, price) => {
         },
       },
     };
-    
+
     const response = await XUMM.payload.create(payload);
     return response?.meta?.txn_id;  // Return the transaction ID for listing the NFT
   } catch (error) {
     console.error('Error listing NFT for sale:', error);
+    return null;
+  }
+};
+
+// Function to transfer NFT to a buyer (SeagullCoin only)
+export const transferNFT = async (wallet, nftId) => {
+  try {
+    const payload = {
+      tx_json: {
+        TransactionType: 'NFTokenCreateOffer',
+        Account: wallet,
+        NFTokenID: nftId,
+        Amount: {
+          currency: SGLCN_CURRENCY,
+          value: '0.5',
+          issuer: SGLCN_ISSUER,
+        },
+      },
+    };
+
+    const response = await XUMM.payload.create(payload);
+    return response?.meta?.txn_id;  // Return the transaction ID of the transfer
+  } catch (error) {
+    console.error('Error transferring NFT:', error);
+    return null;
+  }
+};
+
+// Function to cancel XRP offers if detected
+export const cancelXrpOffer = async (wallet, nftId) => {
+  try {
+    const payload = {
+      tx_json: {
+        TransactionType: 'NFTokenCancelOffer',
+        Account: wallet,
+        NFTokenID: nftId,
+      },
+    };
+
+    const response = await XUMM.payload.create(payload);
+    return response?.meta?.txn_id;  // Return the transaction ID of the cancellation
+  } catch (error) {
+    console.error('Error cancelling XRP offer:', error);
     return null;
   }
 };

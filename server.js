@@ -2,18 +2,15 @@ const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const dotenv = require('dotenv');
-const XummSdk = require('xumm-sdk');
+const { XummSdk } = require('xumm-sdk');  // Corrected import
 const axios = require('axios');
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Initialize XUMM SDK
-const xumm = new XummSdk({
-  apiKey: process.env.XUMM_API_KEY,
-  secretKey: process.env.XUMM_SECRET_KEY,
-});
+// Initialize XUMM SDK (correct way)
+const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_SECRET_KEY);
 
 // SeagullCoin information
 const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';

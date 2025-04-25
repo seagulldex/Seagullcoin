@@ -1,10 +1,11 @@
-
 import express from 'express';
 import { Client } from 'xrpl';
 import { XummSdk } from 'xumm-sdk';  // Corrected import
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import swaggerJSDoc from 'swagger-jsdoc'; // Import swagger-jsdoc
+import swaggerUi from 'swagger-ui-express'; // Import swagger-ui-express
 
 dotenv.config();
 
@@ -21,12 +22,69 @@ const client = new Client(process.env.XRPL_NODE_URL);
 app.use(bodyParser.json());
 app.use(cors());
 
+// Swagger setup
+const swaggerOptions = {
+    swaggerDefinition: {
+        info: {
+            title: 'SeagullCoin NFT Minting API',
+            version: '1.0.0',
+            description: 'API for SeagullCoin-only minting, buying, and selling NFTs',
+        },
+        servers: [
+            {
+                url: `http://localhost:${port}`, // Adjust the URL if needed for production
+            },
+        ],
+    },
+    apis: ['./server.js'], // Path to the API doc
+};
+
+// Initialize swagger-jsdoc
+const swaggerSpec = swaggerJSDoc(swaggerOptions);
+
+// Serve Swagger docs at /docs
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Info route to check if API is running
 app.get('/api/info', (req, res) => {
     res.send('SeagullCoin NFT Minting API is up and running!');
 });
 
-// Minting Endpoint - Ensure SeagullCoin-only minting
+/**
+ * @swagger
+ * /api/mint:
+ *   post:
+ *     description: Mint an NFT using SeagullCoin
+ *     parameters:
+ *       - name: wallet
+ *         in: body
+ *         description: Wallet address of the user
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - name: nftMetadata
+ *         in: body
+ *         description: Metadata for the NFT
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             name:
+ *               type: string
+ *             description:
+ *               type: string
+ *             file:
+ *               type: string
+ *             collection:
+ *               type: string
+ *     responses:
+ *       200:
+ *         description: NFT minted successfully
+ *       400:
+ *         description: Invalid input or insufficient balance
+ *       500:
+ *         description: Server error
+ */
 app.post('/api/mint', async (req, res) => {
     const { wallet, nftMetadata } = req.body;
 
@@ -74,7 +132,38 @@ async function mintNFT(wallet, nftMetadata) {
     return mintResult;
 }
 
-// Buy NFT Endpoint (SeagullCoin only)
+/**
+ * @swagger
+ * /api/buy-nft:
+ *   post:
+ *     description: Buy an NFT using SeagullCoin
+ *     parameters:
+ *       - name: wallet
+ *         in: body
+ *         description: Wallet address of the user
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - name: nftId
+ *         in: body
+ *         description: NFT ID to be purchased
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - name: price
+ *         in: body
+ *         description: Price of the NFT in SeagullCoin
+ *         required: true
+ *         schema:
+ *           type: number
+ *     responses:
+ *       200:
+ *         description: NFT bought successfully
+ *       400:
+ *         description: Invalid input
+ *       500:
+ *         description: Server error
+ */
 app.post('/api/buy-nft', async (req, res) => {
     const { wallet, nftId, price } = req.body;
 

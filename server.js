@@ -6,6 +6,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import swaggerJSDoc from 'swagger-jsdoc'; // Import swagger-jsdoc
 import swaggerUi from 'swagger-ui-express'; // Import swagger-ui-express
+import axios from 'axios';  // Added axios for making HTTP requests to IPFS
 
 dotenv.config();
 
@@ -45,34 +46,94 @@ const swaggerSpec = swaggerJSDoc(swaggerOptions);
 // Serve Swagger docs at /docs
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// **Root Route** - This will ensure the "Cannot GET /" error doesn't occur
-app.get('/', (req, res) => {
-    res.send('Welcome to the SeagullCoin NFT Minting API. Access the API documentation at /docs');
+// Info route to check if API is running
+app.get('/api/info', (req, res) => {
+    res.send('SeagullCoin NFT Minting API is up and running!');
 });
 
-// **Metrics Endpoints** 
+// Helper function to fetch NFT details from NFT.Storage using the NFT ID (IPFS hash)
+async function getNFTDetails(nftId) {
+    try {
+        // Construct the URL to fetch metadata from NFT.Storage via the IPFS hash (NFT ID)
+        const ipfsUrl = `https://ipfs.infura.io/ipfs/${nftId}`;
+
+        // Make a GET request to the IPFS URL to fetch metadata
+        const response = await axios.get(ipfsUrl);
+
+        // Return the metadata if found
+        if (response.data) {
+            return {
+                id: nftId,
+                name: response.data.name,
+                description: response.data.description,
+                file: response.data.image, // Assuming 'image' is the property storing the file URL
+                collection: response.data.collection || 'Unknown Collection', // Assuming a collection field
+            };
+        }
+
+        // If no data is found, return null
+        return null;
+    } catch (error) {
+        throw new Error('Error fetching NFT details from IPFS: ' + error.message);
+    }
+}
 
 /**
  * @swagger
- * /api/metrics:
+ * /api/nft/{id}:
  *   get:
- *     description: Get the metrics of minted NFTs and total transactions
+ *     description: Get details of a specific NFT by its ID
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: The ID (IPFS hash) of the NFT to fetch
+ *         required: true
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
- *         description: Metrics fetched successfully
+ *         description: NFT details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   description: The unique ID of the NFT
+ *                 name:
+ *                   type: string
+ *                   description: Name of the NFT
+ *                 description:
+ *                   type: string
+ *                   description: Description of the NFT
+ *                 file:
+ *                   type: string
+ *                   description: URI or file URL associated with the NFT
+ *                 collection:
+ *                   type: string
+ *                   description: The collection the NFT belongs to
+ *       400:
+ *         description: Invalid NFT ID
  *       500:
  *         description: Server error
  */
-app.get('/api/metrics', async (req, res) => {
-    try {
-        // Placeholder for NFT metrics, could fetch from a DB or blockchain directly
-        const metrics = {
-            totalMintedNFTs: 123, // Example metric
-            totalTransactions: 456, // Example metric
-            totalSeagullCoinSpent: 7890, // Example metric (total amount of SeagullCoin used in transactions)
-        };
+app.get('/api/nft/:id', async (req, res) => {
+    const { id } = req.params;
 
-        res.status(200).json(metrics);
+    if (!id) {
+        return res.status(400).json({ error: 'NFT ID is required' });
+    }
+
+    try {
+        // Fetch the NFT details using the ID (IPFS hash)
+        const nftDetails = await getNFTDetails(id);
+
+        if (!nftDetails) {
+            return res.status(404).json({ error: 'NFT not found' });
+        }
+
+        res.status(200).json(nftDetails);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -82,7 +143,7 @@ app.get('/api/metrics', async (req, res) => {
  * @swagger
  * /api/mint:
  *   post:
- *     description: Mint an NFT using SeagullCoin only (SGLCN-X20)
+ *     description: Mint an NFT using SeagullCoin
  *     parameters:
  *       - name: wallet
  *         in: body
@@ -92,7 +153,7 @@ app.get('/api/metrics', async (req, res) => {
  *           type: string
  *       - name: nftMetadata
  *         in: body
- *         description: Metadata for the NFT (name, description, file, collection)
+ *         description: Metadata for the NFT
  *         required: true
  *         schema:
  *           type: object
@@ -109,7 +170,7 @@ app.get('/api/metrics', async (req, res) => {
  *       200:
  *         description: NFT minted successfully
  *       400:
- *         description: Insufficient balance or invalid input
+ *         description: Invalid input or insufficient balance
  *       500:
  *         description: Server error
  */
@@ -164,7 +225,7 @@ async function mintNFT(wallet, nftMetadata) {
  * @swagger
  * /api/buy-nft:
  *   post:
- *     description: Buy an NFT using SeagullCoin (SGLCN-X20)
+ *     description: Buy an NFT using SeagullCoin
  *     parameters:
  *       - name: wallet
  *         in: body
@@ -180,7 +241,7 @@ async function mintNFT(wallet, nftMetadata) {
  *           type: string
  *       - name: price
  *         in: body
- *         description: Price of the NFT in SeagullCoin (SGLCN-X20)
+ *         description: Price of the NFT in SeagullCoin
  *         required: true
  *         schema:
  *           type: number
@@ -188,7 +249,7 @@ async function mintNFT(wallet, nftMetadata) {
  *       200:
  *         description: NFT bought successfully
  *       400:
- *         description: Invalid input or insufficient funds
+ *         description: Invalid input
  *       500:
  *         description: Server error
  */
@@ -216,11 +277,11 @@ async function buyNFT(wallet, nftId, price) {
         Destination: process.env.SERVICE_WALLET, // The wallet of the NFT seller
     };
 
-    const buyResult = await client.submitAndWait(payment);
-    return buyResult;
+    const paymentResult = await client.submitAndWait(payment);
+    return paymentResult;
 }
 
-// Start server
+// Start the server
 app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+    console.log(`Server running on port ${port}`);
 });

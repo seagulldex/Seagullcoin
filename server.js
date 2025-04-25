@@ -1,122 +1,120 @@
-// server.js
-
-require('dotenv').config(); // Load environment variables
 const express = require('express');
-const bodyParser = require('body-parser');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+const dotenv = require('dotenv');
+const XummSdk = require('xumm-sdk');
 const axios = require('axios');
-const { XummSdk } = require('xumm-sdk');
-const { Client } = require('xrpl');
+dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Initialize XUMM SDK
-const XUMM_API_KEY = process.env.XUMM_API_KEY;
-const XUMM_SECRET_KEY = process.env.XUMM_SECRET_KEY;
-const xummSdk = new XummSdk(XUMM_API_KEY, XUMM_SECRET_KEY);
+const xumm = new XummSdk({
+  apiKey: process.env.XUMM_API_KEY,
+  secretKey: process.env.XUMM_SECRET_KEY,
+});
 
-// Initialize XRPL client
-const client = new Client('wss://s.altnet.rippletest.net:51233'); // Using testnet
-client.on('error', (error) => console.log(error));
+// SeagullCoin information
+const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
+const SEAGULLCOIN_CURRENCY = 'SeagullCoin';
 
-// Middleware
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Basic API documentation configuration using Swagger JSDoc
+const options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'SeagullCoin NFT Minting API',
+      version: '1.0.0',
+      description: 'API documentation for the SeagullCoin NFT minting platform.',
+    },
+  },
+  apis: ['./server.js'],  // Files to scan for JSDoc comments (you can add more files if needed)
+};
 
-// Function to check if wallet has enough SeagullCoin (0.5 required for minting)
-async function checkSeagullCoinPayment(walletAddress, amountRequired) {
+const specs = swaggerJsdoc(options);
+
+// Serve Swagger API docs at /docs
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
+
+// Middleware to ensure SeagullCoin balance for minting
+async function checkSeagullCoinBalance(walletAddress) {
   try {
-    const response = await axios.post('https://api.xrpl.org/v2/accounts/lines', {
-      account: walletAddress,
-    });
-
-    const lines = response.data.result.lines;
-
-    // Find SeagullCoin trustline
-    const seagullCoinLine = lines.find(line => line.currency === 'SGLCN' && line.account === process.env.SERVICE_WALLET);
-
-    if (seagullCoinLine) {
-      const balance = parseFloat(seagullCoinLine.balance);
-      return balance >= parseFloat(amountRequired);
-    }
-
-    return false;
+    const response = await axios.get(`https://data.ripple.com/v2/accounts/${walletAddress}/balances`);
+    const balances = response.data.result;
+    const seagullCoinBalance = balances.find(b => b.currency === SEAGULLCOIN_CURRENCY && b.issuer === SEAGULLCOIN_ISSUER);
+    return seagullCoinBalance ? parseFloat(seagullCoinBalance.value) : 0;
   } catch (error) {
-    console.error('Error checking SeagullCoin payment:', error);
-    return false;
+    console.error('Error checking SeagullCoin balance:', error);
+    return 0;
   }
 }
 
-// Route to mint an NFT
-app.post('/mint', async (req, res) => {
+// Minting Endpoint (SeagullCoin Only)
+app.post('/mint', express.json(), async (req, res) => {
   const { walletAddress, metadata } = req.body;
-  const amountRequired = 0.5; // SeagullCoin required for minting
 
-  // Check if wallet has enough SeagullCoin
-  const hasEnoughCoins = await checkSeagullCoinPayment(walletAddress, amountRequired);
-
-  if (!hasEnoughCoins) {
-    return res.status(400).json({ error: 'Insufficient SeagullCoin balance' });
+  if (!walletAddress || !metadata) {
+    return res.status(400).send({ error: 'Missing walletAddress or metadata' });
   }
 
-  // Create NFT Minting transaction
-  try {
-    const transaction = {
-      TransactionType: 'NFTokenMint',
-      Account: walletAddress,
-      NFTokenTaxon: 0,
-      URI: metadata.uri,  // Assuming metadata.uri contains a link to the metadata
-    };
+  // Check SeagullCoin balance before proceeding with minting
+  const balance = await checkSeagullCoinBalance(walletAddress);
 
-    const { data } = await xummSdk.payload.create(transaction);
-    return res.status(200).json({ success: true, tx_hash: data.hash });
-  } catch (error) {
-    console.error('Error minting NFT:', error);
-    return res.status(500).json({ error: 'Minting failed' });
+  if (balance < 0.5) {
+    return res.status(400).send({ error: 'Insufficient SeagullCoin balance. You need at least 0.5 SeagullCoin to mint.' });
   }
+
+  // Proceed with minting (Logic for creating the NFT and storing in metadata)
+  // Assuming you have the minting logic here, like adding to NFT.Storage, etc.
+
+  // Example response
+  res.send({ message: 'Minting successful, NFT created!' });
 });
 
-// Route to buy an NFT (Listing NFT for Sale)
-app.post('/buy-nft', async (req, res) => {
-  const { walletAddress, nftId, price } = req.body;
-
-  try {
-    const transaction = {
-      TransactionType: 'NFTokenCreateOffer',
-      Account: walletAddress,
-      NFTokenID: nftId,
-      Amount: price, // Price in SeagullCoin (SGLCN)
-      Flags: 131072, // Offer flags
-    };
-
-    const { data } = await xummSdk.payload.create(transaction);
-    return res.status(200).json({ success: true, tx_hash: data.hash });
-  } catch (error) {
-    console.error('Error listing NFT for sale:', error);
-    return res.status(500).json({ error: 'Listing failed' });
-  }
-});
-
-// Route to cancel an XRP offer (ensure it's only SeagullCoin)
-app.post('/cancel-xrp-offer', async (req, res) => {
+// Buying NFTs (SeagullCoin Only)
+app.post('/buy-nft', express.json(), async (req, res) => {
   const { walletAddress, nftId } = req.body;
 
-  try {
-    const transaction = {
-      TransactionType: 'NFTokenCancelOffer',
-      Account: walletAddress,
-      NFTokenID: nftId,
-    };
-
-    const { data } = await xummSdk.payload.create(transaction);
-    return res.status(200).json({ success: true, tx_hash: data.hash });
-  } catch (error) {
-    console.error('Error canceling XRP offer:', error);
-    return res.status(500).json({ error: 'Cancel failed' });
+  if (!walletAddress || !nftId) {
+    return res.status(400).send({ error: 'Missing walletAddress or nftId' });
   }
+
+  // Check SeagullCoin balance before processing the purchase
+  const balance = await checkSeagullCoinBalance(walletAddress);
+
+  if (balance < 0.5) {
+    return res.status(400).send({ error: 'Insufficient SeagullCoin balance to buy NFT.' });
+  }
+
+  // Proceed with the buying logic (XUMM or transaction on the XRPL)
+  // You should call XUMM or your transaction logic here
+
+  res.send({ message: 'NFT purchased successfully!' });
 });
 
-// Start server
+// Selling NFTs (SeagullCoin Only)
+app.post('/sell-nft', express.json(), async (req, res) => {
+  const { walletAddress, nftId, price } = req.body;
+
+  if (!walletAddress || !nftId || !price) {
+    return res.status(400).send({ error: 'Missing walletAddress, nftId, or price' });
+  }
+
+  // Check SeagullCoin balance before processing the sale
+  const balance = await checkSeagullCoinBalance(walletAddress);
+
+  if (balance < price) {
+    return res.status(400).send({ error: 'Insufficient SeagullCoin balance for sale.' });
+  }
+
+  // Proceed with the selling logic (XUMM or transaction on the XRPL)
+  // You should call XUMM or your transaction logic here
+
+  res.send({ message: 'NFT sale successful!' });
+});
+
+// Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });

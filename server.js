@@ -45,6 +45,11 @@ const swaggerSpec = swaggerJSDoc(swaggerOptions);
 // Serve Swagger docs at /docs
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// Default route for root (fixing the "Cannot GET /" issue)
+app.get('/', (req, res) => {
+    res.send('Welcome to the SeagullCoin NFT Minting API. Access the API documentation at /docs');
+});
+
 // Info route to check if API is running
 app.get('/api/info', (req, res) => {
     res.send('SeagullCoin NFT Minting API is up and running!');

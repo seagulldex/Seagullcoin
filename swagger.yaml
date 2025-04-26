@@ -1,48 +1,45 @@
-swagger: "2.0"
+openapi: "3.0.0"
 info:
-  description: "API documentation for SGLCN-X20 Minting API"
+  title: "SeagullCoin NFT Minting API"
+  description: "API for minting SeagullCoin-only NFTs, verifying payments, and interacting with the SeagullCoin network."
   version: "1.0.0"
-  title: "SGLCN-X20 Minting API"
 paths:
   /mint:
     post:
-      summary: "Mint a new NFT"
-      parameters:
-        - name: "nft_name"
-          in: "formData"
-          required: true
-          type: "string"
-        - name: "nft_description"
-          in: "formData"
-          required: true
-          type: "string"
-        - name: "nft_file"
-          in: "formData"
-          required: true
-          type: "file"
+      summary: "Mint a SeagullCoin NFT"
+      description: "Allows a user to mint an NFT with a 0.5 SeagullCoin payment."
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nft_name:
+                  type: string
+                  description: "Name of the NFT"
+                nft_description:
+                  type: string
+                  description: "Description of the NFT"
+                domain:
+                  type: string
+                  description: "Domain of the NFT"
+                properties:
+                  type: string
+                  description: "Additional properties of the NFT"
+                nft_file:
+                  type: string
+                  format: binary
+                  description: "File representing the NFT image or media"
       responses:
-        200:
+        '200':
           description: "NFT minted successfully"
-        400:
-          description: "Invalid input"
-        500:
-          description: "Internal server error"
-  /buy-nft:
-    post:
-      summary: "Buy an NFT"
-      parameters:
-        - name: "nftId"
-          in: "formData"
-          required: true
-          type: "string"
-        - name: "price"
-          in: "formData"
-          required: true
-          type: "number"
-      responses:
-        200:
-          description: "NFT purchased successfully"
-        400:
-          description: "Invalid input"
-        500:
-          description: "Internal server error"
+          content:
+            application/json:
+              example:
+                success: true
+                nftId: "abc123"
+        '400':
+          description: "Minting requires 0.5 SeagullCoin payment"
+        '500':
+          description: "Failed to mint NFT"

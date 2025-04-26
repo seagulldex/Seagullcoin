@@ -184,6 +184,63 @@ async function checkSeagullCoinBalance(wallet) {
     return balance;
 }
 
+app.post("/mint", async (req, res) => {
+  const { wallet, metadataUrl, collectionId } = req.body;
+
+  if (!wallet || !metadataUrl) {
+    return res.status(400).json({ error: "Wallet and metadata URL are required." });
+  }
+
+  try {
+    // Fetch transactions to check 0.5 SeagullCoin payment
+    const txs = await client.request({
+      command: "account_tx",
+      account: wallet,
+      ledger_index_min: -1,
+      ledger_index_max: -1,
+      limit: 10,
+    });
+
+    const paid = txs.result.transactions.some(tx => {
+      const t = tx.tx;
+      return (
+        t.TransactionType === "Payment" &&
+        t.Amount &&
+        typeof t.Amount === "object" &&
+        t.Amount.currency === "53656167756C6C436F696E000000000000000000" &&
+        t.Amount.value === "0.5" &&
+        t.Amount.issuer === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno" &&
+        t.Destination === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U"
+      );
+    });
+
+    if (!paid) {
+      return res.status(402).json({ error: "0.5 SeagullCoin payment not found." });
+    }
+
+    // Mint NFT logic
+    const mintTx = {
+      TransactionType: "NFTokenMint",
+      Account: wallet,
+      URI: Buffer.from(metadataUrl).toString("hex").toUpperCase(),
+      Flags: 8,
+      TransferFee: 0,
+      NFTokenTaxon: collectionId || 0,
+    };
+
+    const prepared = await client.autofill(mintTx);
+    const signed = await walletClient.sign(prepared);
+    const result = await client.submitAndWait(signed.tx_blob);
+
+    const tokenID = result.result.meta?.nftoken_id;
+
+    res.json({ success: true, tokenID, metadataUrl });
+  } catch (err) {
+    console.error("Minting error:", err);
+    res.status(500).json({ error: "Minting failed" });
+  }
+});
+
 // Swagger: Get SeagullCoin balance for a given wallet
 /**
  * @swagger

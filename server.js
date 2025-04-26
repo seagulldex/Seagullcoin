@@ -1,11 +1,11 @@
-import express from 'express';
+import express from 'express';  
 import session from 'express-session';
 import cors from 'cors';
 import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import { mintNFT } from './mintingLogic.js';
+import { mintNFT, verifySeagullCoinPayment } from './mintingLogic.js'; // Ensure verifySeagullCoinPayment exists
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
@@ -38,6 +38,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Swagger JSON for API docs
 app.get('/swagger.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'swagger.json'));
+});
+
+// Add the root route to serve a response for / (root)
+app.get('/', (req, res) => {
+  res.send('Welcome to the SeagullCoin NFT Minting API!');
 });
 
 // ========== XUMM OAUTH2 ==========
@@ -111,6 +116,12 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
   const nft_file = req.file;
 
   try {
+    // Ensure SeagullCoin payment before minting
+    const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
+    if (!paymentValid) {
+      return res.status(400).json({ error: 'Minting requires 0.5 SeagullCoin payment' });
+    }
+
     const result = await mintNFT(nft_name, nft_description, nft_file, domain, properties);
 
     if (result.success) {

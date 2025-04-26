@@ -15,6 +15,10 @@ const port = process.env.PORT || 3000;
 
 // Initialize XRPL and XUMM clients
 const xrplClient = new XRPLClient(process.env.XRPL_NODE_URL);
+// SeagullCoin X20 token details
+const SEAGULLCOIN_HEX = '53656167756C6C436F696E000000000000000000';
+const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
+
 const walletClient = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 // NFT Storage Client setup

@@ -14,14 +14,12 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Initialize XRPL and XUMM clients
-const xrplClient = new XRPLClient('wss://s.altnet.rippletest.net:51233'); // Use Mainnet URL if needed
+const xrplClient = new XRPLClient(process.env.XRPL_NODE_URL);
 const walletClient = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
-// XRPL Client setup
-const client = new Client(process.env.XRPL_NODE_URL);
 
 // NFT Storage Client setup
 const nftStorageClient = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
+
 
 // Middleware for JSON parsing and CORS
 app.use(bodyParser.json());

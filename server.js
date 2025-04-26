@@ -3,8 +3,8 @@ const session = require("express-session");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const path = require("path");
-const multer = require("multer");
-const { mintNFT } = require("./mintingLogic");
+const multer = require('multer');
+const { mintNFT, processNFTOffer, processNFTSale } = require('./mintingLogic');  // Assuming these functions are in mintingLogic.js
 require("dotenv").config();
 
 const app = express();
@@ -13,33 +13,33 @@ const app = express();
 const XUMM_CLIENT_ID = process.env.XUMM_CLIENT_ID;
 const XUMM_CLIENT_SECRET = process.env.XUMM_CLIENT_SECRET;
 const XUMM_REDIRECT_URI = process.env.XUMM_REDIRECT_URI;
-const XUMM_ACCESS_TOKEN = process.env.XUMM_ACCESS_TOKEN; // Ensure this is correctly set
+
+// SeagullCoin details
+const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
+const SEAGULLCOIN_CURRENCY = 'SeagullCoin';
+const SEAGULLCOIN_AMOUNT = 0.5;  // Minting cost in SeagullCoin
 
 // Middleware
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(
-  session({
-    secret: "sglcn_secret_session",
-    resave: false,
-    saveUninitialized: true,
-  })
-);
+app.use(session({
+  secret: "sglcn_secret_session",
+  resave: false,
+  saveUninitialized: true,
+}));
 
 // Setup for serving static files (HTML, CSS, JS)
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve swagger.json for documentation
-app.get("/swagger.json", (req, res) => {
-  res.sendFile(path.join(__dirname, "swagger.json"));
+app.get('/swagger.json', (req, res) => {
+  res.sendFile(path.join(__dirname, 'swagger.json'));
 });
 
 // ======= LOGIN (OAuth2) ========
 app.get("/api/login", (req, res) => {
-  const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(
-    XUMM_REDIRECT_URI
-  )}&scope=identity%20payload`;
+  const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}&scope=identity%20payload`;
   res.redirect(authUrl);
 });
 
@@ -52,13 +52,10 @@ app.get("/api/callback", async (req, res) => {
     const tokenRes = await fetch("https://oauth2.xumm.app/token", {
       method: "POST",
       headers: {
-        Authorization:
-          "Basic " + Buffer.from(`${XUMM_CLIENT_ID}:${XUMM_CLIENT_SECRET}`).toString("base64"),
+        Authorization: "Basic " + Buffer.from(`${XUMM_CLIENT_ID}:${XUMM_CLIENT_SECRET}`).toString("base64"),
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: `grant_type=authorization_code&code=${code}&redirect_uri=${encodeURIComponent(
-        XUMM_REDIRECT_URI
-      )}`,
+      body: `grant_type=authorization_code&code=${code}&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}`,
     });
 
     const tokenData = await tokenRes.json();
@@ -105,93 +102,76 @@ app.get("/api/ping", (req, res) => {
   res.json({ status: "SGLCN-X20 Minting API is alive" });
 });
 
-// ======= Check SeagullCoin Balance ========
-const fetchSeagullCoinBalance = async (address) => {
-  const url = `https://xumm.app/api/v1/platform/accounts/${address}/balances`;
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${XUMM_ACCESS_TOKEN}`, // Replace with the actual XUMM token
-    },
-  });
-  const data = await response.json();
-  const seagullCoinBalance = data.balances.find((b) => b.currency === "SGLCN-X20");
-
-  return seagullCoinBalance ? parseFloat(seagullCoinBalance.value) : 0;
-};
-
 // ======= NFT Minting Route ========
-const upload = multer({ dest: "uploads/" }); // To handle file uploads
-app.post("/mint", upload.single("nft_file"), async (req, res) => {
-  const { nft_name, nft_description, domain, properties, userAddress } = req.body;
+const upload = multer({ dest: 'uploads/' }); // To handle file uploads
+app.post('/mint', upload.single('nft_file'), async (req, res) => {
+  const { nft_name, nft_description, domain, properties } = req.body;
   const nft_file = req.file;
 
-  try {
-    // Check if user has enough SeagullCoin
-    const balance = await fetchSeagullCoinBalance(userAddress);
-    if (balance < 0.5) {
-      return res.status(400).json({ error: "Insufficient SeagullCoin balance to mint NFT" });
-    }
+  // Ensure the user has 0.5 SeagullCoin for minting
+  const userWallet = req.session.xumm.wallet; // Assuming wallet address is stored in session
+  const hasEnoughBalance = await checkSeagullCoinBalance(userWallet);
+  
+  if (!hasEnoughBalance) {
+    return res.status(400).json({ error: 'Insufficient SeagullCoin balance for minting' });
+  }
 
-    // Proceed with minting
+  try {
+    // Call your minting logic to interact with XRPL
     const result = await mintNFT(nft_name, nft_description, nft_file, domain, properties);
 
     if (result.success) {
       res.json({ success: true, nftId: result.nftId });
     } else {
-      res.status(500).json({ error: "Minting failed" });
+      res.status(500).json({ error: 'Minting failed' });
     }
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-// ======= Restrict Offer to SeagullCoin for Buying/Selling NFTs ========
-app.post("/buy-nft", async (req, res) => {
-  const { nftId, offerAmount, userAddress } = req.body;
+// ======= NFT Offer Route ========
+app.post('/offer', async (req, res) => {
+  const { nftId, offerAmount } = req.body;
 
-  // Check if offer is in SeagullCoin
-  if (offerAmount.currency !== "SGLCN-X20") {
-    return res.status(400).json({ error: "Only SeagullCoin is accepted for buying NFTs" });
+  if (offerAmount <= 0) {
+    return res.status(400).json({ error: 'Offer amount must be greater than zero' });
   }
 
-  // Proceed with buying NFT logic here
   try {
-    const result = await processNFTOffer(nftId, offerAmount, userAddress);
+    const result = await processNFTOffer(nftId, offerAmount);
 
     if (result.success) {
-      res.json({ success: true, message: "NFT purchase offer created" });
+      res.json({ success: true, offerId: result.offerId });
     } else {
-      res.status(500).json({ error: "Failed to create offer" });
+      res.status(500).json({ error: 'Offer processing failed' });
     }
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-// ======= Restrict Selling NFT to SeagullCoin ========
-app.post("/sell-nft", async (req, res) => {
-  const { nftId, sellAmount, userAddress } = req.body;
+// ======= NFT Sale Route ========
+app.post('/sale', async (req, res) => {
+  const { nftId, saleAmount } = req.body;
 
-  // Check if sale amount is in SeagullCoin
-  if (sellAmount.currency !== "SGLCN-X20") {
-    return res.status(400).json({ error: "Only SeagullCoin is accepted for selling NFTs" });
+  if (saleAmount <= 0) {
+    return res.status(400).json({ error: 'Sale amount must be greater than zero' });
   }
 
-  // Proceed with selling NFT logic here
   try {
-    const result = await processNFTSale(nftId, sellAmount, userAddress);
+    const result = await processNFTSale(nftId, saleAmount);
 
     if (result.success) {
-      res.json({ success: true, message: "NFT sale created" });
+      res.json({ success: true, saleId: result.saleId });
     } else {
-      res.status(500).json({ error: "Failed to create sale" });
+      res.status(500).json({ error: 'Sale processing failed' });
     }
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -200,3 +180,15 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}/docs`);
 });
+
+// Function to check SeagullCoin balance
+async function checkSeagullCoinBalance(walletAddress) {
+  const response = await fetch(`https://api.xrpl.org/accounts/${walletAddress}/balances`);
+  const data = await response.json();
+  const balance = data.result.balances.find(balance => balance.currency === SEAGULLCOIN_CURRENCY);
+  
+  if (balance && balance.value >= SEAGULLCOIN_AMOUNT) {
+    return true;
+  }
+  return false;
+}

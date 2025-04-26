@@ -3,9 +3,9 @@ const session = require("express-session");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const path = require("path");
-const app = express();
-
 require("dotenv").config();
+
+const app = express();
 
 // Middleware
 app.use(cors({ origin: "*", credentials: true }));
@@ -24,115 +24,8 @@ app.get('/swagger.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'swagger.json'));
 });
 
-// XUMM const express = require("express");
-const session = require("express-session");
-const cors = require("cors");
-const fetch = require("node-fetch");
-const path = require("path");
-const app = express();
-
-require("dotenv").config();
-
-// Middleware
-app.use(cors({ origin: "*", credentials: true }));
-app.use(express.json());
-app.use(session({
-  secret: "sglcn_secret_session",
-  resave: false,
-  saveUninitialized: true,
-}));
-
-// Static Swagger UI
-app.use('/docs', express.static(path.join(__dirname, 'swagger-ui')));
-
-// Serve swagger.json
-app.get('/swagger.json', (req, res) => {
-  res.sendFile(path.join(__dirname, 'swagger.json'));
-});
-
-// XUMM OAuth2 constants (replace with actual values)
-const XUMconst express = require("express");
-const session = require("express-session");
-const cors = require("cors");
-const fetch = require("node-fetch");
-const path = require("path");
-const app = express();
-
-require("dotenv").config();
-OAuth2 constants (replace with actual values)
-const XUMconst express = require("express");
-const session = require("express-session");
-const cors = require("cors");
-const fetch = require("node-fetch");
-const path = require("path");
-const app = express();
-
-require("dotenv").config();
-
-// Middleware
-app.use(cors({ origin: "*", credentials: true }));
-app.use(express.json());
-app.use(session({
-  secret: "sglcn_secret_session",
-  resave: false,
-  saveUninitialized: true,
-}));
-
-// Static Swagger UI
-app.use('/docs', express.static(path.join(__dirname, 'swagger-ui')));
-
-// Serve swagger.json
-app.get('/swagger.json', (req, res) => {
-  res.sendFile(path.join(__dirname, 'swagger.json'));
-});
-
-// XUMM OAconst express = require("express");
-const session = require("express-session");
-const cors = require("cors");
-const fetch = require("node-fetch");
-const path = require("path");
-const app = express();
-
-require("dotenv").config();
-
-// Middleware
-app.use(cors({ origin: "*", credentials: true }));
-app.use(express.json());
-app.use(session({
-  secret: "sglcn_secret_session",
-  resave: false,
-  saveUninitialized: true,
-}));
-
-// Static Swagger UI
-app.use('/docs', express.static(path.join(__dirname, 'swagger-ui')));
-
-// Serve swagger.json
-app.get('/swagger.json', (req, res) => {
-  res.sendFile(path.join(__dirname, 'swagger.json'));
-});
-
-// XUMM OAuth2 constants (replace with actual values)
+// ======= XUMM OAUTH2 CONFIG ========
 const XUMM_CLIENT_ID = "your-xumm-client-id";
-const XUMM_CLIENT_SECRET = "your-xumm-client-secret";
-const XUMM_REDIRECT_URI = "https://yourdomain.com/api/callback";
-
-// ======= LOGIN (OAuth2) ========
-app.get("/api/login", (req, res) => {
-  const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}&scope=identity%20payload`;
-  res.redirect(authUrl);
-});
-uth2 constants (replace with actual values)
-const XUMM_CLIENT_ID = "your-xumm-client-id";
-const XUMM_CLIENT_SECRET = "your-xumm-client-secret";
-const XUMM_REDIRECT_URI = "https://yourdomain.com/api/callback";
-
-// ======= LOGIN (OAuth2) ========
-app.get("/api/login", (req, res) => {
-  const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}&scope=identity%20payload`;
-  res.redirect(authUrl);
-});
-M_CLIENT_ID = "your-xumm-client-id";
 const XUMM_CLIENT_SECRET = "your-xumm-client-secret";
 const XUMM_REDIRECT_URI = "https://yourdomain.com/api/callback";
 
@@ -145,7 +38,6 @@ app.get("/api/login", (req, res) => {
 // ======= OAUTH2 CALLBACK ========
 app.get("/api/callback", async (req, res) => {
   const code = req.query.code;
-
   if (!code) return res.status(400).send("No code provided");
 
   try {
@@ -182,7 +74,7 @@ app.get("/api/logout", (req, res) => {
   });
 });
 
-// ======= AUTH CHECK (optional) ========
+// ======= AUTH CHECK ========
 app.get("/api/user", async (req, res) => {
   if (!req.session.xumm) return res.status(401).json({ error: "Not authenticated" });
 
@@ -197,7 +89,7 @@ app.get("/api/user", async (req, res) => {
   }
 });
 
-// ======= SAMPLE API ENDPOINT ========
+// ======= SAMPLE PING ENDPOINT ========
 app.get("/api/ping", (req, res) => {
   res.json({ status: "SGLCN-X20 Minting API is alive" });
 });

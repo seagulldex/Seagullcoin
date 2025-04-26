@@ -1,0 +1,48 @@
+swagger: "2.0"
+info:
+  description: "API documentation for SGLCN-X20 Minting API"
+  version: "1.0.0"
+  title: "SGLCN-X20 Minting API"
+paths:
+  /mint:
+    post:
+      summary: "Mint a new NFT"
+      parameters:
+        - name: "nft_name"
+          in: "formData"
+          required: true
+          type: "string"
+        - name: "nft_description"
+          in: "formData"
+          required: true
+          type: "string"
+        - name: "nft_file"
+          in: "formData"
+          required: true
+          type: "file"
+      responses:
+        200:
+          description: "NFT minted successfully"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /buy-nft:
+    post:
+      summary: "Buy an NFT"
+      parameters:
+        - name: "nftId"
+          in: "formData"
+          required: true
+          type: "string"
+        - name: "price"
+          in: "formData"
+          required: true
+          type: "number"
+      responses:
+        200:
+          description: "NFT purchased successfully"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"

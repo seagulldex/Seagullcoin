@@ -8,8 +8,10 @@ import dotenv from 'dotenv';
 import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction } from './mintingLogic.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import fs from 'fs'; 
+import fs from 'fs';  
 import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';  // To load Swagger YAML file
 
 // Load environment variables
 dotenv.config();
@@ -53,16 +55,9 @@ app.use(session({
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Swagger JSON for API docs
-app.get('/swagger.json', (req, res) => {
-  const swaggerPath = path.join(__dirname, 'swagger.json');
-  fs.readFile(swaggerPath, 'utf8', (err, data) => {
-    if (err) {
-      return res.status(500).send("Error reading swagger.json");
-    }
-    res.json(JSON.parse(data));
-  });
-});
+// Swagger documentation
+const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml')); // Load Swagger YAML file
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // ========== XUMM OAUTH2 ==========
 app.get("/api/login", (req, res) => {
@@ -73,7 +68,7 @@ app.get("/api/login", (req, res) => {
 // Add a simple root route for the API
 app.get('/', (req, res) => {
   res.json({
-    message: 'Welcome to the SGLCN-X20 Minting API. Please refer to /swagger.json for API documentation.',
+    message: 'Welcome to the SGLCN-X20 Minting API. Please refer to /api-docs for API documentation.',
   });
 });
 
@@ -88,7 +83,7 @@ const upload = multer({
     }
     cb(null, true);
   }
-}); 
+});
 
 app.post('/mint', upload.single('nft_file'), async (req, res) => {
   const { nft_name, nft_description, domain, properties } = req.body;
@@ -145,7 +140,7 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
 // ======= Buying NFTs Route =======
 app.post('/buy-nft', async (req, res) => {
   const { nftId, price } = req.body;
-  
+    
   if (!nftId || !price) {
     return res.status(400).json({ error: 'NFT ID and price are required' });
   }

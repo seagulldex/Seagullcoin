@@ -49,18 +49,36 @@ app.use(async (req, res, next) => {
     }
 });
 
-// Function to sign transaction with XUMM (to be used in transfer)
 async function signTransactionWithXUMM(transaction, signer) {
-    try {
-        // Add the logic for signing the transaction via XUMM
-        const response = await axios.post('https://xumm.app/api/v1/platform/sign', {
-            txjson: transaction,
-            signer: signer
-        });
-        return response.data;  // Return the signed transaction
-    } catch (error) {
-        throw new Error('Error signing transaction with XUMM: ' + error.message);
+    const xummApiKey = process.env.XUMM_API_KEY;
+    const xummApiSecret = process.env.XUMM_API_SECRET;
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'x-api-key': xummApiKey,
+        'x-api-secret': xummApiSecret,
+    };
+
+    const payloadRes = await axios.post('https://xumm.app/api/v1/platform/payload', {
+        txjson: transaction,
+        user_token: signer // optional if using OAuth2-based session
+    }, { headers });
+
+    const uuid = payloadRes.data.uuid;
+
+    let signed_blob = null;
+    for (let i = 0; i < 20; i++) {
+        const statusRes = await axios.get(`https://xumm.app/api/v1/platform/payload/${uuid}`, { headers });
+        if (statusRes.data.meta.signed === true) {
+            signed_blob = statusRes.data.response.tx_blob;
+            break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
     }
+
+    if (!signed_blob) throw new Error('User did not sign the transaction in time');
+
+    return signed_blob;
 }
 
 // Route to transfer NFTs
@@ -145,6 +163,23 @@ app.use((err, req, res, next) => {
 
     res.status(500).json({ error: 'Something went wrong. Please try again later.' });
 });
+
+const xrpl = require('xrpl');
+
+async function submitTransactionToXRPL(signedTxBlob) {
+    const client = new xrpl.Client("wss://xrplcluster.com"); // or another XRPL node
+    await client.connect();
+
+    try {
+        const result = await client.submitAndWait(signedTxBlob);
+        return { tx_id: result.result.hash };
+    } catch (error) {
+        console.error("XRPL submission error:", error);
+        return { error: error.message || "Unknown XRPL error" };
+    } finally {
+        await client.disconnect();
+    }
+}
 
 // Start the server
 app.listen(port, () => {

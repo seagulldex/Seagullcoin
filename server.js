@@ -5,11 +5,10 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import { mintNFT, verifySeagullCoinPayment } from './mintingLogic.js'; 
+import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction } from './mintingLogic.js'; 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs'; 
-import FormData from 'form-data';
 import rateLimit from 'express-rate-limit';
 
 // Load environment variables
@@ -176,6 +175,51 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'An error occurred while minting your NFT.' });
+  }
+});
+
+// ======= Buying NFTs Route =======
+app.post('/buy-nft', async (req, res) => {
+  const { nftId, price } = req.body;
+  
+  if (!nftId || !price) {
+    return res.status(400).json({ error: 'NFT ID and price are required' });
+  }
+
+  try {
+    // Verify SeagullCoin payment
+    const paymentValid = await verifySeagullCoinTransaction(req.session.xumm, price);
+    if (!paymentValid) {
+      return res.status(400).json({ error: 'Transaction failed, insufficient SeagullCoin payment' });
+    }
+
+    // Process the NFT purchase logic (transfer NFT to buyer, update the sale status)
+    // Example: Call the function to transfer the NFT
+    const purchaseResult = await transferNFT(nftId, req.session.xumm.access_token);
+
+    res.json({ success: true, purchaseResult });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while processing your purchase.' });
+  }
+});
+
+// ======= Selling NFTs Route =======
+app.post('/sell-nft', async (req, res) => {
+  const { nftId, price } = req.body;
+
+  if (!nftId || !price) {
+    return res.status(400).json({ error: 'NFT ID and price are required' });
+  }
+
+  try {
+    // Ensure the user has the NFT and set it for sale
+    const saleResult = await setNFTForSale(nftId, price, req.session.xumm.access_token);
+
+    res.json({ success: true, saleResult });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while listing your NFT for sale.' });
   }
 });
 

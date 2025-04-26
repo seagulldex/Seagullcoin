@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import { mintNFT, verifySeagullCoinPayment, verifyXRPTransaction } from './mintingLogic.js'; // Ensure verifyXRPTransaction exists
+import { mintNFT, verifySeagullCoinPayment } from './mintingLogic.js'; // Removed verifyXRPTransaction import
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs'; // Import fs to read the JSON file

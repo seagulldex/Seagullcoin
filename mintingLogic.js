@@ -45,6 +45,41 @@ export async function verifySeagullCoinPayment(userAddress) {
   }
 }
 
+// Verify SeagullCoin Transaction for Purchases or Transfers
+export async function verifySeagullCoinTransaction(userAddress, transactionAmount) {
+  const client = await connectXRPL();
+  
+  try {
+    const accountTransactions = await client.request({
+      command: 'account_tx',
+      account: userAddress,
+      ledger_index_min: -1, // To fetch the latest transactions
+      ledger_index_max: -1,
+      limit: 10, // Fetch recent transactions
+    });
+
+    // Find the most recent transaction for SeagullCoin
+    const transaction = accountTransactions.result.transactions.find(tx => {
+      return tx.tx.TransactionType === 'Payment' && 
+             tx.tx.Amount === transactionAmount && 
+             tx.tx.Destination === SERVICE_WALLET && 
+             tx.tx.Currency === SEAGULLCOIN_CURRENCY && 
+             tx.tx.Issuer === SEAGULLCOIN_ISSUER;
+    });
+
+    if (transaction) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (err) {
+    console.error("Error verifying SeagullCoin transaction:", err);
+    return false;
+  } finally {
+    client.disconnect();
+  }
+}
+
 // Mint NFT Function
 export async function mintNFT(nft_name, nft_description, nft_file, domain, properties, userAddress) {
   // First, verify SeagullCoin payment

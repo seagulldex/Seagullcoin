@@ -151,7 +151,7 @@ app.post('/buy-nft', async (req, res) => {
   }
 
   try {
-    // Verify SeagullCoin payment
+    // Verify SeagullCoin transaction for payment
     const paymentValid = await verifySeagullCoinTransaction(req.session.xumm, price);
     if (!paymentValid) {
       return res.status(400).json({ error: 'Transaction failed, insufficient SeagullCoin payment' });
@@ -163,45 +163,12 @@ app.post('/buy-nft', async (req, res) => {
     res.json({ success: true, purchaseResult });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'An error occurred while processing your purchase.' });
+    res.status(500).json({ error: 'An error occurred while processing your NFT purchase.' });
   }
 });
 
-// ======= Selling NFTs Route =======
-app.post('/sell-nft', async (req, res) => {
-  const { nftId, price } = req.body;
-
-  if (!nftId || !price) {
-    return res.status(400).json({ error: 'NFT ID and price are required' });
-  }
-
-  try {
-    // Ensure the user has the NFT and set it for sale
-    const saleResult = await setNFTForSale(nftId, price, req.session.xumm.access_token);
-
-    res.json({ success: true, saleResult });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'An error occurred while listing your NFT for sale.' });
-  }
-});
-
-// Helper functions
-async function transferNFT(nftId, accessToken) {
-  // Implement your NFT transfer logic using XUMM or another service
-  // Example: Make a transaction to transfer NFT ownership
-  // You need to use XUMM payload API or XRPL to transfer the NFT
-  return { success: true, message: 'NFT transferred successfully' };
-}
-
-async function setNFTForSale(nftId, price, accessToken) {
-  // Implement logic to set the NFT for sale
-  // Example: Use XUMM or XRPL to create an offer with SeagullCoin
-  return { success: true, message: `NFT ${nftId} set for sale at price ${price} SeagullCoin` };
-}
-
-// Start server
+// Start the Express app
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

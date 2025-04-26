@@ -12,17 +12,18 @@ import fs from 'fs';
 import FormData from 'form-data';
 import rateLimit from 'express-rate-limit';
 
+// Load environment variables
 dotenv.config();
+
+// Fix __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Ensure 'uploads' folder exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-
-// Fix __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const app = express();
 
@@ -70,6 +71,18 @@ app.get("/api/login", (req, res) => {
   res.redirect(authUrl);
 });
 
+// Middleware and other routes...
+
+// Add a simple root route for the API
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to the SGLCN-X20 Minting API. Please refer to /swagger.json for API documentation.',
+  });
+});
+
+// Your existing routes...
+
+
 app.get("/api/callback", async (req, res) => {
   const code = req.query.code;
   if (!code) return res.status(400).send("No code provided");
@@ -103,7 +116,7 @@ app.get("/api/callback", async (req, res) => {
 
 // ======= NFT Minting Route =======
 const upload = multer({ 
-  dest: 'uploads/',
+  dest: uploadsDir,  // Set the dynamic 'uploads' folder path
   limits: { fileSize: 50 * 1024 * 1024 }, // Limit file size to 50MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/webm'];

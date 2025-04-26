@@ -10,12 +10,13 @@ import { NFTStorage, File } from 'nft.storage';
 
 dotenv.config();
 
+const client = xrplClient; // or walletClient depending on context
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Initialize XRPL and XUMM clients
 const xrplClient = new XRPLClient(process.env.XRPL_NODE_URL);
-const client = xrplClient;  // Assign xrplClient to client
+const walletclient = xrplClient;  // Assign xrplClient to client
 
 // SeagullCoin X20 token details
 const SEAGULLCOIN_HEX = '53656167756C6C436F696E000000000000000000';
@@ -25,12 +26,6 @@ const walletClient = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_
 
 // NFT Storage Client setup
 const nftStorageClient = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
-
-// Add any further functionality here using `client` or `walletClient`
-
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
 
 // Middleware for JSON parsing and CORS
 app.use(bodyParser.json());
@@ -186,7 +181,7 @@ app.get('/', (req, res) => {
 
 // Helper function to check SeagullCoin balance
 async function checkSeagullCoinBalance(wallet) {
-    const accountInfo = await XRPLClient.request({
+    const accountInfo = await walletclient.request({
         command: 'account_info',
         account: wallet,
     });
@@ -455,7 +450,7 @@ async function mintNFT(wallet, nftMetadata) {
         Flags: 8, // Set this for non-fungible tokens
     };
 
-    const mintResult = await XRPLClient.submitAndWait(mintTransaction);
+    const mintResult = await walletclient.submitAndWait(mintTransaction);
     return mintResult;
 }
 
@@ -506,7 +501,7 @@ async function buyNFT(wallet, nftId, price) {
         Destination: process.env.SERVICE_WALLET, // The wallet of the NFT seller
     };
 
-    const paymentResult = await XRPLClient.submitAndWait(payment);
+    const paymentResult = await walletclient.submitAndWait(payment);
     return paymentResult;
 }
 

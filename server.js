@@ -7,6 +7,11 @@ require("dotenv").config();
 
 const app = express();
 
+// XUMM OAuth2 constants from .env
+const XUMM_CLIENT_ID = process.env.XUMM_CLIENT_ID;
+const XUMM_CLIENT_SECRET = process.env.XUMM_CLIENT_SECRET;
+const XUMM_REDIRECT_URI = process.env.XUMM_REDIRECT_URI;
+
 // Middleware
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
@@ -24,11 +29,6 @@ app.get('/swagger.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'swagger.json'));
 });
 
-// ======= XUMM OAUTH2 CONFIG ========
-const XUMM_CLIENT_ID = "your-xumm-client-id";
-const XUMM_CLIENT_SECRET = "your-xumm-client-secret";
-const XUMM_REDIRECT_URI = "https://yourdomain.com/api/callback";
-
 // ======= LOGIN (OAuth2) ========
 app.get("/api/login", (req, res) => {
   const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}&scope=identity%20payload`;
@@ -38,6 +38,7 @@ app.get("/api/login", (req, res) => {
 // ======= OAUTH2 CALLBACK ========
 app.get("/api/callback", async (req, res) => {
   const code = req.query.code;
+
   if (!code) return res.status(400).send("No code provided");
 
   try {

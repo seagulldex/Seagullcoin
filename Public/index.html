@@ -7,92 +7,49 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <header>
+        <img src="https://xpcdn.xpmarket.com/gravatars/3b2d755282cd6b2bd8a42398d76c8c05.png" alt="SeagullCoin Logo" class="logo">
+        <nav>
+            <a href="/docs">API Documentation</a>
+        </nav>
+    </header>
+
     <div class="container">
-        <header>
-            <!-- SeagullCoin logo in the top-left -->
-            <img src="https://xpcdn.xpmarket.com/gravatars/3b2d755282cd6b2bd8a42398d76c8c05.png" alt="SeagullCoin Logo" class="logo">
-            <!-- Minting button -->
-            <button id="mint-button">Mint NFT with SeagullCoin</button>
-        </header>
-        <main>
-            <h2>Mint SeagullCoin NFTs</h2>
-            <p>Welcome to the SeagullCoin NFT Minting Platform. To start, connect your XUMM wallet and mint your exclusive SeagullCoin NFTs!</p>
-            <p id="status-message">Please connect your wallet to begin.</p>
+        <h1>Mint Your SeagullCoin NFT</h1>
+        <form action="/mint" method="POST" enctype="multipart/form-data">
+            <!-- Upload NFT File -->
+            <label for="nft_file">Upload NFT File:</label>
+            <input type="file" id="nft_file" name="nft_file" required><br><br>
 
-            <!-- XUMM Wallet login button -->
-            <button id="xumm-login" onclick="loginWithXUMM()">Login with XUMM</button>
+            <!-- NFT Name -->
+            <label for="nft_name">NFT Name:</label>
+            <input type="text" id="nft_name" name="nft_name" required><br><br>
 
-            <!-- Minting Form -->
-            <div id="minting-form" style="display:none;">
-                <label for="nft-name">NFT Name:</label>
-                <input type="text" id="nft-name" placeholder="Enter NFT name">
-                <label for="nft-description">NFT Description:</label>
-                <textarea id="nft-description" placeholder="Enter NFT description"></textarea>
-                <label for="nft-file">Upload File:</label>
-                <input type="file" id="nft-file">
-                <button onclick="mintNFT()">Mint NFT</button>
+            <!-- NFT Description -->
+            <label for="nft_description">NFT Description:</label>
+            <input type="text" id="nft_description" name="nft_description" required><br><br>
+
+            <!-- Domain -->
+            <label for="nft_domain">Domain (optional):</label>
+            <input type="text" id="nft_domain" name="nft_domain"><br><br>
+
+            <!-- Property Name/Value pairs (optional with add/remove buttons) -->
+            <div id="properties-section">
+                <h3>Properties</h3>
+                <div class="property">
+                    <label for="property_name_1">Property Name 1:</label>
+                    <input type="text" id="property_name_1" name="property_name_1" placeholder="Property Name">
+                    <label for="property_value_1">Property Value 1:</label>
+                    <input type="text" id="property_value_1" name="property_value_1" placeholder="Property Value">
+                    <button type="button" class="remove-property" onclick="removeProperty(this)">Remove</button><br><br>
+                </div>
             </div>
-        </main>
+            <button type="button" id="add-property">Add Property</button><br><br>
+
+            <button type="submit">Mint NFT</button>
+        </form>
     </div>
 
-    <div class="background-video">
-        <!-- Beach-themed background video -->
-        <video autoplay loop muted id="background-video">
-            <source src="https://www.example.com/beach-seagull-video.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
-    </div>
-
-    <script>
-        // Login to XUMM
-        function loginWithXUMM() {
-            window.location.href = "/api/login";  // Replace with your backend login endpoint
-        }
-
-        // Minting Function
-        async function mintNFT() {
-            const nftName = document.getElementById("nft-name").value;
-            const nftDescription = document.getElementById("nft-description").value;
-            const nftFile = document.getElementById("nft-file").files[0];
-
-            if (!nftName || !nftDescription || !nftFile) {
-                alert("Please fill out all fields and upload a file.");
-                return;
-            }
-
-            // Implement minting logic here
-            const formData = new FormData();
-            formData.append("nft_name", nftName);
-            formData.append("nft_description", nftDescription);
-            formData.append("nft_file", nftFile);
-
-            const response = await fetch("/mint", {
-                method: "POST",
-                body: formData
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                alert("NFT minted successfully!");
-            } else {
-                alert("Minting failed: " + result.error);
-            }
-        }
-
-        // Check if user is logged in
-        async function checkLogin() {
-            const response = await fetch("/api/user");
-            const user = await response.json();
-            if (user.error) {
-                document.getElementById("status-message").innerText = "Please log in with XUMM.";
-            } else {
-                document.getElementById("status-message").innerText = `Welcome, ${user.username}`;
-                document.getElementById("minting-form").style.display = "block";
-            }
-        }
-
-        // Check login status on page load
-        window.onload = checkLogin;
-    </script>
+    <script src="main.js"></script>
 </body>
 </html>

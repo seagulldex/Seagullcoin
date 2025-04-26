@@ -1,19 +1,24 @@
 openapi: "3.0.0"
 info:
   title: "SeagullCoin NFT Minting API"
-  description: "API for minting SeagullCoin-only NFTs, verifying payments, and interacting with the SeagullCoin network."
+  description: "API for minting SeagullCoin-only NFTs, verifying SeagullCoin payments, and interacting with the SeagullCoin network."
   version: "1.0.0"
 paths:
   /mint:
     post:
       summary: "Mint a SeagullCoin NFT"
       description: "Allows a user to mint an NFT with a 0.5 SeagullCoin payment."
+      operationId: mintNFT
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
+              required:
+                - nft_name
+                - nft_description
+                - nft_file
               properties:
                 nft_name:
                   type: string
@@ -41,5 +46,67 @@ paths:
                 nftId: "abc123"
         '400':
           description: "Minting requires 0.5 SeagullCoin payment"
+          content:
+            application/json:
+              example:
+                error: "Minting requires 0.5 SeagullCoin payment"
         '500':
           description: "Failed to mint NFT"
+          content:
+            application/json:
+              example:
+                error: "An error occurred while minting your NFT."
+
+  /buy-nft:
+    post:
+      summary: "Buy a SeagullCoin NFT"
+      description: "Allows a user to buy an NFT using SeagullCoin."
+      operationId: buyNFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nftId
+                - price
+              properties:
+                nftId:
+                  type: string
+                  description: "ID of the NFT to purchase"
+                price:
+                  type: integer
+                  description: "Price of the NFT in SeagullCoin"
+      responses:
+        '200':
+          description: "NFT purchased successfully"
+          content:
+            application/json:
+              example:
+                success: true
+                purchaseResult: "Transaction details here"
+        '400':
+          description: "Insufficient SeagullCoin payment"
+          content:
+            application/json:
+              example:
+                error: "Transaction failed, insufficient SeagullCoin payment"
+        '500':
+          description: "Failed to process the NFT purchase"
+          content:
+            application/json:
+              example:
+                error: "An error occurred while processing your NFT purchase."
+
+  /api-docs:
+    get:
+      summary: "API documentation"
+      description: "Access the Swagger UI documentation for the SeagullCoin NFT Minting API."
+      operationId: getAPI
+      responses:
+        '200':
+          description: "API documentation served"
+        '404':
+          description: "API documentation not found"
+

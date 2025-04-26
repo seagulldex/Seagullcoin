@@ -4,20 +4,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SGLCN-X20 NFT Minter</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <!-- Header with Logo -->
-    <header class="header">
-        <img src="https://seagullbank.my.canva.site/seagullcoin" alt="SeagullCoin Logo" class="logo">
-    </header>
-
     <div class="container">
-        <h2>Welcome to the SeagullCoin NFT Minter</h2>
-        <!-- Your content goes here -->
-        <button>Start Minting</button>
+        <header>
+            <!-- SeagullCoin logo in the top-left -->
+            <img src="https://xpcdn.xpmarket.com/gravatars/3b2d755282cd6b2bd8a42398d76c8c05.png" alt="SeagullCoin Logo" class="logo">
+            <!-- Minting button -->
+            <button id="mint-button">Mint NFT with SeagullCoin</button>
+        </header>
+        <main>
+            <h2>Mint SeagullCoin NFTs</h2>
+            <p>Welcome to the SeagullCoin NFT Minting Platform. To start, connect your XUMM wallet and mint your exclusive SeagullCoin NFTs!</p>
+            <p id="status-message">Please connect your wallet to begin.</p>
+
+            <!-- XUMM Wallet login button -->
+            <button id="xumm-login" onclick="loginWithXUMM()">Login with XUMM</button>
+
+            <!-- Minting Form -->
+            <div id="minting-form" style="display:none;">
+                <label for="nft-name">NFT Name:</label>
+                <input type="text" id="nft-name" placeholder="Enter NFT name">
+                <label for="nft-description">NFT Description:</label>
+                <textarea id="nft-description" placeholder="Enter NFT description"></textarea>
+                <label for="nft-file">Upload File:</label>
+                <input type="file" id="nft-file">
+                <button onclick="mintNFT()">Mint NFT</button>
+            </div>
+        </main>
     </div>
 
+    <div class="background-video">
+        <!-- Beach-themed background video -->
+        <video autoplay loop muted id="background-video">
+            <source src="https://www.example.com/beach-seagull-video.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <script>
+        // Login to XUMM
+        function loginWithXUMM() {
+            window.location.href = "/api/login";  // Replace with your backend login endpoint
+        }
+
+        // Minting Function
+        async function mintNFT() {
+            const nftName = document.getElementById("nft-name").value;
+            const nftDescription = document.getElementById("nft-description").value;
+            const nftFile = document.getElementById("nft-file").files[0];
+
+            if (!nftName || !nftDescription || !nftFile) {
+                alert("Please fill out all fields and upload a file.");
+                return;
+            }
+
+            // Implement minting logic here
+            const formData = new FormData();
+            formData.append("nft_name", nftName);
+            formData.append("nft_description", nftDescription);
+            formData.append("nft_file", nftFile);
+
+            const response = await fetch("/mint", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert("NFT minted successfully!");
+            } else {
+                alert("Minting failed: " + result.error);
+            }
+        }
+
+        // Check if user is logged in
+        async function checkLogin() {
+            const response = await fetch("/api/user");
+            const user = await response.json();
+            if (user.error) {
+                document.getElementById("status-message").innerText = "Please log in with XUMM.";
+            } else {
+                document.getElementById("status-message").innerText = `Welcome, ${user.username}`;
+                document.getElementById("minting-form").style.display = "block";
+            }
+        }
+
+        // Check login status on page load
+        window.onload = checkLogin;
+    </script>
 </body>
 </html>

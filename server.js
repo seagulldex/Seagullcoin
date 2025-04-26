@@ -5,10 +5,11 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import { mintNFT, verifySeagullCoinPayment } from './mintingLogic.js'; // Removed verifyXRPTransaction import
+import { mintNFT, verifySeagullCoinPayment } from './mintingLogic.js'; // mintNFT and verifySeagullCoinPayment should be implemented
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs'; // Import fs to read the JSON file
+import FormData from 'form-data';
 
 dotenv.config();
 
@@ -89,33 +90,6 @@ app.get("/api/callback", async (req, res) => {
   }
 });
 
-// Logout
-app.get("/api/logout", (req, res) => {
-  req.session.destroy(() => {
-    res.redirect("/docs");
-  });
-});
-
-// Check authenticated user
-app.get("/api/user", async (req, res) => {
-  if (!req.session.xumm) return res.status(401).json({ error: "Not authenticated" });
-
-  try {
-    const userRes = await fetch("https://oauth2.xumm.app/userinfo", {
-      headers: { Authorization: `Bearer ${req.session.xumm.access_token}` },
-    });
-    const userInfo = await userRes.json();
-    res.json(userInfo);
-  } catch (e) {
-    res.status(500).json({ error: "Failed to fetch user" });
-  }
-});
-
-// ======= PING TEST =======
-app.get("/api/ping", (req, res) => {
-  res.json({ status: "SGLCN-X20 Minting API is alive" });
-});
-
 // ======= NFT Minting Route =======
 const upload = multer({ dest: 'uploads/' }); // For file uploads
 app.post('/mint', upload.single('nft_file'), async (req, res) => {
@@ -129,55 +103,65 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
       return res.status(400).json({ error: 'Minting requires 0.5 SeagullCoin payment' });
     }
 
-    const result = await mintNFT(nft_name, nft_description, nft_file, domain, properties);
-
-    if (result.success) {
-      res.json({ success: true, nftId: result.nftId });
-    } else {
-      res.status(500).json({ error: 'Minting failed' });
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
-// ======= Buy/Sell NFT Routes =======
-
-// Buy NFT - Only allow SeagullCoin for buying
-app.post('/buy-nft', async (req, res) => {
-  const { nftId, amount } = req.body;
-
-  try {
-    // Verify the payment transaction
-    const paymentValid = await verifySeagullCoinPayment(req.session.xumm, amount);
-    if (!paymentValid) {
-      return res.status(400).json({ error: 'Transaction must use SeagullCoin for purchasing NFTs' });
+    // Ensure the file is uploaded properly
+    if (!nft_file) {
+      return res.status(400).json({ error: 'File upload failed' });
     }
 
-    // Further logic for completing the purchase...
+    // Prepare metadata and file for NFT.Storage upload
+    const metadata = {
+      name: nft_name,
+      description: nft_description,
+      domain: domain,
+      properties: properties,
+      image: ''  // This will be filled with the IPFS link once the file is uploaded
+    };
 
-    res.json({ success: true, message: 'NFT purchased successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
+    // Upload the file to NFT.Storage
+    const form = new FormData();
+    form.append('file', fs.createReadStream(nft_file.path));
 
-// Sell NFT - Only allow SeagullCoin for selling
-app.post('/sell-nft', async (req, res) => {
-  const { nftId, price } = req.body;
+    const fileUploadRes = await fetch('https://api.nft.storage/upload', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`,
+      },
+      body: form,
+    });
 
-  try {
-    // Verify the price currency is SeagullCoin (not XRP)
-    const priceValid = await verifySeagullCoinPayment(req.session.xumm, price);
-    if (!priceValid) {
-      return res.status(400).json({ error: 'Selling price must be in SeagullCoin' });
+    const fileUploadData = await fileUploadRes.json();
+    if (!fileUploadData.ok) {
+      throw new Error('Failed to upload file to NFT.Storage');
     }
 
-    // Further logic for completing the sale...
+    const ipfsLink = `https://ipfs.io/ipfs/${fileUploadData.value.cid}`;
+    metadata.image = ipfsLink;
 
-    res.json({ success: true, message: 'NFT listed for sale successfully' });
+    // Upload metadata to NFT.Storage
+    const metadataForm = new FormData();
+    metadataForm.append('file', Buffer.from(JSON.stringify(metadata), 'utf-8'), 'metadata.json');
+    
+    const metadataUploadRes = await fetch('https://api.nft.storage/upload', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`,
+      },
+      body: metadataForm,
+    });
+
+    const metadataUploadData = await metadataUploadRes.json();
+    if (!metadataUploadData.ok) {
+      throw new Error('Failed to upload metadata to NFT.Storage');
+    }
+
+    const metadataLink = `https://ipfs.io/ipfs/${metadataUploadData.value.cid}`;
+    
+    // Return minted NFT info
+    res.json({
+      success: true,
+      nftId: metadataLink, // Returning the metadata link as the NFT ID
+      metadata: metadataLink,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });

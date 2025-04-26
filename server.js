@@ -1,6 +1,8 @@
 const express = require('express');
 const axios = require('axios');
 const session = require('express-session');
+const xrpl = require('xrpl');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -49,6 +51,51 @@ app.use(async (req, res, next) => {
     }
 });
 
+// Route to authenticate users via XUMM (redirect to XUMM for OAuth2)
+app.get('/auth/xumm', async (req, res) => {
+    try {
+        const response = await axios.post('https://xumm.app/api/v1/platform/auth', {}, {
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': process.env.XUMM_API_KEY,
+                'x-api-secret': process.env.XUMM_API_SECRET,
+            },
+        });
+
+        const redirectUrl = response.data.payload_url;
+        res.redirect(redirectUrl);
+    } catch (error) {
+        console.error('Error during XUMM OAuth authentication:', error);
+        res.status(500).json({ error: 'Error starting XUMM OAuth authentication' });
+    }
+});
+
+// Callback route to handle the XUMM OAuth2 response
+app.get('/auth/xumm/callback', async (req, res) => {
+    const { txid } = req.query;
+
+    try {
+        const response = await axios.get(`https://xumm.app/api/v1/platform/payload/${txid}`, {
+            headers: {
+                'x-api-key': process.env.XUMM_API_KEY,
+                'x-api-secret': process.env.XUMM_API_SECRET,
+            },
+        });
+
+        const walletAddress = response.data.response.account;
+        
+        // Store wallet address in session
+        req.session.walletAddress = walletAddress;
+        req.session.xummPayload = response.data;
+
+        res.redirect('/');
+    } catch (error) {
+        console.error('Error during XUMM authentication callback:', error);
+        res.status(500).json({ error: 'Error processing XUMM authentication callback' });
+    }
+});
+
+// Function to sign a transaction with XUMM
 async function signTransactionWithXUMM(transaction, signer) {
     const xummApiKey = process.env.XUMM_API_KEY;
     const xummApiSecret = process.env.XUMM_API_SECRET;
@@ -80,6 +127,32 @@ async function signTransactionWithXUMM(transaction, signer) {
 
     return signed_blob;
 }
+
+// Route to mint NFTs (SeagullCoin payment required)
+app.post('/api/mint', async (req, res) => {
+    try {
+        const { walletAddress, nftMetadata } = req.body;
+
+        if (!walletAddress || !nftMetadata) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        // Check user's SeagullCoin balance
+        const balance = await getSeagullCoinBalance(walletAddress);
+
+        if (balance < 0.5) {
+            return res.status(400).json({ error: "Insufficient SeagullCoin balance" });
+        }
+
+        // Proceed with minting the NFT after confirming the payment
+        const nft = await mintNFT(walletAddress, nftMetadata);
+
+        res.status(200).json({ success: true, message: "NFT minted successfully", nft });
+    } catch (error) {
+        console.error('Minting error:', error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
 
 // Route to transfer NFTs
 app.post('/api/transfer-nft', async (req, res) => {
@@ -127,32 +200,6 @@ app.post('/api/transfer-nft', async (req, res) => {
     }
 });
 
-// Route to mint NFTs (SeagullCoin payment required)
-app.post('/api/mint', async (req, res) => {
-    try {
-        const { walletAddress, nftMetadata } = req.body;
-
-        if (!walletAddress || !nftMetadata) {
-            return res.status(400).json({ error: "Missing required fields" });
-        }
-
-        // Check user's SeagullCoin balance
-        const balance = await getSeagullCoinBalance(walletAddress);
-
-        if (balance < 0.5) {
-            return res.status(400).json({ error: "Insufficient SeagullCoin balance" });
-        }
-
-        // Proceed with minting the NFT after confirming the payment
-        const nft = await mintNFT(walletAddress, nftMetadata);
-
-        res.status(200).json({ success: true, message: "NFT minted successfully", nft });
-    } catch (error) {
-        console.error('Minting error:', error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Server Error:', err);
@@ -163,8 +210,6 @@ app.use((err, req, res, next) => {
 
     res.status(500).json({ error: 'Something went wrong. Please try again later.' });
 });
-
-const xrpl = require('xrpl');
 
 async function submitTransactionToXRPL(signedTxBlob) {
     const client = new xrpl.Client("wss://xrplcluster.com"); // or another XRPL node

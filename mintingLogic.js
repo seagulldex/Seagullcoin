@@ -1,5 +1,7 @@
-const xrpl = require('xrpl');
-require('dotenv').config();
+import xrpl from 'xrpl';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // SeagullCoin constants (from .env)
 const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER;
@@ -15,7 +17,7 @@ async function connectXRPL() {
 }
 
 // Mint NFT Function
-async function mintNFT(nft_name, nft_description, nft_file, domain, properties) {
+export async function mintNFT(nft_name, nft_description, nft_file, domain, properties) {
   const client = await connectXRPL();
   const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED); // Seed of the minting wallet
   
@@ -51,7 +53,7 @@ async function mintNFT(nft_name, nft_description, nft_file, domain, properties) 
 }
 
 // Process NFT Offer (Buyer Offers SeagullCoin to purchase an NFT)
-async function processNFTOffer(nftId, offerAmount) {
+export async function processNFTOffer(nftId, offerAmount) {
   const client = await connectXRPL();
   const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED);
   
@@ -82,7 +84,7 @@ async function processNFTOffer(nftId, offerAmount) {
 }
 
 // Process NFT Sale (Seller Accepts the Offer)
-async function processNFTSale(nftId, saleAmount) {
+export async function processNFTSale(nftId, saleAmount) {
   const client = await connectXRPL();
   const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED);
   
@@ -110,5 +112,3 @@ async function processNFTSale(nftId, saleAmount) {
     ? { success: true, saleId: result.result.tx_json.OfferSequence }
     : { success: false, error: 'Sale processing failed' };
 }
-
-module.exports = { mintNFT, processNFTOffer, processNFTSale };

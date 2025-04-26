@@ -91,12 +91,40 @@ app.get("/api/callback", async (req, res) => {
 });
 
 // ======= NFT Minting Route =======
-const upload = multer({ dest: 'uploads/' }); // For file uploads
+const upload = multer({ 
+  dest: 'uploads/',
+  limits: { fileSize: 50 * 1024 * 1024 }, // Limit file size to 50MB
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/webm'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error('Only image and video files are allowed'));
+    }
+    cb(null, true);
+  }
+}); // For file uploads
+
 app.post('/mint', upload.single('nft_file'), async (req, res) => {
   const { nft_name, nft_description, domain, properties } = req.body;
   const nft_file = req.file;
 
   try {
+    // Validate inputs
+    if (!nft_name || nft_name.trim() === '') {
+      return res.status(400).json({ error: 'NFT name is required' });
+    }
+
+    if (!nft_description || nft_description.trim() === '') {
+      return res.status(400).json({ error: 'NFT description is required' });
+    }
+
+    if (nft_name.length > 100) {
+      return res.status(400).json({ error: 'NFT name cannot exceed 100 characters' });
+    }
+
+    if (nft_description.length > 500) {
+      return res.status(400).json({ error: 'NFT description cannot exceed 500 characters' });
+    }
+
     // Ensure SeagullCoin payment before minting
     const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
     if (!paymentValid) {
@@ -105,7 +133,7 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
 
     // Ensure the file is uploaded properly
     if (!nft_file) {
-      return res.status(400).json({ error: 'File upload failed' });
+      return res.status(400).json({ error: 'File upload failed. Please provide a valid image or video file.' });
     }
 
     // Prepare metadata and file for NFT.Storage upload
@@ -164,7 +192,15 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    let errorMessage = 'Internal Server Error';
+
+    if (err instanceof multer.MulterError) {
+      errorMessage = err.message;
+    } else if (err.message) {
+      errorMessage = err.message;
+    }
+
+    res.status(500).json({ error: errorMessage });
   }
 });
 

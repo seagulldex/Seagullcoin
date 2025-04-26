@@ -1,32 +1,80 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SeagullCoin NFT Minting Platform</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 50px;
-        }
-        .btn {
-            padding: 15px 30px;
-            background-color: #4CAF50;
-            color: white;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-        }
-        .btn:hover {
-            background-color: #45a049;
-        }
-    </style>
+
+    <title>SGLCN-X20 NFT Minter</title>
+
+    <link rel="stylesheet" href="style.css">
+
 </head>
+
 <body>
-    <h1>Welcome to the SeagullCoin NFT Minting Platform!</h1>
-    <p>Explore the <a href="/docs" class="btn">API Documentation</a> for more details.</p>
+
+    <div id="app">
+
+        <!-- Wallet Connection -->
+
+        <div id="walletConnect">
+
+            <h1>SGLCN-X20 NFT Minter</h1>
+
+            <p>Connect your wallet to start minting SeagullCoin-only NFTs.</p>
+
+            <button id="connectButton">Connect with XUMM</button>
+
+        </div>
+
+        <!-- Minting Section -->
+
+        <div id="mintingSection" class="hidden">
+
+            <h2>Mint Your NFT</h2>
+
+            <form id="mintForm">
+
+                <input type="text" id="nftName" placeholder="NFT Name" required>
+
+                <input type="file" id="nftFile" accept="image/*" required>
+
+                <textarea id="nftDescription" placeholder="NFT Description" required></textarea>
+
+                <button type="submit">Mint NFT</button>
+
+            </form>
+
+        </div>
+
+        <!-- User Info -->
+
+        <div id="userInfo" class="hidden">
+
+            <h2>Welcome, <span id="walletAddress"></span></h2>
+
+            <button id="logoutButton">Logout</button>
+
+            <h3>Your NFTs</h3>
+
+            <div id="nftsList"></div>
+
+        </div>
+
+        <!-- Error Messages -->
+
+        <div id="errorMessage" class="hidden"></div>
+
+    </div>
+
+    <script src="main.js"></script>
+
 </body>
+
 </html>
+
+/style>
+</he

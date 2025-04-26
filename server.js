@@ -167,6 +167,31 @@ app.post('/buy-nft', async (req, res) => {
   }
 });
 
+// ========== Transfer NFT Logic ==========
+async function transferNFT(nftId, accessToken) {
+  try {
+    // Example transfer logic (ensure you customize this based on your platform's requirements)
+    const response = await fetch('https://xumm.app/api/v1/platform/transfer_nft', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ nftId, to: accessToken }), // Customize the transfer data
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to transfer NFT');
+    }
+
+    const transferResult = await response.json();
+    return transferResult;
+  } catch (err) {
+    console.error(err);
+    throw new Error('Error during NFT transfer');
+  }
+}
+
 // Start the Express app
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

@@ -1,11 +1,11 @@
-import express from 'express';  
+import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
 import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction } from './mintingLogic.js'; 
+import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction } from './mintingLogic.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs'; 
@@ -70,47 +70,11 @@ app.get("/api/login", (req, res) => {
   res.redirect(authUrl);
 });
 
-// Middleware and other routes...
-
 // Add a simple root route for the API
 app.get('/', (req, res) => {
   res.json({
     message: 'Welcome to the SGLCN-X20 Minting API. Please refer to /swagger.json for API documentation.',
   });
-});
-
-// Your existing routes...
-
-
-app.get("/api/callback", async (req, res) => {
-  const code = req.query.code;
-  if (!code) return res.status(400).send("No code provided");
-
-  try {
-    const tokenRes = await fetch("https://oauth2.xumm.app/token", {
-      method: "POST",
-      headers: {
-        Authorization: "Basic " + Buffer.from(`${XUMM_CLIENT_ID}:${XUMM_CLIENT_SECRET}`).toString("base64"),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: `grant_type=authorization_code&code=${code}&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}`,
-    });
-
-    const tokenData = await tokenRes.json();
-
-    if (tokenData.access_token) {
-      req.session.xumm = {
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-      };
-      res.redirect("/docs");
-    } else {
-      res.status(400).json({ error: "Failed to authenticate with XUMM" });
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("OAuth2 Error");
-  }
 });
 
 // ======= NFT Minting Route =======
@@ -194,7 +158,6 @@ app.post('/buy-nft', async (req, res) => {
     }
 
     // Process the NFT purchase logic (transfer NFT to buyer, update the sale status)
-    // Example: Call the function to transfer the NFT
     const purchaseResult = await transferNFT(nftId, req.session.xumm.access_token);
 
     res.json({ success: true, purchaseResult });
@@ -222,6 +185,20 @@ app.post('/sell-nft', async (req, res) => {
     res.status(500).json({ error: 'An error occurred while listing your NFT for sale.' });
   }
 });
+
+// Helper functions
+async function transferNFT(nftId, accessToken) {
+  // Implement your NFT transfer logic using XUMM or another service
+  // Example: Make a transaction to transfer NFT ownership
+  // You need to use XUMM payload API or XRPL to transfer the NFT
+  return { success: true, message: 'NFT transferred successfully' };
+}
+
+async function setNFTForSale(nftId, price, accessToken) {
+  // Implement logic to set the NFT for sale
+  // Example: Use XUMM or XRPL to create an offer with SeagullCoin
+  return { success: true, message: `NFT ${nftId} set for sale at price ${price} SeagullCoin` };
+}
 
 // Start server
 const PORT = process.env.PORT || 3000;

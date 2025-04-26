@@ -5,13 +5,20 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import { mintNFT, verifySeagullCoinPayment } from './mintingLogic.js'; // mintNFT and verifySeagullCoinPayment should be implemented
+import { mintNFT, verifySeagullCoinPayment } from './mintingLogic.js'; 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import fs from 'fs'; // Import fs to read the JSON file
+import fs from 'fs'; 
 import FormData from 'form-data';
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
+
+// Ensure 'uploads' folder exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +30,15 @@ const app = express();
 const XUMM_CLIENT_ID = process.env.XUMM_CLIENT_ID;
 const XUMM_CLIENT_SECRET = process.env.XUMM_CLIENT_SECRET;
 const XUMM_REDIRECT_URI = process.env.XUMM_REDIRECT_URI;
+
+// Rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit to 100 requests per window
+  message: 'Too many requests from this IP, please try again later.',
+});
+
+app.use(limiter);
 
 // Middleware
 app.use(cors({ origin: "*", credentials: true }));
@@ -46,11 +62,6 @@ app.get('/swagger.json', (req, res) => {
     }
     res.json(JSON.parse(data));
   });
-});
-
-// Add the root route to serve a response for / (root)
-app.get('/', (req, res) => {
-  res.send('Welcome to the SeagullCoin NFT Minting API!');
 });
 
 // ========== XUMM OAUTH2 ==========
@@ -101,7 +112,7 @@ const upload = multer({
     }
     cb(null, true);
   }
-}); // For file uploads
+}); 
 
 app.post('/mint', upload.single('nft_file'), async (req, res) => {
   const { nft_name, nft_description, domain, properties } = req.body;
@@ -136,76 +147,27 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
       return res.status(400).json({ error: 'File upload failed. Please provide a valid image or video file.' });
     }
 
-    // Prepare metadata and file for NFT.Storage upload
+    // Prepare metadata and file for NFT
     const metadata = {
       name: nft_name,
       description: nft_description,
-      domain: domain,
-      properties: properties,
-      image: ''  // This will be filled with the IPFS link once the file is uploaded
+      domain,
+      properties: JSON.parse(properties),
+      file: nft_file.path,
     };
 
-    // Upload the file to NFT.Storage
-    const form = new FormData();
-    form.append('file', fs.createReadStream(nft_file.path));
-
-    const fileUploadRes = await fetch('https://api.nft.storage/upload', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`,
-      },
-      body: form,
-    });
-
-    const fileUploadData = await fileUploadRes.json();
-    if (!fileUploadData.ok) {
-      throw new Error('Failed to upload file to NFT.Storage');
-    }
-
-    const ipfsLink = `https://ipfs.io/ipfs/${fileUploadData.value.cid}`;
-    metadata.image = ipfsLink;
-
-    // Upload metadata to NFT.Storage
-    const metadataForm = new FormData();
-    metadataForm.append('file', Buffer.from(JSON.stringify(metadata), 'utf-8'), 'metadata.json');
+    // Call minting function (this part could integrate your logic with NFT.Storage or XUMM)
+    const mintResult = await mintNFT(metadata, req.session.xumm.access_token);
     
-    const metadataUploadRes = await fetch('https://api.nft.storage/upload', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.NFT_STORAGE_KEY}`,
-      },
-      body: metadataForm,
-    });
-
-    const metadataUploadData = await metadataUploadRes.json();
-    if (!metadataUploadData.ok) {
-      throw new Error('Failed to upload metadata to NFT.Storage');
-    }
-
-    const metadataLink = `https://ipfs.io/ipfs/${metadataUploadData.value.cid}`;
-    
-    // Return minted NFT info
-    res.json({
-      success: true,
-      nftId: metadataLink, // Returning the metadata link as the NFT ID
-      metadata: metadataLink,
-    });
+    res.json({ success: true, mintResult });
   } catch (err) {
     console.error(err);
-    let errorMessage = 'Internal Server Error';
-
-    if (err instanceof multer.MulterError) {
-      errorMessage = err.message;
-    } else if (err.message) {
-      errorMessage = err.message;
-    }
-
-    res.status(500).json({ error: errorMessage });
+    res.status(500).json({ error: 'An error occurred while minting your NFT.' });
   }
 });
 
-// Start Server
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/docs`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });

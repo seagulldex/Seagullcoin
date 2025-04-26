@@ -8,6 +8,8 @@ import dotenv from 'dotenv';
 import { mintNFT, verifySeagullCoinPayment } from './mintingLogic.js'; // Ensure verifySeagullCoinPayment exists
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from './swagger.json'; // Ensure this path is correct
 
 dotenv.config();
 
@@ -39,6 +41,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/swagger.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'swagger.json'));
 });
+
+// Serve Swagger UI at /docs
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Add the root route to serve a response for / (root)
 app.get('/', (req, res) => {

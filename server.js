@@ -21,6 +21,17 @@ const walletclient = xrplClient;  // Assign xrplClient to client
 const SEAGULLCOIN_HEX = '53656167756C6C436F696E000000000000000000';
 const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
 
+async function checkSeagullCoinBalance(wallet) {
+    const response = await xrplClient.request({
+        command: "account_lines",
+        account: wallet,
+    });
+    const line = response.result.lines.find(
+        l => l.currency === "SeagullCoin" && l.issuer === SEAGULLCOIN_ISSUER
+    );
+    return line ? line.balance : "0";
+}
+
 const walletClient = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 // NFT Storage Client setup
@@ -179,53 +190,6 @@ app.get('/', (req, res) => {
  *         description: Internal server error
  */
 
-// Helper function to check SeagullCoin balance
-async function checkSeagullCoinBalance(wallet) {
-    const accountInfo = await walletclient.request({
-        command: 'account_info',
-        account: wallet,
-    });
-    const balance = accountInfo.result.account_data.Balance;
-    return balance;
-}
-
-// Swagger: Get SeagullCoin balance for a given wallet
-/**
- * @swagger
- * /api/balance/{wallet}:
- *   get:
- *     summary: "Retrieve the SeagullCoin balance for a given wallet address"
- *     parameters:
- *       - in: path
- *         name: wallet
- *         required: true
- *         description: The wallet address to check the balance.
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: "Wallet balance retrieved successfully"
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 wallet:
- *                   type: string
- *                 balance:
- *                   type: string
- *       500:
- *         description: "Error retrieving balance"
- */
-app.get('/api/balance/:wallet', async (req, res) => {
-    const { wallet } = req.params;
-    try {
-        const balance = await checkSeagullCoinBalance(wallet);
-        res.status(200).json({ wallet, balance });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
 
 // Swagger: Get NFT metadata by ID
 /**

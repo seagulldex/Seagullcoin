@@ -1,80 +1,23 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>SGLCN-X20 NFT Minter</title>
-
-    <link rel="stylesheet" href="style.css">
-
+    <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
 
-    <div id="app">
+    <!-- Header with Logo -->
+    <header class="header">
+        <img src="https://seagullbank.my.canva.site/seagullcoin" alt="SeagullCoin Logo" class="logo">
+    </header>
 
-        <!-- Wallet Connection -->
-
-        <div id="walletConnect">
-
-            <h1>SGLCN-X20 NFT Minter</h1>
-
-            <p>Connect your wallet to start minting SeagullCoin-only NFTs.</p>
-
-            <button id="connectButton">Connect with XUMM</button>
-
-        </div>
-
-        <!-- Minting Section -->
-
-        <div id="mintingSection" class="hidden">
-
-            <h2>Mint Your NFT</h2>
-
-            <form id="mintForm">
-
-                <input type="text" id="nftName" placeholder="NFT Name" required>
-
-                <input type="file" id="nftFile" accept="image/*" required>
-
-                <textarea id="nftDescription" placeholder="NFT Description" required></textarea>
-
-                <button type="submit">Mint NFT</button>
-
-            </form>
-
-        </div>
-
-        <!-- User Info -->
-
-        <div id="userInfo" class="hidden">
-
-            <h2>Welcome, <span id="walletAddress"></span></h2>
-
-            <button id="logoutButton">Logout</button>
-
-            <h3>Your NFTs</h3>
-
-            <div id="nftsList"></div>
-
-        </div>
-
-        <!-- Error Messages -->
-
-        <div id="errorMessage" class="hidden"></div>
-
+    <div class="container">
+        <h2>Welcome to the SeagullCoin NFT Minter</h2>
+        <!-- Your content goes here -->
+        <button>Start Minting</button>
     </div>
 
-    <script src="main.js"></script>
-
 </body>
-
 </html>
-
-/style>
-</he

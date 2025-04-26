@@ -162,6 +162,18 @@ app.post('/buy-nft', async (req, res) => {
   }
 });
 
+// ======= Get NFTs for Sale Route =======
+app.get('/nfts', async (req, res) => {
+  try {
+    // Fetch and return all NFTs available for sale
+    const nftsForSale = await getNFTsForSale();
+    res.json({ success: true, nfts: nftsForSale });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while fetching NFTs.' });
+  }
+});
+
 // ========== Transfer NFT Logic ==========
 async function transferNFT(nftId, accessToken) {
   try {
@@ -185,6 +197,15 @@ async function transferNFT(nftId, accessToken) {
     console.error(err);
     throw new Error('Error during NFT transfer');
   }
+}
+
+// ========== Get All NFTs for Sale ==========
+async function getNFTsForSale() {
+  // Replace with your actual logic to fetch NFTs for sale from the database or any service
+  return [
+    { id: '1', name: 'NFT 1', price: '10', description: 'First NFT for sale' },
+    { id: '2', name: 'NFT 2', price: '20', description: 'Second NFT for sale' }
+  ];
 }
 
 // Start the Express app

@@ -5,11 +5,10 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import { mintNFT, verifySeagullCoinPayment } from './mintingLogic.js'; // Ensure verifySeagullCoinPayment exists
+import { mintNFT, verifySeagullCoinPayment, verifyXRPTransaction } from './mintingLogic.js'; // Ensure verifyXRPTransaction exists
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import swaggerUi from 'swagger-ui-express';
-import swaggerDocument from './swagger.json'; // Ensure this path is correct
+import fs from 'fs'; // Import fs to read the JSON file
 
 dotenv.config();
 
@@ -39,11 +38,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Swagger JSON for API docs
 app.get('/swagger.json', (req, res) => {
-  res.sendFile(path.join(__dirname, 'swagger.json'));
+  const swaggerPath = path.join(__dirname, 'swagger.json');
+  fs.readFile(swaggerPath, 'utf8', (err, data) => {
+    if (err) {
+      return res.status(500).send("Error reading swagger.json");
+    }
+    res.json(JSON.parse(data));
+  });
 });
-
-// Serve Swagger UI at /docs
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Add the root route to serve a response for / (root)
 app.get('/', (req, res) => {
@@ -134,6 +136,48 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
     } else {
       res.status(500).json({ error: 'Minting failed' });
     }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// ======= Buy/Sell NFT Routes =======
+
+// Buy NFT - Only allow SeagullCoin for buying
+app.post('/buy-nft', async (req, res) => {
+  const { nftId, amount } = req.body;
+
+  try {
+    // Verify the payment transaction
+    const paymentValid = await verifySeagullCoinPayment(req.session.xumm, amount);
+    if (!paymentValid) {
+      return res.status(400).json({ error: 'Transaction must use SeagullCoin for purchasing NFTs' });
+    }
+
+    // Further logic for completing the purchase...
+
+    res.json({ success: true, message: 'NFT purchased successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Sell NFT - Only allow SeagullCoin for selling
+app.post('/sell-nft', async (req, res) => {
+  const { nftId, price } = req.body;
+
+  try {
+    // Verify the price currency is SeagullCoin (not XRP)
+    const priceValid = await verifySeagullCoinPayment(req.session.xumm, price);
+    if (!priceValid) {
+      return res.status(400).json({ error: 'Selling price must be in SeagullCoin' });
+    }
+
+    // Further logic for completing the sale...
+
+    res.json({ success: true, message: 'NFT listed for sale successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });

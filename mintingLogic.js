@@ -16,8 +16,43 @@ async function connectXRPL() {
   return client;
 }
 
+// Verify SeagullCoin Payment for Minting
+export async function verifySeagullCoinPayment(userAddress) {
+  const client = await connectXRPL();
+  
+  try {
+    const accountInfo = await client.request({
+      command: 'account_info',
+      account: userAddress,
+    });
+
+    // Check if the SeagullCoin trustline is set and check balance
+    const balances = accountInfo.result.account_data.Balances;
+    const seagullCoinBalance = balances.find(
+      balance => balance.currency === SEAGULLCOIN_CURRENCY && balance.issuer === SEAGULLCOIN_ISSUER
+    );
+
+    if (seagullCoinBalance && parseFloat(seagullCoinBalance.value) >= SEAGULLCOIN_AMOUNT) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (err) {
+    console.error("Error verifying SeagullCoin payment:", err);
+    return false;
+  } finally {
+    client.disconnect();
+  }
+}
+
 // Mint NFT Function
-export async function mintNFT(nft_name, nft_description, nft_file, domain, properties) {
+export async function mintNFT(nft_name, nft_description, nft_file, domain, properties, userAddress) {
+  // First, verify SeagullCoin payment
+  const isPaymentVerified = await verifySeagullCoinPayment(userAddress);
+  if (!isPaymentVerified) {
+    return { success: false, error: 'Insufficient SeagullCoin balance for minting' };
+  }
+
   const client = await connectXRPL();
   const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED); // Seed of the minting wallet
   

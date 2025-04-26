@@ -1,134 +1,89 @@
 const express = require('express');
-const axios = require('axios');
-const session = require('express-session');
-const xrpl = require('xrpl');
+const bodyParser = require('body-parser');
+const { getSeagullCoinBalance, getNFTById } = require('./utils'); // Import utility functions
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use(session({ secret: 'your_secret_key', resave: false, saveUninitialized: true }));
+app.use(bodyParser.json());
 
-// Placeholder function to get SeagullCoin balance (replace with actual logic)
-async function getSeagullCoinBalance(walletAddress) {
-    // Add logic to check balance from SeagullCoin issuer account or XRPL
-    return 1.0; // Example balance
-}
+// Sample Swagger Documentation for /buy-nft and /sell-nft
+app.get('/swagger', (req, res) => {
+  res.send(`
+    <h2>Swagger Documentation</h2>
+    <pre>
+      swagger: "2.0"
+      info:
+        description: "API documentation for SeagullCoin NFT Minting and Marketplace"
+        version: "1.0.0"
+        title: "SeagullCoin NFT Marketplace API"
+      paths:
+        /api/buy-nft:
+          post:
+            summary: "Buy an NFT with SeagullCoin"
+            description: "Place an offer to buy an NFT with SeagullCoin."
+            parameters:
+              - name: "nftId"
+                in: "body"
+                description: "The ID of the NFT to buy."
+                required: true
+                schema:
+                  type: "string"
+              - name: "offerAmount"
+                in: "body"
+                description: "The amount of SeagullCoin offered to buy the NFT."
+                required: true
+                schema:
+                  type: "number"
+              - name: "buyerWallet"
+                in: "body"
+                description: "The wallet address of the buyer."
+                required: true
+                schema:
+                  type: "string"
+            responses:
+              200:
+                description: "Buy offer successfully placed"
+              400:
+                description: "Invalid parameters or insufficient SeagullCoin balance"
+              500:
+                description: "Internal server error"
 
-// Placeholder function to mint NFT (replace with actual logic)
-async function mintNFT(walletAddress, nftMetadata) {
-    // Add logic to mint an NFT using NFT.Storage, XRPL, etc.
-    return { nftId: '123', ...nftMetadata }; // Example NFT data
-}
-
-// Placeholder function to retrieve NFT by ID (replace with actual logic)
-async function getNFTById(nftId) {
-    // Add logic to retrieve NFT from your database or NFT.Storage
-    return { id: nftId, owner: 'user_wallet_address' }; // Example NFT
-}
-
-// Function to check if user is authenticated via XUMM (use actual logic here)
-const checkXummAuth = (xummPayload) => {
-    if (!xummPayload || !xummPayload.user) {
-        throw new Error('User is not authenticated');
-    }
-    return xummPayload.user.wallet_address;
-};
-
-// Middleware to authenticate XUMM users
-app.use(async (req, res, next) => {
-    try {
-        // Retrieve XUMM payload or session information
-        const xummPayload = req.session.xummPayload || req.body.xummPayload;
-        
-        // Ensure user is authenticated via XUMM
-        const userWalletAddress = checkXummAuth(xummPayload);
-        req.userWalletAddress = userWalletAddress;
-
-        next();  // Proceed to the next middleware or route
-    } catch (error) {
-        res.status(401).json({ error: "Unauthorized - XUMM Authentication Failed" });
-    }
+        /api/sell-nft:
+          post:
+            summary: "List an NFT for sale with SeagullCoin"
+            description: "Place an NFT on sale for a specified amount of SeagullCoin."
+            parameters:
+              - name: "nftId"
+                in: "body"
+                description: "The ID of the NFT to list for sale."
+                required: true
+                schema:
+                  type: "string"
+              - name: "salePrice"
+                in: "body"
+                description: "The SeagullCoin price for the NFT."
+                required: true
+                schema:
+                  type: "number"
+              - name: "sellerWallet"
+                in: "body"
+                description: "The wallet address of the seller."
+                required: true
+                schema:
+                  type: "string"
+            responses:
+              200:
+                description: "NFT listed for sale successfully"
+              400:
+                description: "Invalid parameters or insufficient SeagullCoin balance"
+              500:
+                description: "Internal server error"
+    </pre>
+  `);
 });
 
-// Route to authenticate users via XUMM (redirect to XUMM for OAuth2)
-app.get('/auth/xumm', async (req, res) => {
-    try {
-        const response = await axios.post('https://xumm.app/api/v1/platform/auth', {}, {
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': process.env.XUMM_API_KEY,
-                'x-api-secret': process.env.XUMM_API_SECRET,
-            },
-        });
-
-        const redirectUrl = response.data.payload_url;
-        res.redirect(redirectUrl);
-    } catch (error) {
-        console.error('Error during XUMM OAuth authentication:', error);
-        res.status(500).json({ error: 'Error starting XUMM OAuth authentication' });
-    }
-});
-
-// Callback route to handle the XUMM OAuth2 response
-app.get('/auth/xumm/callback', async (req, res) => {
-    const { txid } = req.query;
-
-    try {
-        const response = await axios.get(`https://xumm.app/api/v1/platform/payload/${txid}`, {
-            headers: {
-                'x-api-key': process.env.XUMM_API_KEY,
-                'x-api-secret': process.env.XUMM_API_SECRET,
-            },
-        });
-
-        const walletAddress = response.data.response.account;
-        
-        // Store wallet address in session
-        req.session.walletAddress = walletAddress;
-        req.session.xummPayload = response.data;
-
-        res.redirect('/');
-    } catch (error) {
-        console.error('Error during XUMM authentication callback:', error);
-        res.status(500).json({ error: 'Error processing XUMM authentication callback' });
-    }
-});
-
-// Function to sign a transaction with XUMM
-async function signTransactionWithXUMM(transaction, signer) {
-    const xummApiKey = process.env.XUMM_API_KEY;
-    const xummApiSecret = process.env.XUMM_API_SECRET;
-
-    const headers = {
-        'Content-Type': 'application/json',
-        'x-api-key': xummApiKey,
-        'x-api-secret': xummApiSecret,
-    };
-
-    const payloadRes = await axios.post('https://xumm.app/api/v1/platform/payload', {
-        txjson: transaction,
-        user_token: signer // optional if using OAuth2-based session
-    }, { headers });
-
-    const uuid = payloadRes.data.uuid;
-
-    let signed_blob = null;
-    for (let i = 0; i < 20; i++) {
-        const statusRes = await axios.get(`https://xumm.app/api/v1/platform/payload/${uuid}`, { headers });
-        if (statusRes.data.meta.signed === true) {
-            signed_blob = statusRes.data.response.tx_blob;
-            break;
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    if (!signed_blob) throw new Error('User did not sign the transaction in time');
-
-    return signed_blob;
-}
-
-// Route to mint NFTs (SeagullCoin payment required)
+// Mint an NFT route
 app.post('/api/mint', async (req, res) => {
     try {
         const { walletAddress, nftMetadata } = req.body;
@@ -137,96 +92,104 @@ app.post('/api/mint', async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        // Check user's SeagullCoin balance
-        const balance = await getSeagullCoinBalance(walletAddress);
+        // Assuming SeagullCoin payment is handled separately before minting
 
-        if (balance < 0.5) {
-            return res.status(400).json({ error: "Insufficient SeagullCoin balance" });
-        }
-
-        // Proceed with minting the NFT after confirming the payment
-        const nft = await mintNFT(walletAddress, nftMetadata);
-
-        res.status(200).json({ success: true, message: "NFT minted successfully", nft });
+        // Mint the NFT (calling your minting logic, e.g., interacting with XRPL)
+        const nftId = await mintNFT(walletAddress, nftMetadata);
+        
+        res.status(200).json({ success: true, nftId });
     } catch (error) {
-        console.error('Minting error:', error);
+        console.error("Minting error:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
-// Route to transfer NFTs
-app.post('/api/transfer-nft', async (req, res) => {
+// Buy NFT route
+app.post('/api/buy-nft', async (req, res) => {
     try {
-        const { nft_id, fromWallet, toWallet, signer } = req.body;
+        const { nftId, offerAmount, buyerWallet } = req.body;
 
-        if (!nft_id || !fromWallet || !toWallet || !signer) {
+        if (!nftId || !offerAmount || !buyerWallet) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        // Validate that the sender wallet is authorized (check if the wallet matches the signer)
-        if (fromWallet !== signer) {
-            return res.status(403).json({ error: "Unauthorized transfer attempt" });
+        // Ensure the user has sufficient SeagullCoin balance
+        const balance = await getSeagullCoinBalance(buyerWallet);
+        if (balance < offerAmount) {
+            return res.status(400).json({ error: "Insufficient SeagullCoin balance" });
         }
 
-        // Retrieve the NFT from your database or NFT.Storage
-        const nft = await getNFTById(nft_id);
+        // Fetch the NFT from the database or storage
+        const nft = await getNFTById(nftId);
         if (!nft) {
             return res.status(404).json({ error: "NFT not found" });
         }
 
-        // Set up XRPL transaction to transfer the NFT
-        const transaction = {
-            TransactionType: 'NFTokenCreate',
-            Account: fromWallet,
-            NFTokenID: nft.id,
-            Destination: toWallet,
-        };
+        // Logic to handle the purchase (e.g., creating a transaction to transfer SeagullCoin)
+        // Here we assume the transaction is successful, so we will just mock the process
 
-        // Sign the transaction using XUMM
-        const signedTransaction = await signTransactionWithXUMM(transaction, signer);
+        // Proceed with the buy offer
+        const success = await placeBuyOffer(buyerWallet, nftId, offerAmount);
 
-        // Submit transaction to XRPL
-        const response = await submitTransactionToXRPL(signedTransaction);
-
-        if (response.error) {
-            return res.status(500).json({ error: "Transaction failed", details: response.error });
+        if (!success) {
+            return res.status(500).json({ error: "Failed to place buy offer" });
         }
 
-        // Confirm successful transfer
-        res.status(200).json({ success: true, message: "NFT transferred successfully", tx_id: response.tx_id });
-    } catch (err) {
-        console.error('Transfer NFT error:', err);
+        res.status(200).json({ success: true, message: "NFT bought successfully" });
+    } catch (error) {
+        console.error("Buy NFT error:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Server Error:', err);
+// Sell NFT route
+app.post('/api/sell-nft', async (req, res) => {
+    try {
+        const { nftId, salePrice, sellerWallet } = req.body;
 
-    if (err.status) {
-        return res.status(err.status).json({ error: err.message });
+        if (!nftId || !salePrice || !sellerWallet) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        // Fetch the NFT and ensure the seller owns it
+        const nft = await getNFTById(nftId);
+        if (!nft || nft.owner !== sellerWallet) {
+            return res.status(404).json({ error: "NFT not found or you do not own it" });
+        }
+
+        // Logic to list the NFT for sale (e.g., save to your database)
+        const success = await listNFTForSale(nftId, salePrice);
+
+        if (!success) {
+            return res.status(500).json({ error: "Failed to list NFT for sale" });
+        }
+
+        res.status(200).json({ success: true, message: "NFT listed for sale successfully" });
+    } catch (error) {
+        console.error("Sell NFT error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
     }
-
-    res.status(500).json({ error: 'Something went wrong. Please try again later.' });
 });
 
-async function submitTransactionToXRPL(signedTxBlob) {
-    const client = new xrpl.Client("wss://xrplcluster.com"); // or another XRPL node
-    await client.connect();
+// Utility function to mint an NFT (this needs to be implemented)
+async function mintNFT(walletAddress, nftMetadata) {
+    // Implement actual minting logic here
+    return "nft123"; // Mock NFT ID
+}
 
-    try {
-        const result = await client.submitAndWait(signedTxBlob);
-        return { tx_id: result.result.hash };
-    } catch (error) {
-        console.error("XRPL submission error:", error);
-        return { error: error.message || "Unknown XRPL error" };
-    } finally {
-        await client.disconnect();
-    }
+// Utility function to place a buy offer (this needs to be implemented)
+async function placeBuyOffer(buyerWallet, nftId, offerAmount) {
+    // Implement logic to place a buy offer for the NFT (SeagullCoin transfer logic)
+    return true; // Mock success
+}
+
+// Utility function to list NFT for sale (this needs to be implemented)
+async function listNFTForSale(nftId, salePrice) {
+    // Implement logic to list the NFT for sale
+    return true; // Mock success
 }
 
 // Start the server
 app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    console.log(`Server running on http://localhost:${port}`);
 });

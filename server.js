@@ -10,7 +10,6 @@ import { NFTStorage, File } from 'nft.storage';
 
 dotenv.config();
 
-const client = xrplClient; // or walletClient depending on context
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -41,7 +40,8 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: `http://localhost:${port}`, // Adjust the URL if needed for production
+                url: process.env.API_BASE_URL || `http://localhost:${port}`,
+ // Adjust the URL if needed for production
             },
         ],
     },

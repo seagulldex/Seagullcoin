@@ -1,20 +1,21 @@
 import express from 'express';
-import { Client } from 'xrpl';
-import { XummSdk } from 'xumm-sdk';  // Corrected import
+import { Client as XRPLClient } from 'xrpl';
+import { XummSdk } from 'xumm-sdk';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import swaggerJSDoc from 'swagger-jsdoc'; // Import swagger-jsdoc
-import swaggerUi from 'swagger-ui-express'; // Import swagger-ui-express
-import { NFTStorage, File } from 'nft.storage'; // Corrected import for named exports
+import swaggerJSDoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+import { NFTStorage, File } from 'nft.storage';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Initialize XummSdk correctly as per version 2.0 and above
-const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_SECRET_KEY);
+// Initialize XRPL and XUMM clients
+const xrplClient = new XRPLClient('wss://s.altnet.rippletest.net:51233'); // Use Mainnet URL if needed
+const walletClient = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 // XRPL Client setup
 const client = new Client(process.env.XRPL_NODE_URL);
@@ -183,63 +184,6 @@ async function checkSeagullCoinBalance(wallet) {
     const balance = accountInfo.result.account_data.Balance;
     return balance;
 }
-
-app.post("/mint", async (req, res) => {
-  const { wallet, metadataUrl, collectionId } = req.body;
-
-  if (!wallet || !metadataUrl) {
-    return res.status(400).json({ error: "Wallet and metadata URL are required." });
-  }
-
-  try {
-    // Fetch transactions to check 0.5 SeagullCoin payment
-    const txs = await client.request({
-      command: "account_tx",
-      account: wallet,
-      ledger_index_min: -1,
-      ledger_index_max: -1,
-      limit: 10,
-    });
-
-    const paid = txs.result.transactions.some(tx => {
-      const t = tx.tx;
-      return (
-        t.TransactionType === "Payment" &&
-        t.Amount &&
-        typeof t.Amount === "object" &&
-        t.Amount.currency === "53656167756C6C436F696E000000000000000000" &&
-        t.Amount.value === "0.5" &&
-        t.Amount.issuer === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno" &&
-        t.Destination === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U"
-      );
-    });
-
-    if (!paid) {
-      return res.status(402).json({ error: "0.5 SeagullCoin payment not found." });
-    }
-
-    // Mint NFT logic
-    const mintTx = {
-      TransactionType: "NFTokenMint",
-      Account: wallet,
-      URI: Buffer.from(metadataUrl).toString("hex").toUpperCase(),
-      Flags: 8,
-      TransferFee: 0,
-      NFTokenTaxon: collectionId || 0,
-    };
-
-    const prepared = await client.autofill(mintTx);
-    const signed = await walletClient.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
-
-    const tokenID = result.result.meta?.nftoken_id;
-
-    res.json({ success: true, tokenID, metadataUrl });
-  } catch (err) {
-    console.error("Minting error:", err);
-    res.status(500).json({ error: "Minting failed" });
-  }
-});
 
 // Swagger: Get SeagullCoin balance for a given wallet
 /**

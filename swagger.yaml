@@ -26,6 +26,7 @@ paths:
                 properties:
                   message:
                     type: string
+                    example: "Welcome to the SGLCN-X20 Minting API"
   /api/login:
     get:
       summary: XUMM OAuth2 Login
@@ -76,6 +77,8 @@ paths:
           description: Bad Request (e.g., missing fields, payment not found)
         '500':
           description: Internal Server Error
+      security:
+        - XUMM_OAuth2: []
   /buy-nft:
     post:
       summary: Buy an NFT
@@ -109,6 +112,8 @@ paths:
           description: Bad Request (e.g., missing fields, payment not verified)
         '500':
           description: Internal Server Error
+      security:
+        - XUMM_OAuth2: []
   /metrics:
     get:
       summary: "Retrieve platform metrics"

@@ -1,24 +1,25 @@
-openapi: 3.0.3
+openapi: 3.0.0
 info:
   title: SGLCN-X20 Minting API
   version: 1.0.0
   description: |
-    Public API for minting NFTs with SeagullCoin (SGLCN-X20) only.
+    Public API for minting NFTs with SeagullCoin (SGLCN-X20) only. 
     - Mint NFTs by paying 0.5 SeagullCoin.
     - No XRP purchases allowed.
     - Only SeagullCoin can be used for offers, sales, or mints.
     - Supports CORS for marketplaces like bidds.com and xrp.cafe.
-
 servers:
   - url: https://sglcn-x20-api.glitch.me
+    description: Main API server
 
 paths:
   /pay:
     post:
-      summary: Initiate payment of 0.5 SeagullCoin to mint an NFT
-      description: Creates a XUMM payload to request 0.5 SeagullCoin from user.
+      summary: "Initiate payment of 0.5 SeagullCoin to mint an NFT"
+      operationId: initiatePayment
+      tags:
+        - Payment
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -26,60 +27,15 @@ paths:
               properties:
                 walletAddress:
                   type: string
-                  example: "rYourWalletAddressHere"
+                  description: The wallet address initiating the payment
+                amount:
+                  type: number
+                  format: float
+                  description: Amount of SeagullCoin to be paid (0.5 SGLCN required)
+                  example: 0.5
       responses:
         '200':
-          description: Payment payload created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  uuid:
-                    type: string
-                    example: "your-payload-uuid"
-                  qr_url:
-                    type: string
-                    example: "https://xumm.app/detect/your-uuid"
-        '400':
-          description: Missing or invalid parameters
-
-  /mint:
-    post:
-      security:
-        - XummOAuth2: []
-      summary: Mint an NFT after confirming payment
-      description: Mints an NFT if payment of 0.5 SeagullCoin is confirmed.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - walletAddress
-                - fileUrl
-                - name
-                - description
-              properties:
-                walletAddress:
-                  type: string
-                  example: "rYourWalletAddressHere"
-                fileUrl:
-                  type: string
-                  example: "ipfs://your_ipfs_cid_here"
-                name:
-                  type: string
-                  example: "My Seagull NFT"
-                description:
-                  type: string
-                  example: "An exclusive SeagullCoin NFT!"
-                collection:
-                  type: string
-                  example: "Seagull Collection"
-      responses:
-        '200':
-          description: NFT minted successfully
+          description: "Payment initiated successfully"
           content:
             application/json:
               schema:
@@ -88,55 +44,109 @@ paths:
                   success:
                     type: boolean
                     example: true
-                  nftoken_id:
+                  paymentId:
                     type: string
-                    example: "00080000ABCDEF1234567890ABCDEF1234567890"
+                    description: "Unique payment identifier"
         '400':
-          description: Payment not found or invalid mint data
+          description: "Invalid request or insufficient payment"
+        '500':
+          description: "Internal server error"
 
-  /user:
-    get:
-      summary: Get NFTs owned by a wallet
-      description: Returns list of NFTs owned by provided wallet address.
-      parameters:
-        - in: query
-          name: walletAddress
-          schema:
-            type: string
-          required: true
-          description: Wallet address to fetch NFTs for
+  /mint:
+    post:
+      summary: "Mint an NFT after confirming payment"
+      operationId: mintNFT
+      tags:
+        - Minting
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nft_name:
+                  type: string
+                  description: Name of the NFT
+                nft_description:
+                  type: string
+                  description: Description of the NFT
+                nft_file:
+                  type: string
+                  format: binary
+                  description: The file to be uploaded for the NFT (image/video)
+                domain:
+                  type: string
+                  description: Optional domain for the NFT
+                properties:
+                  type: string
+                  description: JSON string of additional properties (optional)
       responses:
         '200':
-          description: List of NFTs
+          description: "NFT minted successfully"
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    nftoken_id:
-                      type: string
-                      example: "00080000ABCDEF1234567890ABCDEF1234567890"
-                    metadata_url:
-                      type: string
-                      example: "ipfs://your_ipfs_cid_here"
-                    name:
-                      type: string
-                      example: "My Seagull NFT"
-                    description:
-                      type: string
-                      example: "An exclusive SeagullCoin NFT!"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  mintResult:
+                    type: object
+                    properties:
+                      nftId:
+                        type: string
+                        description: "Unique identifier for the minted NFT"
         '400':
-          description: Missing walletAddress
+          description: "Invalid request, missing required parameters or invalid file format"
+        '402':
+          description: "Payment verification failed"
+        '500':
+          description: "Internal server error"
 
-components:
-  securitySchemes:
-    XummOAuth2:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: https://oauth2.xumm.app/auth
-          tokenUrl: https://oauth2.xumm.app/token
-          scopes:
-            openid: OpenID Connect access
+  /user:
+    get:
+      summary: "Get NFTs owned by a wallet"
+      operationId: getUserNFTs
+      tags:
+        - User
+      parameters:
+        - in: query
+          name: walletAddress
+          required: true
+          schema:
+            type: string
+          description: The wallet address to query for NFTs
+      responses:
+        '200':
+          description: "NFTs retrieved successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  nfts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        nftId:
+                          type: string
+                          description: "Unique identifier for the NFT"
+                        name:
+                          type: string
+                          description: "Name of the NFT"
+                        description:
+                          type: string
+                          description: "Description of the NFT"
+                        metadata:
+                          type: object
+                          additionalProperties: true
+                          description: "Metadata for the NFT"
+        '400':
+          description: "Invalid request or wallet address"
+        '500':
+          description: "Internal server error"

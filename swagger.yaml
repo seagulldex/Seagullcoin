@@ -150,3 +150,187 @@ paths:
           description: "Invalid request or wallet address"
         '500':
           description: "Internal server error"
+  
+  /nfts:
+    get:
+      summary: "List all NFTs available on the platform"
+      operationId: listNFTs
+      tags:
+        - NFT
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: "Page number for pagination"
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: "Number of NFTs to return per page"
+      responses:
+        '200':
+          description: "List of NFTs"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  nfts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        nftId:
+                          type: string
+                          description: "Unique identifier for the NFT"
+                        name:
+                          type: string
+                          description: "Name of the NFT"
+                        description:
+                          type: string
+                          description: "Description of the NFT"
+        '500':
+          description: "Internal server error"
+
+  /nft/{nftId}:
+    get:
+      summary: "Get details of a specific NFT"
+      operationId: getNFTDetails
+      tags:
+        - NFT
+      parameters:
+        - in: path
+          name: nftId
+          required: true
+          schema:
+            type: string
+          description: "The ID of the NFT"
+      responses:
+        '200':
+          description: "NFT details retrieved successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  nft:
+                    type: object
+                    properties:
+                      nftId:
+                        type: string
+                        description: "Unique identifier for the NFT"
+                      name:
+                        type: string
+                        description: "Name of the NFT"
+                      description:
+                        type: string
+                        description: "Description of the NFT"
+                      metadata:
+                        type: object
+                        additionalProperties: true
+                        description: "Metadata for the NFT"
+        '400':
+          description: "Invalid NFT ID"
+        '500':
+          description: "Internal server error"
+
+  /make-offer:
+    post:
+      summary: "Make an offer to buy an NFT"
+      operationId: makeOffer
+      tags:
+        - Offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nftId:
+                  type: string
+                  description: "The ID of the NFT being offered on"
+                offerAmount:
+                  type: number
+                  format: float
+                  description: "Amount of SeagullCoin being offered"
+      responses:
+        '200':
+          description: "Offer made successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  offerId:
+                    type: string
+                    description: "Unique identifier for the offer"
+        '400':
+          description: "Invalid offer details"
+        '500':
+          description: "Internal server error"
+
+  /accept-offer:
+    post:
+      summary: "Accept an offer for an NFT"
+      operationId: acceptOffer
+      tags:
+        - Offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId:
+                  type: string
+                  description: "Offer ID to accept"
+                nftId:
+                  type: string
+                  description: "NFT ID being sold"
+      responses:
+        '200':
+          description: "Offer accepted and NFT transferred"
+        '400':
+          description: "Invalid offer ID or NFT ID"
+        '500':
+          description: "Internal server error"
+
+  /transfer-nft:
+    post:
+      summary: "Transfer ownership of an NFT"
+      operationId: transferNFT
+      tags:
+        - NFT Transfer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nftId:
+                  type: string
+                  description: "The NFT ID being transferred"
+                toAddress:
+                  type: string
+                  description: "The wallet address receiving the NFT"
+      responses:
+        '200':
+          description: "NFT successfully transferred"
+        '400':
+          description: "Invalid request or transfer details"
+        '500':
+          description: "Internal server error"

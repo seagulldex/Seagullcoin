@@ -43,17 +43,17 @@ export const mintNFT = async (metadata, walletAddress) => {
     // Upload metadata to NFT.Storage
     const metadataCID = await nftStorageClient.store(metadataObj);
 
-   // Use metadataCID to create the NFT on the XRPL
-const mintPayload = {
-  transaction: {
-    Account: walletAddress,
-    TransactionType: 'NFTokenMint',
-    Flags: 0x8000, // Allow token transfer
-    URI: `ipfs://${metadataCID.url.replace('ipfs://', '')}`,
-    Issuer: SGLCN_ISSUER,
-    TokenTaxon: 0,
-  },
-};
+    // Use metadataCID to create the NFT on the XRPL
+    const mintPayload = {
+      transaction: {
+        Account: walletAddress,
+        TransactionType: 'NFTokenMint',
+        Flags: 0x8000, // Allow token transfer
+        URI: `ipfs://${metadataCID.url.replace('ipfs://', '')}`,
+        Issuer: SGLCN_ISSUER,
+        TokenTaxon: 0,
+      },
+    };
 
     const mintResponse = await fetch(XUMM_API_URL + '/payload', {
       method: 'POST',
@@ -108,38 +108,24 @@ export const verifySeagullCoinTransaction = async (session, price) => {
   }
 };
 
-Amount: {
-  currency: '53656167756C6C436F696E000000000000000000', // Hex for 'SeagullCoin'
-  issuer: SGLCN_ISSUER,
-  value: '0.5', // Value as string
-}
-
-const transferPayload = {
-  transaction: {
-    Account: SERVICE_WALLET,
-    TransactionType: 'NFTokenCreateOffer',
-    NFTokenID: nftId,
-    OfferType: 1, // Sell
-    Taker: buyerWallet,
-    Amount: {
-      currency: '53656167756C6C436F696E000000000000000000', // Hex for 'SeagullCoin'
-      issuer: SGLCN_ISSUER,
-      value: '0.5', // Value as string
-    },
-    Flags: 0,
-  },
-};
-
-const transferResponse = await fetch(XUMM_API_URL + '/payload', {
-  method: 'POST',
-  headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
-  body: JSON.stringify(transferPayload),
-});
-
-const transferData = await transferResponse.json();
-if (!transferData.success) throw new Error('NFT transfer failed');
-
-return transferData;
+// Function to transfer NFT
+export const transferNFT = async (nftId, buyerWallet) => {
+  try {
+    const transferPayload = {
+      transaction: {
+        Account: SERVICE_WALLET,
+        TransactionType: 'NFTokenCreateOffer',
+        NFTokenID: nftId,
+        OfferType: 1, // Sell
+        Taker: buyerWallet,
+        Amount: {
+          currency: '53656167756C6C436F696E000000000000000000', // Hex for 'SeagullCoin'
+          issuer: SGLCN_ISSUER,
+          value: '0.5', // Value as string
+        },
+        Flags: 0,
+      },
+    };
 
     const transferResponse = await fetch(XUMM_API_URL + '/payload', {
       method: 'POST',

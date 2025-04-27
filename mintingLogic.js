@@ -43,17 +43,17 @@ export const mintNFT = async (metadata, walletAddress) => {
     // Upload metadata to NFT.Storage
     const metadataCID = await nftStorageClient.store(metadataObj);
 
-    // Use metadataCID to create the NFT on the XRPL
-    const mintPayload = {
-      transaction: {
-        Account: walletAddress,
-        TransactionType: 'NFTokenMint',
-        Flags: 0x8000, // Allow token transfer
-        URI: `ipfs://${metadataCID}`,
-        Issuer: SGLCN_ISSUER,
-        TokenTaxon: 0,
-      },
-    };
+   // Use metadataCID to create the NFT on the XRPL
+const mintPayload = {
+  transaction: {
+    Account: walletAddress,
+    TransactionType: 'NFTokenMint',
+    Flags: 0x8000, // Allow token transfer
+    URI: `ipfs://${metadataCID.url.replace('ipfs://', '')}`,
+    Issuer: SGLCN_ISSUER,
+    TokenTaxon: 0,
+  },
+};
 
     const mintResponse = await fetch(XUMM_API_URL + '/payload', {
       method: 'POST',
@@ -108,21 +108,38 @@ export const verifySeagullCoinTransaction = async (session, price) => {
   }
 };
 
-// Function to transfer the NFT (after purchase)
-export const transferNFT = async (nftId, buyerWallet) => {
-  try {
-    const transferPayload = {
-      transaction: {
-        Account: SERVICE_WALLET,
-        TransactionType: 'NFTokenCreateOffer',
-        NFTokenID: nftId,
-        OfferType: 1, // Sell
-        Taker: buyerWallet,
-        Amount: '0.5',
-        Currency: 'SGLCN-X20',
-        Flags: 0,
-      },
-    };
+Amount: {
+  currency: '53656167756C6C436F696E000000000000000000', // Hex for 'SeagullCoin'
+  issuer: SGLCN_ISSUER,
+  value: '0.5', // Value as string
+}
+
+const transferPayload = {
+  transaction: {
+    Account: SERVICE_WALLET,
+    TransactionType: 'NFTokenCreateOffer',
+    NFTokenID: nftId,
+    OfferType: 1, // Sell
+    Taker: buyerWallet,
+    Amount: {
+      currency: '53656167756C6C436F696E000000000000000000', // Hex for 'SeagullCoin'
+      issuer: SGLCN_ISSUER,
+      value: '0.5', // Value as string
+    },
+    Flags: 0,
+  },
+};
+
+const transferResponse = await fetch(XUMM_API_URL + '/payload', {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
+  body: JSON.stringify(transferPayload),
+});
+
+const transferData = await transferResponse.json();
+if (!transferData.success) throw new Error('NFT transfer failed');
+
+return transferData;
 
     const transferResponse = await fetch(XUMM_API_URL + '/payload', {
       method: 'POST',
@@ -140,10 +157,22 @@ export const transferNFT = async (nftId, buyerWallet) => {
   }
 };
 
-// Helper function to fetch NFT details from XRPL
+import { Client } from 'xrpl';
+
 const getNFTDetails = async (nftId) => {
-  // Placeholder for fetching NFT details, you should implement this with your XRPL connection
-  const response = await fetch(`${XUMM_API_URL}/nft-details/${nftId}`);
-  const data = await response.json();
-  return data;
+  const client = new Client('wss://s.altnet.rippletest.net:51233'); // Testnet
+  try {
+    await client.connect();
+
+    // XRPL does not have nft_info; workaround:
+    // We'll search accounts that own the NFT via "account_nfts"
+
+    console.error('You must track NFT ownership or use a different method; XRPL does not support fetching by NFTokenID alone.');
+    return { nftId, owner: null };
+  } catch (error) {
+    console.error('Error fetching NFT details:', error);
+    return { nftId, owner: null };
+  } finally {
+    await client.disconnect();
+  }
 };

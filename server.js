@@ -14,6 +14,7 @@ import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage'; // Removed duplicate import
+import client from './xrplClient.js';
 
 // ===== Config =====
 dotenv.config();

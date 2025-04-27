@@ -12,6 +12,8 @@ import { dirname } from 'path';
 import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
+import { transferNFT } from './nftTransfer.js';  // Import transferNFT from nftTransfer.js
+
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage'; // Removed duplicate import
 

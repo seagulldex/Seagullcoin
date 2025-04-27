@@ -1,4 +1,4 @@
-openapi: 3.0.0
+lopenapi: 3.0.0
 info:
   title: SGLCN-X20 Minting API
   version: "1.0.0"
@@ -84,25 +84,7 @@ paths:
           description: Internal Server Error
       security:
         - XUMM_OAuth2: []
-  
-profile:
-  description: |
-    User profile data includes their username and profile picture.
-  properties:
-    profile_picture:
-      type: string
-      format: uri
-      description: |
-        IPFS URL of the user's profile picture image. Stored on NFT.Storage.
-    username:
-      type: string
-      description: |
-        The username of the user. This is stored in metadata alongside the profile picture.
-  example:
-    username: "seagullfan123"
-    profile_picture: "ipfs://Qm...XYZ"
-
-/buy-nft:
+  /buy-nft:
     post:
       summary: Buy an NFT
       description: Purchase an NFT after verifying SeagullCoin payment.
@@ -377,308 +359,27 @@ profile:
                           type: string
                         transactionType:
                           type: string
-                        price:
+                          enum:
+                            - "mint"
+                            - "buy"
+                            - "sell"
+                        amount:
                           type: string
+                          description: SeagullCoin amount involved
                         timestamp:
                           type: string
+                          format: date-time
         '500':
           description: Internal Server Error
       security:
         - XUMM_OAuth2: []
-  /metrics:
-    get:
-      summary: Retrieve platform metrics
-      description: Fetches the current statistics like total NFTs minted, SeagullCoin payments processed, etc.
-      responses:
-        '200':
-          description: Metrics successfully retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  totalMinted:
-                    type: integer
-                    description: Total NFTs minted
-                  totalPayments:
-                    type: integer
-                    description: Total SeagullCoin payments processed
-        '500':
-          description: Internal Server Error
-
-  responses:
-  '200':
-    description: Success
-    headers:
-      X-RateLimit-Limit:
-        description: Maximum number of requests allowed in a given period
-        schema:
-          type: integer
-          example: 100
-      X-RateLimit-Remaining:
-        description: Number of requests remaining in the current period
-        schema:
-          type: integer
-          example: 99
-      X-RateLimit-Reset:
-        description: Time when the rate limit will reset
-        schema:
-          type: string
-          format: date-time
-          example: "2025-04-30T15:00:00Z"
-
-paths:
   /notifications:
-    post:
-      summary: Trigger notification for user
-      parameters:
-        - name: userId
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              userId:
-                type: string
-                description: The user to send the notification to
-              eventType:
-                type: string
-                enum: [offer_accepted, auction_ending]
-                description: The type of event triggering the notification
-              message:
-                type: string
-                description: The message to send to the user
-      responses:
-        '200':
-          description: Notification successfully sent
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: "Notification sent successfully"
-        '400':
-          description: Bad Request (missing required parameters)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: error
-                  error:
-                    type: string
-                    example: "Missing userId or eventType"
-
-paths:
-  /user/{userId}/transactions:
     get:
-      summary: Get transactions for a user with pagination
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 1
-            description: Page number (default 1)
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 10
-            description: Number of transactions per page (default 10)
+      summary: Get notifications for the user
+      description: Retrieves a list of notifications related to the user's activities.
       responses:
         '200':
-          description: A list of transactions for the user
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  page:
-                    type: integer
-                    example: 1
-                  limit:
-                    type: integer
-                    example: 10
-                  totalCount:
-                    type: integer
-                    example: 100
-                  transactions:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Transaction'
-
-  /collections:
-    get:
-      summary: Get all NFT collections with pagination
-      parameters:
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 10
-      responses:
-        '200':
-          description: A list of collections
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  page:
-                    type: integer
-                    example: 1
-                  limit:
-                    type: integer
-                    example: 10
-                  totalCount:
-                    type: integer
-                    example: 50
-                  collections:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Collection'
-
-responses:
-  '200':
-    description: Success
-    content:
-      application/json:
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: success
-            data:
-              type: object
-              additionalProperties: true
-  '400':
-    description: Bad Request (Validation Error)
-    content:
-      application/json:
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: error
-            error:
-              type: string
-              example: "Missing required parameter: token"
-  '401':
-    description: Unauthorized (XUMM OAuth2)
-    content:
-      application/json:
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: error
-            error:
-              type: string
-              example: "Unauthorized access"
-  '404':
-    description: Not Found (Resource does not exist)
-    content:
-      application/json:
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: error
-            error:
-              type: string
-              example: "NFT not found"
-  '500':
-    description: Internal Server Error
-    content:
-      application/json:
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: error
-            error:
-              type: string
-              example: "Internal server error, please try again later"
-
-/collections:
-    get:
-      summary: Retrieve all collections
-      description: Fetches a list of all NFT collections available on the platform.
-      responses:
-        '200':
-          description: Collections retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    collectionName:
-                      type: string
-                      description: The name of the collection
-                    collectionLogo:
-                      type: string
-                      description: URL to the collection's logo image
-                    collectionDescription:
-                      type: string
-                      description: A brief description of the collection
-    post:
-      summary: Create a new NFT collection
-      description: Allows users to create a new collection by specifying a name, description, and logo.
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                collectionName:
-                  type: string
-                  description: Name of the collection
-                collectionDescription:
-                  type: string
-                  description: Description of the collection
-                collectionLogo:
-                  type: string
-                  format: binary
-                  description: Logo image file for the collection
-      responses:
-        '200':
-          description: Collection created successfully
+          description: Notifications retrieved successfully
           content:
             application/json:
               schema:
@@ -686,17 +387,18 @@ responses:
                 properties:
                   success:
                     type: boolean
-                  collection:
-                    type: object
-                    properties:
-                      collectionName:
-                        type: string
-                      collectionLogo:
-                        type: string
-                      collectionDescription:
-                        type: string
-        '400':
-          description: Bad Request (e.g., missing fields, invalid file format)
+                  notifications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        notificationId:
+                          type: string
+                        message:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
         '500':
           description: Internal Server Error
       security:
@@ -705,14 +407,10 @@ components:
   securitySchemes:
     XUMM_OAuth2:
       type: oauth2
-      authorizationUrl: https://xumm.app/oauth2/authorize
-      tokenUrl: https://xumm.app/oauth2/token
-      scopes:
-        user:profile: Access user profile and wallet info
-        user:transactions: Access user transaction history
-        nft:mint: Access NFT minting functionality
-        nft:buy: Access NFT buying functionality
-        nft:sell: Access NFT selling functionality
-        nft:offer: Access NFT offer placing functionality
-
-
+      flows:
+        authorizationCode:
+          authorizationUrl: "https://xumm.app/oauth/authorize"
+          tokenUrl: "https://xumm.app/oauth/token"
+          scopes:
+            user_profile: "View user profile"
+            nft_transactions: "Manage NFT transactions"

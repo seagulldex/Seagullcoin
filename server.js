@@ -110,6 +110,70 @@ apiRouter.get('/xumm/callback', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Minting
+ *     description: Minting SeagullCoin NFTs
+ *   - name: User
+ *     description: User-related operations
+ * 
+ * /mint:
+ *   post:
+ *     tags:
+ *       - Minting
+ *     summary: Mint a new NFT
+ *     description: Verifies payment and mints an NFT using SeagullCoin.
+ *     parameters:
+ *       - in: body
+ *         name: nftData
+ *         description: NFT metadata for minting
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             nft_name:
+ *               type: string
+ *               example: "My SeagullCoin NFT"
+ *             nft_description:
+ *               type: string
+ *               example: "This NFT is minted with SeagullCoin!"
+ *             nft_file:
+ *               type: string
+ *               format: binary
+ *               description: The media file for the NFT.
+ *             userAddress:
+ *               type: string
+ *               example: "r9zQsF9p89mF7Uy3FLzL2XBcYg2kCp7cBz"
+ *     responses:
+ *       200:
+ *         description: NFT successfully minted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 nftId:
+ *                   type: string
+ *                   example: "NFT-12345"
+ *       400:
+ *         description: Invalid input or insufficient SeagullCoin
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "Insufficient SeagullCoin balance for minting"
+ */
+
 // ======= NFT Minting =======
 const upload = multer({
   dest: uploadsDir,

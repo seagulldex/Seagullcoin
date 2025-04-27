@@ -155,8 +155,6 @@ async function listNFTForSale(nftId, price, accessToken) {
   return result.data;
 }
 
-
-
 // ======= Mint NFT =======
 const upload = multer({
   dest: uploadsDir,

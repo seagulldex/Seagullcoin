@@ -1,3 +1,4 @@
+
 {
   "openapi": "3.0.0",
   "info": {
@@ -17,11 +18,11 @@
         "description": "Check if the API is alive.",
         "responses": {
           "200": {
-            "description": "API is alive",
+            "description": "API is live",
             "content": {
               "application/json": {
                 "example": {
-                  "status": "SGLCN-X20 Minting API is alive"
+                  "status": "alive"
                 }
               }
             }
@@ -43,7 +44,7 @@
     "/api/callback": {
       "get": {
         "summary": "XUMM OAuth2 Callback",
-        "description": "Handles the callback from XUMM OAuth2 and stores the access token.",
+        "description": "Handles the callback from XUMM OAuth2, stores the access token, and verifies the 0.5 SeagullCoin payment.",
         "parameters": [
           {
             "name": "code",
@@ -92,6 +93,7 @@
                   "user_id": "xumm123",
                   "user_name": "John Doe",
                   "xrp_address": "r9Pz2tH2Fz6L4U7J7RxQkQwCJQ2zXYZz3t",
+                  "xumm_seagullcoin_address": "seagullCoinAddress",
                   "profile_picture": "https://xumm.com/picture.jpg"
                 }
               }
@@ -109,7 +111,7 @@
     "/mint": {
       "post": {
         "summary": "Mint a SeagullCoin NFT",
-        "description": "Allows a user to mint an NFT with a 0.5 SeagullCoin payment.",
+        "description": "Mint an NFT with a 0.5 SeagullCoin payment (payment verification required).",
         "parameters": [
           {
             "name": "nft_name",
@@ -151,7 +153,7 @@
             "name": "nft_file",
             "in": "formData",
             "required": true,
-            "description": "File representing the NFT image or media",
+            "description": "File representing the SeagullCoin NFT image or media",
             "schema": {
               "type": "file"
             }

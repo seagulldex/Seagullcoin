@@ -4,20 +4,21 @@ info:
   version: "1.0.0"
   description: |
     API for minting and buying NFTs using SeagullCoin (SGLCN-X20).
-    - Mint NFTs (with media upload)
-    - Buy NFTs
-    - Sell NFTs
-    - View NFTs for sale
-    - XUMM OAuth2 login
-    - Place offers and bids on NFTs
-    - Auction system for NFTs
-    - Manage NFT collections
-    - View platform metrics
+    Features:
+      - Mint NFTs (with media upload)
+      - Buy NFTs
+      - Sell NFTs
+      - View NFTs for sale
+      - XUMM OAuth2 login
+      - Place offers and bids on NFTs
+      - Auction system for NFTs
+      - Manage NFT collections
+      - View platform metrics
 servers:
   - url: https://sglcn-x20-api.glitch.me
     description: Production server
 paths:
-  /:
+/:
     get:
       summary: Welcome
       description: Welcome message and API information.

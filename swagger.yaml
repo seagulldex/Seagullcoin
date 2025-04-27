@@ -37,13 +37,17 @@ paths:
                 properties:
                   uuid:
                     type: string
+                    example: "your-payload-uuid"
                   qr_url:
                     type: string
+                    example: "https://xumm.app/detect/your-uuid"
         '400':
           description: Missing or invalid parameters
 
   /mint:
     post:
+      security:
+        - XummOAuth2: []
       summary: Mint an NFT after confirming payment
       description: Mints an NFT if payment of 0.5 SeagullCoin is confirmed.
       requestBody:
@@ -72,7 +76,7 @@ paths:
                   example: "An exclusive SeagullCoin NFT!"
                 collection:
                   type: string
-                  example: "Seagull Collection" 
+                  example: "Seagull Collection"
       responses:
         '200':
           description: NFT minted successfully
@@ -83,8 +87,10 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   nftoken_id:
                     type: string
+                    example: "00080000ABCDEF1234567890ABCDEF1234567890"
         '400':
           description: Payment not found or invalid mint data
 
@@ -111,11 +117,26 @@ paths:
                   properties:
                     nftoken_id:
                       type: string
+                      example: "00080000ABCDEF1234567890ABCDEF1234567890"
                     metadata_url:
                       type: string
+                      example: "ipfs://your_ipfs_cid_here"
                     name:
                       type: string
+                      example: "My Seagull NFT"
                     description:
                       type: string
+                      example: "An exclusive SeagullCoin NFT!"
         '400':
           description: Missing walletAddress
+
+components:
+  securitySchemes:
+    XummOAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://oauth2.xumm.app/auth
+          tokenUrl: https://oauth2.xumm.app/token
+          scopes:
+            openid: OpenID Connect access

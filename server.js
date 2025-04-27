@@ -6,14 +6,12 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction } from './mintingLogic.js';
+import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction, transferNFT } from './mintingLogic.js'; // Transfer function moved to mintingLogic.js
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
-import { transferNFT } from './nftTransfer.js';  // Import transferNFT from nftTransfer.js
-
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage'; // Removed duplicate import
 
@@ -177,7 +175,7 @@ apiRouter.post('/buy-nft', async (req, res) => {
     }
 
     const walletAddress = req.session.walletAddress;
-    const purchaseResult = await transferNFT(nftId, walletAddress);
+    const purchaseResult = await transferNFT(nftId, walletAddress);  // Now calling transferNFT from mintingLogic.js
     return res.json({ success: true, purchaseResult });
   } catch (err) {
     console.error(err);

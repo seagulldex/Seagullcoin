@@ -111,6 +111,52 @@ apiRouter.get('/xumm/callback', async (req, res) => {
   }
 });
 
+// ========================== Sell NFT ==========================
+
+apiRouter.post('/sell-nft', async (req, res) => {
+  const { nftId, price } = req.body;
+
+  try {
+    if (!nftId || !price) {
+      return res.status(400).json({ error: 'NFT ID and price are required.' });
+    }
+
+    // Validate price is a positive number
+    if (isNaN(price) || parseFloat(price) <= 0) {
+      return res.status(400).json({ error: 'Invalid price. It should be a positive number.' });
+    }
+
+    // Verify SeagullCoin payment before listing for sale
+    const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
+    if (!paymentValid) {
+      return res.status(402).json({ error: '0.5 SeagullCoin payment required to list an NFT for sale.' });
+    }
+
+    // Logic for listing NFT for sale (you may need to integrate with your database or blockchain service here)
+    const saleResult = await listNFTForSale(nftId, price, req.session.xumm.access_token);
+
+    return res.json({ success: true, saleResult });
+  } catch (err) {
+    console.error('Error selling NFT:', err);
+    return res.status(500).json({ error: 'An error occurred while selling the NFT.' });
+  }
+});
+
+// Helper function for listing NFT for sale
+async function listNFTForSale(nftId, price, accessToken) {
+  // Placeholder for actual logic to list NFT for sale, such as interacting with your blockchain or database
+  // Replace this with your logic to set the NFT price for sale
+  const result = await axios.post('https://api.nftplatform.io/list_for_sale', {
+    nftId,
+    price,
+    accessToken,
+  });
+
+  return result.data;
+}
+
+
+
 // ======= Mint NFT =======
 const upload = multer({
   dest: uploadsDir,

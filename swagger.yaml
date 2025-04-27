@@ -6,6 +6,7 @@ info:
     API for minting and buying NFTs using SeagullCoin (SGLCN-X20).
     - Mint NFTs (with media upload)
     - Buy NFTs
+    - Sell NFTs
     - View NFTs for sale
     - XUMM OAuth2 login
 servers:
@@ -110,6 +111,43 @@ paths:
                     type: object
         '400':
           description: Bad Request (e.g., missing fields, payment not verified)
+        '500':
+          description: Internal Server Error
+      security:
+        - XUMM_OAuth2: []
+  /sell-nft:
+    post:
+      summary: Sell an NFT
+      description: List an NFT for sale after verifying SeagullCoin payment.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nftId:
+                  type: string
+                  description: ID of the NFT to sell
+                price:
+                  type: string
+                  description: Price to sell the NFT in SeagullCoin
+      responses:
+        '200':
+          description: Successfully listed NFT for sale
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  saleResult:
+                    type: object
+        '400':
+          description: Bad Request (e.g., missing fields, invalid price)
+        '402':
+          description: Payment Required (SeagullCoin payment not verified)
         '500':
           description: Internal Server Error
       security:

@@ -170,6 +170,68 @@ const upload = multer({
   }
 });
 
+// Cancel XRP offers route
+apiRouter.post('/cancel-xrp-offers', async (req, res) => {
+  const { nftId } = req.body;
+
+  if (!nftId) {
+    return res.status(400).json({ error: 'NFT ID is required.' });
+  }
+
+  try {
+    // Verify the NFT is listed for sale and check if the offer is for XRP
+    const offer = await getNFTOffer(nftId); // Assume a function that fetches the offer based on nftId
+
+    // Check if the offer is for XRP
+    if (offer && offer.currency === 'XRP') {
+      // Cancel the XRP offer using the XRPL API (or your own logic)
+      const cancelResult = await cancelXRPOffer(offer.id);
+      
+      if (cancelResult.success) {
+        return res.json({ success: true, message: 'XRP offer successfully canceled.' });
+      } else {
+        return res.status(500).json({ error: 'Failed to cancel XRP offer.' });
+      }
+    } else {
+      return res.status(400).json({ error: 'No XRP offer found for the given NFT.' });
+    }
+  } catch (err) {
+    console.error('Error canceling XRP offer:', err);
+    return res.status(500).json({ error: 'An error occurred while canceling the XRP offer.' });
+  }
+});
+
+// Helper function to get the offer by NFT ID
+async function getNFTOffer(nftId) {
+  // Placeholder logic to fetch the NFT offer (you may need to integrate with your database or blockchain service here)
+  const offer = await axios.get(`https://api.nftplatform.io/get_offer_by_nft_id/${nftId}`);
+  return offer.data;
+}
+
+// Helper function to cancel the XRP offer on XRPL
+async function cancelXRPOffer(offerId) {
+  try {
+    // Construct the XRP transaction to cancel the offer (e.g., using XRPL's cancel offer mechanism)
+    const cancelTransaction = {
+      TransactionType: 'OfferCancel',
+      OfferSequence: offerId, // Offer sequence to be canceled
+      Account: process.env.XRP_ACCOUNT, // Your XRPL account
+    };
+
+    const response = await axios.post('https://xrpl-api.example.com/cancel_offer', cancelTransaction);
+
+    if (response.data.success) {
+      return { success: true };
+    } else {
+      return { success: false };
+    }
+  } catch (err) {
+    console.error('Error canceling XRP offer on XRPL:', err);
+    return { success: false };
+  }
+}
+
+
 // Mint NFT route (POST)
 apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
   const { nft_name, nft_description, domain, properties } = req.body;
@@ -230,6 +292,71 @@ async function checkIfNFTExists(nft_name, nft_description) {
 
   return false;
 }
+
+// Mint NFT route (POST)
+apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
+  const { nft_name, nft_description, domain, properties } = req.body;
+
+  if (!nft_name || !nft_description || !domain || !properties || !req.file) {
+    return res.status(400).json({ error: 'Missing required fields (name, description, domain, properties, file).' });
+  }
+
+  try {
+    // Verify SeagullCoin payment
+    const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
+    if (!paymentValid) {
+      return res.status(402).json({ error: '0.5 SeagullCoin payment required to mint an NFT.' });
+    }
+
+    // Logic to upload the file to NFT.Storage (you can use your existing storage logic here)
+    const mediaUrl = await uploadToNFTStorage(req.file);
+
+    // Prepare metadata for the NFT
+    const metadata = {
+      name: nft_name,
+      description: nft_description,
+      domain: domain,
+      properties: JSON.parse(properties),
+      media_url: mediaUrl,
+    };
+
+    // Logic to mint the NFT using the SeagullCoin transaction (custom minting logic)
+    const mintResult = await mintNFT(metadata, req.session.xumm.access_token);
+
+    // Return the result of minting
+    return res.json({ success: true, mintResult });
+  } catch (err) {
+    console.error('Error minting NFT:', err);
+    return res.status(500).json({ error: 'An error occurred while minting the NFT.' });
+  }
+});
+
+// Helper function to upload the NFT file to NFT.Storage
+async function uploadToNFTStorage(file) {
+  try {
+    const formData = new FormData();
+    formData.append('file', fs.createReadStream(file.path));
+
+    const response = await axios.post('https://api.nft.storage/upload', formData, {
+      headers: {
+        'Authorization': `Bearer ${process.env.NFT_STORAGE_API_KEY}`,
+        'Content-Type': 'multipart/form-data',
+      }
+    });
+
+    if (response.status !== 200) {
+      throw new Error('Failed to upload file to NFT.Storage');
+    }
+
+    return `https://ipfs.io/ipfs/${response.data.value.cid}`;
+  } catch (error) {
+    console.error('Error uploading file to NFT.Storage:', error);
+    throw new Error('Failed to upload file to NFT.Storage.');
+  }
+}
+
+// Use the API router
+app.use('/api', apiRouter);
 
 // Start the app
 const PORT = process.env.PORT || 3000;

@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction, cancelXRPOfferProtection, transferNFT, getNFTsForSale } from './mintingLogic.js';
+import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction } from './mintingLogic.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
@@ -194,26 +194,34 @@ apiRouter.get('/nfts', async (req, res) => {
 app.use('/api', apiRouter);
 
 // ========== Helper Functions ==========
-async function cancelXRPOfferProtection(nftId) {
+async function transferNFT(nftId, accessToken) {
   try {
-    const response = await fetch('https://xumm.app/api/v1/platform/cancel_xrp_offer', {
+    const response = await fetch('https://xumm.app/api/v1/platform/transfer_nft', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ nftId }),
+      body: JSON.stringify({ nftId, to: accessToken }),
     });
 
     if (!response.ok) {
-      throw new Error('Cancel XRP offer failed.');
+      throw new Error('NFT transfer failed.');
     }
 
     return await response.json();
   } catch (err) {
     console.error(err);
-    throw new Error('Error during XRP offer cancellation.');
+    throw new Error('Error during NFT transfer.');
   }
+}
+
+async function getNFTsForSale() {
+  // Simulated example - replace with actual database or storage lookup
+  return [
+    { id: '1', name: 'NFT 1', price: '10', description: 'First NFT for sale' },
+    { id: '2', name: 'NFT 2', price: '20', description: 'Second NFT for sale' },
+  ];
 }
 
 // Start the server

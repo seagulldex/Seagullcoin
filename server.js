@@ -182,6 +182,85 @@ apiRouter.post('/buy-nft', async (req, res) => {
   }
 });
 
+// Admin routes
+const adminRouter = express.Router();
+
+// View all NFTs
+adminRouter.get('/admin/nfts', async (req, res) => {
+  try {
+    const allNFTs = await getAllNFTs(); // Replace with your DB function
+    res.json({ success: true, nfts: allNFTs });
+  } catch (err) {
+    console.error('Error fetching NFTs:', err);
+    res.status(500).json({ error: 'Failed to fetch NFTs.' });
+  }
+});
+
+// View all users (simplified, consider using an actual DB query for users)
+adminRouter.get('/admin/users', async (req, res) => {
+  try {
+    const users = await getAllUsers(); // Replace with actual DB query
+    res.json({ success: true, users: users });
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    res.status(500).json({ error: 'Failed to fetch users.' });
+  }
+});
+
+// Manage listings (simplified for now)
+adminRouter.post('/admin/manage-listing', async (req, res) => {
+  const { nftId, action } = req.body; // Example action: 'delete', 'activate'
+
+  try {
+    if (!nftId || !action) {
+      return res.status(400).json({ error: 'NFT ID and action are required.' });
+    }
+
+    // Implement logic to handle different actions (e.g., activate/deactivate/delete listings)
+    const result = await manageListing(nftId, action); // Add your DB logic here
+    res.json({ success: true, result });
+  } catch (err) {
+    console.error('Error managing listing:', err);
+    res.status(500).json({ error: 'Failed to manage listing.' });
+  }
+});
+
+import { NFTStorage, File } from 'nft.storage';
+
+const nftStorageClient = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
+
+async function mintNFT(metadata, walletAddress) {
+  try {
+    // Upload NFT file to NFT.Storage
+    const nftFile = fs.readFileSync(metadata.file); // File read from local path
+    const file = new File([nftFile], metadata.name, { type: 'image/jpeg' });
+
+    // Upload metadata
+    const metadataWithFile = {
+      name: metadata.name,
+      description: metadata.description,
+      domain: metadata.domain,
+      properties: metadata.properties,
+      image: file,
+    };
+
+    // Upload to IPFS
+    const uploaded = await nftStorageClient.store(metadataWithFile);
+    const metadataUrl = `https://ipfs.io/ipfs/${uploaded.ipnft}`;
+
+    // Your minting logic here
+    // For example: send a transaction to mint the NFT on the XRPL using metadataUrl
+
+    return { metadataUrl, success: true }; // Return the metadata URL after minting
+  } catch (err) {
+    console.error('Error minting NFT:', err);
+    throw new Error('Failed to mint NFT.');
+  }
+}
+
+// Attach admin routes under '/admin'
+app.use('/admin', adminRouter);
+
 // ======= Get NFTs For Sale =======
 apiRouter.get('/nfts', async (req, res) => {
   try {

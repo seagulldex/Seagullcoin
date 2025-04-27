@@ -109,7 +109,6 @@ paths:
           description: Bad Request (e.g., missing fields, payment not verified)
         '500':
           description: Internal Server Error
-  paths:
   /metrics:
     get:
       summary: "Retrieve platform metrics"
@@ -128,7 +127,8 @@ paths:
                   totalPayments:
                     type: integer
                     description: "Total SeagullCoin payments processed"
-
+        '500':
+          description: "Internal Server Error"
   /collections:
     get:
       summary: "Retrieve all collections"
@@ -152,8 +152,31 @@ paths:
                     collectionDescription:
                       type: string
                       description: "A brief description of the collection"
-
-/nfts:
+    post:
+      summary: "Create a new NFT collection"
+      description: "Allows users to create a new collection by specifying a name, logo, and description."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                collectionName:
+                  type: string
+                  description: "The name of the collection"
+                collectionLogo:
+                  type: string
+                  description: "URL of the collection's logo image"
+                collectionDescription:
+                  type: string
+                  description: "Description of the collection"
+      responses:
+        '201':
+          description: "Collection created successfully"
+        '400':
+          description: "Invalid request or missing parameters"
+  /nfts:
     get:
       summary: Get NFTs for Sale
       description: Fetch all NFTs available for sale.
@@ -183,6 +206,27 @@ paths:
         '500':
           description: Internal Server Error
 components:
+  responses:
+    Success:
+      description: "Request was successful"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                description: "Whether the request was successful"
+    Error:
+      description: "Error occurred"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                description: "Error message"
   securitySchemes:
     XUMM_OAuth2:
       type: oauth2

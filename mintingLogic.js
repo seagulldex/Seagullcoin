@@ -1,15 +1,35 @@
-// mintingLogic.js
+import fs from 'fs'; // Import fs to read files
 import fetch from 'node-fetch';
 import { NFTStorage, File } from 'nft.storage';
-import { XUMM_API_URL, NFT_STORAGE_API_KEY, SGLCN_ISSUER, SERVICE_WALLET } from './config.js'; // Ensure to create config.js for your constants
+import { XUMM_API_URL, NFT_STORAGE_API_KEY, SGLCN_ISSUER, SERVICE_WALLET, XUMM_API_KEY } from './config.js'; // Ensure you have config.js with the required constants
 
 // Set up NFT.Storage client
 const nftStorageClient = new NFTStorage({ token: NFT_STORAGE_API_KEY });
 
+// Function to check if the user owns the NFT
+export const checkOwnership = async (nftId, walletAddress) => {
+  try {
+    // Fetch the NFT details using the NFT ID (for example, using an API to fetch the token details)
+    const nftDetailsResponse = await fetch(`${XUMM_API_URL}/nft/${nftId}`);
+    const nftDetails = await nftDetailsResponse.json();
+
+    // Check if the NFT's owner matches the provided wallet address
+    if (nftDetails.owner === walletAddress) {
+      return true; // User owns the NFT
+    }
+    
+    return false; // User does not own the NFT
+  } catch (error) {
+    console.error('Error checking NFT ownership:', error);
+    return false;
+  }
+};
+
+
 // Function to mint the NFT
 export const mintNFT = async (metadata, walletAddress) => {
   try {
-    const file = await fs.promises.readFile(metadata.file);
+    const file = await fs.promises.readFile(metadata.file); // Read the file from disk
     const fileData = new File([file], metadata.file, { type: 'image/jpeg' });
 
     const metadataObj = {
@@ -118,4 +138,25 @@ export const transferNFT = async (nftId, buyerWallet) => {
     console.error('Error transferring NFT:', error);
     throw error;
   }
+};
+
+// Function to check NFT ownership (you will likely need to define this function to check ownership from the XRPL)
+export const checkOwnership = async (nftId, walletAddress) => {
+  try {
+    const nftDetails = await getNFTDetails(nftId); // Assume getNFTDetails is defined elsewhere to interact with XRPL
+
+    if (nftDetails && nftDetails.owner === walletAddress) {
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error('Error checking ownership:', err);
+    retu
+
+// Helper function to fetch NFT details from XRPL
+const getNFTDetails = async (nftId) => {
+  // Placeholder for fetching NFT details, you should implement this with your XRPL connection
+  const response = await fetch(`${XUMM_API_URL}/nft-details/${nftId}`);
+  const data = await response.json();
+  return data;
 };

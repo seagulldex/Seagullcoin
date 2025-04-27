@@ -121,19 +121,12 @@ apiRouter.post('/sell-nft', async (req, res) => {
       return res.status(400).json({ error: 'NFT ID and price are required.' });
     }
 
-    // Validate price is a positive number
     if (isNaN(price) || parseFloat(price) <= 0) {
-      return res.status(400).json({ error: 'Invalid price. It should be a positive number.' });
+      return res.status(400).json({ error: 'Invalid price. Must be a positive number.' });
     }
 
-    // Verify SeagullCoin payment before listing for sale
-    const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
-    if (!paymentValid) {
-      return res.status(402).json({ error: '0.5 SeagullCoin payment required to list an NFT for sale.' });
-    }
-
-    // Logic for listing NFT for sale (you may need to integrate with your database or blockchain service here)
-    const saleResult = await listNFTForSale(nftId, price, req.session.xumm.access_token);
+    // List NFT for sale with price set in SeagullCoin (SGLCN-X20)
+    const saleResult = await listNFTForSaleInSeagullCoin(nftId, price, req.session.xumm.access_token);
 
     return res.json({ success: true, saleResult });
   } catch (err) {
@@ -142,17 +135,23 @@ apiRouter.post('/sell-nft', async (req, res) => {
   }
 });
 
-// Helper function for listing NFT for sale
-async function listNFTForSale(nftId, price, accessToken) {
-  // Placeholder for actual logic to list NFT for sale, such as interacting with your blockchain or database
-  // Replace this with your logic to set the NFT price for sale
-  const result = await axios.post('https://api.nftplatform.io/list_for_sale', {
-    nftId,
-    price,
-    accessToken,
-  });
+// Helper function to list NFT for sale with SeagullCoin
+async function listNFTForSaleInSeagullCoin(nftId, price, accessToken) {
+  const salePayload = {
+    TransactionType: 'NFTokenCreateOffer',
+    Account: 'YOUR_SELLER_ACCOUNT', // Replace with the user's wallet if available
+    NFTokenID: nftId,
+    Amount: {
+      currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin Hex
+      issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno", // Your SeagullCoin issuer
+      value: price.toString(),
+    },
+    Flags: 1, // Sell Offer
+  };
 
-  return result.data;
+  // Send transaction via XUMM or XRPL
+  const response = await axios.post('https://xrpl-api.example.com/create_offer', salePayload);
+  return response.data;
 }
 
 // ======= Mint NFT =======
@@ -231,6 +230,7 @@ async function cancelXRPOffer(offerId) {
 
 
 // Mint NFT route (POST)
+
 apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
   const { nft_name, nft_description, domain, properties } = req.body;
   const nft_file = req.file;
@@ -244,11 +244,25 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
       return res.status(400).json({ error: 'NFT name or description exceeds allowed length.' });
     }
 
-    // Check for duplicate NFT minting
     const nftExists = await checkIfNFTExists(nft_name, nft_description);
     if (nftExists) {
-      return res.status(409).json({ error: 'This NFT already exists. Please use a unique name and description.' });
+      return res.status(409).json({ error: 'This NFT already exists.' });
     }
+
+    // Instead of payment check, ensure the user has a SeagullCoin trustline (optional)
+    const trustlineValid = await checkSeagullCoinTrustline(req.session.xumm.access_token);
+    if (!trustlineValid) {
+      return res.status(400).json({ error: 'SeagullCoin trustline missing. Please add SeagullCoin trustline first.' });
+    }
+
+    const mintResult = await mintNFT(nft_name, nft_description, nft_file, domain, properties, req.session.xumm.access_token);
+
+    return res.json({ success: true, mintResult });
+  } catch (err) {
+    console.error('Error minting NFT:', err);
+    return res.status(500).json({ error: 'An error occurred while minting the NFT.' });
+  }
+});
 
     // Verify SeagullCoin payment before minting
     const paymentValid = await verifySeagullCoinPayment(req.session.xumm);

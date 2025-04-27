@@ -1,157 +1,73 @@
-openapi: 3.0.0
+swagger: '2.0'
 info:
-  title: SGLCN-X20 Minting API
-  version: "1.0.0"
-  description: |
-    API for minting and buying NFTs using SeagullCoin (SGLCN-X20).
-    - Mint NFTs (with media upload)
-    - Buy NFTs
-    - View NFTs for sale
-    - XUMM OAuth2 login
-servers:
-  - url: https://sglcn-x20-api.glitch.me
-    description: Production server
+  title: 'SGLCN-X20 Minting API'
+  description: 'API for minting SeagullCoin-only NFTs, including buying and selling NFTs'
+  version: '1.0.0'
+host: 'localhost:3000'
+basePath: '/'
+schemes:
+  - 'http'
 paths:
-  /:
-    get:
-      summary: Welcome
-      description: Welcome message and API information.
-      responses:
-        '200':
-          description: API welcome message
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-  /api/login:
-    get:
-      summary: XUMM OAuth2 Login
-      description: Redirects user to XUMM OAuth2 login page.
-      responses:
-        '302':
-          description: Redirect to XUMM login page
   /mint:
     post:
-      summary: Mint a new NFT
-      description: Mint a new NFT after verifying SeagullCoin payment.
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                nft_name:
-                  type: string
-                  description: Name of the NFT
-                nft_description:
-                  type: string
-                  description: Description of the NFT
-                domain:
-                  type: string
-                  description: Domain linked to the NFT
-                properties:
-                  type: string
-                  description: JSON stringified additional properties
-                nft_file:
-                  type: string
-                  format: binary
-                  description: Image or video file for the NFT
+      summary: 'Mint an NFT with SeagullCoin'
+      operationId: 'mintNFT'
+      parameters:
+        - name: 'nftMetadata'
+          in: 'body'
+          required: true
+          schema:
+            $ref: '#/definitions/NFTMetadata'
       responses:
-        '200':
-          description: Successfully minted NFT
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  mintResult:
-                    type: object
-        '400':
-          description: Bad Request (e.g., missing fields, payment not found)
-        '500':
-          description: Internal Server Error
+        200:
+          description: 'NFT minted successfully'
+  /list-nft:
+    post:
+      summary: 'List an NFT for sale'
+      operationId: 'listNFT'
+      parameters:
+        - name: 'nftId'
+          in: 'body'
+          required: true
+          schema:
+            $ref: '#/definitions/NFTListing'
+      responses:
+        200:
+          description: 'NFT listed successfully'
   /buy-nft:
     post:
-      summary: Buy an NFT
-      description: Purchase an NFT after verifying SeagullCoin payment.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                nftId:
-                  type: string
-                  description: ID of the NFT to purchase
-                price:
-                  type: string
-                  description: Price to pay in SeagullCoin
+      summary: 'Buy an NFT with SeagullCoin'
+      operationId: 'buyNFT'
+      parameters:
+        - name: 'nftId'
+          in: 'body'
+          required: true
+          schema:
+            $ref: '#/definitions/NFTPurchase'
       responses:
-        '200':
-          description: Successfully purchased NFT
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  purchaseResult:
-                    type: object
-        '400':
-          description: Bad Request (e.g., missing fields, payment not verified)
-        '500':
-          description: Internal Server Error
-  /nfts:
-    get:
-      summary: Get NFTs for Sale
-      description: Fetch all NFTs available for sale.
-      responses:
-        '200':
-          description: List of NFTs for sale
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  nfts:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                        name:
-                          type: string
-                        price:
-                          type: string
-                        description:
-                          type: string
-        '500':
-          description: Internal Server Error
-components:
-  securitySchemes:
-    XUMM_OAuth2:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: https://oauth2.xumm.app/auth
-          tokenUrl: https://oauth2.xumm.app/token
-          scopes:
-            identity: Read user identity
-            payload: Manage payloads
-  schemas:
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
+        200:
+          description: 'NFT bought successfully'
+definitions:
+  NFTMetadata:
+    type: 'object'
+    properties:
+      name:
+        type: 'string'
+      description:
+        type: 'string'
+      file:
+        type: 'string'
+  NFTListing:
+    type: 'object'
+    properties:
+      nftId:
+        type: 'integer'
+      price:
+        type: 'number'
+  NFTPurchase:
+    type: 'object'
+    properties:
+      nftId:
+        type: 'integer'
+      price:
+        type: 'number'

@@ -1,231 +1,197 @@
-import express from 'express';
-import session from 'express-session';
-import cors from 'cors';
-import fetch from 'node-fetch';
-import path from 'path';
-import multer from 'multer';
-import dotenv from 'dotenv';
-import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction } from './mintingLogic.js';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import fs from 'fs';
-import rateLimit from 'express-rate-limit';
-import swaggerUi from 'swagger-ui-express';
-import YAML from 'yamljs';
-
-// Load environment variables
-dotenv.config();
-
-// Fix __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Ensure 'uploads' folder exists
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+const express = require('express');
+const bodyParser = require('body-parser');
+const axios = require('axios');
+const { XummSdk } = require('xumm-sdk');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
+const port = process.env.PORT || 3000;
+const XUMM_API_KEY = process.env.XUMM_API_KEY;
+const XUMM_SECRET_KEY = process.env.XUMM_SECRET_KEY;
+const NFT_STORAGE_API_KEY = process.env.NFT_STORAGE_API_KEY;
+const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
+const SEAGULLCOIN_CURRENCY = 'SeagullCoin';
 
-// XUMM OAuth2 constants from .env
-const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI } = process.env;
+const xummSdk = new XummSdk(XUMM_API_KEY, XUMM_SECRET_KEY);
+app.use(bodyParser.json());
 
-// Rate limiting middleware
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { error: 'Too many requests from this IP, please try again later.' },
-});
+// Swagger UI setup
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
 
-// Middleware
-app.use(limiter);
-app.use(cors({ origin: "*", credentials: true }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(session({
-  secret: "sglcn_secret_session",
-  resave: false,
-  saveUninitialized: true,
-}));
-
-// Static frontend
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Swagger documentation
-const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
+// Serve Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Base root
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Welcome to the SGLCN-X20 Minting API. Visit /api-docs for full documentation.',
-  });
+// Middleware for XUMM authentication
+const checkXummAuth = (req, res, next) => {
+    const xummPayload = req.headers['x-xumm-payload'];
+    if (!xummPayload) return res.status(403).json({ message: 'Unauthorized' });
+
+    xummSdk.payload.get(xummPayload)
+        .then(response => {
+            req.user = response.data.account;
+            next();
+        })
+        .catch(error => res.status(500).json({ message: 'XUMM authentication failed', error }));
+};
+
+// Minting route - Enforces 0.5 SeagullCoin fee
+app.post('/mint', checkXummAuth, async (req, res) => {
+    const { nftMetadata, collection, properties } = req.body;
+
+    try {
+        // Enforce 0.5 SeagullCoin payment
+        const userBalance = await checkUserBalance(req.user);
+        if (userBalance < 0.5) return res.status(400).json({ message: 'Insufficient SeagullCoin balance' });
+
+        // Mint NFT to user
+        const nftData = await mintNFT(req.user, nftMetadata, collection, properties);
+        res.status(200).json({ message: 'NFT Minted Successfully', nftId: nftData.nftId });
+    } catch (error) {
+        res.status(500).json({ message: 'Minting failed', error });
+    }
 });
 
-// ========== API Routes ==========
-const apiRouter = express.Router();
-
-// XUMM Login
-apiRouter.get('/login', (req, res) => {
-  const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}&scope=identity%20payload`;
-  res.redirect(authUrl);
-});
-
-// XUMM OAuth2 callback
-apiRouter.get('/xumm/callback', async (req, res) => {
-  const { code } = req.query;
-
-  if (!code) {
-    return res.status(400).json({ error: 'No authorization code received from XUMM.' });
-  }
-
-  try {
-    // Exchange the authorization code for an access token
-    const response = await fetch('https://xumm.app/api/v1/oauth/token', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${Buffer.from(`${XUMM_CLIENT_ID}:${XUMM_CLIENT_SECRET}`).toString('base64')}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: code, // the authorization code received in the URL
-        redirect_uri: XUMM_REDIRECT_URI,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch the access token.');
+// Payment verification - Ensure 0.5 SeagullCoin
+const checkUserBalance = async (address) => {
+    try {
+        const response = await axios.get(`https://xumm.app/api/v1/accounts/${address}/balances`);
+        const seagullCoinBalance = response.data.find(balance => balance.currency === SEAGULLCOIN_CURRENCY);
+        return seagullCoinBalance ? seagullCoinBalance.value : 0;
+    } catch (error) {
+        throw new Error('Balance check failed');
     }
+};
 
-    const data = await response.json();
-    req.session.xumm = data; // Store access token and other info in session
+// Mint NFT function
+const mintNFT = async (address, metadata, collection, properties) => {
+    try {
+        // Logic to mint NFT to address, use NFT.Storage for metadata and media storage
+        const nftData = await axios.post('https://api.nft.storage/upload', metadata, {
+            headers: {
+                'Authorization': `Bearer ${NFT_STORAGE_API_KEY}`
+            }
+        });
 
-    // Redirect to a success page or home
-    return res.redirect('/'); // Redirect to a different page after successful login
-  } catch (err) {
-    console.error('Error during XUMM OAuth callback:', err);
-    return res.status(500).json({ error: 'Failed to process XUMM OAuth callback.' });
-  }
-});
-
-// ======= NFT Minting =======
-const upload = multer({
-  dest: uploadsDir,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/webm'];
-    if (!allowedTypes.includes(file.mimetype)) {
-      return cb(new Error('Only image and video files are allowed.'));
+        // Save the NFT to your system with collection info and properties
+        const nftId = await saveNFTData(nftData, collection, properties);
+        return { nftId };
+    } catch (error) {
+        throw new Error('NFT minting failed');
     }
-    cb(null, true);
-  }
-});
+};
 
-apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
-  const { nft_name, nft_description, domain, properties } = req.body;
-  const nft_file = req.file;
-
-  try {
-    if (!nft_name || !nft_description || !nft_file) {
-      return res.status(400).json({ error: 'NFT name, description, and file are required.' });
-    }
-
-    if (nft_name.length > 100 || nft_description.length > 500) {
-      return res.status(400).json({ error: 'NFT name or description exceeds allowed length.' });
-    }
-
-    const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
-    if (!paymentValid) {
-      return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });
-    }
-
-    const metadata = {
-      name: nft_name,
-      description: nft_description,
-      domain,
-      properties: properties ? JSON.parse(properties) : {},
-      file: nft_file.path,
+// Save NFT metadata and properties
+const saveNFTData = async (nftData, collection, properties) => {
+    const nftId = Date.now(); // Example ID, use your actual NFT storage logic here
+    const nftInfo = {
+        nftId,
+        metadata: nftData,
+        collection,
+        properties
     };
 
-    const mintResult = await mintNFT(metadata, req.session.xumm.access_token);
-    return res.json({ success: true, mintResult });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'An error occurred while minting the NFT.' });
-  }
-});
+    fs.writeFileSync(path.join(__dirname, 'nfts', `${nftId}.json`), JSON.stringify(nftInfo));
 
-// ======= Buy NFT =======
-apiRouter.post('/buy-nft', async (req, res) => {
-  const { nftId, price } = req.body;
+    return nftId;
+};
 
-  if (!nftId || !price) {
-    return res.status(400).json({ error: 'NFT ID and price are required.' });
-  }
+// Listing NFT for sale (only in SeagullCoin)
+app.post('/list-nft', checkXummAuth, async (req, res) => {
+    const { nftId, price } = req.body;
 
-  try {
-    const paymentValid = await verifySeagullCoinTransaction(req.session.xumm, price);
-    if (!paymentValid) {
-      return res.status(402).json({ error: 'Insufficient SeagullCoin payment.' });
+    if (price <= 0) {
+        return res.status(400).json({ message: 'Price must be greater than 0' });
     }
 
-    const purchaseResult = await transferNFT(nftId, req.session.xumm.access_token);
-    return res.json({ success: true, purchaseResult });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'An error occurred while processing the NFT purchase.' });
-  }
-});
+    try {
+        // Ensure the price is in SeagullCoin
+        const nftData = await getNFTData(nftId);
+        if (!nftData) return res.status(404).json({ message: 'NFT not found' });
 
-// ======= Get NFTs For Sale =======
-apiRouter.get('/nfts', async (req, res) => {
-  try {
-    const nftsForSale = await getNFTsForSale();
-    return res.json({ success: true, nfts: nftsForSale });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'An error occurred fetching NFTs for sale.' });
-  }
-});
+        const listingData = {
+            nftId,
+            seller: req.user,
+            price,
+            currency: SEAGULLCOIN_CURRENCY,
+        };
 
-// Attach the API router under '/api'
-app.use('/api', apiRouter);
+        // Save listing to system (could be a database or a simple file system store)
+        await saveNFTListing(listingData);
 
-// ========== Helper Functions ==========
-async function transferNFT(nftId, accessToken) {
-  try {
-    const response = await fetch('https://xumm.app/api/v1/platform/transfer_nft', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ nftId, to: accessToken }),
-    });
-
-    if (!response.ok) {
-      throw new Error('NFT transfer failed.');
+        res.status(200).json({ message: 'NFT listed successfully', listing: listingData });
+    } catch (error) {
+        res.status(500).json({ message: 'Error listing NFT', error });
     }
+});
 
-    return await response.json();
-  } catch (err) {
-    console.error(err);
-    throw new Error('Error during NFT transfer.');
-  }
-}
+// Buying NFT with SeagullCoin
+app.post('/buy-nft', checkXummAuth, async (req, res) => {
+    const { nftId, price } = req.body;
 
-async function getNFTsForSale() {
-  // Simulated example - replace with actual database or storage lookup
-  return [
-    { id: '1', name: 'NFT 1', price: '10', description: 'First NFT for sale' },
-    { id: '2', name: 'NFT 2', price: '20', description: 'Second NFT for sale' },
-  ];
-}
+    try {
+        // Fetch the listing
+        const listing = await getNFTListing(nftId);
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+        if (!listing || listing.price !== price || listing.currency !== SEAGULLCOIN_CURRENCY) {
+            return res.status(400).json({ message: 'Invalid listing or price mismatch' });
+        }
+
+        // Ensure buyer has sufficient SeagullCoin balance
+        const buyerBalance = await checkUserBalance(req.user);
+        if (buyerBalance < price) {
+            return res.status(400).json({ message: 'Insufficient balance' });
+        }
+
+        // Process the transaction (transfer SeagullCoin from buyer to seller)
+        await transferSeagullCoin(req.user, listing.seller, price);
+
+        // Transfer NFT to buyer
+        await transferNFT(nftId, req.user);
+
+        res.status(200).json({ message: 'NFT purchased successfully', nftId });
+    } catch (error) {
+        res.status(500).json({ message: 'Error buying NFT', error });
+    }
+});
+
+// Helper function to get NFT listing by ID
+const getNFTListing = async (nftId) => {
+    try {
+        const filePath = path.join(__dirname, 'listings', `${nftId}.json`);
+        if (fs.existsSync(filePath)) {
+            return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        }
+        return null;
+    } catch (error) {
+        throw new Error('Error fetching NFT listing');
+    }
+};
+
+// Helper function to save NFT listing
+const saveNFTListing = async (listingData) => {
+    const listingPath = path.join(__dirname, 'listings', `${listingData.nftId}.json`);
+    fs.writeFileSync(listingPath, JSON.stringify(listingData));
+};
+
+// Transfer SeagullCoin (handle SeagullCoin transactions)
+const transferSeagullCoin = async (from, to, amount) => {
+    // Implement logic to transfer SeagullCoin using the XUMM SDK or directly via XRPL
+    console.log(`Transferring ${amount} SeagullCoin from ${from} to ${to}`);
+    // XUMM transaction to transfer SeagullCoin...
+};
+
+// Transfer NFT (handle NFT transfer)
+const transferNFT = async (nftId, to) => {
+    console.log(`Transferring NFT ${nftId} to ${to}`);
+    // Implement the logic to transfer NFT ownership...
+};
+
+// Serve the frontend
+app.use(express.static('public'));
+
+// Start server
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
 });

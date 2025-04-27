@@ -10,7 +10,7 @@ info:
     - Supports CORS for marketplaces like bidds.com and xrp.cafe.
 
 servers:
-  - url: https://outgoing-destiny-bladder.glitch.me
+  - url: https://sglcn-x20-api.glitch.me
 
 paths:
   /pay:

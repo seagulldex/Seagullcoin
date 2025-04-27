@@ -1,3 +1,4 @@
+// ===== Imports =====
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
@@ -12,6 +13,10 @@ import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
+
+// ===== Config =====
+dotenv.config();
+
 
 // Load environment variables
 dotenv.config();
@@ -293,12 +298,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-
-
-
-
-
-
-
-

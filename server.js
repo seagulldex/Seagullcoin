@@ -18,6 +18,14 @@ import { NFTStorage, File } from 'nft.storage'; // Removed duplicate import
 // ===== Config =====
 dotenv.config();
 
+// config.js
+export const XUMM_API_KEY = process.env.XUMM_API_KEY;
+export const NFT_STORAGE_API_KEY = process.env.NFT_STORAGE_API_KEY;
+export const XUMM_API_URL = process.env.XUMM_API_URL;
+export const SGLCN_ISSUER = process.env.SGLCN_ISSUER;
+export const SERVICE_WALLET = process.env.SERVICE_WALLET;
+
+
 // Load environment variables
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI } = process.env;
 

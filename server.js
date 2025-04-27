@@ -72,6 +72,44 @@ apiRouter.get('/login', (req, res) => {
   res.redirect(authUrl);
 });
 
+// XUMM OAuth2 callback
+apiRouter.get('/xumm/callback', async (req, res) => {
+  const { code } = req.query;
+
+  if (!code) {
+    return res.status(400).json({ error: 'No authorization code received from XUMM.' });
+  }
+
+  try {
+    // Exchange the authorization code for an access token
+    const response = await fetch('https://xumm.app/api/v1/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${XUMM_CLIENT_ID}:${XUMM_CLIENT_SECRET}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code, // the authorization code received in the URL
+        redirect_uri: XUMM_REDIRECT_URI,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch the access token.');
+    }
+
+    const data = await response.json();
+    req.session.xumm = data; // Store access token and other info in session
+
+    // Redirect to a success page or home
+    return res.redirect('/'); // Redirect to a different page after successful login
+  } catch (err) {
+    console.error('Error during XUMM OAuth callback:', err);
+    return res.status(500).json({ error: 'Failed to process XUMM OAuth callback.' });
+  }
+});
+
 // ======= NFT Minting =======
 const upload = multer({
   dest: uploadsDir,

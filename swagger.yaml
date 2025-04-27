@@ -362,6 +362,7 @@ paths:
         '500':
           description: Internal Server Error
 
+paths:
   /marketplace/integrate:
     post:
       summary: Integrate with external marketplace
@@ -402,6 +403,7 @@ paths:
           description: Bad Request (e.g., invalid action or missing fields)
         '500':
           description: Internal Server Error
+
 
 /buy-nft:
     post:
@@ -1015,7 +1017,3 @@ components:
         nft:buy: Access NFT buying functionality
         nft:sell: Access NFT selling functionality
         nft:offer: Access NFT offer placing functionality
-
-
-
-

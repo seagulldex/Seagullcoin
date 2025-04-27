@@ -1,3 +1,6 @@
+
+
+
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
@@ -110,6 +113,108 @@ apiRouter.get('/xumm/callback', async (req, res) => {
   }
 });
 
+// Handle NFT Sell Offer with SeagullCoin
+app.post('/sell-nft', async (req, res) => {
+  const { nftId, sellPrice, walletAddress } = req.body;
+
+  if (sellPrice <= 0) {
+    return res.status(400).send('Sell price must be greater than zero.');
+  }
+
+  // Verify that the wallet is the owner of the NFT
+  const isOwner = await verifyNFTOwnership(walletAddress, nftId);
+  if (!isOwner) {
+    return res.status(403).send('You do not own this NFT.');
+  }
+
+// Minting logic (SeagullCoin for minting, XRP for gas)
+app.post('/mint', async (req, res) => {
+  const { walletAddress, nftData } = req.body;
+  
+  // Check SeagullCoin balance (0.5 SGLCN)
+  const balance = await checkSeagullCoinBalance(walletAddress);
+  if (balance < 0.5) {
+    return res.status(400).send('Insufficient SeagullCoin for minting.');
+  }
+
+  // Ensure the wallet has sufficient XRP for gas
+  const xrpBalance = await checkXRPBalance(walletAddress);
+  if (xrpBalance < 0.1) {  // Adjust the gas threshold as needed
+    return res.status(400).send('Insufficient XRP for gas fees.');
+  }
+
+// XUMM OAuth2 login route
+app.get('/login', (req, res) => {
+  const xummLoginUrl = `https://xumm.app/oauth2/authorize?response_type=code&client_id=${XUMM_CLIENT_ID}&redirect_uri=${XUMM_REDIRECT_URI}`;
+  res.redirect(xummLoginUrl);
+});
+
+// XUMM OAuth2 callback handler
+app.get('/auth/callback', async (req, res) => {
+  const code = req.query.code;
+  
+  // Exchange code for access token
+  const tokenResponse = await axios.post('https://xumm.app/oauth2/token', {
+    client_id: XUMM_CLIENT_ID,
+    client_secret: XUMM_CLIENT_SECRET,
+    code: code,
+    redirect_uri: XUMM_REDIRECT_URI
+  });
+
+  // Store the access token and user information
+  const { access_token, account } = tokenResponse.data;
+  req.session.user = { account, access_token };
+
+  // Redirect to the homepage or user dashboard
+  res.redirect('/');
+});
+
+
+  // Proceed with minting the NFT
+  const mintResult = await mintNFT(walletAddress, nftData);
+  res.json(mintResult);
+});
+
+
+  // Create the sell offer with SeagullCoin
+  const sellOfferResult = await createSellOffer(walletAddress, nftId, sellPrice);
+  res.json(sellOfferResult);
+});
+
+
+// Handle NFT Buy Offer with SeagullCoin
+app.post('/buy-nft', async (req, res) => {
+  const { nftId, offerAmount, walletAddress } = req.body;
+
+  if (offerAmount <= 0) {
+    return res.status(400).send('Offer amount must be greater than zero.');
+  }
+
+  // Verify the SeagullCoin balance of the buyer
+  const balance = await checkSeagullCoinBalance(walletAddress);
+  if (balance < offerAmount) {
+    return res.status(400).send('Insufficient SeagullCoin balance.');
+  }
+
+  // Proceed with the purchase transaction logic
+  const purchaseResult = await processNFTPurchase(walletAddress, nftId, offerAmount);
+  res.json(purchaseResult);
+});
+
+app.get('/wallet', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).send('Please log in via XUMM first.');
+  }
+
+  // Use the XUMM API to fetch user wallet information
+  const walletInfo = await axios.get(`https://xumm.app/api/v1/platform/wallet/${req.session.user.account}`, {
+    headers: { Authorization: `Bearer ${req.session.user.access_token}` }
+  });
+
+  res.json(walletInfo.data);
+});
+
+
 // ======= NFT Minting =======
 const upload = multer({
   dest: uploadsDir,
@@ -155,6 +260,21 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
     console.error(err);
     return res.status(500).json({ error: 'An error occurred while minting the NFT.' });
   }
+});
+
+// Minting route
+app.post('/mint', async (req, res) => {
+  const { walletAddress } = req.body;
+  
+  // Check the balance of SeagullCoin
+  const balance = await checkSeagullCoinBalance(walletAddress);
+  if (balance < 0.5) {
+    return res.status(400).send('Insufficient SeagullCoin balance.');
+  }
+
+  // Proceed with the minting process if balance is sufficient
+  const mintResult = await mintNFT(walletAddress);
+  res.json(mintResult);
 });
 
 // ======= Buy NFT =======

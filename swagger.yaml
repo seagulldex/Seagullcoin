@@ -9,6 +9,10 @@ info:
     - Sell NFTs
     - View NFTs for sale
     - XUMM OAuth2 login
+    - Place offers and bids on NFTs
+    - Auction system for NFTs
+    - Manage NFT collections
+    - View platform metrics
 servers:
   - url: https://sglcn-x20-api.glitch.me
     description: Production server
@@ -152,13 +156,218 @@ paths:
           description: Internal Server Error
       security:
         - XUMM_OAuth2: []
-  /metrics:
-    get:
-      summary: "Retrieve platform metrics"
-      description: "Fetches the current statistics like total NFTs minted, SeagullCoin payments processed, etc."
+  /place-offer:
+    post:
+      summary: Place an offer on an NFT
+      description: Place an offer to buy an NFT at a specific price in SeagullCoin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nftId:
+                  type: string
+                  description: ID of the NFT to place the offer on
+                offerPrice:
+                  type: string
+                  description: Offer price in SeagullCoin
       responses:
         '200':
-          description: "Metrics successfully retrieved"
+          description: Successfully placed offer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  offerResult:
+                    type: object
+        '400':
+          description: Bad Request (e.g., missing fields, invalid price)
+        '500':
+          description: Internal Server Error
+      security:
+        - XUMM_OAuth2: []
+  /place-bid:
+    post:
+      summary: Place a bid on an NFT
+      description: Place a bid to purchase an NFT at a higher price in SeagullCoin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nftId:
+                  type: string
+                  description: ID of the NFT to place a bid on
+                bidPrice:
+                  type: string
+                  description: Bid price in SeagullCoin
+      responses:
+        '200':
+          description: Successfully placed bid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  bidResult:
+                    type: object
+        '400':
+          description: Bad Request (e.g., missing fields, invalid price)
+        '500':
+          description: Internal Server Error
+      security:
+        - XUMM_OAuth2: []
+  /auction/start:
+    post:
+      summary: Start an NFT auction
+      description: Starts an auction for an NFT with a set reserve price and auction duration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nftId:
+                  type: string
+                  description: ID of the NFT to start the auction for
+                reservePrice:
+                  type: string
+                  description: Reserve price in SeagullCoin
+                duration:
+                  type: integer
+                  description: Auction duration in seconds
+      responses:
+        '200':
+          description: Successfully started auction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  auctionResult:
+                    type: object
+        '400':
+          description: Bad Request (e.g., missing fields, invalid price)
+        '500':
+          description: Internal Server Error
+      security:
+        - XUMM_OAuth2: []
+  /auction/close:
+    post:
+      summary: Close an NFT auction
+      description: Closes an NFT auction and determines the winner.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nftId:
+                  type: string
+                  description: ID of the NFT auction to close
+      responses:
+        '200':
+          description: Successfully closed auction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  closeResult:
+                    type: object
+        '400':
+          description: Bad Request (e.g., auction already closed)
+        '500':
+          description: Internal Server Error
+      security:
+        - XUMM_OAuth2: []
+  /user/profile:
+    get:
+      summary: Get user profile
+      description: Retrieves the user's profile, including owned NFTs and wallet balance.
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  profile:
+                    type: object
+                    properties:
+                      walletAddress:
+                        type: string
+                        description: User's wallet address
+                      nftsOwned:
+                        type: array
+                        items:
+                          type: string
+                        description: List of NFTs owned by the user
+                      balance:
+                        type: string
+                        description: SeagullCoin balance
+        '500':
+          description: Internal Server Error
+      security:
+        - XUMM_OAuth2: []
+  /user/transactions:
+    get:
+      summary: Get user transaction history
+      description: Retrieves the user's NFT transaction history (minted, bought, sold).
+      responses:
+        '200':
+          description: Transaction history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  transactions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        transactionId:
+                          type: string
+                        nftId:
+                          type: string
+                        transactionType:
+                          type: string
+                        price:
+                          type: string
+                        timestamp:
+                          type: string
+        '500':
+          description: Internal Server Error
+      security:
+        - XUMM_OAuth2: []
+  /metrics:
+    get:
+      summary: Retrieve platform metrics
+      description: Fetches the current statistics like total NFTs minted, SeagullCoin payments processed, etc.
+      responses:
+        '200':
+          description: Metrics successfully retrieved
           content:
             application/json:
               schema:
@@ -166,19 +375,19 @@ paths:
                 properties:
                   totalMinted:
                     type: integer
-                    description: "Total NFTs minted"
+                    description: Total NFTs minted
                   totalPayments:
                     type: integer
-                    description: "Total SeagullCoin payments processed"
+                    description: Total SeagullCoin payments processed
         '500':
-          description: "Internal Server Error"
+          description: Internal Server Error
   /collections:
     get:
-      summary: "Retrieve all collections"
-      description: "Fetches a list of all NFT collections available on the platform."
+      summary: Retrieve all collections
+      description: Fetches a list of all NFT collections available on the platform.
       responses:
         '200':
-          description: "Collections retrieved successfully"
+          description: Collections retrieved successfully
           content:
             application/json:
               schema:
@@ -188,16 +397,16 @@ paths:
                   properties:
                     collectionName:
                       type: string
-                      description: "The name of the collection"
+                      description: The name of the collection
                     collectionLogo:
                       type: string
-                      description: "URL to the collection's logo image"
+                      description: URL to the collection's logo image
                     collectionDescription:
                       type: string
-                      description: "A brief description of the collection"
+                      description: A brief description of the collection
     post:
-      summary: "Create a new NFT collection"
-      description: "Allows users to create a new collection by specifying a name, logo, and description."
+      summary: Create a new NFT collection
+      description: Allows users to create a new collection by specifying a name, logo, and description.
       requestBody:
         required: true
         content:
@@ -207,25 +416,16 @@ paths:
               properties:
                 collectionName:
                   type: string
-                  description: "The name of the collection"
+                  description: Name of the new collection
                 collectionLogo:
                   type: string
-                  description: "URL of the collection's logo image"
+                  description: URL of the logo image for the collection
                 collectionDescription:
                   type: string
-                  description: "Description of the collection"
-      responses:
-        '201':
-          description: "Collection created successfully"
-        '400':
-          description: "Invalid request or missing parameters"
-  /nfts:
-    get:
-      summary: Get NFTs for Sale
-      description: Fetch all NFTs available for sale.
+                  description: Description of the collection
       responses:
         '200':
-          description: List of NFTs for sale
+          description: Collection created successfully
           content:
             application/json:
               schema:
@@ -233,56 +433,11 @@ paths:
                 properties:
                   success:
                     type: boolean
-                  nfts:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                        name:
-                          type: string
-                        price:
-                          type: string
-                        description:
-                          type: string
+                  collectionResult:
+                    type: object
+        '400':
+          description: Bad Request (e.g., missing fields)
         '500':
           description: Internal Server Error
-components:
-  responses:
-    Success:
-      description: "Request was successful"
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              success:
-                type: boolean
-                description: "Whether the request was successful"
-    Error:
-      description: "Error occurred"
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                description: "Error message"
-  securitySchemes:
-    XUMM_OAuth2:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: https://oauth2.xumm.app/auth
-          tokenUrl: https://oauth2.xumm.app/token
-          scopes:
-            identity: Read user identity
-            payload: Manage payloads
-  schemas:
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
+      security:
+        - XUMM_OAuth2: []

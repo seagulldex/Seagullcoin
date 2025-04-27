@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction, cancelXRPOfferProtection, createSeagullCoinOffer, getNFTsForSale, transferNFT } from './mintingLogic.js';
+import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction, cancelXRPOfferProtection, transferNFT, getNFTsForSale } from './mintingLogic.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
@@ -33,8 +33,8 @@ const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI } = process.env;
 
 // Rate limiting middleware
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: { error: 'Too many requests from this IP, please try again later.' },
 });
 
@@ -90,7 +90,7 @@ apiRouter.get('/xumm/callback', async (req, res) => {
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
-        code: code,
+        code: code, // the authorization code received in the URL
         redirect_uri: XUMM_REDIRECT_URI,
       }),
     });
@@ -102,6 +102,7 @@ apiRouter.get('/xumm/callback', async (req, res) => {
     const data = await response.json();
     req.session.xumm = data; // Store access token and other info in session
 
+    // Redirect to a success page or home
     return res.redirect('/'); // Redirect to a different page after successful login
   } catch (err) {
     console.error('Error during XUMM OAuth callback:', err);
@@ -135,7 +136,6 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
       return res.status(400).json({ error: 'NFT name or description exceeds allowed length.' });
     }
 
-    // Verify SeagullCoin payment for minting
     const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
     if (!paymentValid) {
       return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });
@@ -166,7 +166,6 @@ apiRouter.post('/buy-nft', async (req, res) => {
   }
 
   try {
-    // Verify SeagullCoin payment for purchasing the NFT
     const paymentValid = await verifySeagullCoinTransaction(req.session.xumm, price);
     if (!paymentValid) {
       return res.status(402).json({ error: 'Insufficient SeagullCoin payment.' });
@@ -200,7 +199,7 @@ async function cancelXRPOfferProtection(nftId) {
     const response = await fetch('https://xumm.app/api/v1/platform/cancel_xrp_offer', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${req.session.xumm.access_token}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ nftId }),

@@ -1,21 +1,24 @@
-openapi: 3.0.3
+openapi: 3.0.0
 info:
   title: SGLCN-X20 Minting API
-  version: 1.0.0
+  version: "1.0.0"
   description: |
-    This API allows users to authenticate via XUMM, mint NFTs, purchase NFTs using SeagullCoin (SGLCN-X20), and view NFTs available for sale.
-    All minting and buying operations require a successful SeagullCoin payment.
+    API for minting and buying NFTs using SeagullCoin (SGLCN-X20).
+    - Mint NFTs (with media upload)
+    - Buy NFTs
+    - View NFTs for sale
+    - XUMM OAuth2 login
 servers:
-  - url: https://your-api-domain.com
+  - url: https://sglcn-x20-api.glitch.me
     description: Production server
 paths:
   /:
     get:
-      summary: Welcome route
-      description: Basic welcome message and API docs redirection info.
+      summary: Welcome
+      description: Welcome message and API information.
       responses:
         '200':
-          description: Welcome message
+          description: API welcome message
           content:
             application/json:
               schema:
@@ -23,66 +26,43 @@ paths:
                 properties:
                   message:
                     type: string
-
   /api/login:
     get:
       summary: XUMM OAuth2 Login
-      description: Redirects the user to XUMM OAuth2 authentication page.
+      description: Redirects user to XUMM OAuth2 login page.
       responses:
         '302':
-          description: Redirects to XUMM authentication page
-
-  /api/logout:
-    get:
-      summary: XUMM Logout
-      description: Clears the user's session and logs out the user.
-      responses:
-        '200':
-          description: User logged out successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-
+          description: Redirect to XUMM login page
   /mint:
     post:
       summary: Mint a new NFT
-      description: |
-        Mints a new NFT after verifying a 0.5 SeagullCoin payment.
-        Requires authentication via XUMM and file upload.
+      description: Mint a new NFT after verifying SeagullCoin payment.
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
-              required:
-                - nft_name
-                - nft_description
-                - nft_file
               properties:
                 nft_name:
                   type: string
-                  description: Name of the NFT (max 100 characters)
+                  description: Name of the NFT
                 nft_description:
                   type: string
-                  description: Description of the NFT (max 500 characters)
+                  description: Description of the NFT
                 domain:
                   type: string
-                  description: Associated domain (optional)
+                  description: Domain linked to the NFT
                 properties:
                   type: string
-                  description: JSON string of additional properties
+                  description: JSON stringified additional properties
                 nft_file:
                   type: string
                   format: binary
-                  description: Image or video file (jpg, png, gif, mp4, webm)
+                  description: Image or video file for the NFT
       responses:
         '200':
-          description: NFT minted successfully
+          description: Successfully minted NFT
           content:
             application/json:
               schema:
@@ -93,49 +73,29 @@ paths:
                   mintResult:
                     type: object
         '400':
-          description: Bad request (e.g., missing fields or payment not verified)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
+          description: Bad Request (e.g., missing fields, payment not found)
         '500':
-          description: Server error during minting
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-
+          description: Internal Server Error
   /buy-nft:
     post:
       summary: Buy an NFT
-      description: |
-        Purchases an NFT after verifying a SeagullCoin payment.
-        Requires authentication via XUMM.
+      description: Purchase an NFT after verifying SeagullCoin payment.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - nftId
-                - price
               properties:
                 nftId:
                   type: string
-                  description: ID of the NFT to buy
+                  description: ID of the NFT to purchase
                 price:
-                  type: number
-                  description: Price in SeagullCoin
+                  type: string
+                  description: Price to pay in SeagullCoin
       responses:
         '200':
-          description: NFT purchased successfully
+          description: Successfully purchased NFT
           content:
             application/json:
               schema:
@@ -146,31 +106,16 @@ paths:
                   purchaseResult:
                     type: object
         '400':
-          description: Bad request (missing parameters or payment failure)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
+          description: Bad Request (e.g., missing fields, payment not verified)
         '500':
-          description: Server error during purchase
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-
+          description: Internal Server Error
   /nfts:
     get:
       summary: Get NFTs for Sale
-      description: Fetches all NFTs currently listed for sale.
+      description: Fetch all NFTs available for sale.
       responses:
         '200':
-          description: NFTs fetched successfully
+          description: List of NFTs for sale
           content:
             application/json:
               schema:
@@ -192,11 +137,21 @@ paths:
                         description:
                           type: string
         '500':
-          description: Error fetching NFTs
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
+          description: Internal Server Error
+components:
+  securitySchemes:
+    XUMM_OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://oauth2.xumm.app/auth
+          tokenUrl: https://oauth2.xumm.app/token
+          scopes:
+            identity: Read user identity
+            payload: Manage payloads
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string

@@ -1,5 +1,5 @@
 document.getElementById('add-property').addEventListener('click', function() {
-    const propertiesSection = document.getElementById('properties-section');
+   const propertiesSection = document.getElementById('properties-section');
     const propertyIndex = propertiesSection.getElementsByClassName('property').length + 1;
     
     // Create new property fields

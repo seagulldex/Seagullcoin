@@ -16,6 +16,21 @@ const SEAGULLCOIN_CURRENCY = 'SeagullCoin';
 const xummSdk = new XummSdk(XUMM_API_KEY, XUMM_SECRET_KEY);
 app.use(bodyParser.json());
 
+// Directories for NFT metadata and listings
+const nftDirectory = path.join(__dirname, 'nfts');
+const listingsDirectory = path.join(__dirname, 'listings');
+
+// Ensure the directories exist or create them
+if (!fs.existsSync(nftDirectory)) {
+    fs.mkdirSync(nftDirectory, { recursive: true });
+    console.log('NFT directory created');
+}
+
+if (!fs.existsSync(listingsDirectory)) {
+    fs.mkdirSync(listingsDirectory, { recursive: true });
+    console.log('Listings directory created');
+}
+
 // Swagger UI setup
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
@@ -92,9 +107,22 @@ const saveNFTData = async (nftData, collection, properties) => {
         properties
     };
 
-    fs.writeFileSync(path.join(__dirname, 'nfts', `${nftId}.json`), JSON.stringify(nftInfo));
+    fs.writeFileSync(path.join(nftDirectory, `${nftId}.json`), JSON.stringify(nftInfo));
 
     return nftId;
+};
+
+// Helper function to get NFT data by ID
+const getNFTData = async (nftId) => {
+    try {
+        const filePath = path.join(nftDirectory, `${nftId}.json`);
+        if (fs.existsSync(filePath)) {
+            return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        }
+        return null; // If NFT data not found
+    } catch (error) {
+        throw new Error('Error fetching NFT data');
+    }
 };
 
 // Listing NFT for sale (only in SeagullCoin)
@@ -107,7 +135,7 @@ app.post('/list-nft', checkXummAuth, async (req, res) => {
 
     try {
         // Ensure the price is in SeagullCoin
-        const nftData = await getNFTData(nftId);
+        const nftData = await getNFTData(nftId);  // Use the getNFTData function
         if (!nftData) return res.status(404).json({ message: 'NFT not found' });
 
         const listingData = {
@@ -159,7 +187,7 @@ app.post('/buy-nft', checkXummAuth, async (req, res) => {
 // Helper function to get NFT listing by ID
 const getNFTListing = async (nftId) => {
     try {
-        const filePath = path.join(__dirname, 'listings', `${nftId}.json`);
+        const filePath = path.join(listingsDirectory, `${nftId}.json`);
         if (fs.existsSync(filePath)) {
             return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
         }
@@ -171,7 +199,7 @@ const getNFTListing = async (nftId) => {
 
 // Helper function to save NFT listing
 const saveNFTListing = async (listingData) => {
-    const listingPath = path.join(__dirname, 'listings', `${listingData.nftId}.json`);
+    const listingPath = path.join(listingsDirectory, `${listingData.nftId}.json`);
     fs.writeFileSync(listingPath, JSON.stringify(listingData));
 };
 

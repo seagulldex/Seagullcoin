@@ -247,7 +247,7 @@ paths:
 
   /make-offer:
     post:
-      summary: "Make an offer to buy an NFT"
+      summary: "Make an offer to buy an NFT using SeagullCoin"
       operationId: makeOffer
       tags:
         - Offers
@@ -264,6 +264,7 @@ paths:
                   type: number
                   format: float
                   description: "Amount of SeagullCoin being offered"
+                  example: 0.5
       responses:
         '200':
           description: "Offer made successfully"
@@ -279,13 +280,13 @@ paths:
                     type: string
                     description: "Unique identifier for the offer"
         '400':
-          description: "Invalid offer details"
+          description: "Invalid offer details, must be SeagullCoin"
         '500':
           description: "Internal server error"
 
   /accept-offer:
     post:
-      summary: "Accept an offer for an NFT"
+      summary: "Accept an offer for an NFT, ensuring the offer is SeagullCoin"
       operationId: acceptOffer
       tags:
         - Offers

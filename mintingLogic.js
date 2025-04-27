@@ -140,19 +140,6 @@ export const transferNFT = async (nftId, buyerWallet) => {
   }
 };
 
-// Function to check NFT ownership (you will likely need to define this function to check ownership from the XRPL)
-export const checkOwnership = async (nftId, walletAddress) => {
-  try {
-    const nftDetails = await getNFTDetails(nftId); // Assume getNFTDetails is defined elsewhere to interact with XRPL
-
-    if (nftDetails && nftDetails.owner === walletAddress) {
-      return true;
-    }
-    return false;
-  } catch (err) {
-    console.error('Error checking ownership:', err);
-    retu
-
 // Helper function to fetch NFT details from XRPL
 const getNFTDetails = async (nftId) => {
   // Placeholder for fetching NFT details, you should implement this with your XRPL connection

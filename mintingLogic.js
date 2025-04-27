@@ -6,7 +6,7 @@ dotenv.config();
 // SeagullCoin constants (from .env)
 const SEAGULLCOIN_ISSUER = process.env.SEAGULLCOIN_ISSUER;
 const SEAGULLCOIN_CURRENCY = process.env.SEAGULLCOIN_CURRENCY;
-const SEAGULLCOIN_AMOUNT = process.env.SEAGULLCOIN_AMOUNT;
+const SEAGULLCOIN_AMOUNT = process.env.SEAGULLCOIN_AMOUNT; // 0.5 SeagullCoin
 const SERVICE_WALLET = process.env.SERVICE_WALLET; // This is the wallet from which minting transactions will be issued
 
 // Connect to the XRP Ledger
@@ -89,7 +89,21 @@ export async function mintNFT(nft_name, nft_description, nft_file, domain, prope
   }
 
   // Proceed with minting logic
-  // In this example, we assume the NFT creation happens here...
-  
-  return { success: true, nftId: "sample-nft-id" };
+  // Here we assume the NFT creation happens on the backend (storing metadata and generating the NFT)
+  const nftMetadata = {
+    name: nft_name,
+    description: nft_description,
+    domain,
+    properties: properties ? JSON.parse(properties) : {},
+    file: nft_file.path,
+  };
+
+  // You can save this metadata to IPFS or a database (e.g., NFT.Storage)
+  // For the sake of simplicity, we'll simulate the minting process
+  const nftId = `NFT-${Date.now()}`; // Simulated NFT ID
+
+  // In the real-world scenario, you'd call IPFS or NFT storage to store the file and get metadata.
+  // This could involve uploading the file and returning the IPFS CID.
+
+  return { success: true, nftId };
 }

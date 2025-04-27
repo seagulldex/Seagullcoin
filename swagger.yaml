@@ -109,7 +109,51 @@ paths:
           description: Bad Request (e.g., missing fields, payment not verified)
         '500':
           description: Internal Server Error
-  /nfts:
+  paths:
+  /metrics:
+    get:
+      summary: "Retrieve platform metrics"
+      description: "Fetches the current statistics like total NFTs minted, SeagullCoin payments processed, etc."
+      responses:
+        '200':
+          description: "Metrics successfully retrieved"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalMinted:
+                    type: integer
+                    description: "Total NFTs minted"
+                  totalPayments:
+                    type: integer
+                    description: "Total SeagullCoin payments processed"
+
+  /collections:
+    get:
+      summary: "Retrieve all collections"
+      description: "Fetches a list of all NFT collections available on the platform."
+      responses:
+        '200':
+          description: "Collections retrieved successfully"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    collectionName:
+                      type: string
+                      description: "The name of the collection"
+                    collectionLogo:
+                      type: string
+                      description: "URL to the collection's logo image"
+                    collectionDescription:
+                      type: string
+                      description: "A brief description of the collection"
+
+/nfts:
     get:
       summary: Get NFTs for Sale
       description: Fetch all NFTs available for sale.

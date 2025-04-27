@@ -170,74 +170,6 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
 
 // Helper Functions
 
-/**
- * Mint the NFT using SeagullCoin via XUMM API
- * @param {Object} metadata - Metadata for the NFT (name, description, etc.)
- * @param {string} accessToken - The access token from XUMM for authentication
- * @returns {Object} - Result of the minting process
- */
-
-    // Placeholder for SeagullCoin minting logic
-    // You should replace this section with actual API calls or contract interactions
-    const mintResponse = await axios.post('https://api.seagullcoin.io/mint', nftData, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`, // Assuming accessToken is needed for authentication
-      }
-    });
-
-    if (mintResponse.status !== 200) {
-      throw new Error('Error minting NFT: ' + mintResponse.data.message);
-    }
-
-    // Return the minting result
-    return {
-      status: 'success',
-      message: 'NFT minted successfully',
-      nft_id: mintResponse.data.nft_id, // Example field, adjust as per actual response
-      metadata: nftData,
-    };
-  } catch (err) {
-    console.error('Error during NFT minting:', err);
-    throw new Error('Minting failed: ' + err.message);
-  }
-}
-
-/**
- * Verify SeagullCoin payment by checking the XUMM payload
- * @param {Object} sessionData - The session data containing user details
- * @returns {boolean} - Returns true if the payment is valid, else false
- */
-async function verifySeagullCoinPayment(sessionData) {
-  try {
-    const paymentRequestData = {
-      currency: 'SGLCN-X20',
-      amount: '0.5', // Minimum amount of SeagullCoin needed for minting
-    };
-
-    // Placeholder for checking payment with XUMM (this logic depends on your payment verification method)
-    const paymentCheckResponse = await axios.post('https://api.xumm.app/payment/check', paymentRequestData, {
-      headers: {
-        Authorization: `Bearer ${sessionData.access_token}`,
-      }
-    });
-
-    if (paymentCheckResponse.status !== 200 || !paymentCheckResponse.data.success) {
-      return false;
-    }
-
-    return true;
-  } catch (err) {
-    console.error('Error during SeagullCoin payment verification:', err);
-    return false;
-  }
-}
-
-/**
- * Check if an NFT already exists based on its name and description.
- * @param {string} nft_name - The name of the NFT
- * @param {string} nft_description - The description of the NFT
- * @returns {boolean} - Returns true if an NFT already exists, else false
- */
 async function checkIfNFTExists(nft_name, nft_description) {
   // Placeholder for checking duplicate NFTs
   // Replace this with actual database or blockchain queries to check for existing NFTs
@@ -250,20 +182,6 @@ async function checkIfNFTExists(nft_name, nft_description) {
     return true; // NFT already exists
   }
 
-  return false;
-}
-
-
-async function verifySeagullCoinPayment(sessionData) {
-  // Logic to verify SeagullCoin payment from XUMM
-  // This is a simplified version. Replace with actual verification.
-  return true;
-}
-
-async function checkIfNFTExists(nft_name, nft_description) {
-  // Logic to check if an NFT with the same name and description already exists
-  // This should query the database or another data store to prevent duplicates
-  // For demonstration purposes, assume this function always returns false
   return false;
 }
 

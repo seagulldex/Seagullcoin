@@ -335,3 +335,177 @@ paths:
           description: "Invalid request or transfer details"
         '500':
           description: "Internal server error"
+            /accept-offer:
+    post:
+      summary: "Accept an offer for an NFT, ensuring the offer is SeagullCoin"
+      operationId: acceptOffer
+      tags:
+        - Offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId:
+                  type: string
+                  description: "Offer ID to accept"
+                nftId:
+                  type: string
+                  description: "NFT ID being sold"
+      responses:
+        '200':
+          description: "Offer accepted successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  transactionId:
+                    type: string
+                    description: "Transaction ID for the acceptance"
+        '400':
+          description: "Invalid offer ID or NFT ID"
+        '402':
+          description: "Offer amount must be SeagullCoin"
+        '500':
+          description: "Internal server error"
+
+  /reject-offer:
+    post:
+      summary: "Reject an offer for an NFT"
+      operationId: rejectOffer
+      tags:
+        - Offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId:
+                  type: string
+                  description: "Offer ID to reject"
+                nftId:
+                  type: string
+                  description: "NFT ID being sold"
+      responses:
+        '200':
+          description: "Offer rejected successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          description: "Invalid offer ID or NFT ID"
+        '500':
+          description: "Internal server error"
+        
+  /nft/{nftId}/transfer:
+    post:
+      summary: "Transfer ownership of an NFT"
+      operationId: transferNFT
+      tags:
+        - NFT
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recipientAddress:
+                  type: string
+                  description: "The wallet address of the recipient"
+      responses:
+        '200':
+          description: "NFT transferred successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  transactionId:
+                    type: string
+                    description: "Transaction ID for the transfer"
+        '400':
+          description: "Invalid wallet address or NFT ID"
+        '500':
+          description: "Internal server error"
+
+  /nft/{nftId}/update-metadata:
+    post:
+      summary: "Update metadata for an NFT"
+      operationId: updateNFTMetadata
+      tags:
+        - NFT
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                metadata:
+                  type: object
+                  additionalProperties: true
+                  description: "The new metadata to update for the NFT"
+      responses:
+        '200':
+          description: "NFT metadata updated successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          description: "Invalid metadata or NFT ID"
+        '500':
+          description: "Internal server error"
+
+  /api/health:
+    get:
+      summary: "Check the health of the API server"
+      operationId: checkHealth
+      tags:
+        - Health
+      responses:
+        '200':
+          description: "Server is healthy"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+        '500':
+          description: "Server health check failed"
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: "https://oauth2.xumm.app/auth"
+          tokenUrl: "https://oauth2.xumm.app/token"
+          scopes:
+            identity: "Access user identity"
+            payload: "Access XUMM payload"
+          
+security:
+  - OAuth2: ["identity", "payload"]
+

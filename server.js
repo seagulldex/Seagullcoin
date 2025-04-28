@@ -74,6 +74,13 @@ app.get('/', (req, res) => {
 // ========== API Routes ==========
 const apiRouter = express.Router();
 
+// XUMM Login Start
+apiRouter.get('/login/start', (req, res) => {
+  res.json({
+    message: 'Use /api/login to start XUMM OAuth2 login flow.'
+  });
+});
+
 // XUMM Login
 apiRouter.get('/login', (req, res) => {
   const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}&scope=identity%20payload`;

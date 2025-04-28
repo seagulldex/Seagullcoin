@@ -4,40 +4,50 @@ info:
   description: API for minting and interacting with SeagullCoin-based NFTs.
   version: 1.0.0
   contact:
-    name: Bored Seagull Club 
+    name: Bored Seagull Club
     email: boredseagulls@gmail.com
     url: https://linktr.ee/boredseagullclub
 
 servers:
-  - url: 'https://sglcn-x20-api.glitch.me/api'  # <-- updated to your public URL
+  - url: 'https://sglcn-x20-api.glitch.me/api'
 
 paths:
-  /login:
+  /login/start:
     get:
-      summary: Login via XUMM OAuth2
-      description: Redirects to the XUMM OAuth2 login page.
+      summary: Start XUMM OAuth2 login
+      description: Redirects the user to the XUMM OAuth2 login page.
       responses:
         '302':
-          description: Redirect to XUMM login
+          description: Redirects to XUMM login page
 
-  /xumm/callback:
+  /login/check:
     get:
-      summary: XUMM OAuth2 Callback
-      description: Handles the OAuth2 callback from XUMM.
+      summary: Check XUMM OAuth2 login status
+      description: Checks if a user has successfully logged in via XUMM.
       parameters:
         - in: query
-          name: code
+          name: payloadUuid
           required: true
           schema:
             type: string
-          description: The authorization code from XUMM
+          description: The XUMM payload UUID to check login status
       responses:
         '200':
-          description: Successfully logged in
+          description: Login status (signed or not)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signed:
+                    type: boolean
+                  walletAddress:
+                    type: string
+                    nullable: true
         '400':
-          description: Missing authorization code
+          description: Missing or invalid payloadUuid
         '500':
-          description: Failed to process XUMM callback
+          description: Server error checking login status
 
   /mint:
     post:

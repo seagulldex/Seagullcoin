@@ -38,7 +38,7 @@ const app = express();
 // ===== Middleware =====
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 600, 
+  max: 6000, 
   message: { error: 'Too many requests from this IP, please try again later.' },
 });
 app.use(limiter);
@@ -185,6 +185,36 @@ apiRouter.post('/buy-nft', async (req, res) => {
   } catch (err) {
     console.error('Buying NFT error:', err);
     return res.status(500).json({ error: 'Failed to process NFT purchase.' });
+  }
+});
+
+apiRouter.get('/nft-listings', async (req, res) => {
+  try {
+    const listings = await getAllNFTListings(); // We'll make sure this function exists
+    res.json({ success: true, listings });
+  } catch (err) {
+    console.error('Error fetching NFT listings:', err);
+    res.status(500).json({ error: 'Failed to fetch NFT listings' });
+  }
+});
+
+apiRouter.post('/unlist-nft', async (req, res) => {
+  const { nftId } = req.body;
+  const userAddress = req.session.walletAddress;
+
+  if (!userAddress) {
+    return res.status(400).send('User not logged in');
+  }
+
+  try {
+    const success = await unlistNFT(nftId, userAddress);
+    if (!success) {
+      return res.status(400).send('You are not authorized to unlist this NFT');
+    }
+    res.status(200).send('NFT unlisted successfully');
+  } catch (error) {
+    console.error('Unlist NFT error:', error);
+    res.status(500).send('Internal Server Error');
   }
 });
 

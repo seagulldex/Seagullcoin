@@ -231,15 +231,20 @@ apiRouter.post('/sell-nft', async (req, res) => {
     return res.status(400).send('Price must be greater than zero');
   }
 
-  const nft = await getNFTDetails(nftId); // Assuming this function is properly set up
+  try {
+    const nft = await getNFTDetails(nftId); // Ensure this function is defined and works correctly
 
-  if (!nft || nft.owner !== userAddress) {
-    return res.status(400).send('You are not the owner of this NFT');
+    if (!nft || nft.owner !== userAddress) {
+      return res.status(400).send('You are not the owner of this NFT');
+    }
+
+    await addListing(nftId, price, userAddress); // Use addListing to save the NFT listing
+
+    res.status(200).send('NFT listed for sale');
+  } catch (error) {
+    console.error('Error listing NFT for sale:', error);
+    res.status(500).send('Failed to list NFT for sale');
   }
-
-  await addListing(nftId, price, userAddress); // Use addListing to save the NFT listing
-
-  res.status(200).send('NFT listed for sale');
 });
 
 app.use('/api', apiRouter);

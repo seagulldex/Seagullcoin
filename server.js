@@ -50,24 +50,24 @@ app.use(session({
   saveUninitialized: true,
 }));
 
-// Static frontend
+// ===== Static Files =====
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Swagger documentation
+// ===== Offer Routes =====
+const offerRouter = express.Router();
+// Define offer routes here
+app.use('/offer', offerRouter);
+
+// ===== Swagger Docs =====
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Health check
+// ===== Health Check =====
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'Server running', timestamp: new Date().toISOString() });
 });
 
-// Base root
-app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to the SGLCN-X20 Minting API. Visit /api-docs for documentation.' });
-});
-
-// ========== API Routes ==========
+// ====== API Routes ======
 const apiRouter = express.Router();
 
 // ======= XUMM OAuth =======
@@ -200,14 +200,14 @@ apiRouter.post('/buy-nft', async (req, res) => {
   }
 });
 
-// ======= Admin Routes Placeholder =======
+// ====== Attach API Routes ======
+app.use('/api', apiRouter);
+
+// ======= Admin Routes =======
 const adminRouter = express.Router();
 app.use('/admin', adminRouter);
 
-// ======= Attach API Routes =======
-app.use('/api', apiRouter);
-
-// ======= Start Server =======
+// ===== Start Server =======
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

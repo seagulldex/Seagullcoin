@@ -1,42 +1,76 @@
-
 openapi: 3.0.0
 info:
   title: SGLCN-X20 Minting API
   version: 1.0.0
   description: |
-    Public API for minting NFTs with SeagullCoin (SGLCN-X20) only. 
+    Public API for minting NFTs with SeagullCoin (SGLCN-X20) only.
     - Mint NFTs by paying 0.5 SeagullCoin.
     - No XRP purchases allowed.
-    - Only SeagullCoin can be used for offers, sales, or mints.
+    - Only SeagullCoin (X20 token) allowed for offers, mints, and sales.
     - Supports CORS for marketplaces like bidds.com and xrp.cafe.
+
 servers:
   - url: https://sglcn-x20-api.glitch.me
     description: Main API server
 
 paths:
+  /login:
+    post:
+      summary: Initiate XUMM login session
+      operationId: loginUser
+      tags:
+        - Authentication
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userToken:
+                  type: string
+                  description: Optional existing XUMM user token
+      responses:
+        '200':
+          description: Login payload generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  loginPayload:
+                    type: object
+                  qrUrl:
+                    type: string
+                  websocketUrl:
+                    type: string
+        '500':
+          description: Error initiating login
+
   /pay:
     post:
-      summary: "Initiate payment of 0.5 SeagullCoin to mint an NFT"
+      summary: Initiate payment of 0.5 SeagullCoin
       operationId: initiatePayment
       tags:
         - Payment
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - walletAddress
               properties:
                 walletAddress:
                   type: string
-                  description: The wallet address initiating the payment
-                amount:
-                  type: number
-                  format: float
-                  description: Amount of SeagullCoin to be paid (0.5 SGLCN required)
-                  example: 0.5
+                  description: Wallet address initiating payment
       responses:
         '200':
-          description: "Payment initiated successfully"
+          description: Payment initiated
           content:
             application/json:
               schema:
@@ -44,46 +78,38 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: true
                   paymentId:
                     type: string
-                    description: "Unique payment identifier"
         '400':
-          description: "Invalid request or insufficient payment"
+          description: Invalid request
         '500':
-          description: "Internal server error"
+          description: Server error
 
   /mint:
     post:
-      summary: "Mint an NFT after confirming payment"
+      summary: Mint a new NFT after payment
       operationId: mintNFT
       tags:
-        - Minting
+        - NFT
       requestBody:
+        required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
+              required:
+                - walletAddress
+                - metadata
               properties:
-                nft_name:
+                walletAddress:
                   type: string
-                  description: Name of the NFT
-                nft_description:
-                  type: string
-                  description: Description of the NFT
-                nft_file:
-                  type: string
-                  format: binary
-                  description: The file to be uploaded for the NFT (image/video)
-                domain:
-                  type: string
-                  description: Optional domain for the NFT
-                properties:
-                  type: string
-                  description: JSON string of additional properties (optional)
+                  description: Wallet address minting the NFT
+                metadata:
+                  type: object
+                  description: NFT metadata (name, description, image link, etc.)
       responses:
         '200':
-          description: "NFT minted successfully"
+          description: NFT minted successfully
           content:
             application/json:
               schema:
@@ -91,184 +117,128 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: true
-                  mintResult:
-                    type: object
-                    properties:
-                      nftId:
-                        type: string
-                        description: "Unique identifier for the minted NFT"
+                  nftokenId:
+                    type: string
+                    description: Minted NFTokenID
         '400':
-          description: "Invalid request, missing required parameters or invalid file format"
-        '402':
-          description: "Payment verification failed"
+          description: Invalid mint request
         '500':
-          description: "Internal server error"
+          description: Server error
 
   /user:
     get:
-      summary: "Get NFTs owned by a wallet"
-      operationId: getUserNFTs
+      summary: Get connected user wallet info
+      operationId: getUser
       tags:
         - User
       parameters:
-        - in: query
-          name: walletAddress
+        - name: token
+          in: query
+          description: XUMM user token
           required: true
           schema:
             type: string
-          description: The wallet address to query for NFTs
       responses:
         '200':
-          description: "NFTs retrieved successfully"
+          description: User wallet info returned
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
-                    example: true
-                  nfts:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        nftId:
-                          type: string
-                          description: "Unique identifier for the NFT"
-                        name:
-                          type: string
-                          description: "Name of the NFT"
-                        description:
-                          type: string
-                          description: "Description of the NFT"
-                        metadata:
-                          type: object
-                          additionalProperties: true
-                          description: "Metadata for the NFT"
+                  walletAddress:
+                    type: string
+                  balance:
+                    type: number
+                    format: float
         '400':
-          description: "Invalid request or wallet address"
+          description: Invalid token
         '500':
-          description: "Internal server error"
-  
+          description: Server error
+
   /nfts:
     get:
-      summary: "List all NFTs available on the platform"
+      summary: List all minted NFTs
       operationId: listNFTs
       tags:
         - NFT
-      parameters:
-        - in: query
-          name: page
-          required: false
-          schema:
-            type: integer
-            default: 1
-          description: "Page number for pagination"
-        - in: query
-          name: limit
-          required: false
-          schema:
-            type: integer
-            default: 10
-          description: "Number of NFTs to return per page"
       responses:
         '200':
-          description: "List of NFTs"
+          description: List of all NFTs
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  nfts:
-                    type: array
-                    items:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    metadata:
                       type: object
-                      properties:
-                        nftId:
-                          type: string
-                          description: "Unique identifier for the NFT"
-                        name:
-                          type: string
-                          description: "Name of the NFT"
-                        description:
-                          type: string
-                          description: "Description of the NFT"
         '500':
-          description: "Internal server error"
+          description: Server error
 
   /nft/{nftId}:
     get:
-      summary: "Get details of a specific NFT"
-      operationId: getNFTDetails
+      summary: Get NFT details
+      operationId: getNFT
       tags:
         - NFT
       parameters:
-        - in: path
-          name: nftId
+        - name: nftId
+          in: path
           required: true
+          description: NFTokenID
           schema:
             type: string
-          description: "The ID of the NFT"
       responses:
         '200':
-          description: "NFT details retrieved successfully"
+          description: NFT details
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
-                    example: true
-                  nft:
+                  id:
+                    type: string
+                  metadata:
                     type: object
-                    properties:
-                      nftId:
-                        type: string
-                        description: "Unique identifier for the NFT"
-                      name:
-                        type: string
-                        description: "Name of the NFT"
-                      description:
-                        type: string
-                        description: "Description of the NFT"
-                      metadata:
-                        type: object
-                        additionalProperties: true
-                        description: "Metadata for the NFT"
-        '400':
-          description: "Invalid NFT ID"
+        '404':
+          description: NFT not found
         '500':
-          description: "Internal server error"
+          description: Server error
 
   /make-offer:
     post:
-      summary: "Make an offer to buy an NFT using SeagullCoin"
+      summary: Make an offer for an NFT
       operationId: makeOffer
       tags:
-        - Offers
+        - Offer
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - walletAddress
+                - nftokenId
+                - amount
               properties:
-                nftId:
+                walletAddress:
                   type: string
-                  description: "The ID of the NFT being offered on"
-                offerAmount:
+                  description: Wallet making the offer
+                nftokenId:
+                  type: string
+                  description: NFTokenID being offered for
+                amount:
                   type: number
                   format: float
-                  description: "Amount of SeagullCoin being offered"
-                  example: 0.5
+                  description: Offer amount in SeagullCoin
       responses:
         '200':
-          description: "Offer made successfully"
+          description: Offer created
           content:
             application/json:
               schema:
@@ -276,110 +246,38 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: true
                   offerId:
                     type: string
-                    description: "Unique identifier for the offer"
         '400':
-          description: "Invalid offer details, must be SeagullCoin"
+          description: Invalid offer
         '500':
-          description: "Internal server error"
-
-  /accept-offer:
-  post:
-    summary: Accept an offer for an NFT
-    description: Accept a user's offer to purchase an NFT.
-    operationId: acceptOffer
-    responses:
-      '200':
-        description: Offer accepted
-      '400':
-        description: Invalid offer
-  /transfer-nft:
-    post:
-      summary: "Transfer ownership of an NFT"
-      operationId: transferNFT
-      tags:
-        - NFT Transfer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                nftId:
-                  type: string
-                  description: "The NFT ID being transferred"
-                toAddress:
-                  type: string
-                  description: "The wallet address receiving the NFT"
-      responses:
-        '200':
-          description: "NFT successfully transferred"
-        '400':
-          description: "Invalid request or transfer details"
-        '500':
-          description: "Internal server error"
-            /accept-offer:
-    post:
-      summary: "Accept an offer for an NFT, ensuring the offer is SeagullCoin"
-      operationId: acceptOffer
-      tags:
-        - Offers
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                offerId:
-                  type: string
-                  description: "Offer ID to accept"
-                nftId:
-                  type: string
-                  description: "NFT ID being sold"
-      responses:
-        '200':
-          description: "Offer accepted successfully"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  transactionId:
-                    type: string
-                    description: "Transaction ID for the acceptance"
-        '400':
-          description: "Invalid offer ID or NFT ID"
-        '402':
-          description: "Offer amount must be SeagullCoin"
-        '500':
-          description: "Internal server error"
+          description: Server error
 
   /reject-offer:
     post:
-      summary: "Reject an offer for an NFT"
+      summary: Reject unauthorized XRP offers
       operationId: rejectOffer
       tags:
-        - Offers
+        - Offer
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - nftokenId
+                - offerId
               properties:
+                nftokenId:
+                  type: string
+                  description: NFT to reject offer for
                 offerId:
                   type: string
-                  description: "Offer ID to reject"
-                nftId:
-                  type: string
-                  description: "NFT ID being sold"
+                  description: Offer ID to reject
       responses:
         '200':
-          description: "Offer rejected successfully"
+          description: Offer rejected
           content:
             application/json:
               schema:
@@ -387,87 +285,19 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: true
         '400':
-          description: "Invalid offer ID or NFT ID"
+          description: Invalid request
         '500':
-          description: "Internal server error"
-        
-  /nft/{nftId}/transfer:
-    post:
-      summary: "Transfer ownership of an NFT"
-      operationId: transferNFT
-      tags:
-        - NFT
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                recipientAddress:
-                  type: string
-                  description: "The wallet address of the recipient"
-      responses:
-        '200':
-          description: "NFT transferred successfully"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  transactionId:
-                    type: string
-                    description: "Transaction ID for the transfer"
-        '400':
-          description: "Invalid wallet address or NFT ID"
-        '500':
-          description: "Internal server error"
-
-  /nft/{nftId}/update-metadata:
-    post:
-      summary: "Update metadata for an NFT"
-      operationId: updateNFTMetadata
-      tags:
-        - NFT
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                metadata:
-                  type: object
-                  additionalProperties: true
-                  description: "The new metadata to update for the NFT"
-      responses:
-        '200':
-          description: "NFT metadata updated successfully"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-        '400':
-          description: "Invalid metadata or NFT ID"
-        '500':
-          description: "Internal server error"
+          description: Server error
 
   /api/health:
     get:
-      summary: "Check the health of the API server"
-      operationId: checkHealth
+      summary: Health check
       tags:
-        - Health
+        - System
       responses:
         '200':
-          description: "Server is healthy"
+          description: API is running
           content:
             application/json:
               schema:
@@ -475,22 +305,4 @@ paths:
                 properties:
                   status:
                     type: string
-                    example: "healthy"
-        '500':
-          description: "Server health check failed"
-
-components:
-  securitySchemes:
-    OAuth2:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: "https://oauth2.xumm.app/auth"
-          tokenUrl: "https://oauth2.xumm.app/token"
-          scopes:
-            identity: "Access user identity"
-            payload: "Access XUMM payload"
-          
-security:
-  - OAuth2: ["identity", "payload"]
-
+                    example: OK

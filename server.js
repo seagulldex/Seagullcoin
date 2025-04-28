@@ -6,6 +6,7 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
+import xrpl from 'xrpl';
 import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction, transferNFT, checkOwnership } from './mintingLogic.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -15,7 +16,10 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage';
 import client from './xrplClient.js';
-import { getAllNFTListings, unlistNFT, addListing } from './helpers/nftListings.js'; // Import NFT listing logic
+import { getAllNFTListings, unlistNFT, addListing } from './helpers/nftListings.js';
+import { getNFTDetails } from './xrplClient.js';
+ // Import NFT listing logic
+
 
 // ===== Config =====
 dotenv.config();

@@ -1,3 +1,4 @@
+
 openapi: 3.0.0
 info:
   title: SGLCN-X20 Minting API
@@ -285,31 +286,15 @@ paths:
           description: "Internal server error"
 
   /accept-offer:
-    post:
-      summary: "Accept an offer for an NFT, ensuring the offer is SeagullCoin"
-      operationId: acceptOffer
-      tags:
-        - Offers
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                offerId:
-                  type: string
-                  description: "Offer ID to accept"
-                nftId:
-                  type: string
-                  description: "NFT ID being sold"
-      responses:
-        '200':
-          description: "Offer accepted and NFT transferred"
-        '400':
-          description: "Invalid offer ID or NFT ID"
-        '500':
-          description: "Internal server error"
-
+  post:
+    summary: Accept an offer for an NFT
+    description: Accept a user's offer to purchase an NFT.
+    operationId: acceptOffer
+    responses:
+      '200':
+        description: Offer accepted
+      '400':
+        description: Invalid offer
   /transfer-nft:
     post:
       summary: "Transfer ownership of an NFT"

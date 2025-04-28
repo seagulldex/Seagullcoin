@@ -15,10 +15,19 @@ paths:
   /login/start:
     get:
       summary: Start XUMM OAuth2 login
-      description: Redirects the user to the XUMM OAuth2 login page.
+      description: Creates a XUMM SignIn payload and returns payload info.
       responses:
-        '302':
-          description: Redirects to XUMM login page
+        '200':
+          description: Payload created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payloadUuid:
+                    type: string
+                  qrUrl:
+                    type: string
 
   /login/check:
     get:

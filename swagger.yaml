@@ -129,24 +129,55 @@ paths:
               properties:
                 nftId:
                   type: string
-                  description: The NFT ID to buy
+                  description: The ID of the NFT to buy
                 price:
+                  type: number
+                  format: float
+                  description: The price of the NFT in SeagullCoin
+                currency:
                   type: string
-                  description: The price in SeagullCoin to buy the NFT
+                  description: The currency used for the purchase (must be SeagullCoin)
       responses:
         '200':
-          description: NFT purchase successful
+          description: NFT successfully purchased
         '400':
-          description: Missing required fields
+          description: Invalid parameters or wrong currency
         '402':
           description: Insufficient SeagullCoin payment
         '500':
           description: Internal server error
 
-  /accept-offer:
+  /nft-listings:
+    get:
+      summary: Get all NFT listings
+      description: Returns all active NFT listings on the platform.
+      responses:
+        '200':
+          description: A list of all NFT listings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  listings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        nftId:
+                          type: string
+                        price:
+                          type: number
+                          format: float
+                        owner:
+                          type: string
+
+  /unlist-nft:
     post:
-      summary: Accept an NFT offer
-      description: Accept an offer to buy or sell an NFT.
+      summary: Unlist an NFT from sale
+      description: Unlist an NFT from the marketplace if the user is the owner.
       requestBody:
         required: true
         content:
@@ -154,34 +185,42 @@ paths:
             schema:
               type: object
               properties:
-                walletAddress:
+                nftId:
                   type: string
-                  description: The wallet address accepting the offer
-                nftokenId:
-                  type: string
-                  description: The NFT ID of the item being transferred
-                offerTxid:
-                  type: string
-                  description: The transaction ID of the offer to be accepted
+                  description: The NFT ID to unlist
       responses:
         '200':
-          description: Offer accepted successfully, NFT transferred
+          description: NFT successfully unlisted
         '400':
-          description: Missing required fields
+          description: User not logged in or unauthorized action
         '500':
           description: Internal server error
 
-components:
-  securitySchemes:
-    oauth2:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: https://oauth2.xumm.app/auth
-          tokenUrl: https://xumm.app/api/v1/oauth/token
-          scopes:
-            identity: "Access to user identity"
-            payload: "Create and send payloads"
-
-security:
-  - oauth2: [identity, payload]
+  /sell-nft:
+    post:
+      summary: Sell an NFT
+      description: List an NFT for sale in the marketplace with a price in SeagullCoin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nftId:
+                  type: string
+                  description: The NFT ID to list for sale
+                price:
+                  type: number
+                  format: float
+                  description: The sale price in SeagullCoin
+                currency:
+                  type: string
+                  description: The currency in which the NFT is listed for sale (must be SeagullCoin)
+      responses:
+        '200':
+          description: NFT successfully listed for sale
+        '400':
+          description: Invalid parameters or wrong currency
+        '500':
+          description: Internal server error

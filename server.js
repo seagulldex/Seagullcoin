@@ -163,9 +163,14 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
 
 // ======= Buy NFT =======
 apiRouter.post('/buy-nft', async (req, res) => {
-  const { nftId, price } = req.body;
+  const { nftId, price, currency } = req.body;  // Include currency check
   if (!nftId || !price) {
     return res.status(400).json({ error: 'NFT ID and price required.' });
+  }
+
+  // **Check if the listing is in SeagullCoin**
+  if (currency !== "53656167756C6C436F696E000000000000000000") {
+    return res.status(400).json({ error: 'NFTs can only be purchased using SeagullCoin (SGLCN-X20).' });
   }
 
   try {
@@ -216,7 +221,7 @@ apiRouter.post('/unlist-nft', (req, res) => {
 
 // ======= Sell NFT =======
 apiRouter.post('/sell-nft', async (req, res) => {
-  const { nftId, price } = req.body;
+  const { nftId, price, currency } = req.body;  // Include currency check
   const userAddress = req.session.walletAddress;
 
   if (!userAddress) {
@@ -225,6 +230,11 @@ apiRouter.post('/sell-nft', async (req, res) => {
 
   if (price <= 0) {
     return res.status(400).send('Price must be greater than zero');
+  }
+
+  // **Check if the listing price is in SeagullCoin**
+  if (currency !== "53656167756C6C436F696E000000000000000000") {
+    return res.status(400).send('NFTs can only be listed for sale in SeagullCoin (SGLCN-X20).');
   }
 
   try {

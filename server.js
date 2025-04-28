@@ -1,3 +1,6 @@
+
+
+
 // ===== Imports =====
 import express from 'express';
 import session from 'express-session';
@@ -73,6 +76,18 @@ const apiRouter = express.Router();
 apiRouter.get('/login', (req, res) => {
   const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}&scope=identity%20payload`;
   res.redirect(authUrl);
+});
+// Example /login endpoint for authentication
+app.post('/login', async (req, res) => {
+  try {
+    // Perform authentication, for example, using XUMM OAuth2
+    const token = await authenticateUserWithXUMM(req.body);
+    
+    // Return the token
+    res.json({ token });
+  } catch (error) {
+    res.status(401).json({ message: 'Authentication failed', error: error.message });
+  }
 });
 
 // XUMM OAuth2 callback

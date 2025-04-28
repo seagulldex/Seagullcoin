@@ -192,11 +192,11 @@ apiRouter.get('/check-ownership/:nftId', async (req, res) => {
     return res.status(400).json({ error: 'NFT ID is required.' });
   }
 
-  try {
-    const ownership = await checkOwnership(nftId, req.session.walletAddress); // Function to check NFT ownership
-    if (!ownership) {
-      return res.status(404).json({ error: 'Ownership not found for this NFT.' });
-    }
+const ownership = await checkOwnership(nftId, req.session.walletAddress);
+if (!ownership) {
+  console.log('Ownership check failed for nftId:', nftId, 'and walletAddress:', req.session.walletAddress);
+  return res.status(404).json({ error: 'Ownership not found for this NFT.' });
+}
 
     return res.json({ success: true, ownership });
   } catch (err) {

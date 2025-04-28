@@ -4,12 +4,12 @@ info:
   description: API for minting and interacting with SeagullCoin-based NFTs.
   version: 1.0.0
   contact:
-    name: Your Name
-    email: your-email@example.com
-    url: https://yourwebsite.com
+    name: Bored Seagull Club 
+    email: boredseagulls@gmail.com
+    url: https://linktr.ee/boredseagullclub
 
 servers:
-  - url: 'http://localhost:3000/api'
+  - url: 'https://sglcn-x20-api.glitch.me/api'  # <-- updated to your public URL
 
 paths:
   /login:
@@ -18,8 +18,8 @@ paths:
       description: Redirects to the XUMM OAuth2 login page.
       responses:
         '302':
-          description: Redirects to XUMM login
-          
+          description: Redirect to XUMM login
+
   /xumm/callback:
     get:
       summary: XUMM OAuth2 Callback
@@ -43,32 +43,29 @@ paths:
     post:
       summary: Mint a new NFT
       description: Allows users to mint a new NFT with a SeagullCoin payment.
-      parameters:
-        - in: formData
-          name: nft_file
-          required: true
-          description: The file representing the NFT media.
-          type: file
-        - in: formData
-          name: nft_name
-          required: true
-          description: The name of the NFT.
-          type: string
-        - in: formData
-          name: nft_description
-          required: true
-          description: The description of the NFT.
-          type: string
-        - in: formData
-          name: domain
-          required: false
-          description: Domain name associated with the NFT.
-          type: string
-        - in: formData
-          name: properties
-          required: false
-          description: Properties related to the NFT (in JSON format).
-          type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nft_file:
+                  type: string
+                  format: binary
+                  description: The file representing the NFT media.
+                nft_name:
+                  type: string
+                  description: The name of the NFT.
+                nft_description:
+                  type: string
+                  description: The description of the NFT.
+                domain:
+                  type: string
+                  description: (Optional) Domain name associated with the NFT.
+                properties:
+                  type: string
+                  description: (Optional) Properties related to the NFT (in JSON format).
       responses:
         '200':
           description: NFT successfully minted
@@ -87,9 +84,9 @@ paths:
         - in: path
           name: nftId
           required: true
-          description: The NFT ID to check ownership for.
           schema:
             type: string
+          description: The NFT ID to check ownership for
       responses:
         '200':
           description: Ownership information
@@ -140,16 +137,16 @@ paths:
               properties:
                 walletAddress:
                   type: string
-                  description: The wallet address accepting the offer.
+                  description: The wallet address accepting the offer
                 nftokenId:
                   type: string
-                  description: The NFT ID of the item being transferred.
+                  description: The NFT ID of the item being transferred
                 offerTxid:
                   type: string
-                  description: The transaction ID of the offer to be accepted.
+                  description: The transaction ID of the offer to be accepted
       responses:
         '200':
-          description: Offer accepted successfully, NFT transferred.
+          description: Offer accepted successfully, NFT transferred
         '400':
           description: Missing required fields
         '500':
@@ -159,10 +156,13 @@ components:
   securitySchemes:
     oauth2:
       type: oauth2
-      authorizationUrl: https://oauth2.xumm.app/auth
-      tokenUrl: https://xumm.app/api/v1/oauth/token
-      scopes:
-        identity: "Access to user identity"
-        payload: "Create and send payloads"
-  security:
-    - oauth2: [identity, payload]
+      flows:
+        authorizationCode:
+          authorizationUrl: https://oauth2.xumm.app/auth
+          tokenUrl: https://xumm.app/api/v1/oauth/token
+          scopes:
+            identity: "Access to user identity"
+            payload: "Create and send payloads"
+
+security:
+  - oauth2: [identity, payload]

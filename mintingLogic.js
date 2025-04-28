@@ -3,6 +3,8 @@ import fetch from 'node-fetch';
 import { NFTStorage, File } from 'nft.storage';
 import { XUMM_API_URL, NFT_STORAGE_API_KEY, SGLCN_ISSUER, SERVICE_WALLET, XUMM_API_KEY } from './config.js';
 import { fileTypeFromBuffer } from 'file-type'; // Correct import
+import path from 'path'; // Required for correct filename extraction
+import { Buffer } from 'buffer'; // Buffer for hex encoding
 
 // Set up NFT.Storage client
 const nftStorageClient = new NFTStorage({ token: NFT_STORAGE_API_KEY });
@@ -29,16 +31,22 @@ export const checkOwnership = async (nftId, walletAddress) => {
 /** Verify if user paid 0.5 SeagullCoin for minting */
 export const verifySeagullCoinPayment = async (walletAddress) => {
   try {
-    const response = await fetch(`${XUMM_API_URL}/user/${walletAddress}/payments`, {
+    const response = await fetch(`${XUMM_API_URL}/user/${walletAddress}/transactions`, {
       headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
     });
     const data = await response.json();
 
-    if (!data.payments) return false;
+    if (!data.transactions) return false;
 
-    return data.payments.some(payment =>
-      payment.amount === '0.5' && payment.currency === 'SGLCN-X20'
-    );
+    // Verify SeagullCoin payment
+    return data.transactions.some(tx => {
+      if (tx.txjson.TransactionType !== 'Payment') return false;
+      if (!tx.txjson.Amount || typeof tx.txjson.Amount !== 'object') return false;
+      
+      return tx.txjson.Amount.currency === '53656167756C6C436F696E000000000000000000' // SeagullCoin hex
+        && tx.txjson.Amount.issuer === SGLCN_ISSUER
+        && parseFloat(tx.txjson.Amount.value) >= 0.5;
+    });
   } catch (error) {
     console.error('Error verifying SeagullCoin payment:', error);
     return false;
@@ -61,7 +69,8 @@ export const mintNFT = async (metadata, walletAddress) => {
 
     const fileBuffer = await fs.promises.readFile(metadata.file);
     const mimeType = await getMimeType(metadata.file);
-    const fileData = new File([fileBuffer], metadata.file, { type: mimeType });
+    const fileName = path.basename(metadata.file);
+    const fileData = new File([fileBuffer], fileName, { type: mimeType });
 
     const metadataObj = {
       name: metadata.name,
@@ -73,11 +82,15 @@ export const mintNFT = async (metadata, walletAddress) => {
 
     const storedMetadata = await nftStorageClient.store(metadataObj);
 
+    // Encode the IPFS URI in hex format for XRPL
+    const ipfsUri = `ipfs://${storedMetadata.ipnft}`;
+    const uriHex = Buffer.from(ipfsUri, 'utf8').toString('hex');
+
     const mintPayload = {
       transaction: {
         TransactionType: 'NFTokenMint',
         Account: walletAddress,
-        URI: `ipfs://${storedMetadata.ipnft}`,
+        URI: uriHex, // Use hex-encoded URI
         Flags: 0x8000, // Transferable
         TokenTaxon: 0,
       },
@@ -110,7 +123,7 @@ export const verifySeagullCoinTransaction = async (walletAddress, price) => {
     if (!data.transactions) return false;
 
     return data.transactions.some(tx =>
-      tx.amount === price.toString() && tx.currency === 'SGLCN-X20'
+      tx.txjson.Amount === price.toString() && tx.txjson.Currency === 'SGLCN-X20'
     );
   } catch (error) {
     console.error('Error verifying SeagullCoin transaction:', error);
@@ -151,3 +164,79 @@ export const transferNFT = async (nftId, buyerWallet) => {
     throw error;
   }
 };
+
+import xrpl from 'xrpl';
+
+const client = new xrpl.Client('wss://xrplcluster.com');
+let isConnected = false;
+
+// Retry logic for connection attempts
+async function connectWithRetry(retryAttempts = 5, delayMs = 1000) {
+  let attempts = 0;
+  while (attempts < retryAttempts) {
+    try {
+      if (!client.isConnected()) {
+        await client.connect();
+        isConnected = true;
+        console.log("Connected to XRPL node.");
+        return;
+      }
+    } catch (error) {
+      attempts++;
+      console.error(`Attempt ${attempts} to connect failed. Retrying in ${delayMs}ms...`);
+      if (attempts >= retryAttempts) {
+        throw new Error('Failed to connect after multiple attempts.');
+      }
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
+// Ensures the client is connected before making a request
+async function ensureConnected() {
+  if (!isConnected) {
+    await connectWithRetry();
+  }
+}
+
+// Function to retrieve NFT details
+export async function getNFTDetails(nftId) {
+  try {
+    await ensureConnected();
+
+    const response = await client.request({
+      command: "nft_info",
+      nft_id: nftId,
+    });
+
+    if (response.result && response.result.nft_info) {
+      const nftData = response.result.nft_info;
+      return {
+        nftId: nftId,
+        owner: nftData.Owner,
+        uri: nftData.URI,
+        flags: nftData.Flags,
+        transferFee: nftData.TransferFee,
+        issuer: nftData.Issuer,
+      };
+    } else {
+      console.error('No NFT info found for', nftId);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching NFT details from XRPL:', error);
+    return null;
+  }
+}
+
+// Close the client gracefully when no longer needed
+export async function disconnectClient() {
+  if (client.isConnected()) {
+    await client.disconnect();
+    isConnected = false;
+    console.log('Disconnected from XRPL node.');
+  }
+}
+
+// Export client for direct access if needed
+export { client };

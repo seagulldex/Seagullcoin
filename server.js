@@ -185,21 +185,24 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
 });
 
 // ======= Check Ownership =======
+
 apiRouter.get('/check-ownership/:nftId', async (req, res) => {
-  const { nftId } = req.params;
+  try { // <-- start try block
+    const { nftId } = req.params;
 
-  if (!nftId) {
-    return res.status(400).json({ error: 'NFT ID is required.' });
-  }
+    if (!nftId) {
+      return res.status(400).json({ error: 'NFT ID is required.' });
+    }
 
-const ownership = await checkOwnership(nftId, req.session.walletAddress);
-if (!ownership) {
-  console.log('Ownership check failed for nftId:', nftId, 'and walletAddress:', req.session.walletAddress);
-  return res.status(404).json({ error: 'Ownership not found for this NFT.' });
-}
+    const ownership = await checkOwnership(nftId, req.session.walletAddress);
+    if (!ownership) {
+      console.log('Ownership check failed for nftId:', nftId, 'and walletAddress:', req.session.walletAddress);
+      return res.status(404).json({ error: 'Ownership not found for this NFT.' });
+    }
 
     return res.json({ success: true, ownership });
-  } catch (err) {
+
+  } catch (err) { // <-- now valid catch block
     console.error(err);
     return res.status(500).json({ error: 'An error occurred while checking ownership.' });
   }

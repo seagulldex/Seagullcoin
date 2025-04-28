@@ -125,7 +125,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ======= NFT Minting =======
+// ======= NFT Minting (Improved) =======
 apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
   const { nft_name, nft_description, domain, properties } = req.body;
   const nft_file = req.file;
@@ -139,11 +139,13 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
       return res.status(400).json({ error: 'NFT name or description too long.' });
     }
 
+    // Ensure the user has paid 0.5 SeagullCoin
     const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
     if (!paymentValid) {
       return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });
     }
 
+    // Prepare NFT metadata
     const metadata = {
       name: nft_name,
       description: nft_description,
@@ -161,24 +163,7 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
   }
 });
 
-// ======= Check NFT Ownership =======
-apiRouter.get('/check-ownership/:nftId', async (req, res) => {
-  const { nftId } = req.params;
-  if (!nftId) return res.status(400).json({ error: 'NFT ID required.' });
-
-  try {
-    const ownership = await checkOwnership(nftId, req.session.walletAddress);
-    if (!ownership) {
-      return res.status(404).json({ error: 'Ownership not found.' });
-    }
-    return res.json({ success: true, ownership });
-  } catch (err) {
-    console.error('Ownership check error:', err);
-    return res.status(500).json({ error: 'Failed to check ownership.' });
-  }
-});
-
-// ======= Buy NFT =======
+// ======= Buy NFT (Ensure transaction with SeagullCoin) =======
 apiRouter.post('/buy-nft', async (req, res) => {
   const { nftId, price } = req.body;
   if (!nftId || !price) {
@@ -186,11 +171,13 @@ apiRouter.post('/buy-nft', async (req, res) => {
   }
 
   try {
+    // Validate the SeagullCoin payment for the price of the NFT
     const paymentValid = await verifySeagullCoinTransaction(req.session.xumm, price);
     if (!paymentValid) {
       return res.status(402).json({ error: 'Insufficient SeagullCoin payment.' });
     }
 
+    // Proceed with the NFT transfer after payment is validated
     const walletAddress = req.session.walletAddress;
     const purchaseResult = await transferNFT(nftId, walletAddress);
     return res.json({ success: true, purchaseResult });
@@ -200,15 +187,42 @@ apiRouter.post('/buy-nft', async (req, res) => {
   }
 });
 
-// ====== Attach API Routes ======
-app.use('/api', apiRouter);
+// ======= Sell NFT (Ensure Listing Validation and Ownership Check) =======
+app.post('/sell-nft', async (req, res) => {
+  try {
+    const { nftId, price } = req.body; // nftId: ID of the NFT to sell, price: the SeagullCoin price
+    const userAddress = req.session.walletAddress;
 
-// ======= Admin Routes =======
-const adminRouter = express.Router();
-app.use('/admin', adminRouter);
+    if (!userAddress) {
+      return res.status(400).send('User not logged in');
+    }
 
-// ===== Start Server =======
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    // Validate price
+    if (price <= 0) {
+      return res.status(400).send('Price must be greater than zero');
+    }
+
+    // Retrieve the NFT details
+    const nft = await getNFTDetails(nftId); // Ensure this retrieves NFT data from a database or storage
+
+    if (!nft || nft.owner !== userAddress) {
+      return res.status(400).send('You are not the owner of this NFT');
+    }
+
+    // Save the listing (store in database or NFT.Storage)
+    const listing = {
+      nftId,
+      price,
+      seller: userAddress,
+      status: 'for-sale',
+      createdAt: new Date(),
+    };
+
+    await saveNFTListing(listing); // Implement this to save to your DB or storage
+
+    res.status(200).send('NFT listed for sale');
+  } catch (error) {
+    console.error('Sell NFT error:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });

@@ -15,22 +15,18 @@ import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage';
-import { client } from './xrplClient.js';  // Use named import for client
+import { client } from './xrplClient.js';
 import { getAllNFTListings, unlistNFT, addListing } from './helpers/nftListings.js';
 import { getNFTDetails } from './xrplClient.js';
-// Import NFT listing logic
 
 // ===== Config =====
 dotenv.config();
 
-// Load environment variables
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
 
-// Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Ensure 'uploads' folder exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -40,8 +36,8 @@ const app = express();
 
 // ===== Middleware =====
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 6000, 
+  windowMs: 15 * 60 * 1000,
+  max: 6000,
   message: { error: 'Too many requests from this IP, please try again later.' },
 });
 app.use(limiter);
@@ -49,7 +45,7 @@ app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
-  secret: "sglcn_secret_session",
+  secret: 'sglcn_secret_session',
   resave: false,
   saveUninitialized: true,
 }));
@@ -107,10 +103,10 @@ apiRouter.get('/xumm/callback', async (req, res) => {
     const data = await response.json();
     req.session.xumm = data;
     req.session.walletAddress = data.account;
-    return res.redirect('/');
+    res.redirect('/');
   } catch (err) {
     console.error('XUMM OAuth callback error:', err);
-    return res.status(500).json({ error: 'OAuth callback processing failed.' });
+    res.status(500).json({ error: 'OAuth callback processing failed.' });
   }
 });
 
@@ -129,7 +125,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ======= NFT Minting (Improved) =======
+// ======= NFT Minting =======
 apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
   const { nft_name, nft_description, domain, properties } = req.body;
   const nft_file = req.file;
@@ -143,13 +139,11 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
       return res.status(400).json({ error: 'NFT name or description too long.' });
     }
 
-    // Ensure the user has paid 0.5 SeagullCoin
     const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
     if (!paymentValid) {
       return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });
     }
 
-    // Prepare NFT metadata
     const metadata = {
       name: nft_name,
       description: nft_description,
@@ -160,14 +154,14 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
 
     const walletAddress = req.session.walletAddress;
     const mintResult = await mintNFT(metadata, walletAddress);
-    return res.json({ success: true, mintResult });
+    res.json({ success: true, mintResult });
   } catch (err) {
     console.error('Minting error:', err);
-    return res.status(500).json({ error: 'Failed to mint NFT.' });
+    res.status(500).json({ error: 'Failed to mint NFT.' });
   }
 });
 
-// ======= Buy NFT (Ensure transaction with SeagullCoin) =======
+// ======= Buy NFT =======
 apiRouter.post('/buy-nft', async (req, res) => {
   const { nftId, price } = req.body;
   if (!nftId || !price) {
@@ -175,33 +169,32 @@ apiRouter.post('/buy-nft', async (req, res) => {
   }
 
   try {
-    // Validate the SeagullCoin payment for the price of the NFT
     const paymentValid = await verifySeagullCoinTransaction(req.session.xumm, price);
     if (!paymentValid) {
       return res.status(402).json({ error: 'Insufficient SeagullCoin payment.' });
     }
 
-    // Proceed with the NFT transfer after payment is validated
     const walletAddress = req.session.walletAddress;
     const purchaseResult = await transferNFT(nftId, walletAddress);
-    return res.json({ success: true, purchaseResult });
+    res.json({ success: true, purchaseResult });
   } catch (err) {
     console.error('Buying NFT error:', err);
-    return res.status(500).json({ error: 'Failed to process NFT purchase.' });
+    res.status(500).json({ error: 'Failed to process NFT purchase.' });
   }
 });
 
-apiRouter.get('/nft-listings', async (req, res) => {
+// ======= NFT Listings =======
+apiRouter.get('/nft-listings', (req, res) => {
   try {
-    const listings = getAllNFTListings(); // Fetch listings from memory (no need for async)
+    const listings = getAllNFTListings();
     res.json({ success: true, listings });
   } catch (err) {
     console.error('Error fetching NFT listings:', err);
-    res.status(500).json({ error: 'Failed to fetch NFT listings' });
+    res.status(500).json({ error: 'Failed to fetch NFT listings.' });
   }
 });
 
-apiRouter.post('/unlist-nft', async (req, res) => {
+apiRouter.post('/unlist-nft', (req, res) => {
   const { nftId } = req.body;
   const userAddress = req.session.walletAddress;
 
@@ -221,7 +214,7 @@ apiRouter.post('/unlist-nft', async (req, res) => {
   }
 });
 
-// ======= Sell NFT (Ensure Listing Validation and Ownership Check) =======
+// ======= Sell NFT =======
 apiRouter.post('/sell-nft', async (req, res) => {
   const { nftId, price } = req.body;
   const userAddress = req.session.walletAddress;
@@ -235,14 +228,13 @@ apiRouter.post('/sell-nft', async (req, res) => {
   }
 
   try {
-    const nft = await getNFTDetails(nftId); // Ensure this function is defined and works correctly
+    const nft = await getNFTDetails(nftId);
 
     if (!nft || nft.owner !== userAddress) {
       return res.status(400).send('You are not the owner of this NFT');
     }
 
-    addListing(nftId, price, userAddress); // Assuming addListing is correctly handling the database or in-memory storage
-
+    addListing(nftId, price, userAddress);
     res.status(200).send('NFT listed for sale');
   } catch (error) {
     console.error('Sell NFT error:', error);
@@ -250,6 +242,7 @@ apiRouter.post('/sell-nft', async (req, res) => {
   }
 });
 
+// ====== Mount API Router ======
 app.use('/api', apiRouter);
 
 // ===== Start Server =====

@@ -14,7 +14,6 @@ import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage';
-import { getNFTDetails, saveNFTListing } from './helpers/nftListings.js'; // Import the helper functions
 import client from './xrplClient.js';
 import { getAllNFTListings, unlistNFT, addListing } from './helpers/nftListings.js'; // Import NFT listing logic
 

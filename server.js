@@ -123,6 +123,16 @@ apiRouter.get('/xumm/callback', async (req, res) => {
   }
 });
 
+apiRouter.get('/api/login/check', (req, res) => {
+  if (req.session.xumm) {
+    // User is logged in
+    res.json({ loggedIn: true, walletAddress: req.session.walletAddress });
+  } else {
+    // User is not logged in
+    res.json({ loggedIn: false });
+  }
+});
+
 // ======= NFT Minting =======
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

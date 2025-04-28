@@ -91,8 +91,9 @@ app.post('/login', async (req, res) => {
 });
 
 // XUMM OAuth2 callback
-apiRouter.get('/xumm/callback', async (req, res) => {
-  const { code } = req.query;
+app.post('/xumm/callback', async (req, res) => {
+  const { code } = req.body;  // The authorization code returned by XUMM
+
   if (!code) {
     return res.status(400).json({ error: 'No authorization code received from XUMM.' });
   }
@@ -119,7 +120,7 @@ apiRouter.get('/xumm/callback', async (req, res) => {
     req.session.xumm = data; 
     req.session.walletAddress = data.account; 
 
-    return res.redirect('/'); 
+    return res.redirect('/');  // Redirect to the main page or another relevant page
   } catch (err) {
     console.error('Error during XUMM OAuth callback:', err);
     return res.status(500).json({ error: 'Failed to process XUMM OAuth callback.' });
@@ -138,6 +139,107 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
+// Create NFToken Offer (Sell or Buy)
+app.post("/api/create-offer", async (req, res) => {
+  try {
+    const { walletAddress, nftokenId, amount, offerType } = req.body;
+    if (!walletAddress || !nftokenId || !offerType) {
+      return res.status(400).json({ error: "Missing required fields." });
+    }
+
+    // Authenticate via XUMM (you already have your auth system, assume user is logged in)
+
+    const txJson = {
+      TransactionType: "NFTokenCreateOffer",
+      Account: walletAddress,
+      NFTokenID: nftokenId,
+      Amount: amount ? amount.toString() : undefined, // only for sell offers
+      Flags: offerType === "sell" ? 1 : 0, // 1 = Sell offer, 0 = Buy offer
+      Destination: offerType === "buy" ? walletAddress : undefined // for buy offers
+    };
+
+    // Enforce SeagullCoin for sell offers (amount must be in SeagullCoin)
+    if (offerType === "sell" && amount) {
+      txJson.Amount = {
+        currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin Hex
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+        value: amount.toString()
+      };
+    }
+
+    // Create XUMM payload
+    const payload = {
+      txjson: txJson,
+      options: {
+        submit: true,
+      }
+    };
+
+    const subscription = await xumm.payload.createAndSubscribe(payload, event => {
+      if (event.data.signed === false) {
+        return { signed: false };
+      }
+      if (event.data.signed === true) {
+        return { signed: true, txid: event.data.txid };
+      }
+    });
+
+    if (subscription.signed) {
+      return res.json({ success: true, txid: subscription.txid });
+    } else {
+      return res.status(400).json({ error: "Offer creation was declined by user." });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// Accept NFToken Offer (Buy or Sell)
+app.post("/api/accept-offer", async (req, res) => {
+  try {
+    const { walletAddress, nftokenId, offerTxid } = req.body;
+    if (!walletAddress || !nftokenId || !offerTxid) {
+      return res.status(400).json({ error: "Missing required fields." });
+    }
+
+    // Authenticate user (You have your login system in place)
+
+    const txJson = {
+      TransactionType: "NFTokenAcceptOffer",
+      Account: walletAddress,
+      NFTokenID: nftokenId,
+      OfferSequence: offerTxid,
+    };
+
+    // Create XUMM payload
+    const payload = {
+      txjson: txJson,
+      options: {
+        submit: true,
+      }
+    };
+
+    const subscription = await xumm.payload.createAndSubscribe(payload, event => {
+      if (event.data.signed === false) {
+        return { signed: false };
+      }
+      if (event.data.signed === true) {
+        return { signed: true, txid: event.data.txid };
+      }
+    });
+
+    if (subscription.signed) {
+      return res.json({ success: true, txid: subscription.txid });
+    } else {
+      return res.status(400).json({ error: "Offer acceptance was declined by user." });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
 
 // Minting NFT endpoint
 apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {

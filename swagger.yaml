@@ -1,308 +1,168 @@
 openapi: 3.0.0
 info:
   title: SGLCN-X20 Minting API
+  description: API for minting and interacting with SeagullCoin-based NFTs.
   version: 1.0.0
-  description: |
-    Public API for minting NFTs with SeagullCoin (SGLCN-X20) only.
-    - Mint NFTs by paying 0.5 SeagullCoin.
-    - No XRP purchases allowed.
-    - Only SeagullCoin (X20 token) allowed for offers, mints, and sales.
-    - Supports CORS for marketplaces like bidds.com and xrp.cafe.
+  contact:
+    name: Your Name
+    email: your-email@example.com
+    url: https://yourwebsite.com
 
 servers:
-  - url: https://sglcn-x20-api.glitch.me
-    description: Main API server
+  - url: 'http://localhost:3000/api'
 
 paths:
   /login:
-    post:
-      summary: Initiate XUMM login session
-      operationId: loginUser
-      tags:
-        - Authentication
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                userToken:
-                  type: string
-                  description: Optional existing XUMM user token
+    get:
+      summary: Login via XUMM OAuth2
+      description: Redirects to the XUMM OAuth2 login page.
+      responses:
+        '302':
+          description: Redirects to XUMM login
+          
+  /xumm/callback:
+    get:
+      summary: XUMM OAuth2 Callback
+      description: Handles the OAuth2 callback from XUMM.
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+          description: The authorization code from XUMM
       responses:
         '200':
-          description: Login payload generated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  loginPayload:
-                    type: object
-                  qrUrl:
-                    type: string
-                  websocketUrl:
-                    type: string
-        '500':
-          description: Error initiating login
-
-  /pay:
-    post:
-      summary: Initiate payment of 0.5 SeagullCoin
-      operationId: initiatePayment
-      tags:
-        - Payment
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - walletAddress
-              properties:
-                walletAddress:
-                  type: string
-                  description: Wallet address initiating payment
-      responses:
-        '200':
-          description: Payment initiated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  paymentId:
-                    type: string
+          description: Successfully logged in
         '400':
-          description: Invalid request
+          description: Missing authorization code
         '500':
-          description: Server error
+          description: Failed to process XUMM callback
 
   /mint:
     post:
-      summary: Mint a new NFT after payment
-      operationId: mintNFT
-      tags:
-        - NFT
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - walletAddress
-                - metadata
-              properties:
-                walletAddress:
-                  type: string
-                  description: Wallet address minting the NFT
-                metadata:
-                  type: object
-                  description: NFT metadata (name, description, image link, etc.)
+      summary: Mint a new NFT
+      description: Allows users to mint a new NFT with a SeagullCoin payment.
+      parameters:
+        - in: formData
+          name: nft_file
+          required: true
+          description: The file representing the NFT media.
+          type: file
+        - in: formData
+          name: nft_name
+          required: true
+          description: The name of the NFT.
+          type: string
+        - in: formData
+          name: nft_description
+          required: true
+          description: The description of the NFT.
+          type: string
+        - in: formData
+          name: domain
+          required: false
+          description: Domain name associated with the NFT.
+          type: string
+        - in: formData
+          name: properties
+          required: false
+          description: Properties related to the NFT (in JSON format).
+          type: string
       responses:
         '200':
-          description: NFT minted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  nftokenId:
-                    type: string
-                    description: Minted NFTokenID
+          description: NFT successfully minted
         '400':
-          description: Invalid mint request
+          description: Missing required fields
+        '402':
+          description: Payment required (0.5 SeagullCoin)
         '500':
-          description: Server error
+          description: Internal server error
 
-  /user:
+  /check-ownership/{nftId}:
     get:
-      summary: Get connected user wallet info
-      operationId: getUser
-      tags:
-        - User
+      summary: Check NFT ownership
+      description: Checks if a user owns a specific NFT.
       parameters:
-        - name: token
-          in: query
-          description: XUMM user token
+        - in: path
+          name: nftId
           required: true
+          description: The NFT ID to check ownership for.
           schema:
             type: string
       responses:
         '200':
-          description: User wallet info returned
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  walletAddress:
-                    type: string
-                  balance:
-                    type: number
-                    format: float
+          description: Ownership information
         '400':
-          description: Invalid token
-        '500':
-          description: Server error
-
-  /nfts:
-    get:
-      summary: List all minted NFTs
-      operationId: listNFTs
-      tags:
-        - NFT
-      responses:
-        '200':
-          description: List of all NFTs
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    metadata:
-                      type: object
-        '500':
-          description: Server error
-
-  /nft/{nftId}:
-    get:
-      summary: Get NFT details
-      operationId: getNFT
-      tags:
-        - NFT
-      parameters:
-        - name: nftId
-          in: path
-          required: true
-          description: NFTokenID
-          schema:
-            type: string
-      responses:
-        '200':
-          description: NFT details
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  metadata:
-                    type: object
+          description: Missing NFT ID
         '404':
-          description: NFT not found
+          description: Ownership not found
         '500':
-          description: Server error
+          description: Internal server error
 
-  /make-offer:
+  /buy-nft:
     post:
-      summary: Make an offer for an NFT
-      operationId: makeOffer
-      tags:
-        - Offer
+      summary: Buy an NFT
+      description: Allows users to buy an NFT by sending a SeagullCoin transaction.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - walletAddress
-                - nftokenId
-                - amount
+              properties:
+                nftId:
+                  type: string
+                  description: The NFT ID to buy
+                price:
+                  type: string
+                  description: The price in SeagullCoin to buy the NFT
+      responses:
+        '200':
+          description: NFT purchase successful
+        '400':
+          description: Missing required fields
+        '402':
+          description: Insufficient SeagullCoin payment
+        '500':
+          description: Internal server error
+
+  /accept-offer:
+    post:
+      summary: Accept an NFT offer
+      description: Accept an offer to buy or sell an NFT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
               properties:
                 walletAddress:
                   type: string
-                  description: Wallet making the offer
+                  description: The wallet address accepting the offer.
                 nftokenId:
                   type: string
-                  description: NFTokenID being offered for
-                amount:
-                  type: number
-                  format: float
-                  description: Offer amount in SeagullCoin
-      responses:
-        '200':
-          description: Offer created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  offerId:
-                    type: string
-        '400':
-          description: Invalid offer
-        '500':
-          description: Server error
-
-  /reject-offer:
-    post:
-      summary: Reject unauthorized XRP offers
-      operationId: rejectOffer
-      tags:
-        - Offer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - nftokenId
-                - offerId
-              properties:
-                nftokenId:
+                  description: The NFT ID of the item being transferred.
+                offerTxid:
                   type: string
-                  description: NFT to reject offer for
-                offerId:
-                  type: string
-                  description: Offer ID to reject
+                  description: The transaction ID of the offer to be accepted.
       responses:
         '200':
-          description: Offer rejected
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
+          description: Offer accepted successfully, NFT transferred.
         '400':
-          description: Invalid request
+          description: Missing required fields
         '500':
-          description: Server error
+          description: Internal server error
 
-  /api/health:
-    get:
-      summary: Health check
-      tags:
-        - System
-      responses:
-        '200':
-          description: API is running
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: OK
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      authorizationUrl: https://oauth2.xumm.app/auth
+      tokenUrl: https://xumm.app/api/v1/oauth/token
+      scopes:
+        identity: "Access to user identity"
+        payload: "Create and send payloads"
+  security:
+    - oauth2: [identity, payload]

@@ -15,11 +15,10 @@ import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage';
-import client from './xrplClient.js';
+import { client } from './xrplClient.js';  // Use named import for client
 import { getAllNFTListings, unlistNFT, addListing } from './helpers/nftListings.js';
 import { getNFTDetails } from './xrplClient.js';
- // Import NFT listing logic
-
+// Import NFT listing logic
 
 // ===== Config =====
 dotenv.config();
@@ -242,17 +241,19 @@ apiRouter.post('/sell-nft', async (req, res) => {
       return res.status(400).send('You are not the owner of this NFT');
     }
 
-    await addListing(nftId, price, userAddress); // Use addListing to save the NFT listing
+    addListing(nftId, price, userAddress); // Assuming addListing is correctly handling the database or in-memory storage
 
     res.status(200).send('NFT listed for sale');
   } catch (error) {
-    console.error('Error listing NFT for sale:', error);
-    res.status(500).send('Failed to list NFT for sale');
+    console.error('Sell NFT error:', error);
+    res.status(500).send('Internal Server Error');
   }
 });
 
 app.use('/api', apiRouter);
 
-app.listen(3000, () => {
-  console.log('Server is running on http://localhost:3000');
+// ===== Start Server =====
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });

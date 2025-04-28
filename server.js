@@ -1,7 +1,7 @@
 // ===== Imports =====
 import express from 'express';
 import session from 'express-session';
-import cors from 'cors';
+import cors from 'cors'; // Importing CORS
 import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
@@ -13,6 +13,8 @@ import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
+import { checkOwnership } from './mintingLogic.js';
+
 import { NFTStorage, File } from 'nft.storage'; // Removed duplicate import
 import client from './xrplClient.js';
 
@@ -48,7 +50,7 @@ const limiter = rateLimit({
 
 // Middleware
 app.use(limiter);
-app.use(cors({ origin: "*", credentials: true }));
+app.use(cors({ origin: "*", credentials: true })); // CORS middleware added here
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
@@ -185,9 +187,8 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
 });
 
 // ======= Check Ownership =======
-
 apiRouter.get('/check-ownership/:nftId', async (req, res) => {
-  try { // <-- start try block
+  try {
     const { nftId } = req.params;
 
     if (!nftId) {
@@ -202,7 +203,7 @@ apiRouter.get('/check-ownership/:nftId', async (req, res) => {
 
     return res.json({ success: true, ownership });
 
-  } catch (err) { // <-- now valid catch block
+  } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'An error occurred while checking ownership.' });
   }

@@ -1,55 +1,134 @@
+// Do not load NFTs on the homepage, or limit it to previews
+fetch('/api/highlighted-nfts') // Only a few highlighted NFTs or collections
+    .then(response => response.json())
+    .then(data => {
+        const previewSection = document.getElementById('highlighted-nfts');
+        data.forEach(nft => {
+            const nftElement = document.createElement('div');
+            nftElement.classList.add('nft-preview');
+            nftElement.innerHTML = `
+                <img src="${nft.imageUrl}" alt="${nft.name}" />
+                <p>${nft.name}</p>
+            `;
+            previewSection.appendChild(nftElement);
+        });
+    });
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGLCN-X20 NFT Minter</title>
+    <title>SGLCN-X20 NFT Marketplace</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <img src="https://xpcdn.xpmarket.com/gravatars/3b2d755282cd6b2bd8a42398d76c8c05.png" alt="SeagullCoin Logo" class="logo">
         <nav>
-            <a href="/docs">API Documentation</a>
+            <a href="/">Home</a>
+            <a href="/mint">Mint NFT</a>
+            <a href="/nfts">Explore NFTs</a>
+            <a href="/profile">My Profile</a>
         </nav>
     </header>
 
     <div class="container">
-        <h1>Mint Your SeagullCoin NFT</h1>
-        <form action="/mint" method="POST" enctype="multipart/form-data">
-            <!-- Upload NFT File -->
-            <label for="nft_file">Upload NFT File:</label>
-            <input type="file" id="nft_file" name="nft_file" required><br><br>
-
-            <!-- NFT Name -->
-            <label for="nft_name">NFT Name:</label>
-            <input type="text" id="nft_name" name="nft_name" required><br><br>
-
-            <!-- NFT Description -->
-            <label for="nft_description">NFT Description:</label>
-            <input type="text" id="nft_description" name="nft_description" required><br><br>
-
-            <!-- Domain -->
-            <label for="nft_domain">Domain (optional):</label>
-            <input type="text" id="nft_domain" name="nft_domain"><br><br>
-
-            <!-- Property Name/Value pairs (optional with add/remove buttons) -->
-            <div id="properties-section">
-                <h3>Properties</h3>
-                <div class="property">
-                    <label for="property_name_1">Property Name 1:</label>
-                    <input type="text" id="property_name_1" name="property_name_1" placeholder="Property Name">
-                    <label for="property_value_1">Property Value 1:</label>
-                    <input type="text" id="property_value_1" name="property_value_1" placeholder="Property Value">
-                    <button type="button" class="remove-property" onclick="removeProperty(this)">Remove</button><br><br>
-                </div>
-            </div>
-            <button type="button" id="add-property">Add Property</button><br><br>
-
-            <button type="submit">Mint NFT</button>
-        </form>
+        <h1>Welcome to SeagullCoin NFT Marketplace</h1>
+        <p>Discover, mint, and trade NFTs exclusively using SeagullCoin!</p>
+        <div class="cta-buttons">
+            <a href="/mint"><button>Mint Your NFT</button></a>
+            <a href="/nfts"><button>Explore NFTs</button></a>
+        </div>
     </div>
 
-    <script src="main.js"></script>
+    <footer>
+        <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+    </footer>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | SeagullCoin NFT Marketplace</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <img src="https://xpcdn.xpmarket.com/gravatars/3b2d755282cd6b2bd8a42398d76c8c05.png" alt="SeagullCoin Logo" class="logo">
+        <nav>
+            <a href="/">Home</a>
+            <a href="/mint">Mint NFT</a>
+            <a href="/nfts">Explore NFTs</a>
+            <a href="/profile">My Profile</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1>Your Profile</h1>
+
+        <!-- Profile Picture Upload -->
+        <form action="/profile/update" method="POST" enctype="multipart/form-data">
+            <label for="profile_picture">Upload Profile Picture:</label>
+            <input type="file" id="profile_picture" name="profile_picture"><br><br>
+
+            <label for="username">Set Username:</label>
+            <input type="text" id="username" name="username" placeholder="Enter a new username" required><br><br>
+
+            <button type="submit">Update Profile</button>
+        </form>
+
+        <hr>
+
+        <!-- Display User Minted NFTs -->
+        <h2>Your Minted NFTs</h2>
+        <div id="minted-nfts">
+            <!-- Dynamically load NFTs from API -->
+        </div>
+
+        <hr>
+
+        <!-- XUMM Login -->
+        <div id="xumm-login">
+            <!-- XUMM Wallet Login Logic -->
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+    </footer>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore NFTs | SeagullCoin NFT Marketplace</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <img src="https://xpcdn.xpmarket.com/gravatars/3b2d755282cd6b2bd8a42398d76c8c05.png" alt="SeagullCoin Logo" class="logo">
+        <nav>
+            <a href="/">Home</a>
+            <a href="/mint">Mint NFT</a>
+            <a href="/nfts">Explore NFTs</a>
+            <a href="/profile">My Profile</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1>Explore NFT Collections</h1>
+        <div id="collections">
+            <!-- Dynamically load NFT collections from API -->
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+    </footer>
 </body>
 </html>

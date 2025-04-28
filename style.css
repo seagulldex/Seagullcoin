@@ -1,135 +1,112 @@
-/* Global Styles */
+/* General Styles */
 body {
     font-family: Arial, sans-serif;
+    background-color: #000000; /* Black Background */
+    color: white; /* White text */
     margin: 0;
     padding: 0;
-    background-image: url('https://www.w3schools.com/w3images/beach.jpg'); /* Beach background */
-    background-size: cover;
-    background-position: center;
-    color: white;
 }
 
 header {
-    padding: 20px;
+    background-color: #343a40;
+    color: white;
+    padding: 10px 0;
     text-align: center;
-    background: rgba(0, 0, 0, 0.5);
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    position: relative;
 }
 
-.logo {
-    width: 120px;
-    margin-bottom: 10px;
+header nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
-nav a {
+header nav ul li {
+    display: inline;
+    margin-right: 20px;
+}
+
+header nav ul li a {
     color: white;
     text-decoration: none;
     font-size: 18px;
-    margin: 10px;
 }
 
-nav a:hover {
-    text-decoration: underline;
+/* Logo */
+header::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    background-image: url('https://xpcdn.xpmarket.com/gravatars/3b2d755282cd6b2bd8a42398d76c8c05.png');
+    background-size: cover;
+    border-radius: 50%;
 }
 
-/* Form Styles */
-.container {
-    width: 80%;
-    max-width: 600px;
-    margin: 50px auto;
-    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
+main {
     padding: 20px;
-    border-radius: 10px;
 }
 
-h1 {
-    font-size: 24px;
+.hero {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-label {
-    font-size: 16px;
-}
-
-input[type="text"], input[type="file"] {
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #f8f8f8;
-    color: #333;
+.hero h1 {
+    font-size: 36px;
+    color: #ffffff;
 }
 
 button {
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: #4CAF50;
+    background-color: #007bff;
     color: white;
+    padding: 10px 20px;
     border: none;
-    border-radius: 5px;
+    font-size: 16px;
     cursor: pointer;
+    border-radius: 50px; /* Bubbly effect */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 button:hover {
-    background-color: #45a049;
+    background-color: #0056b3;
 }
 
-/* Property Fields */
-.property {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+.collections, .nfts {
+    margin-bottom: 40px;
 }
 
-.property input {
+.nft-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.nft-card {
+    background-color: #212529; /* Dark background for the card */
+    padding: 20px;
+    border-radius: 15px; /* Bubbly effect */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: all 0.3s ease-in-out;
+}
+
+.nft-card:hover {
+    transform: translateY(-10px); /* Hover effect */
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nft-card img {
     width: 100%;
+    border-radius: 10px; /* Rounded corners for the image */
 }
 
-.remove-property {
-    background-color: red;
+footer {
+    background-color: #343a40;
     color: white;
-    border: none;
-    padding: 5px 10px;
-    font-size: 12px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.remove-property:hover {
-    background-color: darkred;
-}
-
-/* Add Property Button */
-#add-property {
-    background-color: #008CBA;
-    color: white;
-    font-size: 16px;
-}
-
-#add-property:hover {
-    background-color: #007B9E;
-}
-
-/* Responsive Design */
-@media (max-width: 600px) {
-    .container {
-        width: 90%;
-    }
-
-    h1 {
-        font-size: 20px;
-    }
-
-    button {
-        font-size: 14px;
-    }
+    text-align: center;
+    padding: 10px;
+    margin-top: 40px;
 }

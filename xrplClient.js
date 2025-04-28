@@ -1,7 +1,7 @@
 // xrplClient.js
 import xrpl from 'xrpl';
 
-const client = new xrpl.Client('wss://s.altnet.rippletest.net:51233');
+const client = new xrpl.Client('wss://xrplcluster.com');
 
 async function connectClient() {
   if (!client.isConnected()) {

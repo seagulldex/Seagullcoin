@@ -53,11 +53,6 @@ app.use(session({
 // ===== Static Files =====
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ===== Offer Routes =====
-const offerRouter = express.Router();
-// Define offer routes here
-app.use('/offer', offerRouter);
-
 // ===== Swagger Docs =====
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -65,6 +60,11 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // ===== Health Check =====
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'Server running', timestamp: new Date().toISOString() });
+});
+
+// ===== Root Route =====
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to the SGLCN-X20 Minting API. Visit /api-docs for documentation.' });
 });
 
 // ====== API Routes ======

@@ -163,12 +163,11 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
 
 // ======= Buy NFT =======
 apiRouter.post('/buy-nft', async (req, res) => {
-  const { nftId, price, currency } = req.body;  // Include currency check
+  const { nftId, price, currency } = req.body;
   if (!nftId || !price) {
     return res.status(400).json({ error: 'NFT ID and price required.' });
   }
 
-  // **Check if the listing is in SeagullCoin**
   if (currency !== "53656167756C6C436F696E000000000000000000") {
     return res.status(400).json({ error: 'NFTs can only be purchased using SeagullCoin (SGLCN-X20).' });
   }
@@ -221,7 +220,7 @@ apiRouter.post('/unlist-nft', (req, res) => {
 
 // ======= Sell NFT =======
 apiRouter.post('/sell-nft', async (req, res) => {
-  const { nftId, price, currency } = req.body;  // Include currency check
+  const { nftId, price, currency } = req.body;
   const userAddress = req.session.walletAddress;
 
   if (!userAddress) {
@@ -232,7 +231,6 @@ apiRouter.post('/sell-nft', async (req, res) => {
     return res.status(400).send('Price must be greater than zero');
   }
 
-  // **Check if the listing price is in SeagullCoin**
   if (currency !== "53656167756C6C436F696E000000000000000000") {
     return res.status(400).send('NFTs can only be listed for sale in SeagullCoin (SGLCN-X20).');
   }
@@ -258,6 +256,5 @@ app.use('/api', apiRouter);
 // ===== Start Server =====
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on https://sglcn-x20-api.glitch.me/`);
+  console.log(`Server running on port ${PORT}`);
 });
-

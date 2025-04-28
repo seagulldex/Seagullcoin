@@ -12,9 +12,32 @@ export const checkOwnership = async (nftId, walletAddress) => {
   try {
     const nftDetailsResponse = await fetch(`${XUMM_API_URL}/nft/${nftId}`);
     const nftDetails = await nftDetailsResponse.json();
-    return nftDetails.owner === walletAddress;
+
+    if (nftDetails.owner === walletAddress) {
+      return true;
+    }
+    return false;
   } catch (error) {
     console.error('Error checking NFT ownership:', error);
+    return false;
+  }
+};
+
+// Function to verify SeagullCoin payment for minting
+export const verifySeagullCoinPayment = async ({ walletAddress }) => {
+  try {
+    const response = await fetch(`${XUMM_API_URL}/user/${walletAddress}/payments`, {
+      headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
+    });
+    const data = await response.json();
+
+    const paymentVerified = data.payments.some(payment =>
+      payment.amount === 0.5 && payment.currency === 'SGLCN-X20'
+    );
+
+    return paymentVerified;
+  } catch (error) {
+    console.error('Error verifying SeagullCoin payment:', error);
     return false;
   }
 };
@@ -27,41 +50,37 @@ export const mintNFT = async (metadata, walletAddress) => {
       throw new Error('SeagullCoin payment not verified.');
     }
 
-    // Upload the file separately first
     const fileBuffer = await fs.promises.readFile(metadata.file);
     const fileData = new File([fileBuffer], metadata.file, { type: 'image/jpeg' });
-    const imageCID = await nftStorageClient.storeBlob(fileData);
 
-    // Then create metadata using uploaded image CID
     const metadataObj = {
       name: metadata.name,
       description: metadata.description,
       domain: metadata.domain,
       properties: metadata.properties,
-      image: `ipfs://${imageCID}`,
+      image: fileData,
     };
 
-    const metadataResult = await nftStorageClient.store(metadataObj);
+    const storedMetadata = await nftStorageClient.store(metadataObj);
 
     const mintPayload = {
       transaction: {
-        Account: walletAddress,
         TransactionType: 'NFTokenMint',
-        Flags: 0x8000, // Allow transfer
-        URI: `ipfs://${metadataResult.url.replace('ipfs://', '')}`,
-        Issuer: SGLCN_ISSUER,
+        Account: walletAddress,
+        URI: `ipfs://${storedMetadata.ipnft}`,
+        Flags: 0x8000, // Transferable
         TokenTaxon: 0,
       },
     };
 
-    const mintResponse = await fetch(`${XUMM_API_URL}/payload`, {
+    const mintResponse = await fetch(XUMM_API_URL + '/payload', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
       body: JSON.stringify(mintPayload),
     });
 
     const mintData = await mintResponse.json();
-    if (!mintData.success) throw new Error('Minting failed: ' + mintData.message);
+    if (!mintData.success) throw new Error('Minting failed');
 
     return mintData;
   } catch (error) {
@@ -70,35 +89,16 @@ export const mintNFT = async (metadata, walletAddress) => {
   }
 };
 
-// Function to verify SeagullCoin payment for minting
-export const verifySeagullCoinPayment = async (session) => {
-  try {
-    const response = await fetch(`${XUMM_API_URL}/user/${session.walletAddress}/payments`, {
-      headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
-    });
-    const data = await response.json();
-
-    const paymentVerified = data.payments.some(payment =>
-      payment.currency === 'SGLCN-X20' && parseFloat(payment.amount) === 0.5
-    );
-
-    return paymentVerified;
-  } catch (error) {
-    console.error('Error verifying SeagullCoin payment:', error);
-    return false;
-  }
-};
-
 // Function to verify SeagullCoin transaction for buying NFTs
-export const verifySeagullCoinTransaction = async (session, price) => {
+export const verifySeagullCoinTransaction = async ({ walletAddress }, price) => {
   try {
-    const response = await fetch(`${XUMM_API_URL}/user/${session.walletAddress}/transactions`, {
+    const response = await fetch(`${XUMM_API_URL}/user/${walletAddress}/transactions`, {
       headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
     });
     const data = await response.json();
 
     const transactionValid = data.transactions.some(tx =>
-      tx.currency === 'SGLCN-X20' && parseFloat(tx.amount) === parseFloat(price)
+      tx.amount === price && tx.currency === 'SGLCN-X20'
     );
 
     return transactionValid;
@@ -113,13 +113,12 @@ export const transferNFT = async (nftId, buyerWallet) => {
   try {
     const transferPayload = {
       transaction: {
-        Account: SERVICE_WALLET,
         TransactionType: 'NFTokenCreateOffer',
+        Account: SERVICE_WALLET,
         NFTokenID: nftId,
-        OfferType: 1, // Sell
         Taker: buyerWallet,
         Amount: {
-          currency: '53656167756C6C436F696E000000000000000000', // Hex for 'SeagullCoin'
+          currency: '53656167756C6C436F696E000000000000000000', // 'SeagullCoin' in hex
           issuer: SGLCN_ISSUER,
           value: '0.5',
         },
@@ -127,14 +126,14 @@ export const transferNFT = async (nftId, buyerWallet) => {
       },
     };
 
-    const transferResponse = await fetch(`${XUMM_API_URL}/payload`, {
+    const transferResponse = await fetch(XUMM_API_URL + '/payload', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
       body: JSON.stringify(transferPayload),
     });
 
     const transferData = await transferResponse.json();
-    if (!transferData.success) throw new Error('NFT transfer failed: ' + transferData.message);
+    if (!transferData.success) throw new Error('NFT transfer failed');
 
     return transferData;
   } catch (error) {

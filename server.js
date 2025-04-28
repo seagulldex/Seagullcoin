@@ -6,24 +6,21 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction, transferNFT } from './mintingLogic.js';
+import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction, transferNFT } from './mintingLogic.js'; // Ensure minting logic is correctly imported
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
-import { NFTStorage, File } from 'nft.storage';
+import { NFTStorage, File } from 'nft.storage'; // Removed duplicate import
 import client from './xrplClient.js';
-import { XummSdk } from 'xumm-sdk'; // <<< Added this line
 
 // ===== Config =====
 dotenv.config();
 
+// Load environment variables
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
-
-// Initialize XUMM SDK
-const xumm = new XummSdk(XUMM_CLIENT_ID, XUMM_CLIENT_SECRET); // <<< Added this line
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -37,10 +34,15 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express();
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'Server running', timestamp: new Date().toISOString() });
+});
+
 // Rate limiting middleware
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 600,
+  windowMs: 15 * 60 * 1000, 
+  max: 600, 
   message: { error: 'Too many requests from this IP, please try again later.' },
 });
 
@@ -72,7 +74,7 @@ app.get('/', (req, res) => {
 // ========== API Routes ==========
 const apiRouter = express.Router();
 
-// XUMM Login (payload creation)
+// XUMM Login
 apiRouter.get('/login', (req, res) => {
   const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}&scope=identity%20payload`;
   res.redirect(authUrl);
@@ -104,10 +106,10 @@ apiRouter.get('/xumm/callback', async (req, res) => {
     }
 
     const data = await response.json();
-    req.session.xumm = data;
-    req.session.walletAddress = data.account;
+    req.session.xumm = data; 
+    req.session.walletAddress = data.account; 
 
-    return res.redirect('/');
+    return res.redirect('/'); 
   } catch (err) {
     console.error('Error during XUMM OAuth callback:', err);
     return res.status(500).json({ error: 'Failed to process XUMM OAuth callback.' });
@@ -141,19 +143,13 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
       return res.status(400).json({ error: 'NFT name or description exceeds allowed length.' });
     }
 
-    const walletAddress = req.session.walletAddress; // <<< Use walletAddress here now
-
-    if (!walletAddress) {
-      return res.status(401).json({ error: 'Wallet address not found. Please authenticate first.' });
-    }
-
-    // Validate SeagullCoin payment
-    const paymentValid = await verifySeagullCoinPayment(walletAddress); // <<< Pass walletAddress
+    // Validate SeagullCoin payment before minting
+    const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
     if (!paymentValid) {
       return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });
     }
 
-    // Create metadata
+    // Create metadata for the NFT
     const metadata = {
       name: nft_name,
       description: nft_description,
@@ -162,7 +158,8 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
       file: nft_file.path,
     };
 
-    const mintResult = await mintNFT(metadata, walletAddress);
+    const walletAddress = req.session.walletAddress;
+    const mintResult = await mintNFT(metadata, walletAddress); // Call the minting logic
     return res.json({ success: true, mintResult });
   } catch (err) {
     console.error(err);
@@ -179,7 +176,7 @@ apiRouter.get('/check-ownership/:nftId', async (req, res) => {
   }
 
   try {
-    const ownership = await checkOwnership(nftId, req.session.walletAddress);
+    const ownership = await checkOwnership(nftId, req.session.walletAddress); // Function to check NFT ownership
     if (!ownership) {
       return res.status(404).json({ error: 'Ownership not found for this NFT.' });
     }
@@ -200,17 +197,14 @@ apiRouter.post('/buy-nft', async (req, res) => {
   }
 
   try {
-    const walletAddress = req.session.walletAddress;
-    if (!walletAddress) {
-      return res.status(401).json({ error: 'Wallet address not found. Please authenticate first.' });
-    }
-
-    const paymentValid = await verifySeagullCoinTransaction(walletAddress, price);
+    // Validate SeagullCoin transaction for purchase
+    const paymentValid = await verifySeagullCoinTransaction(req.session.xumm, price);
     if (!paymentValid) {
       return res.status(402).json({ error: 'Insufficient SeagullCoin payment.' });
     }
 
-    const purchaseResult = await transferNFT(nftId, walletAddress);
+    const walletAddress = req.session.walletAddress;
+    const purchaseResult = await transferNFT(nftId, walletAddress);  // Calling transferNFT from mintingLogic.js
     return res.json({ success: true, purchaseResult });
   } catch (err) {
     console.error(err);
@@ -220,6 +214,8 @@ apiRouter.post('/buy-nft', async (req, res) => {
 
 // Admin routes
 const adminRouter = express.Router();
+
+// Attach admin routes under '/admin'
 app.use('/admin', adminRouter);
 
 // Attach the API router under '/api'

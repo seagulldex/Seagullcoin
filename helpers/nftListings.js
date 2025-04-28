@@ -1,60 +1,37 @@
-import fs from 'fs';
-import path from 'path';
+// nftListings.js
 
-const listingsFilePath = path.join(process.cwd(), 'nftListings.json');
+// In-memory store for NFT listings (this can be an array of objects)
+let nftListings = [];
 
-// Load existing listings
-export async function getNFTDetails(nftId) {
-  try {
-    if (!fs.existsSync(listingsFilePath)) return null;
-    const listings = JSON.parse(fs.readFileSync(listingsFilePath, 'utf-8'));
-    return listings.find(listing => listing.nftId === nftId) || null;
-  } catch (error) {
-    console.error('Error reading NFT listings:', error);
-    return null;
-  }
-}
+// Helper function to get all NFT listings
+const getAllNFTListings = () => {
+  return nftListings;
+};
 
-// Save a new listing
-export async function saveNFTListing(newListing) {
-  try {
-    let listings = [];
-    if (fs.existsSync(listingsFilePath)) {
-      listings = JSON.parse(fs.readFileSync(listingsFilePath, 'utf-8'));
-    }
-    listings.push(newListing);
-    fs.writeFileSync(listingsFilePath, JSON.stringify(listings, null, 2));
-  } catch (error) {
-    console.error('Error saving NFT listing:', error);
-  }
-}
+// Helper function to unlist an NFT
+const unlistNFT = (nftId, userAddress) => {
+  const index = nftListings.findIndex((listing) => listing.nftId === nftId && listing.seller === userAddress);
+  
+  if (index === -1) return false; // NFT not found or not owned by the user
+  
+  nftListings.splice(index, 1); // Remove the NFT listing from the array
+  return true; // Successfully unlisted
+};
 
-// Get all listings
-export async function getAllNFTListings() {
-  try {
-    if (!fs.existsSync(listingsFilePath)) return [];
-    const listings = JSON.parse(fs.readFileSync(listingsFilePath, 'utf-8'));
-    return listings;
-  } catch (error) {
-    console.error('Error reading all NFT listings:', error);
-    return [];
-  }
-}
+// Helper function to add a new NFT listing to memory
+const addListing = (nftId, price, userAddress) => {
+  nftListings.push({
+    nftId,           // Unique NFT ID
+    price,           // Price in SeagullCoin
+    seller: userAddress,  // User wallet address of the seller
+    status: 'for-sale',   // Status of the listing (could be 'for-sale', 'sold', etc.)
+    createdAt: new Date(), // Timestamp when the listing was created
+  });
+};
 
-// Unlist an NFT (remove from file)
-export async function unlistNFT(nftId, sellerAddress) {
-  try {
-    if (!fs.existsSync(listingsFilePath)) return false;
-    let listings = JSON.parse(fs.readFileSync(listingsFilePath, 'utf-8'));
-    const index = listings.findIndex(listing => listing.nftId === nftId && listing.sellerAddress === sellerAddress);
-    if (index === -1) {
-      return false;
-    }
-    listings.splice(index, 1); // remove listing
-    fs.writeFileSync(listingsFilePath, JSON.stringify(listings, null, 2));
-    return true;
-  } catch (error) {
-    console.error('Error unlisting NFT:', error);
-    return false;
-  }
-}
+// Exporting functions for use in other parts of the application
+module.exports = {
+  getAllNFTListings,
+  unlistNFT,
+  addListing,
+};

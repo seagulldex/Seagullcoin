@@ -14,8 +14,9 @@ import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage';
-import { getNFTDetails, saveNFTListing } from './helpers/nftListings.js';
+import { getNFTDetails, saveNFTListing } from './helpers/nftListings.js'; // Import the helper functions
 import client from './xrplClient.js';
+import { getAllNFTListings, unlistNFT, addListing } from './helpers/nftListings.js'; // Import NFT listing logic
 
 // ===== Config =====
 dotenv.config();
@@ -190,7 +191,7 @@ apiRouter.post('/buy-nft', async (req, res) => {
 
 apiRouter.get('/nft-listings', async (req, res) => {
   try {
-    const listings = await getAllNFTListings(); // We'll make sure this function exists
+    const listings = getAllNFTListings(); // Fetch listings from memory (no need for async)
     res.json({ success: true, listings });
   } catch (err) {
     console.error('Error fetching NFT listings:', err);
@@ -207,7 +208,7 @@ apiRouter.post('/unlist-nft', async (req, res) => {
   }
 
   try {
-    const success = await unlistNFT(nftId, userAddress);
+    const success = unlistNFT(nftId, userAddress);
     if (!success) {
       return res.status(400).send('You are not authorized to unlist this NFT');
     }
@@ -219,41 +220,31 @@ apiRouter.post('/unlist-nft', async (req, res) => {
 });
 
 // ======= Sell NFT (Ensure Listing Validation and Ownership Check) =======
-app.post('/sell-nft', async (req, res) => {
-  try {
-    const { nftId, price } = req.body; // nftId: ID of the NFT to sell, price: the SeagullCoin price
-    const userAddress = req.session.walletAddress;
+apiRouter.post('/sell-nft', async (req, res) => {
+  const { nftId, price } = req.body;
+  const userAddress = req.session.walletAddress;
 
-    if (!userAddress) {
-      return res.status(400).send('User not logged in');
-    }
-
-    // Validate price
-    if (price <= 0) {
-      return res.status(400).send('Price must be greater than zero');
-    }
-
-    // Retrieve the NFT details
-    const nft = await getNFTDetails(nftId); // Ensure this retrieves NFT data from a database or storage
-
-    if (!nft || nft.owner !== userAddress) {
-      return res.status(400).send('You are not the owner of this NFT');
-    }
-
-    // Save the listing (store in database or NFT.Storage)
-    const listing = {
-      nftId,
-      price,
-      seller: userAddress,
-      status: 'for-sale',
-      createdAt: new Date(),
-    };
-
-    await saveNFTListing(listing); // Implement this to save to your DB or storage
-
-    res.status(200).send('NFT listed for sale');
-  } catch (error) {
-    console.error('Sell NFT error:', error);
-    res.status(500).send('Internal Server Error');
+  if (!userAddress) {
+    return res.status(400).send('User not logged in');
   }
+
+  if (price <= 0) {
+    return res.status(400).send('Price must be greater than zero');
+  }
+
+  const nft = await getNFTDetails(nftId); // Assuming this function is properly set up
+
+  if (!nft || nft.owner !== userAddress) {
+    return res.status(400).send('You are not the owner of this NFT');
+  }
+
+  await addListing(nftId, price, userAddress); // Use addListing to save the NFT listing
+
+  res.status(200).send('NFT listed for sale');
+});
+
+app.use('/api', apiRouter);
+
+app.listen(3000, () => {
+  console.log('Server is running on http://localhost:3000');
 });

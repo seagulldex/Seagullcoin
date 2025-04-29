@@ -1,59 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <title>Profile - SGLCN-X20</title>
+  <style>
+    body {
+      background-color: #000; /* Black background */
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    .profile-container {
+      background: #111;
+      padding: 30px;
+      border-radius: 20px; /* Bubbly rounded */
+      box-shadow: 0 0 10px #333;
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .profile-picture {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background-color: #222;
+      object-fit: cover;
+      margin-bottom: 20px;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .upload-label {
+      background-color: #333;
+      padding: 10px 20px;
+      border-radius: 15px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: background 0.3s;
+    }
+    .upload-label:hover {
+      background-color: #555;
+    }
+    .input-box {
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .input-box input {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 15px;
+      background: #222;
+      color: #fff;
+      font-size: 16px;
+    }
+    button {
+      background: #444;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #666;
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/nft">NFT Collections</a></li>
-                <li><a href="/api-docs">API Docs</a></li>
-            </ul>
-        </nav>
-    </header>
 
-    <section id="profile">
-        <h1>Profile</h1>
-        <form id="profile-form" enctype="multipart/form-data">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" value="" required />
+  <h1>My Profile</h1>
+  <div class="profile-container">
+    <img id="preview" class="profile-picture" src="default-avatar.png" alt="Profile Picture">
+    
+    <label for="file-upload" class="upload-label">Choose Profile Picture</label>
+    <input type="file" id="file-upload" accept="image/*">
+    
+    <div class="input-box">
+      <input type="text" id="username" placeholder="Enter your username">
+    </div>
+    
+    <button onclick="saveProfile()">Save Changes</button>
+  </div>
 
-            <label for="profile-picture">Profile Picture:</label>
-            <input type="file" id="profile-picture" name="profile_picture" accept="image/*" required />
+  <script>
+    const fileInput = document.getElementById('file-upload');
+    const preview = document.getElementById('preview');
 
-            <button type="submit">Save Changes</button>
-        </form>
-    </section>
+    fileInput.addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+      }
+    });
 
-    <script>
-        document.getElementById('profile-form').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const formData = new FormData();
-            formData.append('username', document.getElementById('username').value);
-            formData.append('profile_picture', document.getElementById('profile-picture').files[0]);
+    function saveProfile() {
+      const username = document.getElementById('username').value;
+      const profilePic = preview.src;
+      
+      // You can send these to your server with fetch() if needed
+      console.log('Username:', username);
+      console.log('Profile Picture:', profilePic);
+      
+      alert('Profile saved!');
+    }
+  </script>
 
-            try {
-                const response = await fetch('/api/update-profile', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    alert('Profile updated successfully');
-                } else {
-                    alert('Failed to update profile');
-                }
-            } catch (error) {
-                console.error('Error updating profile:', error);
-                alert('Error updating profile');
-            }
-        });
-    </script>
 </body>
 </html>

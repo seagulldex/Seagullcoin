@@ -1,72 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGLCN-X20 NFT Collections</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <title>NFT Collections - SGLCN-X20</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .collections-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+    }
+    .collection-card {
+      background: #111;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 0 10px #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: transform 0.3s;
+    }
+    .collection-card:hover {
+      transform: scale(1.05);
+    }
+    .collection-logo {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin-bottom: 15px;
+      background: #222;
+    }
+    .collection-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .collection-description {
+      font-size: 14px;
+      color: #aaa;
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/profile">Profile</a></li>
-                <li><a href="/api-docs">API Docs</a></li>
-            </ul>
-        </nav>
-    </header>
 
-    <section id="collections">
-        <h1>NFT Collections</h1>
-        <div id="collections-list">
-            <!-- Dynamic content for NFT collections will be injected here -->
-        </div>
-    </section>
+  <h1>Explore NFT Collections</h1>
 
-    <section id="new-mints">
-        <h1>Newly Minted NFTs</h1>
-        <div id="new-mints-list">
-            <!-- Dynamic content for newly minted NFTs will be injected here -->
-        </div>
-    </section>
+  <div class="collections-container" id="collections">
+    <!-- Dynamic content here -->
+  </div>
 
-    <script>
-        // Fetch collections and newly minted NFTs from the API
-        async function fetchCollections() {
-            const response = await fetch('/api/nft-listings');
-            const data = await response.json();
-            const collectionsList = document.getElementById('collections-list');
-            data.listings.forEach((listing) => {
-                const collectionItem = document.createElement('div');
-                collectionItem.classList.add('collection');
-                collectionItem.innerHTML = `
-                    <h3>${listing.collectionName}</h3>
-                    <img src="${listing.collectionLogo}" alt="${listing.collectionName} logo" />
-                    <a href="/collections/${listing.collectionId}">View Collection</a>
-                `;
-                collectionsList.appendChild(collectionItem);
-            });
-        }
+  <script>
+    // Example NFT collections
+    const collections = [
+      {
+        name: "Seagull Skies",
+        description: "Flying high with style",
+        logo: "https://via.placeholder.com/100"
+      },
+      {
+        name: "Ocean Dreams",
+        description: "NFTs from the deep blue",
+        logo: "https://via.placeholder.com/100"
+      },
+      {
+        name: "City Lights",
+        description: "Urban-themed XRPL NFTs",
+        logo: "https://via.placeholder.com/100"
+      }
+    ];
 
-        async function fetchNewMints() {
-            const response = await fetch('/api/new-mints');
-            const data = await response.json();
-            const newMintsList = document.getElementById('new-mints-list');
-            data.mints.forEach((mint) => {
-                const mintItem = document.createElement('div');
-                mintItem.classList.add('mint');
-                mintItem.innerHTML = `
-                    <h3>${mint.nftName}</h3>
-                    <img src="${mint.nftImage}" alt="${mint.nftName}" />
-                    <a href="/nft/${mint.nftId}">View NFT</a>
-                `;
-                newMintsList.appendChild(mintItem);
-            });
-        }
+    const container = document.getElementById('collections');
 
-        fetchCollections();
-        fetchNewMints();
-    </script>
+    collections.forEach(collection => {
+      const card = document.createElement('div');
+      card.className = 'collection-card';
+      card.innerHTML = `
+        <img class="collection-logo" src="${collection.logo}" alt="${collection.name}">
+        <div class="collection-name">${collection.name}</div>
+        <div class="collection-description">${collection.description}</div>
+      `;
+      container.appendChild(card);
+    });
+  </script>
+
 </body>
 </html>

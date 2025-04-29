@@ -16,8 +16,6 @@ import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage'; 
 import { client, fetchNFTs } from './xrplClient.js'; // Named import
 import xrpl from 'xrpl';
-import { client } from './xrplClient.js'; // or './utils/xrpl.js' depending on your file structure
-
 
 // ===== Config =====
 dotenv.config();
@@ -65,8 +63,21 @@ const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // ===== Health Check =====
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'Server running', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  try {
+    const connected = client.isConnected();
+    res.status(200).json({
+      status: connected ? 'ok' : 'disconnected',
+      xrpl: connected,
+      uptime: process.uptime().toFixed(2) + 's',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message
+    });
+  }
 });
 
 app.get('/test-nft/:id', async (req, res) => {

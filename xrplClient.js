@@ -3,6 +3,12 @@ import xrpl from 'xrpl';
 const client = new xrpl.Client('wss://xrplcluster.com');
 let isConnected = false;
 
+// Setup the disconnect handler once
+client.on('disconnected', () => {
+  isConnected = false;
+  console.warn("XRPL client disconnected.");
+});
+
 // Retry logic for connecting to XRPL
 async function connectWithRetry(retryAttempts = 5, delayMs = 1000) {
   let attempts = 0;
@@ -11,14 +17,7 @@ async function connectWithRetry(retryAttempts = 5, delayMs = 1000) {
       if (!client.isConnected()) {
         await client.connect();
         isConnected = true;
-        console.log("Connected to XRPL node.");  // This confirms the connection
-
-        // Monitor unexpected disconnects
-        client.on('disconnected', () => {
-          isConnected = false;
-          console.warn("XRPL client disconnected.");
-        });
-
+        console.log("Connected to XRPL node.");
         return;
       }
     } catch (error) {
@@ -47,11 +46,25 @@ async function ensureConnected() {
   }
 }
 
+// Fetch NFTs for a given address
+export async function fetchNFTs(address) {
+  try {
+    await ensureConnected();
+    const response = await client.request({
+      command: "account_nfts",
+      account: address,
+    });
+    return response.result.nfts || [];
+  } catch (error) {
+    console.error('Error fetching NFTs:', error.message);
+    return { error: true, message: error.message };
+  }
+}
+
 // Retrieve NFT metadata and owner info from the XRPL
 export async function getNFTDetails(nftId) {
   try {
     await ensureConnected();
-
     const response = await client.request({
       command: "nft_info",
       nft_id: nftId,
@@ -83,16 +96,37 @@ export async function getNFTDetails(nftId) {
 
 // Gracefully disconnect the XRPL client
 export async function disconnectClient() {
-  if (client.isConnected()) {
-    await client.disconnect();
+  try {
+    if (client.isConnected()) {
+      await client.disconnect();
+      console.log('Disconnected from XRPL node.');
+    }
+  } catch (err) {
+    console.warn('Error during disconnect:', err.message);
+  } finally {
     isConnected = false;
-    console.log('Disconnected from XRPL node.');
   }
 }
 
-// Optional: auto-disconnect on server shutdown
-process.on('SIGINT', disconnectClient);
-process.on('SIGTERM', disconnectClient);
+// Handle graceful shutdown
+process.on('SIGINT', async () => {
+  await disconnectClient();
+  setTimeout(() => process.exit(0), 500);
+});
 
-// Export raw client for advanced use if needed
+process.on('SIGTERM', async () => {
+  await disconnectClient();
+  setTimeout(() => process.exit(0), 500);
+});
+
+// Catch unhandled errors
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', err => {
+  console.error('Uncaught Exception:', err);
+});
+
+// Export raw client if needed
 export { client };

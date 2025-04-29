@@ -16,7 +16,9 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="nfts.html">NFTs</a></li>
                 <li><a href="mint.html">Mint NFT</a></li>
-                <li><a href="profile.html">Profile</a></li>
+                <li><a href="profile.html">
+                    <img src="https://seagullcoinlogo.com/logo.png" alt="SeagullCoin Logo" style="height: 40px; width: auto;">
+                </a></li>
             </ul>
         </nav>
     </header>
@@ -28,6 +30,26 @@
             <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
             <button id="connect-wallet-btn">Connect Wallet via XUMM</button>
             <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
+        </section>
+
+        <section id="user-profiles" class="user-profiles">
+            <h2>Meet Other Users</h2>
+            <div class="profile-scroll">
+                <!-- Dynamically populated with user profiles -->
+                <div class="profile">
+                    <a href="profile.html">
+                        <img src="https://via.placeholder.com/100" alt="User 1">
+                        <p>User 1</p>
+                    </a>
+                </div>
+                <div class="profile">
+                    <a href="profile.html">
+                        <img src="https://via.placeholder.com/100" alt="User 2">
+                        <p>User 2</p>
+                    </a>
+                </div>
+                <!-- Add more profiles here -->
+            </div>
         </section>
 
         <section id="collections" class="collections">

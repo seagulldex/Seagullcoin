@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/nft">NFT Collections</a></li>
+                <li><a href="/api-docs">API Docs</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section id="profile">
+        <h1>Profile</h1>
+        <form id="profile-form" enctype="multipart/form-data">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" value="" required />
+
+            <label for="profile-picture">Profile Picture:</label>
+            <input type="file" id="profile-picture" name="profile_picture" accept="image/*" required />
+
+            <button type="submit">Save Changes</button>
+        </form>
+    </section>
+
+    <script>
+        document.getElementById('profile-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('username', document.getElementById('username').value);
+            formData.append('profile_picture', document.getElementById('profile-picture').files[0]);
+
+            try {
+                const response = await fetch('/api/update-profile', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('Profile updated successfully');
+                } else {
+                    alert('Failed to update profile');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert('Error updating profile');
+            }
+        });
+    </script>
+</body>
+</html>

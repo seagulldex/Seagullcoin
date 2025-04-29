@@ -266,6 +266,28 @@ apiRouter.post('/sell-nft', async (req, res) => {
   }
 });
 
+// API Route for updating profile
+apiRouter.post('/update-profile', upload.single('profile_picture'), async (req, res) => {
+    const { username } = req.body;
+    const profilePicture = req.file;
+
+    try {
+        const walletAddress = req.session.walletAddress;
+        if (!walletAddress) {
+            return res.status(401).json({ error: 'User not logged in' });
+        }
+        // Here you would update the user profile in your database or data store
+        // For now, we just simulate this by returning a success message
+        // You could store the username and image URL here.
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Profile update error:', err);
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
+
+
 // ====== Mount API Router ======
 app.use('/api', apiRouter);
 

@@ -1,74 +1,46 @@
-/* mint.css - Mint Page Only */
-body {
-  font-family: 'Poppins', sans-serif;
-  background: #000000;
-  color: white;
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.container {
-  background-color: rgba(0, 0, 0, 0.8);
-  border-radius: 20px;
-  padding: 30px;
-  width: 100%;
-  max-width: 600px;
-  box-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
-  text-align: center;
-}
-
-.preview-container {
-  margin-top: 30px;
-  background-color: #1a1a1a;
-  padding: 20px;
-  border-radius: 15px;
-  text-align: center;
-  box-shadow: 0 0 10px #555;
-}
-
-
-header h1 {
-  margin-bottom: 20px;
-  font-size: 2rem;
-}
-
 .mint-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-/* Bigger Description Box */
-textarea {
-  width: 100%;
-  padding: 12px;
   background-color: #111;
-  border: 1px solid #555;
-  border-radius: 10px;
-  color: white;
-  font-size: 1rem;
-  resize: none;
-  height: 150px;
-}
-
-/* Input Fields */
-input, select {
+  padding: 30px;
+  border-radius: 15px;
+  max-width: 600px;
   width: 100%;
-  padding: 12px;
-  background-color: #111;
-  border: 1px solid #555;
-  border-radius: 10px;
-  color: white;
-  font-size: 1rem;
+  margin: auto;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
 }
 
-/* Properties Section */
-#propertiesContainer {
+.form-field {
+  margin-bottom: 20px;
   text-align: left;
+}
+
+.form-field label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 8px;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #555;
+  background: #222;
+  color: white;
+}
+
+textarea {
+  height: 120px;
+  resize: vertical;
+}
+
+.preview-container img,
+.preview-container video {
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: 12px;
+  background-color: #000;
+  margin-top: 10px;
 }
 
 .property {
@@ -78,54 +50,22 @@ input, select {
 }
 
 .property input {
-  width: 45%;
+  flex: 1;
 }
 
-/* Buttons */
-button.mint-btn {
-  background-color: #00BFFF;
-  border: none;
-  border-radius: 30px;
-  padding: 15px;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
-button.mint-btn:hover {
-  background-color: #008C99;
-}
-
-/* Spinner */
-.spinner {
-  display: none;
-  margin-top: 20px;
-}
-
-.beachball {
-  width: 60px;
-  height: 60px;
-  background-color: #FFD700;
-  border-radius: 50%;
-  animation: spin 2s infinite linear;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* NFT Preview Window */
-.preview-container {
-  margin-top: 20px;
-}
-
-.preview-container img {
+button.mint-btn, #addPropertyBtn {
+  display: block;
   width: 100%;
-  max-height: 300px;
-  object-fit: cover;
-  border-radius: 10px;
-  margin-top: 10px;
+  background-color: #00BFFF;
+  color: white;
+  padding: 15px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button.mint-btn:hover, #addPropertyBtn:hover {
+  background-color: #008C99;
 }

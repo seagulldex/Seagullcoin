@@ -1,3 +1,6 @@
+
+
+
 // ===== Imports =====
 import express from 'express';
 import session from 'express-session';
@@ -49,10 +52,11 @@ app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
-  secret: "sglcn_secret_session",
+  secret: process.env.SESSION_SECRET,  // Was "sglcn_secret_session"
   resave: false,
   saveUninitialized: true,
 }));
+
 
 // ===== Static Files =====
 app.use(express.static(path.join(__dirname, 'public')));
@@ -91,6 +95,56 @@ app.get('/test-nft/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch NFT details', message: err.message });
   }
 });
+
+async function getUserNFTs(walletAddress) {
+  // Placeholder for fetching NFTs from a database or using an API
+  // Example:
+  // return await db.query('SELECT * FROM nfts WHERE owner = ?', [walletAddress]);
+
+  // Replace this with actual logic to fetch NFTs from your storage or blockchain
+  return [];  // Return an empty array for now, if no actual logic is implemented
+}
+
+// Example of pagination for /nfts
+app.get('/nfts', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;  // Default page to 1
+  const limit = parseInt(req.query.limit) || 20;  // Default limit to 20
+
+  const skip = (page - 1) * limit;
+
+  try {
+    const nfts = await NFTModel.find()
+      .skip(skip)  // Skip previous pages
+      .limit(limit)  // Limit the number of results
+      .exec();
+    
+    res.json(nfts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// Example of pagination for /user-offers
+app.get('/user-offers', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;  // Default page to 1
+  const limit = parseInt(req.query.limit) || 20;  // Default limit to 20
+
+  const skip = (page - 1) * limit;
+
+  try {
+    const offers = await OfferModel.find({ userId: req.query.userId })
+      .skip(skip)
+      .limit(limit)
+      .exec();
+    
+    res.json(offers);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Internal server error');
+  }
+});
+
 
 // ===== Root Route =====
 app.get('/', (req, res) => {
@@ -365,6 +419,33 @@ app.get("/user-offers", async (req, res) => {
   }
 });
 
+// ======= Get User's NFTs =======
+apiRouter.get('/user-nfts', async (req, res) => {
+  const walletAddress = req.session.walletAddress;
+
+  // Check if user is authenticated (wallet address exists in session)
+  if (!walletAddress) {
+    return res.status(400).json({ error: 'User is not authenticated.' });
+  }
+
+  try {
+    // Fetch NFTs for the user
+    const userNFTs = await getUserNFTs(walletAddress);  // Assume this function gets NFTs for a given wallet address
+
+    // If no NFTs found, return 404
+    if (!userNFTs || userNFTs.length === 0) {
+      return res.status(404).json({ error: 'No NFTs found for the user.' });
+    }
+
+    // Respond with the user's NFTs
+    res.json({ userNFTs });
+  } catch (err) {
+    console.error('Error fetching user NFTs:', err);
+    res.status(500).json({ error: 'Failed to fetch user NFTs.' });
+  }
+});
+
+
 // ====== Mount API Router ======
 app.use('/api', apiRouter);
 
@@ -373,4 +454,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+
 

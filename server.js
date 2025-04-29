@@ -41,11 +41,9 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Inside an async function
 async function getOffers(yourTokenId) {
-  const offers = await Offer.find({ tokenId: yourTokenId });
+  const offers = await OfferModel.find({ tokenId: yourTokenId });
   return offers;
 }
-
-const Offer = require('./models/OfferModel'); // adjust path if needed
 
 const app = express();
 
@@ -107,12 +105,7 @@ app.get('/test-nft/:id', async (req, res) => {
 });
 
 async function getUserNFTs(walletAddress) {
-  // Placeholder for fetching NFTs from a database or using an API
-  // Example:
-  // return await db.query('SELECT * FROM nfts WHERE owner = ?', [walletAddress]);
-
-  // Replace this with actual logic to fetch NFTs from your storage or blockchain
-  return [];  // Return an empty array for now, if no actual logic is implemented
+  return [];  // Placeholder for actual logic
 }
 
 // Example of pagination for /nfts
@@ -123,9 +116,9 @@ app.get('/nfts', async (req, res) => {
   const skip = (page - 1) * limit;
 
   try {
-    const nfts = await NFTModel.find()
-      .skip(skip)  // Skip previous pages
-      .limit(limit)  // Limit the number of results
+    const nfts = await NftModel.find()
+      .skip(skip)
+      .limit(limit)
       .exec();
     
     res.json(nfts);
@@ -163,7 +156,6 @@ app.get('/', (req, res) => {
 
 // ======= XUMM OAuth =======
 apiRouter.get('/login/start', (req, res) => {
-  // Start OAuth flow
   res.json({ message: 'Use /api/login to start XUMM OAuth2 login flow.' });
 });
 
@@ -177,7 +169,6 @@ apiRouter.get('/xumm/callback', async (req, res) => {
   if (!code) return res.status(400).json({ error: 'Missing authorization code.' });
 
   try {
-    // Exchange code for access token
     const response = await fetch('https://xumm.app/api/v1/oauth/token', {
       method: 'POST',
       headers: {
@@ -193,13 +184,11 @@ apiRouter.get('/xumm/callback', async (req, res) => {
 
     if (!response.ok) throw new Error('Failed to obtain access token.');
 
-    // Store session data
     const data = await response.json();
-    req.session.xumm = data;  // Store XUMM OAuth data
-    req.session.walletAddress = data.account;  // Store wallet address
+    req.session.xumm = data;
+    req.session.walletAddress = data.account;
 
-    // Redirect user to homepage or profile after successful login
-    res.redirect('/');  // Or any other page you wish to redirect
+    res.redirect('/');
   } catch (err) {
     console.error('XUMM OAuth callback error:', err);
     res.status(500).json({ error: 'OAuth callback processing failed.' });
@@ -211,13 +200,12 @@ apiRouter.get('/logout', (req, res) => {
     if (err) {
       return res.status(500).json({ error: 'Failed to log out.' });
     }
-    res.redirect('/');  // Redirect after logout
+    res.redirect('/');
   });
 });
 
 // ======= Check Login State =======
 apiRouter.get('/login/check', (req, res) => {
-  // Check if user is logged in by looking for session data
   if (req.session.xumm) {
     res.json({ loggedIn: true, walletAddress: req.session.walletAddress });
   } else {
@@ -264,256 +252,13 @@ apiRouter.post('/mint', upload.single('nft_file'), async (req, res) => {
     res.json({ success: true, mintResult });
   } catch (err) {
     console.error('Minting error:', err);
-    res.status(500).json({ error: 'Failed to mint NFT.' });
+    res.status(500).json({ error: 'Minting failed.', message: err.message });
   }
 });
 
-// ======= Buy NFT =======
-apiRouter.post('/buy-nft', async (req, res) => {
-  const { nftId, price, currency } = req.body;
-  if (!nftId || !price) {
-    return res.status(400).json({ error: 'NFT ID and price required.' });
-  }
-
-  if (currency !== "53656167756C6C436F696E000000000000000000") {
-    return res.status(400).json({ error: 'NFTs can only be purchased using SeagullCoin (SGLCN-X20).' });
-  }
-
-  try {
-    const paymentValid = await verifySeagullCoinTransaction(req.session.xumm, price);
-    if (!paymentValid) {
-      return res.status(402).json({ error: 'Insufficient SeagullCoin payment.' });
-    }
-
-    const walletAddress = req.session.walletAddress;
-    const purchaseResult = await transferNFT(nftId, walletAddress);
-    res.json({ success: true, purchaseResult });
-  } catch (err) {
-    console.error('Buying NFT error:', err);
-    res.status(500).json({ error: 'Failed to process NFT purchase.' });
-  }
-});
-
-// ======= NFT Listings =======
-apiRouter.get('/nft-listings', (req, res) => {
-  try {
-    const listings = getAllNFTListings();
-    res.json({ success: true, listings });
-  } catch (err) {
-    console.error('Error fetching NFT listings:', err);
-    res.status(500).json({ error: 'Failed to fetch NFT listings.' });
-  }
-});
-
-apiRouter.post('/unlist-nft', (req, res) => {
-  const { nftId } = req.body;
-  const userAddress = req.session.walletAddress;
-
-  if (!userAddress) {
-    return res.status(400).send('User not logged in');
-  }
-
-  try {
-    const success = unlistNFT(nftId, userAddress);
-    if (!success) {
-      return res.status(400).send('You are not authorized to unlist this NFT');
-    }
-    res.status(200).send('NFT unlisted successfully');
-  } catch (error) {
-    console.error('Unlist NFT error:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-// ======= Sell NFT =======
-apiRouter.post('/sell-nft', async (req, res) => {
-  const { nftId, price, currency } = req.body;
-  const userAddress = req.session.walletAddress;
-
-  if (!userAddress) {
-    return res.status(400).send('User not logged in');
-  }
-
-  if (price <= 0) {
-    return res.status(400).send('Price must be greater than zero');
-  }
-
-  if (currency !== "53656167756C6C436F696E000000000000000000") {
-    return res.status(400).send('NFTs can only be listed for sale in SeagullCoin (SGLCN-X20).');
-  }
-
-  try {
-    const nft = await getNFTDetails(nftId);
-
-    if (!nft || nft.owner !== userAddress) {
-      return res.status(400).send('You are not the owner of this NFT');
-    }
-
-    addListing(nftId, price, userAddress);
-    res.status(200).send('NFT listed for sale');
-  } catch (error) {
-    console.error('Sell NFT error:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-// API Route for updating profile
-apiRouter.post('/update-profile', upload.single('profile_picture'), async (req, res) => {
-    const { username } = req.body;
-    const profilePicture = req.file;
-
-    try {
-        const walletAddress = req.session.walletAddress;
-        if (!walletAddress) {
-            return res.status(401).json({ error: 'User not logged in' });
-        }
-        // Here you would update the user profile in your database or data store
-        // For now, we just simulate this by returning a success message
-        // You could store the username and image URL here.
-
-        res.json({ success: true });
-    } catch (err) {
-        console.error('Profile update error:', err);
-        res.status(500).json({ error: 'Failed to update profile' });
-    }
-});
-
-app.get('/nfts', async (req, res) => {
-  // Replace this with actual logic to fetch from your NFT database or files
-  res.json([
-    {
-      name: "Seagull Sunset",
-      description: "A seagull enjoying a golden sunset.",
-      media: "https://example.com/nft1.png",
-      price: "1.2",
-      fileType: "image",
-      onSale: true,
-      rarity: "Rare",
-      dateMinted: "2025-04-27",
-      collection: {
-        name: "Coastal Birds",
-        icon: "https://example.com/coastal_birds_logo.png"
-      }
-    },
-    // Add more NFTs...
-  ]);
-});
-
-app.get("/user-offers", async (req, res) => {
-  const address = req.query.address;
-  if (!address) return res.status(400).json({ error: "Address required" });
-
-  try {
-    const response = await client.request({
-      command: "account_nft_sell_offers",
-      account: address
-    });
-
-    const offers = response.result.offers || [];
-
-    // Separate offers into "listed" and "incoming"
-    const listed = [];
-    const incoming = [];
-
-    for (const offer of offers) {
-      if (offer.owner === address) {
-        listed.push(offer);
-      } else {
-        incoming.push(offer);
-      }
-    }
-
-    res.json({ listed, incoming });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Add this in your routes section of server.js
-
-app.get('/nfts', async (req, res) => {
-  const page = parseInt(req.query.page) || 1;  // Default to page 1
-  const limit = parseInt(req.query.limit) || 20;  // Default limit to 20
-
-  const cacheKey = `nfts_page_${page}_limit_${limit}`;
-  const cachedData = myCache.get(cacheKey);
-
-  if (cachedData) {
-    return res.json(cachedData);  // Return cached data if it exists
-  }
-
-  try {
-    const nfts = await NFTModel.find()
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .exec();
-
-    myCache.set(cacheKey, nfts);  // Cache the result
-    res.json(nfts);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Internal server error');
-  }
-});
-
-// Example for /user-offers route
-app.get('/user-offers', async (req, res) => {
-  const page = parseInt(req.query.page) || 1;  
-  const limit = parseInt(req.query.limit) || 20;
-
-  const cacheKey = `user_offers_user_${req.query.userId}_page_${page}_limit_${limit}`;
-  const cachedData = myCache.get(cacheKey);
-
-  if (cachedData) {
-    return res.json(cachedData);  // Return cached data if it exists
-  }
-
-  try {
-    const offers = await OfferModel.find({ userId: req.query.userId })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .exec();
-
-    myCache.set(cacheKey, offers);  // Cache the result
-    res.json(offers);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Internal server error');
-  }
-});
-
-// ======= Get User's NFTs =======
-apiRouter.get('/user-nfts', async (req, res) => {
-  const walletAddress = req.session.walletAddress;
-
-  // Check if user is authenticated (wallet address exists in session)
-  if (!walletAddress) {
-    return res.status(400).json({ error: 'User is not authenticated.' });
-  }
-
-  try {
-    // Fetch NFTs for the user
-    const userNFTs = await getUserNFTs(walletAddress);  // Assume this function gets NFTs for a given wallet address
-
-    // If no NFTs found, return 404
-    if (!userNFTs || userNFTs.length === 0) {
-      return res.status(404).json({ error: 'No NFTs found for the user.' });
-    }
-
-    // Respond with the user's NFTs
-    res.json({ userNFTs });
-  } catch (err) {
-    console.error('Error fetching user NFTs:', err);
-    res.status(500).json({ error: 'Failed to fetch user NFTs.' });
-  }
-});
-
-
-// ====== Mount API Router ======
-app.use('/api', apiRouter);
-
-// ===== Start Server =====
-const PORT = process.env.PORT || 3000;
+// Start server
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`SGLCN-X20 Minting API running on port ${PORT}`);
 });
+

@@ -3,181 +3,233 @@
 <head>
   <meta charset="UTF-8">
   <title>SGLCN-X20 NFT Minter</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="Mint.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #111;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #222;
+    }
+    header img {
+      height: 40px;
+    }
+    header nav select {
+      padding: 6px;
+      background: #222;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+    }
+    main {
+      max-width: 600px;
+      margin: 30px auto;
+      background: #111;
+      padding: 25px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(255,255,255,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #f0f0f0;
+    }
+    .drop-area {
+      border: 2px dashed #444;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 10px;
+      background-color: #222;
+      border-radius: 15px;
+      color: #ccc;
+    }
+    .drop-area.drag-over {
+      background-color: #333;
+      border-color: #0f0;
+    }
+    #previewArea img, #previewArea video {
+      border-radius: 15px;
+      margin-top: 10px;
+    }
+    .property-container .property {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .property-container input {
+      flex: 1;
+      padding: 8px;
+      border-radius: 10px;
+      border: none;
+      background: #222;
+      color: white;
+      box-shadow: inset 0 0 5px #000;
+    }
+    .property-container button {
+      padding: 8px;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #e74c3c;
+    }
+    button[type="button"], button[type="submit"] {
+      background: #3498db;
+      color: white;
+      padding: 12px 18px;
+      border: none;
+      cursor: pointer;
+      border-radius: 12px;
+      margin-top: 10px;
+      box-shadow: 0 0 10px #3498db;
+    }
+    button[type="button"]:hover,
+    button[type="submit"]:hover {
+      background: #2980b9;
+    }
+    input[type="text"], input[type="url"], textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 14px;
+      border-radius: 10px;
+      border: none;
+      background: #222;
+      color: white;
+      box-shadow: inset 0 0 5px #000;
+    }
+    textarea {
+      resize: vertical;
+    }
+  </style>
 </head>
 <body>
-
   <header>
-    <div class="logo">SGLCN-X20 NFT Minter</div>
     <nav>
-      <select onchange="if(this.value) window.location.href=this.value">
-        <option value="">Menu</option>
-        <option value="/NFT.html">NFTs</option>
+      <select onchange="location.href=this.value">
+        <option value="#">Menu</option>
+        <option value="NFT.html">NFTs</option>
       </select>
     </nav>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Seagull.svg/768px-Seagull.svg.png" alt="SeagullCoin Logo">
   </header>
 
   <main>
-    <section>
-      <h1>Mint a New NFT</h1>
-      <form id="mintForm">
-        <input type="text" placeholder="NFT Name" required>
-        <textarea placeholder="NFT Description"></textarea>
-        <input type="text" placeholder="Domain (optional)">
-        <div id="propertiesContainer">
-          <h3>Properties</h3>
-          <!-- Properties Section (max 8) -->
-          <div class="property">
-            <input type="text" placeholder="Property Name (e.g., color)">
-            <input type="text" placeholder="Value (e.g., red)">
-            <button type="button" class="addPropertyBtn">+</button>
-            <button type="button" class="removePropertyBtn">-</button>
-          </div>
-          <!-- More properties will be added dynamically -->
-        </div>
+    <h1>Mint Your NFT</h1>
+    <form id="mintForm" enctype="multipart/form-data">
+      <label>Name:</label>
+      <input type="text" name="name" required>
 
-        <div class="drop-area" id="fileDropArea">
-          <p>Drag & drop files here or click to upload</p>
-        </div>
-        <div id="previewWrapper">
-          <!-- Preview Images, Videos, or GIFs will appear here -->
-        </div>
+      <label>Description:</label>
+      <textarea name="description" required></textarea>
 
-        <select id="collection">
-          <option value="">Select Collection</option>
-          <option value="new">+ Create New Collection</option>
-        </select>
-        
-        <button type="submit">Mint NFT</button>
-      </form>
-    </section>
+      <label>Collection:</label>
+      <select name="collection">
+        <option value="">No Collection</option>
+        <!-- Dynamically filled -->
+      </select>
+
+      <label>Domain (optional):</label>
+      <input type="text" name="domain">
+
+      <label>Upload Media:</label>
+      <div id="dropArea" class="drop-area">Drag and Drop your file here</div>
+      <input type="file" id="mediaInput" name="media" accept="image/*,video/*" required>
+      <div id="previewArea"></div>
+
+      <label>Properties:</label>
+      <div id="properties" class="property-container"></div>
+      <button type="button" id="addProperty">+ Add Property</button>
+
+      <br><br>
+      <button type="submit">Mint NFT</button>
+    </form>
   </main>
 
-  <!-- Create Collection Modal -->
-  <div id="collectionModal" class="modal">
-    <div class="modal-content">
-      <h2>Create New Collection</h2>
-      <input type="text" id="collectionName" placeholder="Collection Name" required />
-      <input type="file" id="collectionLogo" accept="image/*" />
-      <input type="text" id="collectionDescription" placeholder="Description" />
-      <input type="text" id="collectionDomain" placeholder="Domain (e.g., https://example.com)" />
-      <input type="text" id="collectionWebsite" placeholder="Website" />
-      <input type="text" id="collectionTelegram" placeholder="Telegram Handle" />
-      <div class="modal-actions">
-        <button id="saveCollection">Save</button>
-        <button id="cancelCollection">Cancel</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // Modal logic for collection creation
-    const collectionSelect = document.getElementById('collection');
-    const modal = document.getElementById('collectionModal');
-    const cancelBtn = document.getElementById('cancelCollection');
-    const saveBtn = document.getElementById('saveCollection');
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('mediaInput');
+    const previewArea = document.getElementById('previewArea');
 
-    collectionSelect.addEventListener('change', () => {
-      if (collectionSelect.value === 'new') {
-        modal.style.display = 'flex';
-      }
-    });
-
-    cancelBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
-      collectionSelect.value = '';
-    });
-
-    saveBtn.addEventListener('click', () => {
-      const name = document.getElementById('collectionName').value;
-      if (!name) return alert('Please enter a collection name.');
-
-      const option = document.createElement('option');
-      option.value = name;
-      option.textContent = name;
-      collectionSelect.appendChild(option);
-      collectionSelect.value = name;
-
-      modal.style.display = 'none';
-    });
-
-    // Logic for adding/removing properties dynamically
-    const propertiesContainer = document.getElementById('propertiesContainer');
-    const addPropertyBtn = document.querySelector('.addPropertyBtn');
-    const removePropertyBtn = document.querySelector('.removePropertyBtn');
-
-    addPropertyBtn.addEventListener('click', () => {
-      const propertyCount = propertiesContainer.querySelectorAll('.property').length;
-
-      if (propertyCount < 8) { // Allow up to 8 properties
-        const newProperty = document.createElement('div');
-        newProperty.classList.add('property');
-        newProperty.innerHTML = `
-          <input type="text" placeholder="Property Name">
-          <input type="text" placeholder="Value">
-          <button type="button" class="addPropertyBtn">+</button>
-          <button type="button" class="removePropertyBtn">-</button>
-        `;
-        propertiesContainer.appendChild(newProperty);
-      }
-    });
-
-    propertiesContainer.addEventListener('click', (e) => {
-      if (e.target.classList.contains('removePropertyBtn')) {
-        e.target.parentElement.remove();
-      }
-    });
-
-    // File drag and drop area logic
-    const fileDropArea = document.getElementById('fileDropArea');
-    const previewWrapper = document.getElementById('previewWrapper');
-
-    fileDropArea.addEventListener('click', () => {
-      const fileInput = document.createElement('input');
-      fileInput.type = 'file';
-      fileInput.accept = 'image/*,video/*';
-      fileInput.onchange = (e) => {
-        handleFilePreview(e.target.files[0]);
-      };
-      fileInput.click();
-    });
-
-    fileDropArea.addEventListener('dragover', (e) => {
+    dropArea.addEventListener('dragover', (e) => {
       e.preventDefault();
-      fileDropArea.classList.add('drag-over');
+      dropArea.classList.add('drag-over');
     });
-
-    fileDropArea.addEventListener('dragleave', () => {
-      fileDropArea.classList.remove('drag-over');
-    });
-
-    fileDropArea.addEventListener('drop', (e) => {
+    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('drag-over'));
+    dropArea.addEventListener('drop', (e) => {
       e.preventDefault();
-      fileDropArea.classList.remove('drag-over');
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        handleFilePreview(files[0]);
-      }
+      dropArea.classList.remove('drag-over');
+      fileInput.files = e.dataTransfer.files;
+      showPreview(fileInput.files[0]);
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) showPreview(fileInput.files[0]);
     });
 
-    function handleFilePreview(file) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        let previewElement;
-        if (file.type.startsWith('image/')) {
-          previewElement = document.createElement('img');
-          previewElement.src = e.target.result;
-        } else if (file.type.startsWith('video/')) {
-          previewElement = document.createElement('video');
-          previewElement.src = e.target.result;
-          previewElement.controls = true;
-        }
-        previewWrapper.innerHTML = ''; // Clear previous previews
-        previewWrapper.appendChild(previewElement);
-      };
-      reader.readAsDataURL(file);
+    function showPreview(file) {
+      previewArea.innerHTML = '';
+      const url = URL.createObjectURL(file);
+      if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '300px';
+        previewArea.appendChild(img);
+      } else if (file.type === 'video/mp4') {
+        const video = document.createElement('video');
+        video.src = url;
+        video.controls = true;
+        video.style.maxWidth = '100%';
+        video.style.maxHeight = '300px';
+        previewArea.appendChild(video);
+      } else {
+        previewArea.textContent = 'Unsupported file type.';
+      }
     }
+
+    const addPropertyButton = document.getElementById('addProperty');
+    const propertiesContainer = document.getElementById('properties');
+    let propertyCount = 0;
+
+    addPropertyButton.addEventListener('click', () => {
+      if (propertyCount < 8) {
+        const propertyDiv = document.createElement('div');
+        propertyDiv.classList.add('property');
+
+        const traitInput = document.createElement('input');
+        traitInput.placeholder = 'Trait Type';
+        traitInput.name = `trait_type_${propertyCount}`;
+
+        const valueInput = document.createElement('input');
+        valueInput.placeholder = 'Value';
+        valueInput.name = `value_${propertyCount}`;
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.textContent = '-';
+        removeButton.onclick = () => {
+          propertiesContainer.removeChild(propertyDiv);
+          propertyCount--;
+        };
+
+        propertyDiv.append(traitInput, valueInput, removeButton);
+        propertiesContainer.appendChild(propertyDiv);
+        propertyCount++;
+      }
+    });
+
+    document.getElementById('mintForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alert('Minting logic not yet wired to backend.');
+    });
   </script>
 </body>
 </html>

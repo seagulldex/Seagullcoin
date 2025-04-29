@@ -1,6 +1,3 @@
-
-
-
 // ===== Imports =====
 import express from 'express';
 import session from 'express-session';
@@ -41,6 +38,14 @@ const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+// Inside an async function
+async function getOffers(yourTokenId) {
+  const offers = await Offer.find({ tokenId: yourTokenId });
+  return offers;
+}
+
+const Offer = require('./models/OfferModel'); // adjust path if needed
 
 const app = express();
 

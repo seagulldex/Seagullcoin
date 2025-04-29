@@ -3,108 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Explore NFTs</title>
-  <link rel="stylesheet" href="nft.css" />
+  <title>Browse NFTs | SGLCN-X20</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
 </head>
 <body>
-  <!-- Navigation Bar (same as index.html) -->
+  <!-- Navigation -->
   <header>
     <nav>
-      <div class="logo">
-        <!-- SeagullCoin logo linking to the wallet -->
-        <a href="https://xumm.app" target="_blank">
-          <img src="seagullcoin-logo.png" alt="SeagullCoin Logo" />
-        </a>
-      </div>
       <ul>
-        <li><a href="/">Home</a></li>
-        <li><a href="/profile.html">Profile</a></li>
-        <li><a href="/mint.html">Mint NFT</a></li>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="nfts.html" class="active">NFTs</a></li>
+        <li><a href="mint.html">Mint NFT</a></li>
       </ul>
+      <a href="profile.html">
+        <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" 
+             alt="SeagullCoin Logo" style="height: 40px; width: auto; position: absolute; top: 10px; right: 10px;">
+      </a>
     </nav>
   </header>
 
-  <div class="container">
-    <header>
-      <h1>Explore NFTs</h1>
-    </header>
-
-    <div class="filters">
-      <h2>Filters</h2>
-      
-      <!-- Name Search -->
-      <label for="search-name">Search by Name</label>
-      <input type="text" id="search-name" placeholder="Enter NFT or collection name" />
-
-      <label>Price Range</label>
-      <input type="number" id="min-price" placeholder="Min SGLCN" />
-      <input type="number" id="max-price" placeholder="Max SGLCN" />
-
-      <label>Collection</label>
-      <select id="collection-filter">
-        <option value="">All</option>
-        <option value="collection1">Cool Gulls</option>
-        <option value="collection2">Sky Kings</option>
-      </select>
-
-      <label>Rarity</label>
-      <select id="rarity-filter">
-        <option value="">Any</option>
-        <option>Common</option>
-        <option>Rare</option>
-        <option>Epic</option>
-        <option>Legendary</option>
-      </select>
-
-      <label>Type</label>
-      <select id="type-filter">
-        <option value="">All</option>
-        <option value="image">Image</option>
-        <option value="video">Video</option>
-      </select>
-
-      <label>Sort by</label>
-      <select id="sort-filter">
-        <option>Newest</option>
-        <option>Lowest Price</option>
-        <option>Highest Price</option>
-        <option>Rarest</option>
-      </select>
-
-      <!-- Dropdown for viewing Single NFT or Collection -->
-      <label for="view-toggle">View</label>
-      <select id="view-toggle">
-        <option value="nfts">Single NFT</option>
-        <option value="collections">Collection</option>
-      </select>
-
-      <div class="filter-buttons">
-        <button id="apply-filters-btn">Submit</button>
-        <button id="clear-filters-btn">Clear</button>
-      </div>
-    </div>
-
-    <div class="nft-grid">
-      <!-- NFT cards will be dynamically inserted here -->
-    </div>
-
-    <!-- New Section: Live NFT Collections -->
-    <section class="live-collections">
-      <h2>Live NFT Collections</h2>
-      <div class="collection-list">
-        <!-- Collection items will be dynamically inserted here -->
-      </div>
+  <!-- Main NFT Section -->
+  <main>
+    <section class="hero">
+      <h1>Explore the Marketplace</h1>
+      <p>All NFTs minted with SeagullCoin (SGLCN-X20)</p>
     </section>
 
-    <!-- New Section: Single NFTs -->
-    <section class="single-nfts">
-      <h2>Single NFTs</h2>
-      <div class="nft-list">
-        <!-- Single NFT items will be dynamically inserted here -->
+    <section class="nft-gallery">
+      <div class="nft-item">
+        <img src="https://cdn.xrp.cafe/d3c8da0fc24d-41f6-a374-9224883133037fb6752f8487-47ec-8ee7-ebe6607d7a2de63bc4c085bc-4ddb-be20-a41783409571.webp" alt="NFT 1" />
+        <p>Seagull Art #1</p>
       </div>
+      <div class="nft-item">
+        <img src="https://cdn.xrp.cafe/a693980ec046-465b-bbd5-4f3e54a0a5cdc893372b6d6e-46d8-940a-02bd285be9cff646cfb9a614-4659-b66f-3f9df572cd15.webp" alt="NFT 2" />
+        <p>Seagull Art #2</p>
+      </div>
+      <div class="nft-item">
+        <img src="https://cdn.xrp.cafe/b3b1d44e91a2-4b08-a8d0-c01f376e9f2ea46710f47795-4487-be60-86c782be811db196ce23c3ec-437b-9f0d-8f75d090c7d9.webp" alt="NFT 3" />
+        <p>Seagull Art #3</p>
+      </div>
+      <!-- More NFTs can be dynamically added -->
     </section>
-  </div>
+  </main>
 
-  <script src="nft.js"></script>
+  <footer>
+    <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+  </footer>
 </body>
 </html>

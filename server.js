@@ -17,7 +17,7 @@ import { NFTStorage, File } from 'nft.storage';
 import { client, fetchNFTs } from './xrplClient.js'; // Named import
 import xrpl from 'xrpl';
 import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
-import NFTModel from './models/nftModel.js'; // Adjust path if necessary
+import NftModel from './models/nftModel.js';  // Correct single import
 import OfferModel from './models/offerModel.js'; // Adjust path if necessary
 
 // At the top of your server.js
@@ -517,6 +517,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-
-

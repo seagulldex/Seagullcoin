@@ -130,6 +130,22 @@
         e.target.parentElement.remove();
       }
     });
-  </script>
+    <!-- Create Collection Modal -->
+<div id="collectionModal" class="modal">
+  <div class="modal-content">
+    <h2>Create New Collection</h2>
+    <input type="text" id="collectionName" placeholder="Collection Name" required />
+    <input type="file" id="collectionLogo" accept="image/*" />
+    <input type="text" id="collectionDescription" placeholder="Description" />
+    <input type="text" id="collectionDomain" placeholder="Domain (e.g., https://example.com)" />
+    <input type="text" id="collectionWebsite" placeholder="Website" />
+    <input type="text" id="collectionTelegram" placeholder="Telegram Handle" />
+    <div class="modal-actions">
+      <button id="saveCollection">Save</button>
+      <button id="cancelCollection">Cancel</button>
+    </div>
+  </div>
+</div>
+ </script>
 </body>
 </html>

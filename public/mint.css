@@ -1,71 +1,129 @@
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #000;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+.container {
+  width: 100%;
+  max-width: 600px;
+  padding: 20px;
+}
+
+header h1 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
 .mint-form {
   background-color: #111;
-  padding: 30px;
+  padding: 20px;
   border-radius: 15px;
-  max-width: 600px;
-  width: 100%;
-  margin: auto;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 10px #333;
 }
 
-.form-field {
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-.form-field label {
-  font-weight: bold;
-  display: block;
-  margin-bottom: 8px;
-}
-
-input, textarea, select {
+.mint-form input,
+.mint-form textarea,
+.mint-form select {
   width: 100%;
   padding: 12px;
+  margin: 10px 0;
   border-radius: 10px;
-  border: 1px solid #555;
-  background: #222;
-  color: white;
+  border: 1px solid #333;
+  background-color: #222;
+  color: #fff;
 }
 
 textarea {
   height: 120px;
-  resize: vertical;
 }
 
-.preview-container img,
-.preview-container video {
+.mint-btn {
+  background-color: #00BFFF;
+  color: white;
+  padding: 15px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1.2rem;
+  cursor: pointer;
   width: 100%;
-  max-height: 400px;
+  margin-top: 20px;
+}
+
+.mint-btn:hover {
+  background-color: #008C99;
+}
+
+.spinner {
+  display: none;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.beachball {
+  width: 60px;
+  height: 60px;
+  background-color: #FFD700;
+  border-radius: 50%;
+  animation: spin 2s infinite linear;
+  margin: auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Preview Area */
+.drop-area {
+  border: 2px dashed #555;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 15px;
+  background-color: #222;
+}
+
+.drop-area.drag-over {
+  background-color: #333;
+}
+
+#previewWrapper img,
+#previewWrapper video {
+  width: 100%;
+  max-height: 300px;
   object-fit: contain;
-  border-radius: 12px;
-  background-color: #000;
   margin-top: 10px;
+  border-radius: 10px;
 }
 
 .property {
   display: flex;
   gap: 10px;
-  margin-bottom: 10px;
+  margin: 10px 0;
 }
 
 .property input {
   flex: 1;
 }
 
-button.mint-btn, #addPropertyBtn {
-  display: block;
-  width: 100%;
-  background-color: #00BFFF;
-  color: white;
-  padding: 15px;
-  font-size: 1rem;
+.removeProperty {
+  background-color: #FF6347;
+  color: #fff;
   border: none;
-  border-radius: 25px;
+  border-radius: 8px;
+  padding: 0 10px;
   cursor: pointer;
-  transition: background-color 0.3s;
 }
 
-button.mint-btn:hover, #addPropertyBtn:hover {
-  background-color: #008C99;
+.removeProperty:hover {
+  background-color: #cc4c39;
 }

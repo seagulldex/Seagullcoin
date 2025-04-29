@@ -26,8 +26,10 @@ paths:
                 properties:
                   payloadUuid:
                     type: string
+                    description: UUID of the XUMM payload
                   qrUrl:
                     type: string
+                    description: URL of the QR code for user login
 
   /login/check:
     get:
@@ -50,9 +52,11 @@ paths:
                 properties:
                   signed:
                     type: boolean
+                    description: Whether the payload was signed (login success)
                   walletAddress:
                     type: string
                     nullable: true
+                    description: The XRPL wallet address of the logged-in user
         '400':
           description: Missing or invalid payloadUuid
         '500':
@@ -81,13 +85,24 @@ paths:
                   description: The description of the NFT.
                 domain:
                   type: string
-                  description: (Optional) Domain name associated with the NFT.
+                  description: Optional domain name associated with the NFT.
                 properties:
                   type: string
-                  description: (Optional) Properties related to the NFT (in JSON format).
+                  description: Optional JSON string of NFT properties.
       responses:
         '200':
           description: NFT successfully minted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  nftId:
+                    type: string
+                  message:
+                    type: string
         '400':
           description: Missing required fields
         '402':
@@ -109,6 +124,14 @@ paths:
       responses:
         '200':
           description: Ownership information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  owner:
+                    type: string
+                    description: Wallet address of the NFT owner
         '400':
           description: Missing NFT ID
         '404':
@@ -136,10 +159,22 @@ paths:
                   description: The price of the NFT in SeagullCoin
                 currency:
                   type: string
+                  enum: [SeagullCoin]
                   description: The currency used for the purchase (must be SeagullCoin)
       responses:
         '200':
           description: NFT successfully purchased
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  txHash:
+                    type: string
+                  message:
+                    type: string
         '400':
           description: Invalid parameters or wrong currency
         '402':
@@ -191,6 +226,15 @@ paths:
       responses:
         '200':
           description: NFT successfully unlisted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
         '400':
           description: User not logged in or unauthorized action
         '500':
@@ -216,10 +260,20 @@ paths:
                   description: The sale price in SeagullCoin
                 currency:
                   type: string
-                  description: The currency in which the NFT is listed for sale (must be SeagullCoin)
+                  enum: [SeagullCoin]
+                  description: The currency in which the NFT is listed (must be SeagullCoin)
       responses:
         '200':
           description: NFT successfully listed for sale
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
         '400':
           description: Invalid parameters or wrong currency
         '500':

@@ -28,7 +28,7 @@
       z-index: 10;
     }
     nav a {
-      color: #0ff;
+      color: #fff;
       text-decoration: none;
       font-weight: bold;
     }
@@ -41,7 +41,7 @@
       border-radius: 20px;
       box-shadow: 0 0 10px #333;
       width: 100%;
-      max-width: 400px;
+      max-width: 500px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -72,7 +72,7 @@
       width: 100%;
       margin-bottom: 20px;
     }
-    .input-box input {
+    .input-box input, .input-box textarea {
       width: 100%;
       padding: 12px;
       border: none;
@@ -80,6 +80,10 @@
       background: #222;
       color: #fff;
       font-size: 16px;
+    }
+    .input-box textarea {
+      resize: vertical;
+      min-height: 80px;
     }
     button {
       background: #444;
@@ -94,15 +98,41 @@
     button:hover {
       background: #666;
     }
+    .section {
+      margin-top: 40px;
+      width: 100%;
+      max-width: 900px;
+    }
+    .section h2 {
+      margin-bottom: 15px;
+    }
+    .nft-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 20px;
+    }
+    .nft-card {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 15px;
+      padding: 10px;
+      text-align: center;
+    }
+    .nft-card img {
+      width: 100%;
+      border-radius: 10px;
+    }
+    .nft-actions button {
+      margin: 5px 5px 0 0;
+    }
   </style>
 </head>
 <body>
 
   <nav>
     <a href="/">Home</a>
-    <a href="/nfts.html">NFTs</a>
     <a href="/mint.html">Mint</a>
-    <a href="/profile.html">Profile</a>
+    <a href="/nfts.html">NFTs</a>
   </nav>
 
   <h1>My Profile</h1>
@@ -116,7 +146,28 @@
       <input type="text" id="username" placeholder="Enter your username">
     </div>
     
+    <div class="input-box">
+      <textarea id="description" placeholder="Tell others about yourself..."></textarea>
+    </div>
+    
     <button onclick="saveProfile()">Save Changes</button>
+  </div>
+
+  <div class="section" id="owned-nfts-section">
+    <h2>My NFTs</h2>
+    <div class="nft-grid" id="owned-nfts">
+      <!-- Owned NFTs will be loaded here -->
+    </div>
+  </div>
+
+  <div class="section" id="listings-offers-section">
+    <h2>My Listings & Offers</h2>
+    <div class="nft-grid" id="listings-nfts">
+      <!-- Listed NFTs will be loaded here with cancel buttons -->
+    </div>
+    <div class="nft-grid" id="offers-nfts">
+      <!-- Incoming offers will appear here with accept/reject buttons -->
+    </div>
   </div>
 
   <script>
@@ -137,13 +188,60 @@
     function saveProfile() {
       const username = document.getElementById('username').value;
       const profilePic = preview.src;
-      
-      // You can send these to your server with fetch() if needed
+      const description = document.getElementById('description').value;
+
       console.log('Username:', username);
       console.log('Profile Picture:', profilePic);
-      
+      console.log('Bio:', description);
+
       alert('Profile saved!');
     }
+
+    // Simulated dynamic loading functions (replace with actual data fetch)
+    function loadOwnedNFTs() {
+      const container = document.getElementById('owned-nfts');
+      container.innerHTML = '<div class="nft-card"><img src="nft1.png"><p>My NFT #1</p></div>';
+    }
+
+    function loadListingsAndOffers() {
+      const listingsContainer = document.getElementById('listings-nfts');
+      const offersContainer = document.getElementById('offers-nfts');
+
+      listingsContainer.innerHTML = `
+        <div class="nft-card">
+          <img src="nft2.png">
+          <p>Listed NFT</p>
+          <div class="nft-actions">
+            <button onclick="cancelListing()">Cancel Listing</button>
+          </div>
+        </div>`;
+
+      offersContainer.innerHTML = `
+        <div class="nft-card">
+          <img src="nft3.png">
+          <p>Offer on My NFT</p>
+          <div class="nft-actions">
+            <button onclick="acceptOffer()">Accept</button>
+            <button onclick="rejectOffer()">Reject</button>
+          </div>
+        </div>`;
+    }
+
+    function cancelListing() {
+      alert('Listing canceled.');
+    }
+
+    function acceptOffer() {
+      alert('Offer accepted.');
+    }
+
+    function rejectOffer() {
+      alert('Offer rejected.');
+    }
+
+    // Load dummy data on page load
+    loadOwnedNFTs();
+    loadListingsAndOffers();
   </script>
 
 </body>

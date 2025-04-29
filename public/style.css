@@ -110,3 +110,113 @@ footer {
     padding: 10px;
     margin-top: 40px;
 }
+
+/* Basic Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #000000, #003366);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  text-align: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
+}
+
+header h1 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+.mint-form {
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.mint-form h2 {
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.form-field {
+  margin-bottom: 15px;
+}
+
+label {
+  font-size: 1rem;
+  display: block;
+  margin-bottom: 5px;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  background-color: #333;
+  border: 1px solid #555;
+  border-radius: 5px;
+  color: white;
+}
+
+textarea {
+  height: 100px;
+}
+
+button.mint-btn {
+  background-color: #00BFFF;
+  color: white;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button.mint-btn:hover {
+  background-color: #008C99;
+}
+
+.spinner {
+  display: none;
+  margin-top: 20px;
+}
+
+.beachball {
+  width: 60px;
+  height: 60px;
+  background-color: #FFD700;
+  border-radius: 50%;
+  animation: spin 2s infinite linear;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.status {
+  margin-top: 20px;
+  font-size: 1.2rem;
+}
+
+.status.success {
+  color: #32CD32;
+}
+
+.status.error {
+  color: #FF6347;
+}

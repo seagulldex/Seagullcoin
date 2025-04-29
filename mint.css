@@ -1,0 +1,15 @@
+.mint-page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px;
+  background: linear-gradient(to bottom right, #000, #001f3f);
+}
+
+.container {
+  width: 100%;
+  max-width: 600px;
+  background-color: #111;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 0 

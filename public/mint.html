@@ -13,10 +13,8 @@
     </header>
 
     <form class="mint-form" id="mintForm">
-      <!-- NFT Name -->
       <input type="text" id="nftName" placeholder="NFT Name" required />
 
-      <!-- Drag & Drop Preview Area -->
       <div id="dropArea" class="drop-area">
         <p>Drag & Drop your file here or click to select</p>
         <input type="file" id="nftFile" accept="image/*,video/*" required hidden />
@@ -26,13 +24,9 @@
         </div>
       </div>
 
-      <!-- Description -->
       <textarea id="nftDescription" placeholder="NFT Description" required></textarea>
-
-      <!-- Domain -->
       <input type="text" id="domain" placeholder="Domain (e.g., https://example.com)" />
 
-      <!-- Properties -->
       <div id="propertiesContainer">
         <h3>Properties</h3>
         <div class="property">
@@ -43,7 +37,6 @@
       </div>
       <button type="button" id="addPropertyBtn">+ Add Property</button>
 
-      <!-- Collection -->
       <select id="collection">
         <option value="">-- Select or Create Collection --</option>
         <option value="new">+ Create New</option>
@@ -57,6 +50,23 @@
     </div>
   </div>
 
+  <!-- COLLECTION MODAL -->
+  <div id="collectionModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2>Create New Collection</h2>
+      <input type="text" id="collectionName" placeholder="Collection Name" required />
+      <input type="file" id="collectionLogo" accept="image/*" />
+      <input type="text" id="collectionDescription" placeholder="Description" />
+      <input type="text" id="collectionDomain" placeholder="Domain" />
+      <input type="text" id="collectionWebsite" placeholder="Website" />
+      <input type="text" id="collectionTelegram" placeholder="Telegram Handle" />
+      <div class="modal-actions">
+        <button id="saveCollection">Save</button>
+        <button id="cancelCollection">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const fileInput = document.getElementById('nftFile');
     const dropArea = document.getElementById('dropArea');
@@ -64,6 +74,9 @@
     const previewVideo = document.getElementById('nftPreviewVideo');
     const addPropertyBtn = document.getElementById('addPropertyBtn');
     const propertiesContainer = document.getElementById('propertiesContainer');
+    const collectionDropdown = document.getElementById('collection');
+    const modal = document.getElementById('collectionModal');
+    const cancelBtn = document.getElementById('cancelCollection');
     const MAX_PROPERTIES = 10;
 
     function resetPreview() {
@@ -130,22 +143,24 @@
         e.target.parentElement.remove();
       }
     });
-    <!-- Create Collection Modal -->
-<div id="collectionModal" class="modal">
-  <div class="modal-content">
-    <h2>Create New Collection</h2>
-    <input type="text" id="collectionName" placeholder="Collection Name" required />
-    <input type="file" id="collectionLogo" accept="image/*" />
-    <input type="text" id="collectionDescription" placeholder="Description" />
-    <input type="text" id="collectionDomain" placeholder="Domain (e.g., https://example.com)" />
-    <input type="text" id="collectionWebsite" placeholder="Website" />
-    <input type="text" id="collectionTelegram" placeholder="Telegram Handle" />
-    <div class="modal-actions">
-      <button id="saveCollection">Save</button>
-      <button id="cancelCollection">Cancel</button>
-    </div>
-  </div>
-</div>
- </script>
+
+    collectionDropdown.addEventListener('change', () => {
+      if (collectionDropdown.value === 'new') {
+        modal.style.display = 'flex';
+      }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      modal.style.display = 'none';
+      collectionDropdown.value = '';
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+        collectionDropdown.value = '';
+      }
+    });
+  </script>
 </body>
 </html>

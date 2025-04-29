@@ -21,6 +21,9 @@ import { client, fetchNFTs } from './xrplClient.js'; // Named import
 import xrpl from 'xrpl';
 import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
 
+// At the top of your server.js
+const NodeCache = require('node-cache');
+const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });  // Cache for 10 minutes
 
 // ===== Config =====
 dotenv.config();
@@ -416,6 +419,59 @@ app.get("/user-offers", async (req, res) => {
     res.json({ listed, incoming });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Add this in your routes section of server.js
+
+app.get('/nfts', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;  // Default to page 1
+  const limit = parseInt(req.query.limit) || 20;  // Default limit to 20
+
+  const cacheKey = `nfts_page_${page}_limit_${limit}`;
+  const cachedData = myCache.get(cacheKey);
+
+  if (cachedData) {
+    return res.json(cachedData);  // Return cached data if it exists
+  }
+
+  try {
+    const nfts = await NFTModel.find()
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec();
+
+    myCache.set(cacheKey, nfts);  // Cache the result
+    res.json(nfts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// Example for /user-offers route
+app.get('/user-offers', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;  
+  const limit = parseInt(req.query.limit) || 20;
+
+  const cacheKey = `user_offers_user_${req.query.userId}_page_${page}_limit_${limit}`;
+  const cachedData = myCache.get(cacheKey);
+
+  if (cachedData) {
+    return res.json(cachedData);  // Return cached data if it exists
+  }
+
+  try {
+    const offers = await OfferModel.find({ userId: req.query.userId })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec();
+
+    myCache.set(cacheKey, offers);  // Cache the result
+    res.json(offers);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Internal server error');
   }
 });
 

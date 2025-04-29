@@ -2,234 +2,195 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SGLCN-X20 NFT Minter</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #000;
+      background-color: #000;
       color: #fff;
+      font-family: sans-serif;
       margin: 0;
-      padding: 0;
-    }
-    header {
-      background: #111;
-      color: white;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid #222;
-    }
-    header img {
-      height: 40px;
-    }
-    header nav select {
-      padding: 6px;
-      background: #222;
-      color: #fff;
-      border: none;
-      border-radius: 10px;
+      padding: 20px;
     }
     main {
-      max-width: 600px;
-      margin: 30px auto;
-      background: #111;
-      padding: 25px;
+      background-color: #111;
       border-radius: 20px;
-      box-shadow: 0 0 20px rgba(255,255,255,0.1);
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 0 15px #333;
     }
-    h1 {
-      text-align: center;
-      color: #f0f0f0;
-    }
-    .drop-area {
-      border: 2px dashed #444;
-      padding: 30px;
-      text-align: center;
-      margin-bottom: 10px;
-      background-color: #222;
-      border-radius: 15px;
-      color: #ccc;
-    }
-    .drop-area.drag-over {
-      background-color: #333;
-      border-color: #0f0;
-    }
-    #previewArea img, #previewArea video {
-      border-radius: 15px;
+    input, textarea, select, button {
+      width: 100%;
       margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      background: #222;
+      color: white;
     }
-    .property-container .property {
+    label {
+      margin-top: 15px;
+      display: block;
+    }
+    .property-pair {
       display: flex;
       gap: 10px;
-      margin-bottom: 10px;
-    }
-    .property-container input {
-      flex: 1;
-      padding: 8px;
-      border-radius: 10px;
-      border: none;
-      background: #222;
-      color: white;
-      box-shadow: inset 0 0 5px #000;
-    }
-    .property-container button {
-      padding: 8px;
-      background: #e74c3c;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #e74c3c;
-    }
-    button[type="button"], button[type="submit"] {
-      background: #3498db;
-      color: white;
-      padding: 12px 18px;
-      border: none;
-      cursor: pointer;
-      border-radius: 12px;
       margin-top: 10px;
-      box-shadow: 0 0 10px #3498db;
     }
-    button[type="button"]:hover,
-    button[type="submit"]:hover {
-      background: #2980b9;
+    .property-pair input {
+      flex: 1;
     }
-    input[type="text"], input[type="url"], textarea, select {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 14px;
-      border-radius: 10px;
-      border: none;
-      background: #222;
-      color: white;
-      box-shadow: inset 0 0 5px #000;
+    #collectionModal {
+      display:none;
+      position:fixed;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:#000c;
+      backdrop-filter: blur(3px);
+      justify-content:center;
+      align-items:center;
     }
-    textarea {
-      resize: vertical;
+    #collectionModal div {
+      background:#111;
+      padding:20px;
+      border-radius:20px;
+      width:90%;
+      max-width:400px;
+      color:white;
+      box-shadow:0 0 20px #333;
     }
   </style>
 </head>
 <body>
-  <header>
-    <nav>
-      <select onchange="location.href=this.value">
-        <option value="#">Menu</option>
-        <option value="NFT.html">NFTs</option>
-      </select>
-    </nav>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Seagull.svg/768px-Seagull.svg.png" alt="SeagullCoin Logo">
-  </header>
-
   <main>
-    <h1>Mint Your NFT</h1>
-    <form id="mintForm" enctype="multipart/form-data">
+    <h1>Mint a New NFT</h1>
+    <form id="mintForm">
       <label>Name:</label>
       <input type="text" name="name" required>
 
       <label>Description:</label>
-      <textarea name="description" required></textarea>
+      <textarea name="description" rows="4"></textarea>
 
-      <label>Collection:</label>
-      <select name="collection">
-        <option value="">No Collection</option>
-        <!-- Dynamically filled -->
-      </select>
+      <label>Upload File:</label>
+      <input type="file" name="file" accept="image/*,video/*" required>
 
-      <label>Domain (optional):</label>
+      <label>Domain:</label>
       <input type="text" name="domain">
 
-      <label>Upload Media:</label>
-      <div id="dropArea" class="drop-area">Drag and Drop your file here</div>
-      <input type="file" id="mediaInput" name="media" accept="image/*,video/*" required>
-      <div id="previewArea"></div>
-
       <label>Properties:</label>
-      <div id="properties" class="property-container"></div>
-      <button type="button" id="addProperty">+ Add Property</button>
+      <div id="propertiesContainer"></div>
+      <button type="button" id="addPropertyButton">+ Add Property</button>
 
-      <br><br>
+      <label>Collection:</label>
+      <select name="collection" id="collectionSelect">
+        <option value="">No Collection</option>
+        <option value="new">+ Create New Collection</option>
+      </select>
+
       <button type="submit">Mint NFT</button>
     </form>
   </main>
 
+  <!-- Collection Modal -->
+  <div id="collectionModal">
+    <div>
+      <h2>Create New Collection</h2>
+      <label>Collection Name:</label>
+      <input type="text" id="newCollectionName" required>
+
+      <label>Collection Logo:</label>
+      <input type="file" id="newCollectionLogo" accept="image/*">
+
+      <label>Description:</label>
+      <textarea id="newCollectionDesc" rows="3"></textarea>
+
+      <label>Website:</label>
+      <input type="url" id="newCollectionWebsite">
+
+      <label>X.com Link:</label>
+      <input type="url" id="newCollectionX">
+
+      <label>Telegram:</label>
+      <input type="url" id="newCollectionTelegram">
+
+      <button onclick="submitNewCollection()">Submit Collection</button>
+      <button onclick="document.getElementById('collectionModal').style.display='none'" style="margin-top:10px;background:#555;">Cancel</button>
+    </div>
+  </div>
+
   <script>
-    const dropArea = document.getElementById('dropArea');
-    const fileInput = document.getElementById('mediaInput');
-    const previewArea = document.getElementById('previewArea');
-
-    dropArea.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropArea.classList.add('drag-over');
-    });
-    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('drag-over'));
-    dropArea.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropArea.classList.remove('drag-over');
-      fileInput.files = e.dataTransfer.files;
-      showPreview(fileInput.files[0]);
-    });
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files[0]) showPreview(fileInput.files[0]);
+    const propertiesContainer = document.getElementById('propertiesContainer');
+    document.getElementById('addPropertyButton').addEventListener('click', () => {
+      const div = document.createElement('div');
+      div.className = 'property-pair';
+      div.innerHTML = `
+        <input type="text" name="trait_type" placeholder="Trait Type">
+        <input type="text" name="value" placeholder="Value">
+      `;
+      propertiesContainer.appendChild(div);
     });
 
-    function showPreview(file) {
-      previewArea.innerHTML = '';
-      const url = URL.createObjectURL(file);
-      if (file.type.startsWith('image/')) {
-        const img = document.createElement('img');
-        img.src = url;
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '300px';
-        previewArea.appendChild(img);
-      } else if (file.type === 'video/mp4') {
-        const video = document.createElement('video');
-        video.src = url;
-        video.controls = true;
-        video.style.maxWidth = '100%';
-        video.style.maxHeight = '300px';
-        previewArea.appendChild(video);
-      } else {
-        previewArea.textContent = 'Unsupported file type.';
+    const collectionSelect = document.getElementById('collectionSelect');
+    const collectionModal = document.getElementById('collectionModal');
+
+    collectionSelect.addEventListener('change', () => {
+      if (collectionSelect.value === 'new') {
+        collectionModal.style.display = 'flex';
       }
+    });
+
+    async function submitNewCollection() {
+      const name = document.getElementById('newCollectionName').value;
+      const desc = document.getElementById('newCollectionDesc').value;
+      const website = document.getElementById('newCollectionWebsite').value;
+      const x = document.getElementById('newCollectionX').value;
+      const telegram = document.getElementById('newCollectionTelegram').value;
+      const logo = document.getElementById('newCollectionLogo').files[0];
+
+      if (!name || !logo) {
+        alert("Collection name and logo are required.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("description", desc);
+      formData.append("website", website);
+      formData.append("x", x);
+      formData.append("telegram", telegram);
+      formData.append("logo", logo);
+
+      try {
+        const res = await fetch("/create-collection", {
+          method: "POST",
+          body: formData
+        });
+        const json = await res.json();
+        if (json.success) {
+          const option = document.createElement('option');
+          option.value = json.collectionId;
+          option.textContent = name;
+          option.selected = true;
+          collectionSelect.appendChild(option);
+        } else {
+          alert("Error creating collection: " + json.error);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Failed to create collection.");
+      }
+
+      collectionModal.style.display = 'none';
+      document.getElementById('newCollectionName').value = '';
+      document.getElementById('newCollectionDesc').value = '';
+      document.getElementById('newCollectionWebsite').value = '';
+      document.getElementById('newCollectionX').value = '';
+      document.getElementById('newCollectionTelegram').value = '';
+      document.getElementById('newCollectionLogo').value = '';
     }
-
-    const addPropertyButton = document.getElementById('addProperty');
-    const propertiesContainer = document.getElementById('properties');
-    let propertyCount = 0;
-
-    addPropertyButton.addEventListener('click', () => {
-      if (propertyCount < 8) {
-        const propertyDiv = document.createElement('div');
-        propertyDiv.classList.add('property');
-
-        const traitInput = document.createElement('input');
-        traitInput.placeholder = 'Trait Type';
-        traitInput.name = `trait_type_${propertyCount}`;
-
-        const valueInput = document.createElement('input');
-        valueInput.placeholder = 'Value';
-        valueInput.name = `value_${propertyCount}`;
-
-        const removeButton = document.createElement('button');
-        removeButton.type = 'button';
-        removeButton.textContent = '-';
-        removeButton.onclick = () => {
-          propertiesContainer.removeChild(propertyDiv);
-          propertyCount--;
-        };
-
-        propertyDiv.append(traitInput, valueInput, removeButton);
-        propertiesContainer.appendChild(propertyDiv);
-        propertyCount++;
-      }
-    });
-
-    document.getElementById('mintForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      alert('Minting logic not yet wired to backend.');
-    });
   </script>
 </body>
 </html>

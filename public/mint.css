@@ -12,7 +12,7 @@ body {
   max-width: 600px;
   margin: auto;
   padding: 20px;
-  background: #fff; /* White background for the form container */
+  background: #111; /* Darker background for the form container */
   margin-top: 40px;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -21,7 +21,7 @@ body {
 /* Header Styling */
 header h1 {
   text-align: center;
-  color: #fff; /* White text for the header */
+  color: #00BFFF;
 }
 
 /* Input, Textarea, Select, Button Styling */
@@ -50,9 +50,18 @@ input, textarea, select, button {
   background-color: #444; /* Slightly lighter background when dragging over */
 }
 
-/* Image and Video Preview Styling */
-#previewWrapper img, #previewWrapper video {
+/* Preview Wrapper Styling */
+#previewWrapper {
+  margin-top: 10px;
   max-width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+#previewWrapper img,
+#previewWrapper video {
+  max-width: 100%;
+  max-height: 200px;
   margin-top: 10px;
 }
 
@@ -93,12 +102,12 @@ input, textarea, select, button {
 
 /* Modal Content Styling */
 .modal-content {
-  background: #fff; /* White background for modal content */
+  background: #222; /* Darker background for modal content */
   padding: 20px;
   border-radius: 8px;
   width: 90%;
   max-width: 400px;
-  color: #000; /* Dark text color for modal content */
+  color: #fff;
 }
 
 /* Modal Actions (Save/Cancel buttons) */
@@ -121,4 +130,3 @@ button#cancelCollection {
 button#saveCollection:hover, button#cancelCollection:hover {
   opacity: 0.8; /* Slight opacity change on hover */
 }
-

@@ -12,7 +12,13 @@ body {
 header {
   background-color: #222; /* Dark header */
   color: white;
-  padding: 10px 20px;
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); /* Bubbly effect */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
 }
 
 nav ul {
@@ -20,7 +26,8 @@ nav ul {
   margin: 0;
   padding: 0;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start; /* Align left for links */
+  gap: 15px; /* Adjust gap between links */
 }
 
 nav ul li {
@@ -32,16 +39,19 @@ nav ul li a {
   text-decoration: none;
   padding: 10px;
   font-weight: bold;
+  border-radius: 20px;
+  transition: background-color 0.3s;
 }
 
-.active {
-  background-color: #555;
-  border-radius: 5px;
+nav ul li a:hover {
+  background-color: #555; /* Light background on hover */
 }
 
 header img {
   height: 40px;
   width: auto;
+  position: absolute;
+  right: 20px; /* Keeps the logo on the top-right corner */
 }
 
 /* Hero Section */
@@ -50,6 +60,7 @@ header img {
   padding: 20px;
   text-align: center;
   border-radius: 20px; /* Bubbly corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); /* Bubbly effect */
 }
 
 .hero h1 {
@@ -98,13 +109,18 @@ header img {
 .scroll-item {
   background-color: #222;
   padding: 15px;
-  border-radius: 20px;
+  border-radius: 25px; /* Bubbly effect */
   width: 200px; /* Adjust width for uniformity */
   text-align: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Bubbly effect */
   overflow: hidden;
   cursor: pointer;
   flex-shrink: 0; /* Prevents the items from shrinking */
+  transition: transform 0.3s;
+}
+
+.scroll-item:hover {
+  transform: scale(1.05); /* Slight zoom effect on hover */
 }
 
 .scroll-item img {
@@ -134,11 +150,16 @@ header img {
   text-align: center;
   width: 250px;
   background-color: #222;
-  border-radius: 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 25px; /* Bubbly effect */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Bubbly effect */
   overflow: hidden;
   padding: 15px;
   flex-shrink: 0; /* Prevents the items from shrinking */
+  transition: transform 0.3s;
+}
+
+.nft-item:hover {
+  transform: scale(1.05); /* Slight zoom effect on hover */
 }
 
 .nft-item img {
@@ -161,4 +182,5 @@ footer {
   position: fixed;
   width: 100%;
   bottom: 0;
+  border-radius: 20px; /* Bubbly effect */
 }

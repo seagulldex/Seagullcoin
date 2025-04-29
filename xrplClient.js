@@ -11,7 +11,7 @@ async function connectWithRetry(retryAttempts = 5, delayMs = 1000) {
       if (!client.isConnected()) {
         await client.connect();
         isConnected = true;
-        console.log("Connected to XRPL node.");
+        console.log("Connected to XRPL node.");  // This confirms the connection
 
         // Monitor unexpected disconnects
         client.on('disconnected', () => {

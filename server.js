@@ -14,7 +14,7 @@ import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage'; 
-import client, { fetchNFTs } from './xrplClient.js'; // Import fetchNFTs
+import { client, fetchNFTs } from './xrplClient.js'; // Named import
 import xrpl from 'xrpl';
 
 // ===== Config =====

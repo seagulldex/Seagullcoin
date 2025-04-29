@@ -3,7 +3,7 @@ import xrpl from 'xrpl';
 const client = new xrpl.Client('wss://xrplcluster.com');
 let isConnected = false;
 
-// Retry logic for connection attempts
+// Retry logic for connecting to XRPL
 async function connectWithRetry(retryAttempts = 5, delayMs = 1000) {
   let attempts = 0;
   while (attempts < retryAttempts) {
@@ -12,27 +12,42 @@ async function connectWithRetry(retryAttempts = 5, delayMs = 1000) {
         await client.connect();
         isConnected = true;
         console.log("Connected to XRPL node.");
+
+        // Monitor unexpected disconnects
+        client.on('disconnected', () => {
+          isConnected = false;
+          console.warn("XRPL client disconnected.");
+        });
+
         return;
       }
     } catch (error) {
       attempts++;
       console.error(`Attempt ${attempts} to connect failed. Retrying in ${delayMs}ms...`);
       if (attempts >= retryAttempts) {
-        throw new Error('Failed to connect after multiple attempts.');
+        throw new Error('Failed to connect to XRPL after multiple attempts.');
       }
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
 }
 
-// Ensures the client is connected before making a request
+// Ensure the client is actively connected
 async function ensureConnected() {
-  if (!isConnected) {
+  if (!client.isConnected()) {
     await connectWithRetry();
+  } else {
+    try {
+      await client.request({ command: "ping" });
+    } catch (e) {
+      console.warn("Ping failed, reconnecting XRPL client...");
+      isConnected = false;
+      await connectWithRetry();
+    }
   }
 }
 
-// Function to retrieve NFT details
+// Retrieve NFT metadata and owner info from the XRPL
 export async function getNFTDetails(nftId) {
   try {
     await ensureConnected();
@@ -44,25 +59,29 @@ export async function getNFTDetails(nftId) {
 
     if (response.result && response.result.nft_info) {
       const nftData = response.result.nft_info;
+      const uriHex = nftData.URI || '';
+      const uri = Buffer.from(uriHex, 'hex').toString('utf8');
+
       return {
-        nftId: nftId,
+        nftId,
         owner: nftData.Owner,
-        uri: nftData.URI,
+        issuer: nftData.Issuer,
+        uri,
+        rawURI: uriHex,
         flags: nftData.Flags,
         transferFee: nftData.TransferFee,
-        issuer: nftData.Issuer,
       };
     } else {
-      console.error('No NFT info found for', nftId);
+      console.warn('No NFT info returned for:', nftId);
       return null;
     }
   } catch (error) {
-    console.error('Error fetching NFT details from XRPL:', error);
-    return null;
+    console.error('Error fetching NFT details:', error.message);
+    return { error: true, message: error.message };
   }
 }
 
-// Close the client gracefully when no longer needed
+// Gracefully disconnect the XRPL client
 export async function disconnectClient() {
   if (client.isConnected()) {
     await client.disconnect();
@@ -71,5 +90,9 @@ export async function disconnectClient() {
   }
 }
 
-// Export client for direct access if needed
+// Optional: auto-disconnect on server shutdown
+process.on('SIGINT', disconnectClient);
+process.on('SIGTERM', disconnectClient);
+
+// Export raw client for advanced use if needed
 export { client };

@@ -65,6 +65,16 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'Server running', timestamp: new Date().toISOString() });
 });
 
+app.get('/test-nft/:id', async (req, res) => {
+  const nftId = req.params.id;
+  try {
+    const details = await getNFTDetails(nftId);
+    res.json(details);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch NFT details', message: err.message });
+  }
+});
+
 // ===== Root Route =====
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the SGLCN-X20 Minting API. Visit /api-docs for documentation.' });

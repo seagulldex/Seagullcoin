@@ -1,150 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Profile - SGLCN-X20</title>
-  <style>
-    body {
-      background-color: #000;
-      color: #fff;
-      font-family: 'Arial', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
-    }
-    h1 {
-      margin-top: 20px;
-    }
-    nav {
-      background: #111;
-      display: flex;
-      justify-content: center;
-      gap: 40px;
-      padding: 15px 0;
-      box-shadow: 0 0 10px #222;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    nav a {
-      color: #0ff;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    nav a:hover {
-      text-decoration: underline;
-    }
-    .profile-container {
-      background: #111;
-      padding: 30px;
-      border-radius: 20px;
-      box-shadow: 0 0 10px #333;
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .profile-picture {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background-color: #222;
-      object-fit: cover;
-      margin-bottom: 20px;
-    }
-    input[type="file"] {
-      display: none;
-    }
-    .upload-label {
-      background-color: #333;
-      padding: 10px 20px;
-      border-radius: 15px;
-      cursor: pointer;
-      margin-bottom: 20px;
-      transition: background 0.3s;
-    }
-    .upload-label:hover {
-      background-color: #555;
-    }
-    .input-box {
-      width: 100%;
-      margin-bottom: 20px;
-    }
-    .input-box input {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 15px;
-      background: #222;
-      color: #fff;
-      font-size: 16px;
-    }
-    button {
-      background: #444;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background: #666;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGLCN-X20 NFT Minter</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
 </head>
 <body>
 
-  <nav>
-    <a href="/">Home</a>
-    <a href="/nfts.html">NFTs</a>
-    <a href="/mint.html">Mint</a>
-    <a href="/profile.html">Profile</a>
-  </nav>
+    <!-- Navigation -->
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="nfts.html">NFTs</a></li>
+                <li><a href="mint.html">Mint NFT</a></li>
+                <li><a href="profile.html">Profile</a></li>
+            </ul>
+        </nav>
+    </header>
 
-  <h1>My Profile</h1>
-  <div class="profile-container">
-    <img id="preview" class="profile-picture" src="default-avatar.png" alt="Profile Picture">
-    
-    <label for="file-upload" class="upload-label">Choose Profile Picture</label>
-    <input type="file" id="file-upload" accept="image/*">
-    
-    <div class="input-box">
-      <input type="text" id="username" placeholder="Enter your username">
-    </div>
-    
-    <button onclick="saveProfile()">Save Changes</button>
-  </div>
+    <!-- Main Content -->
+    <main>
+        <section class="hero">
+            <h1>Welcome to SeagullCoin NFT Marketplace</h1>
+            <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
+            <button id="connect-wallet-btn">Connect Wallet via XUMM</button>
+            <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
+        </section>
 
-  <script>
-    const fileInput = document.getElementById('file-upload');
-    const preview = document.getElementById('preview');
+        <section id="collections" class="collections">
+            <h2>Featured Collections</h2>
+            <!-- Dynamic Content for Collections -->
+        </section>
 
-    fileInput.addEventListener('change', function(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          preview.src = e.target.result;
+        <section id="nfts" class="nfts">
+            <h2>Browse NFTs</h2>
+            <div class="nft-gallery">
+                <h2>Featured NFTs</h2>
+                <div class="nft-item">
+                    <img src="https://cdn.xrp.cafe/d3c8da0fc24d-41f6-a374-9224883133037fb6752f8487-47ec-8ee7-ebe6607d7a2de63bc4c085bc-4ddb-be20-a41783409571.webp" alt="NFT 1">
+                </div>
+                <div class="nft-item">
+                    <img src="https://cdn.xrp.cafe/a693980ec046-465b-bbd5-4f3e54a0a5cdc893372b6d6e-46d8-940a-02bd285be9cff646cfb9a614-4659-b66f-3f9df572cd15.webp" alt="NFT 2">
+                </div>
+                <div class="nft-item">
+                    <img src="https://cdn.xrp.cafe/b3b1d44e91a2-4b08-a8d0-c01f376e9f2ea46710f47795-4487-be60-86c782be811db196ce23c3ec-437b-9f0d-8f75d090c7d9.webp" alt="NFT 3">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+    </footer>
+
+    <script src="main.js"></script>
+
+    <script>
+        // Check login status when page loads
+        async function checkLogin() {
+            const res = await fetch('/api/login/check');
+            const data = await res.json();
+
+            if (data.loggedIn) {
+                // User is logged in
+                const wallet = data.account;
+                localStorage.setItem('xummWallet', wallet);
+                document.getElementById('connect-wallet-btn').style.display = 'none';
+                document.getElementById('wallet-info').style.display = 'block';
+                document.getElementById('wallet-address').innerText = wallet;
+                
+                unlockMinting();
+            } else {
+                // Not logged in
+                document.getElementById('connect-wallet-btn').style.display = 'inline-block';
+                document.getElementById('wallet-info').style.display = 'none';
+                lockMinting();
+            }
         }
-        reader.readAsDataURL(file);
-      }
-    });
 
-    function saveProfile() {
-      const username = document.getElementById('username').value;
-      const profilePic = preview.src;
-      
-      // You can send these to your server with fetch() if needed
-      console.log('Username:', username);
-      console.log('Profile Picture:', profilePic);
-      
-      alert('Profile saved!');
-    }
-  </script>
+        // Click to start login
+        document.getElementById('connect-wallet-btn').addEventListener('click', async () => {
+            const res = await fetch('/api/login');
+            const data = await res.json();
+            if (data.next.always) {
+                window.location.href = data.next.always; // Redirect to XUMM login
+            }
+        });
+
+        // Dummy functions to lock/unlock minting
+        function lockMinting() {
+            const mintButton = document.getElementById('mint-button');
+            if (mintButton) mintButton.disabled = true;
+        }
+
+        function unlockMinting() {
+            const mintButton = document.getElementById('mint-button');
+            if (mintButton) mintButton.disabled = false;
+        }
+
+        // Run login check on page load
+        checkLogin();
+    </script>
 
 </body>
 </html>

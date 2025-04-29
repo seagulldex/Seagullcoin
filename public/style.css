@@ -1,186 +1,129 @@
-/* Basic reset */
-body, h1, h2, p, ul {
+/* General Body Styling */
+body {
+    background-color: #1a1a1a; /* Dark background */
+    color: white; /* White text */
+    font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 0;
-    font-family: Arial, sans-serif;
 }
 
-/* Body and Layout */
-body {
-    background-color: #000; /* Black background */
-    color: #fff; /* White text for contrast */
-    line-height: 1.6;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Header & Navigation */
+/* Header */
 header {
-    background: #222;
-    color: #fff;
-    padding: 1.5em 0;
-    text-align: center;
-    position: relative;
+    background-color: #333;
+    padding: 20px;
 }
 
-nav ul {
-    list-style: none;
+header nav ul {
     display: flex;
-    justify-content: center;
-    gap: 30px; /* Space between menu items */
+    justify-content: space-around;
+    list-style: none;
+    padding: 0;
 }
 
-nav ul li {
-    margin: 0;
-}
-
-nav ul li a {
-    color: #fff;
+header nav ul li a {
     text-decoration: none;
-    font-weight: bold;
-}
-
-#seagull-logo-link {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    text-decoration: none;
-}
-
-#seagull-logo {
-    width: 50px; /* Adjust logo size */
-    height: auto;
-}
-
-/* Footer */
-footer {
-    text-align: center;
-    padding: 1.5em;
-    background: #333;
-    color: #fff;
-    position: relative;
-    bottom: 0;
-    margin-top: auto;
+    color: white;
+    font-size: 18px;
 }
 
 /* Hero Section */
 .hero {
     text-align: center;
-    padding: 4em 2em;
-    background: #222;
-    color: #fff;
+    padding: 50px 20px;
+    background-color: #222;
+    border-radius: 15px;
+    margin: 20px auto;
+    max-width: 1000px;
 }
 
-#connect-wallet-btn {
-    padding: 12px 24px;
-    background-color: #007BFF;
+/* Bubbly Buttons */
+button {
+    padding: 10px 20px;
+    background-color: #0099cc;
     border: none;
+    border-radius: 25px; /* Bubbly style */
     color: white;
+    font-size: 16px;
     cursor: pointer;
-    margin-top: 30px;
+    transition: background-color 0.3s ease;
 }
 
-#wallet-info {
-    margin-top: 15px;
+button:hover {
+    background-color: #007a99;
 }
 
-/* NFT Gallery Styling */
-.nft-gallery {
+/* User Profile Scroll Section */
+.user-profiles {
+    background-color: #333;
+    padding: 20px;
+    border-radius: 15px;
+    margin: 20px auto;
+    max-width: 1000px;
+}
+
+.profile-scroll {
     display: flex;
     overflow-x: auto;
-    gap: 40px;
-    padding: 40px 20px;
-    margin-top: 40px;
-    justify-content: flex-start;
+    padding: 10px;
+}
+
+.profile {
+    text-align: center;
+    margin: 0 10px;
+    background-color: #444;
+    padding: 20px;
+    border-radius: 20px;
+    transition: transform 0.2s ease;
+}
+
+.profile:hover {
+    transform: scale(1.05);
+}
+
+.profile img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    margin-bottom: 10px;
+}
+
+/* NFT and Collections Section */
+.nfts, .collections {
+    padding: 20px;
+    margin-top: 20px;
+    background-color: #444;
+    border-radius: 15px;
+    max-width: 1000px;
+    margin: 20px auto;
+}
+
+.nft-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .nft-item {
-    flex-shrink: 0;
-    width: 350px;
-    height: auto;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    text-align: center;
+    background-color: #555;
+    border-radius: 10px;
+    padding: 10px;
+    transition: transform 0.2s ease;
+}
+
+.nft-item:hover {
+    transform: scale(1.05);
 }
 
 .nft-item img {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
+    max-width: 100%;
+    border-radius: 10px;
 }
 
-/* Collections Scroll */
-.collections-scroll {
-    display: flex;
-    overflow-x: auto;
-    gap: 40px;
-    padding: 40px 20px;
-    margin-top: 40px;
-}
-
-.collection-item {
-    flex-shrink: 0;
-    width: 250px;
-    height: auto;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+/* Footer */
+footer {
     text-align: center;
     padding: 20px;
-}
-
-.collection-item img {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-}
-
-/* User Profiles Scroll */
-.user-profiles {
-    display: flex;
-    overflow-x: auto;
-    gap: 40px;
-    padding: 40px 20px;
-    margin-top: 40px;
-    justify-content: flex-start;
-}
-
-.profile-item {
-    flex-shrink: 0;
-    width: 250px;
-    height: auto;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    padding: 20px;
-}
-
-.profile-item img {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-}
-
-/* Mobile Adjustments */
-@media (max-width: 768px) {
-    .nft-gallery, .collections-scroll, .user-profiles {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .nft-item, .collection-item, .profile-item {
-        width: 80%;
-        margin-bottom: 20px;
-    }
-
-    footer {
-        padding: 1em;
-    }
+    background-color: #222;
+    color: white;
 }

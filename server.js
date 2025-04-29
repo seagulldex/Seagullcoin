@@ -6,27 +6,27 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import xrpl from 'xrpl';
-import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction, transferNFT, checkOwnership } from './mintingLogic.js';
+import { mintNFT, verifySeagullCoinPayment, verifySeagullCoinTransaction, transferNFT } from './mintingLogic.js'; 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
-import { NFTStorage, File } from 'nft.storage';
-import { client } from './xrplClient.js';
-import { getAllNFTListings, unlistNFT, addListing } from './helpers/nftListings.js';
-import { getNFTDetails } from './xrplClient.js';
+import { NFTStorage, File } from 'nft.storage'; 
+import client, { fetchNFTs } from './xrplClient.js'; // Import fetchNFTs
+import xrpl from 'xrpl';
 
 // ===== Config =====
 dotenv.config();
 
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
 
+// Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Ensure 'uploads' folder exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -34,18 +34,20 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express();
 
-// ===== Middleware =====
+// Rate limiting middleware
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 6000,
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
   message: { error: 'Too many requests from this IP, please try again later.' },
 });
+
+// Middleware
 app.use(limiter);
-app.use(cors({ origin: '*', credentials: true }));
+app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
-  secret: 'sglcn_secret_session',
+  secret: "sglcn_secret_session",
   resave: false,
   saveUninitialized: true,
 }));
@@ -356,3 +358,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+

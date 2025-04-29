@@ -77,8 +77,7 @@ apiRouter.get('/login/start', (req, res) => {
 });
 
 apiRouter.get('/login', (req, res) => {
-  // Redirect to XUMM OAuth2
-  const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}&scope=identity%20payload`;
+  const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://sglcn-x20-api.glitch.me/callback')}&state=randomstring123`;
   res.redirect(authUrl);
 });
 

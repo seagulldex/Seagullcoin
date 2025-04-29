@@ -72,10 +72,12 @@ const apiRouter = express.Router();
 
 // ======= XUMM OAuth =======
 apiRouter.get('/login/start', (req, res) => {
+  // Start OAuth flow
   res.json({ message: 'Use /api/login to start XUMM OAuth2 login flow.' });
 });
 
 apiRouter.get('/login', (req, res) => {
+  // Redirect to XUMM OAuth2
   const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}&scope=identity%20payload`;
   res.redirect(authUrl);
 });
@@ -85,6 +87,7 @@ apiRouter.get('/xumm/callback', async (req, res) => {
   if (!code) return res.status(400).json({ error: 'Missing authorization code.' });
 
   try {
+    // Exchange code for access token
     const response = await fetch('https://xumm.app/api/v1/oauth/token', {
       method: 'POST',
       headers: {
@@ -100,17 +103,22 @@ apiRouter.get('/xumm/callback', async (req, res) => {
 
     if (!response.ok) throw new Error('Failed to obtain access token.');
 
+    // Store session data
     const data = await response.json();
-    req.session.xumm = data;
-    req.session.walletAddress = data.account;
-    res.redirect('/');
+    req.session.xumm = data;  // Store XUMM OAuth data
+    req.session.walletAddress = data.account;  // Store wallet address
+
+    // Redirect user to homepage or profile after successful login
+    res.redirect('/');  // Or any other page you wish to redirect
   } catch (err) {
     console.error('XUMM OAuth callback error:', err);
     res.status(500).json({ error: 'OAuth callback processing failed.' });
   }
 });
 
+// ======= Check Login State =======
 apiRouter.get('/login/check', (req, res) => {
+  // Check if user is logged in by looking for session data
   if (req.session.xumm) {
     res.json({ loggedIn: true, walletAddress: req.session.walletAddress });
   } else {

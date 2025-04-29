@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mint Your NFT</title>
+  <link rel="stylesheet" href="mint.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Mint Your NFT</h1>
+    </header>
+
+    <!-- Mint Form -->
+    <form class="mint-form" id="mintForm">
+      <input type="text" id="nftName" placeholder="NFT Name" required />
+      
+      <!-- Bigger Description Box -->
+      <textarea id="nftDescription" placeholder="NFT Description" required></textarea>
+      
+      <!-- Domain -->
+      <input type="text" id="domain" placeholder="Domain (e.g., https://example.com)" />
+
+      <!-- Properties Section -->
+      <div id="propertiesContainer">
+        <h3>Properties</h3>
+        <div class="property">
+          <input type="text" placeholder="Property Name" class="property-name" />
+          <input type="text" placeholder="Property Value" class="property-value" />
+        </div>
+      </div>
+      <button type="button" id="addPropertyBtn">+ Add Property</button>
+
+      <!-- File Upload -->
+      <input type="file" id="nftFile" accept="image/*,video/*" required />
+      
+      <!-- Collection Selection -->
+      <select id="collection">
+        <option value="">-- Select or Create Collection --</option>
+        <option value="new">+ Create New</option>
+      </select>
+
+      <!-- Mint Button -->
+      <button type="submit" class="mint-btn">Mint NFT</button>
+    </form>
+
+    <!-- Spinner -->
+    <div class="spinner" id="spinner">
+      <div class="beachball"></div>
+    </div>
+
+    <!-- NFT Preview Window -->
+    <div class="preview-container">
+      <h2>Preview</h2>
+      <img id="nftPreview" src="" alt="NFT Preview" style="display: none;" />
+    </div>
+
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('nftFile');
+    const preview = document.getElementById('nftPreview');
+    const addPropertyBtn = document.getElementById('addPropertyBtn');
+    const propertiesContainer = document.getElementById('propertiesContainer');
+    
+    // Show preview of uploaded file
+    fileInput.addEventListener('change', function() {
+      const file = fileInput.files[0];
+      if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+      }
+    });
+
+    // Add new property input fields dynamically
+    addPropertyBtn.addEventListener('click', function() {
+      const newProperty = document.createElement('div');
+      newProperty.classList.add('property');
+      newProperty.innerHTML = `
+        <input type="text" placeholder="Property Name" class="property-name" />
+        <input type="text" placeholder="Property Value" class="property-value" />
+      `;
+      propertiesContainer.appendChild(newProperty);
+    });
+  </script>
+</body>
+</html>

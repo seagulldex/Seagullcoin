@@ -115,6 +115,15 @@ apiRouter.get('/xumm/callback', async (req, res) => {
   }
 });
 
+apiRouter.get('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to log out.' });
+    }
+    res.redirect('/');  // Redirect after logout
+  });
+});
+
 // ======= Check Login State =======
 apiRouter.get('/login/check', (req, res) => {
   // Check if user is logged in by looking for session data

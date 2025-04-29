@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGLCN-X20 NFT Collections</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/api-docs">API Docs</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section id="collections">
+        <h1>NFT Collections</h1>
+        <div id="collections-list">
+            <!-- Dynamic content for NFT collections will be injected here -->
+        </div>
+    </section>
+
+    <section id="new-mints">
+        <h1>Newly Minted NFTs</h1>
+        <div id="new-mints-list">
+            <!-- Dynamic content for newly minted NFTs will be injected here -->
+        </div>
+    </section>
+
+    <script>
+        // Fetch collections and newly minted NFTs from the API
+        async function fetchCollections() {
+            const response = await fetch('/api/nft-listings');
+            const data = await response.json();
+            const collectionsList = document.getElementById('collections-list');
+            data.listings.forEach((listing) => {
+                const collectionItem = document.createElement('div');
+                collectionItem.classList.add('collection');
+                collectionItem.innerHTML = `
+                    <h3>${listing.collectionName}</h3>
+                    <img src="${listing.collectionLogo}" alt="${listing.collectionName} logo" />
+                    <a href="/collections/${listing.collectionId}">View Collection</a>
+                `;
+                collectionsList.appendChild(collectionItem);
+            });
+        }
+
+        async function fetchNewMints() {
+            const response = await fetch('/api/new-mints');
+            const data = await response.json();
+            const newMintsList = document.getElementById('new-mints-list');
+            data.mints.forEach((mint) => {
+                const mintItem = document.createElement('div');
+                mintItem.classList.add('mint');
+                mintItem.innerHTML = `
+                    <h3>${mint.nftName}</h3>
+                    <img src="${mint.nftImage}" alt="${mint.nftName}" />
+                    <a href="/nft/${mint.nftId}">View NFT</a>
+                `;
+                newMintsList.appendChild(mintItem);
+            });
+        }
+
+        fetchCollections();
+        fetchNewMints();
+    </script>
+</body>
+</html>

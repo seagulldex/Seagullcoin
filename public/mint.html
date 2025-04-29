@@ -1,98 +1,289 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGLCN-X20 NFT Minter</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SGLCN-X20 NFT Minter</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: sans-serif;
+      margin: 0;
+    }
+    nav {
+      background: #111;
+      display: flex;
+      justify-content: space-evenly; /* Even space distribution */
+      padding: 15px 0;
+      box-shadow: 0 0 10px #222;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    nav a {
+      color: #0ff;
+      text-decoration: none;
+      font-weight: bold;
+      padding: 10px 20px; /* Adds spacing for easier clicking */
+      text-align: center;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    main {
+      background-color: #111;
+      border-radius: 20px;
+      padding: 20px;
+      max-width: 600px;
+      margin: 30px auto;
+      box-shadow: 0 0 15px #333;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      background: #222;
+      color: white;
+    }
+    label {
+      margin-top: 15px;
+      display: block;
+    }
+    .property-pair {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .property-pair input {
+      flex: 1;
+    }
+    #collectionModal {
+      display:none;
+      position:fixed;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:#000c;
+      backdrop-filter: blur(3px);
+      justify-content:center;
+      align-items:center;
+    }
+    #collectionModal div {
+      background:#111;
+      padding:20px;
+      border-radius:20px;
+      width:90%;
+      max-width:400px;
+      color:white;
+      box-shadow:0 0 20px #333;
+    }
+    #dropzone {
+      border: 2px dashed #555;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    #dropzone.hover {
+      background: #222;
+    }
+    #preview {
+      margin-top: 10px;
+      text-align: center;
+    }
+    #preview img, #preview video {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Navigation -->
-    <header>
-        <nav style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #f9f9f9; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <ul id="nav-links" style="list-style: none; display: flex; gap: 20px; margin: 0; padding: 0;">
-                <li><a href="index.html" data-page="index.html">Home</a></li>
-                <li><a href="nfts.html" data-page="nfts.html">NFTs</a></li>
-            </ul>
-            <!-- SeagullCoin Logo -->
-            <a href="profile.html">
-                <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" 
-                     alt="SeagullCoin Logo" style="height: 40px;">
-            </a>
-        </nav>
-    </header>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/nfts.html">NFTs</a>
+    <a href="/profile.html">Profile</a>
+  </nav>
 
-    <!-- Main Content -->
-    <main>
-        <section class="hero">
-            <h1>Welcome to SeagullCoin NFT Marketplace</h1>
-            <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
-            <button id="connect-wallet-btn">Connect Wallet via XUMM</button>
-            <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
-        </section>
+  <main>
+    <h1>Mint a New NFT</h1>
+    <form id="mintForm">
+      <label>Name:</label>
+      <input type="text" name="name" required>
 
-        <!-- Mint NFT Form -->
-        <section id="mint-form">
-            <h2>Mint a New NFT</h2>
-            <!-- Your minting form logic goes here -->
-        </section>
+      <label>Description:</label>
+      <textarea name="description" rows="4"></textarea>
 
-    </main>
+      <label>Upload File:</label>
+      <div id="dropzone">Drag & Drop or Click to Upload</div>
+      <input type="file" name="file" accept="image/*,video/*" required style="display:none;" id="fileInput">
+      <div id="preview"></div>
 
-    <footer>
-        <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
-    </footer>
+      <label>Domain:</label>
+      <input type="text" name="domain">
 
-    <script src="main.js"></script>
+      <label>Properties (max 8):</label>
+      <div id="propertiesContainer"></div>
+      <button type="button" id="addPropertyButton">+ Add Property</button>
 
-    <script>
-        // Check login status when page loads
-        async function checkLogin() {
-            const res = await fetch('/api/login/check');
-            const data = await res.json();
+      <label>Collection:</label>
+      <select name="collection" id="collectionSelect">
+        <option value="">No Collection</option>
+        <option value="new">+ Create New Collection</option>
+      </select>
 
-            if (data.loggedIn) {
-                // User is logged in
-                const wallet = data.account;
-                localStorage.setItem('xummWallet', wallet);
-                document.getElementById('connect-wallet-btn').style.display = 'none';
-                document.getElementById('wallet-info').style.display = 'block';
-                document.getElementById('wallet-address').innerText = wallet;
-                
-                unlockMinting();
-            } else {
-                // Not logged in
-                document.getElementById('connect-wallet-btn').style.display = 'inline-block';
-                document.getElementById('wallet-info').style.display = 'none';
-                lockMinting();
-            }
-        }
+      <button type="submit">Mint NFT</button>
+    </form>
+  </main>
 
-        // Click to start login
-        document.getElementById('connect-wallet-btn').addEventListener('click', async () => {
-            const res = await fetch('/api/login');
-            const data = await res.json();
-            if (data.next.always) {
-                window.location.href = data.next.always; // Redirect to XUMM login
-            }
+  <!-- Collection Modal -->
+  <div id="collectionModal">
+    <div>
+      <h2>Create New Collection</h2>
+      <label>Collection Name:</label>
+      <input type="text" id="newCollectionName" required>
+
+      <label>Collection Logo:</label>
+      <input type="file" id="newCollectionLogo" accept="image/*">
+
+      <label>Description:</label>
+      <textarea id="newCollectionDesc" rows="3"></textarea>
+
+      <label>Website:</label>
+      <input type="url" id="newCollectionWebsite">
+
+      <label>X.com Link:</label>
+      <input type="url" id="newCollectionX">
+
+      <label>Telegram:</label>
+      <input type="url" id="newCollectionTelegram">
+
+      <button onclick="submitNewCollection()">Submit Collection</button>
+      <button onclick="collectionModal.style.display='none'" style="margin-top:10px;background:#555;">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropzone.classList.add('hover');
+    });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('hover'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('hover');
+      if (e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        showPreview(fileInput.files[0]);
+      }
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        showPreview(fileInput.files[0]);
+      }
+    });
+
+    function showPreview(file) {
+      preview.innerHTML = '';
+      if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        preview.appendChild(img);
+      } else if (file.type.startsWith('video/')) {
+        const vid = document.createElement('video');
+        vid.src = URL.createObjectURL(file);
+        vid.controls = true;
+        preview.appendChild(vid);
+      }
+    }
+
+    const propertiesContainer = document.getElementById('propertiesContainer');
+    const addButton = document.getElementById('addPropertyButton');
+
+    addButton.addEventListener('click', () => {
+      const count = propertiesContainer.querySelectorAll('.property-pair').length;
+      if (count >= 8) {
+        alert('Maximum of 8 properties allowed.');
+        return;
+      }
+      const div = document.createElement('div');
+      div.className = 'property-pair';
+      div.innerHTML = `
+        <input type="text" name="trait_type" placeholder="Trait Type">
+        <input type="text" name="value" placeholder="Value">
+      `;
+      propertiesContainer.appendChild(div);
+    });
+
+    const collectionSelect = document.getElementById('collectionSelect');
+    const collectionModal = document.getElementById('collectionModal');
+
+    collectionSelect.addEventListener('change', () => {
+      if (collectionSelect.value === 'new') {
+        collectionModal.style.display = 'flex';
+      }
+    });
+
+    async function submitNewCollection() {
+      const name = document.getElementById('newCollectionName').value;
+      const desc = document.getElementById('newCollectionDesc').value;
+      const website = document.getElementById('newCollectionWebsite').value;
+      const x = document.getElementById('newCollectionX').value;
+      const telegram = document.getElementById('newCollectionTelegram').value;
+      const logo = document.getElementById('newCollectionLogo').files[0];
+
+      if (!name || !logo) {
+        alert("Collection name and logo are required.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("description", desc);
+      formData.append("website", website);
+      formData.append("x", x);
+      formData.append("telegram", telegram);
+      formData.append("logo", logo);
+
+      try {
+        const res = await fetch("/create-collection", {
+          method: "POST",
+          body: formData
         });
-
-        // Dummy functions to lock/unlock minting
-        function lockMinting() {
-            const mintButton = document.getElementById('mint-button');
-            if (mintButton) mintButton.disabled = true;
+        const json = await res.json();
+        if (json.success) {
+          const option = document.createElement('option');
+          option.value = json.collectionId;
+          option.textContent = name;
+          option.selected = true;
+          collectionSelect.appendChild(option);
+        } else {
+          alert("Error creating collection: " + json.error);
         }
+      } catch (err) {
+        console.error(err);
+        alert("Failed to create collection.");
+      }
 
-        function unlockMinting() {
-            const mintButton = document.getElementById('mint-button');
-            if (mintButton) mintButton.disabled = false;
-        }
-
-        // Run login check on page load
-        checkLogin();
-    </script>
-
+      collectionModal.style.display = 'none';
+      document.getElementById('newCollectionName').value = '';
+      document.getElementById('newCollectionDesc').value = '';
+      document.getElementById('newCollectionWebsite').value = '';
+      document.getElementById('newCollectionX').value = '';
+      document.getElementById('newCollectionTelegram').value = '';
+      document.getElementById('newCollectionLogo').value = '';
+    }
+  </script>
 </body>
 </html>

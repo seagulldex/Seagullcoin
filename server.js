@@ -16,6 +16,8 @@ import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage'; 
 import { client, fetchNFTs } from './xrplClient.js'; // Named import
 import xrpl from 'xrpl';
+import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
+
 
 // ===== Config =====
 dotenv.config();

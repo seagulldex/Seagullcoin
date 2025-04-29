@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Explore NFTs</title>
+  <link rel="stylesheet" href="nft.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Explore NFTs</h1>
+    </header>
+
+    <div class="filters">
+      <h2>Filters</h2>
+      
+      <!-- Name Search -->
+      <label for="search-name">Search by Name</label>
+      <input type="text" id="search-name" placeholder="Enter NFT or collection name" />
+
+      <label>Price Range</label>
+      <input type="number" id="min-price" placeholder="Min SGLCN" />
+      <input type="number" id="max-price" placeholder="Max SGLCN" />
+
+      <label>Collection</label>
+      <select id="collection-filter">
+        <option value="">All</option>
+        <option value="collection1">Cool Gulls</option>
+        <option value="collection2">Sky Kings</option>
+      </select>
+
+      <label>Rarity</label>
+      <select id="rarity-filter">
+        <option value="">Any</option>
+        <option>Common</option>
+        <option>Rare</option>
+        <option>Epic</option>
+        <option>Legendary</option>
+      </select>
+
+      <label>Type</label>
+      <select id="type-filter">
+        <option value="">All</option>
+        <option value="image">Image</option>
+        <option value="video">Video</option>
+      </select>
+
+      <label>Sort by</label>
+      <select id="sort-filter">
+        <option>Newest</option>
+        <option>Lowest Price</option>
+        <option>Highest Price</option>
+        <option>Rarest</option>
+      </select>
+
+      <!-- Dropdown for viewing Single NFT or Collection -->
+      <label for="view-toggle">View</label>
+      <select id="view-toggle">
+        <option value="nfts">Single NFT</option>
+        <option value="collections">Collection</option>
+      </select>
+
+      <div class="filter-buttons">
+        <button id="apply-filters-btn">Submit</button>
+        <button id="clear-filters-btn">Clear</button>
+      </div>
+    </div>
+
+    <div class="nft-grid">
+      <!-- NFT cards will be dynamically inserted here -->
+    </div>
+
+    <!-- New Section: Live NFT Collections -->
+    <section class="live-collections">
+      <h2>Live NFT Collections</h2>
+      <div class="collection-list">
+        <!-- Collection items will be dynamically inserted here -->
+      </div>
+    </section>
+
+    <!-- New Section: Single NFTs -->
+    <section class="single-nfts">
+      <h2>Single NFTs</h2>
+      <div class="nft-list">
+        <!-- Single NFT items will be dynamically inserted here -->
+      </div>
+    </section>
+  </div>
+
+  <script src="nft.js"></script>
+</body>
+</html>

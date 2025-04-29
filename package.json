@@ -22,7 +22,7 @@
     "node-fetch": "^3.3.2",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.3",
-    "xrpl": "^2.14.3",
+    "xrpl": "^4.2.5",
     "xumm-sdk": "^1.1.0",
     "yamljs": "^0.3.0"
   },

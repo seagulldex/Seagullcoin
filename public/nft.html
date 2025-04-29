@@ -1,99 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>NFT Collections - SGLCN-X20</title>
-  <style>
-    body {
-      background-color: #000;
-      color: #fff;
-      font-family: 'Arial', sans-serif;
-      padding: 20px;
-      margin: 0;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .collections-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 20px;
-    }
-    .collection-card {
-      background: #111;
-      padding: 20px;
-      border-radius: 20px;
-      box-shadow: 0 0 10px #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      transition: transform 0.3s;
-    }
-    .collection-card:hover {
-      transform: scale(1.05);
-    }
-    .collection-logo {
-      width: 100px;
-      height: 100px;
-      object-fit: cover;
-      border-radius: 50%;
-      margin-bottom: 15px;
-      background: #222;
-    }
-    .collection-name {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    .collection-description {
-      font-size: 14px;
-      color: #aaa;
-    }
-  </style>
-</head>
-<body>
-
-  <h1>Explore NFT Collections</h1>
-
-  <div class="collections-container" id="collections">
-    <!-- Dynamic content here -->
-  </div>
-
-  <script>
-    // Example NFT collections
-    const collections = [
-      {
-        name: "Seagull Skies",
-        description: "Flying high with style",
-        logo: "https://via.placeholder.com/100"
-      },
-      {
-        name: "Ocean Dreams",
-        description: "NFTs from the deep blue",
-        logo: "https://via.placeholder.com/100"
-      },
-      {
-        name: "City Lights",
-        description: "Urban-themed XRPL NFTs",
-        logo: "https://via.placeholder.com/100"
-      }
-    ];
-
-    const container = document.getElementById('collections');
-
-    collections.forEach(collection => {
-      const card = document.createElement('div');
-      card.className = 'collection-card';
-      card.innerHTML = `
-        <img class="collection-logo" src="${collection.logo}" alt="${collection.name}">
-        <div class="collection-name">${collection.name}</div>
-        <div class="collection-description">${collection.description}</div>
-      `;
-      container.appendChild(card);
-    });
-  </script>
-
-</body>
-</html>
+[
+  {
+    "name": "Seagull Sunset",
+    "description": "A seagull enjoying a golden sunset by the coast.",
+    "image": "https://example.com/nfts/seagull_sunset.png",
+    "collection": "Coastal Birds",
+    "price_seagullcoin": "1.2",
+    "rarity": "Rare",
+    "on_sale": true,
+    "file_type": "image",
+    "minted_on": "2025-04-25"
+  },
+  {
+    "name": "Urban Wings",
+    "description": "A city-dwelling seagull perched on a skyscraper.",
+    "image": "https://example.com/nfts/urban_wings.gif",
+    "collection": "Urban Birds",
+    "price_seagullcoin": "0.75",
+    "rarity": "Common",
+    "on_sale": false,
+    "file_type": "video",
+    "minted_on": "2025-04-26"
+  },
+  {
+    "name": "Storm Glide",
+    "description": "A rare sight of a seagull gliding through a storm.",
+    "image": "https://example.com/nfts/storm_glide.png",
+    "collection": "Extreme Flight",
+    "price_seagullcoin": "2.5",
+    "rarity": "Legendary",
+    "on_sale": true,
+    "file_type": "image",
+    "minted_on": "2025-04-27"
+  }
+]

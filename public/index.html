@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
 </head>
 <body>
+
     <!-- Navigation -->
     <header>
         <nav>
@@ -36,8 +37,17 @@
 
         <section id="nfts" class="nfts">
             <h2>Browse NFTs</h2>
-            <div class="nft-grid">
-                <!-- Dynamic Content for NFTs -->
+            <div class="nft-gallery">
+                <h2>Featured NFTs</h2>
+                <div class="nft-item">
+                    <img src="https://cdn.xrp.cafe/d3c8da0fc24d-41f6-a374-9224883133037fb6752f8487-47ec-8ee7-ebe6607d7a2de63bc4c085bc-4ddb-be20-a41783409571.webp" alt="NFT 1">
+                </div>
+                <div class="nft-item">
+                    <img src="https://cdn.xrp.cafe/a693980ec046-465b-bbd5-4f3e54a0a5cdc893372b6d6e-46d8-940a-02bd285be9cff646cfb9a614-4659-b66f-3f9df572cd15.webp" alt="NFT 2">
+                </div>
+                <div class="nft-item">
+                    <img src="https://cdn.xrp.cafe/b3b1d44e91a2-4b08-a8d0-c01f376e9f2ea46710f47795-4487-be60-86c782be811db196ce23c3ec-437b-9f0d-8f75d090c7d9.webp" alt="NFT 3">
+                </div>
             </div>
         </section>
     </main>
@@ -49,50 +59,50 @@
     <script src="main.js"></script>
 
     <script>
-    // Check login status when page loads
-    async function checkLogin() {
-        const res = await fetch('/api/login/check');
-        const data = await res.json();
+        // Check login status when page loads
+        async function checkLogin() {
+            const res = await fetch('/api/login/check');
+            const data = await res.json();
 
-        if (data.loggedIn) {
-            // User is logged in
-            const wallet = data.account;
-            localStorage.setItem('xummWallet', wallet);
-            document.getElementById('connect-wallet-btn').style.display = 'none';
-            document.getElementById('wallet-info').style.display = 'block';
-            document.getElementById('wallet-address').innerText = wallet;
-            
-            unlockMinting();
-        } else {
-            // Not logged in
-            document.getElementById('connect-wallet-btn').style.display = 'inline-block';
-            document.getElementById('wallet-info').style.display = 'none';
-            lockMinting();
+            if (data.loggedIn) {
+                // User is logged in
+                const wallet = data.account;
+                localStorage.setItem('xummWallet', wallet);
+                document.getElementById('connect-wallet-btn').style.display = 'none';
+                document.getElementById('wallet-info').style.display = 'block';
+                document.getElementById('wallet-address').innerText = wallet;
+                
+                unlockMinting();
+            } else {
+                // Not logged in
+                document.getElementById('connect-wallet-btn').style.display = 'inline-block';
+                document.getElementById('wallet-info').style.display = 'none';
+                lockMinting();
+            }
         }
-    }
 
-    // Click to start login
-    document.getElementById('connect-wallet-btn').addEventListener('click', async () => {
-        const res = await fetch('/api/login');
-        const data = await res.json();
-        if (data.next.always) {
-            window.location.href = data.next.always; // Redirect to XUMM login
+        // Click to start login
+        document.getElementById('connect-wallet-btn').addEventListener('click', async () => {
+            const res = await fetch('/api/login');
+            const data = await res.json();
+            if (data.next.always) {
+                window.location.href = data.next.always; // Redirect to XUMM login
+            }
+        });
+
+        // Dummy functions to lock/unlock minting
+        function lockMinting() {
+            const mintButton = document.getElementById('mint-button');
+            if (mintButton) mintButton.disabled = true;
         }
-    });
 
-    // Dummy functions to lock/unlock minting
-    function lockMinting() {
-        const mintButton = document.getElementById('mint-button');
-        if (mintButton) mintButton.disabled = true;
-    }
+        function unlockMinting() {
+            const mintButton = document.getElementById('mint-button');
+            if (mintButton) mintButton.disabled = false;
+        }
 
-    function unlockMinting() {
-        const mintButton = document.getElementById('mint-button');
-        if (mintButton) mintButton.disabled = false;
-    }
-
-    // Run login check on page load
-    checkLogin();
+        // Run login check on page load
+        checkLogin();
     </script>
 
 </body>

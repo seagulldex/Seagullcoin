@@ -21,6 +21,16 @@ body {
   text-align: center;
 }
 
+.preview-container {
+  margin-top: 30px;
+  background-color: #1a1a1a;
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 0 10px #555;
+}
+
+
 header h1 {
   margin-bottom: 20px;
   font-size: 2rem;

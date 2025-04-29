@@ -15,10 +15,10 @@
     <!-- Mint Form -->
     <form class="mint-form" id="mintForm">
       <input type="text" id="nftName" placeholder="NFT Name" required />
-      
+
       <!-- Bigger Description Box -->
       <textarea id="nftDescription" placeholder="NFT Description" required></textarea>
-      
+
       <!-- Domain -->
       <input type="text" id="domain" placeholder="Domain (e.g., https://example.com)" />
 
@@ -34,7 +34,7 @@
 
       <!-- File Upload -->
       <input type="file" id="nftFile" accept="image/*,video/*" required />
-      
+
       <!-- Collection Selection -->
       <select id="collection">
         <option value="">-- Select or Create Collection --</option>
@@ -53,35 +53,57 @@
     <!-- NFT Preview Window -->
     <div class="preview-container">
       <h2>Preview</h2>
-      <img id="nftPreview" src="" alt="NFT Preview" style="display: none;" />
+      <img id="nftPreviewImg" style="display:none; max-width:100%; border-radius:10px;" />
+      <video id="nftPreviewVideo" controls style="display:none; max-width:100%; border-radius:10px;"></video>
     </div>
-
   </div>
 
   <script>
     const fileInput = document.getElementById('nftFile');
-    const preview = document.getElementById('nftPreview');
+    const previewImg = document.getElementById('nftPreviewImg');
+    const previewVideo = document.getElementById('nftPreviewVideo');
     const addPropertyBtn = document.getElementById('addPropertyBtn');
     const propertiesContainer = document.getElementById('propertiesContainer');
-    
-    // Show preview of uploaded file
-    fileInput.addEventListener('change', function() {
+    const MAX_PROPERTIES = 10;
+
+    // Show image/video preview of uploaded file
+    fileInput.addEventListener('change', function () {
       const file = fileInput.files[0];
       if (file) {
-        preview.src = URL.createObjectURL(file);
-        preview.style.display = 'block';
+        const url = URL.createObjectURL(file);
+        const fileType = file.type;
+
+        if (fileType.startsWith('image/')) {
+          previewImg.src = url;
+          previewImg.style.display = 'block';
+          previewVideo.style.display = 'none';
+        } else if (fileType.startsWith('video/')) {
+          previewVideo.src = url;
+          previewVideo.style.display = 'block';
+          previewImg.style.display = 'none';
+        } else {
+          previewImg.style.display = 'none';
+          previewVideo.style.display = 'none';
+          alert('Unsupported file type for preview.');
+        }
       }
     });
 
-    // Add new property input fields dynamically
-    addPropertyBtn.addEventListener('click', function() {
-      const newProperty = document.createElement('div');
-      newProperty.classList.add('property');
-      newProperty.innerHTML = `
-        <input type="text" placeholder="Property Name" class="property-name" />
-        <input type="text" placeholder="Property Value" class="property-value" />
-      `;
-      propertiesContainer.appendChild(newProperty);
+    // Add new property input fields dynamically (up to MAX_PROPERTIES)
+    addPropertyBtn.addEventListener('click', function () {
+      const propertyCount = propertiesContainer.getElementsByClassName('property').length;
+
+      if (propertyCount < MAX_PROPERTIES) {
+        const newProperty = document.createElement('div');
+        newProperty.classList.add('property');
+        newProperty.innerHTML = `
+          <input type="text" placeholder="Property Name" class="property-name" />
+          <input type="text" placeholder="Property Value" class="property-value" />
+        `;
+        propertiesContainer.appendChild(newProperty);
+      } else {
+        alert('You can only add up to 10 properties.');
+      }
     });
   </script>
 </body>

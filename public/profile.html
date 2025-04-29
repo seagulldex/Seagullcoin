@@ -1,17 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <nav style="position: fixed; top: 0; left: 0; right: 0; background: #1a1a1a; color: white; padding: 10px; z-index: 9999; display: flex; justify-content: space-around;">
-  <a href="/" style="color: white; text-decoration: none;">Home</a>
-  <a href="/nfts.html" style="color: white; text-decoration: none;">NFTs</a>
-  <a href="/mint.html" style="color: white; text-decoration: none;">mint</a>
-</nav>
-<div style="margin-top: 60px;"></div> <!-- spacer to avoid content overlap -->
   <meta charset="UTF-8">
   <title>Profile - SGLCN-X20</title>
   <style>
     body {
-      background-color: #000; /* Black background */
+      background-color: #000;
       color: #fff;
       font-family: 'Arial', sans-serif;
       display: flex;
@@ -22,10 +16,29 @@
     h1 {
       margin-top: 20px;
     }
+    nav {
+      background: #111;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      padding: 15px 0;
+      box-shadow: 0 0 10px #222;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    nav a {
+      color: #0ff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
     .profile-container {
       background: #111;
       padding: 30px;
-      border-radius: 20px; /* Bubbly rounded */
+      border-radius: 20px;
       box-shadow: 0 0 10px #333;
       width: 100%;
       max-width: 400px;
@@ -84,6 +97,13 @@
   </style>
 </head>
 <body>
+
+  <nav>
+    <a href="/">Home</a>
+    <a href="/nfts.html">NFTs</a>
+    <a href="/mint.html">Mint</a>
+    <a href="/profile.html">Profile</a>
+  </nav>
 
   <h1>My Profile</h1>
   <div class="profile-container">

@@ -1,63 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mint Your NFT</title>
-  <link rel="stylesheet" href="mint.css" />
+  <meta charset="UTF-8">
+  <title>SGLCN-X20 NFT Minter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background-color: #000;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      color: #fff;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      padding: 15px;
+      background-color: #111;
+      border-bottom: 2px solid #00BFFF;
+    }
+    .logo {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #00BFFF;
+    }
+    nav select {
+      background: #222;
+      color: #fff;
+      border: 1px solid #00BFFF;
+      padding: 8px;
+      border-radius: 5px;
+    }
+    main {
+      padding: 20px;
+      text-align: center;
+    }
+    section {
+      max-width: 600px;
+      margin: auto;
+      background: #111;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 0 10px #333;
+    }
+    h1 {
+      color: #00BFFF;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background-color: #222;
+      color: #fff;
+    }
+    button {
+      padding: 12px 24px;
+      background-color: #00BFFF;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 1em;
+      cursor: pointer;
+    }
+
+    /* Modal CSS */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: #111;
+      padding: 20px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 0 15px #333;
+    }
+
+    .modal-content h2 {
+      margin-top: 0;
+      color: #00BFFF;
+      text-align: center;
+    }
+
+    .modal-content input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background-color: #222;
+      color: #fff;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .modal-actions button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    #saveCollection {
+      background-color: #00BFFF;
+      color: #fff;
+    }
+
+    #cancelCollection {
+      background-color: #555;
+      color: #fff;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Mint Your NFT</h1>
-    </header>
 
-    <form class="mint-form" id="mintForm">
-      <input type="text" id="nftName" placeholder="NFT Name" required />
-
-      <div id="dropArea" class="drop-area">
-        <p>Drag & Drop your file here or click to select</p>
-        <input type="file" id="nftFile" accept="image/*,video/*" required hidden />
-        <div id="previewWrapper">
-          <img id="nftPreview" alt="NFT Preview" />
-          <video id="nftPreviewVideo" controls></video>
-        </div>
-      </div>
-
-      <textarea id="nftDescription" placeholder="NFT Description" required></textarea>
-      <input type="text" id="domain" placeholder="Domain (e.g., https://example.com)" />
-
-      <div id="propertiesContainer">
-        <h3>Properties</h3>
-        <div class="property">
-          <input type="text" placeholder="Property Name" class="property-name" />
-          <input type="text" placeholder="Property Value" class="property-value" />
-          <button type="button" class="removeProperty">-</button>
-        </div>
-      </div>
-      <button type="button" id="addPropertyBtn">+ Add Property</button>
-
-      <select id="collection">
-        <option value="">-- Select or Create Collection --</option>
-        <option value="new">+ Create New</option>
+  <header>
+    <div class="logo">SGLCN-X20 NFT Minter</div>
+    <nav>
+      <select onchange="if(this.value) window.location.href=this.value">
+        <option value="">Menu</option>
+        <option value="/NFT.html">NFTs</option>
       </select>
+    </nav>
+  </header>
 
-      <button type="submit" class="mint-btn">Mint NFT</button>
-    </form>
+  <main>
+    <section>
+      <h1>Mint a New NFT</h1>
+      <form id="mintForm">
+        <input type="text" placeholder="NFT Name" required>
+        <textarea placeholder="NFT Description"></textarea>
+        <input type="file" accept="image/*,video/*" required>
+        <input type="text" placeholder="Domain (optional)">
+        <input type="text" placeholder="Properties (e.g., trait:value)">
+        <select id="collection">
+          <option value="">Select Collection</option>
+          <option value="new">+ Create New Collection</option>
+        </select>
+        <button type="submit">Mint NFT</button>
+      </form>
+    </section>
+  </main>
 
-    <div class="spinner" id="spinner">
-      <div class="beachball"></div>
-    </div>
-  </div>
-
-  <!-- COLLECTION MODAL -->
-  <div id="collectionModal" class="modal" style="display: none;">
+  <!-- Create Collection Modal -->
+  <div id="collectionModal" class="modal">
     <div class="modal-content">
       <h2>Create New Collection</h2>
       <input type="text" id="collectionName" placeholder="Collection Name" required />
       <input type="file" id="collectionLogo" accept="image/*" />
       <input type="text" id="collectionDescription" placeholder="Description" />
-      <input type="text" id="collectionDomain" placeholder="Domain" />
+      <input type="text" id="collectionDomain" placeholder="Domain (e.g., https://example.com)" />
       <input type="text" id="collectionWebsite" placeholder="Website" />
       <input type="text" id="collectionTelegram" placeholder="Telegram Handle" />
       <div class="modal-actions">
@@ -68,98 +175,36 @@
   </div>
 
   <script>
-    const fileInput = document.getElementById('nftFile');
-    const dropArea = document.getElementById('dropArea');
-    const previewImg = document.getElementById('nftPreview');
-    const previewVideo = document.getElementById('nftPreviewVideo');
-    const addPropertyBtn = document.getElementById('addPropertyBtn');
-    const propertiesContainer = document.getElementById('propertiesContainer');
-    const collectionDropdown = document.getElementById('collection');
+    const collectionSelect = document.getElementById('collection');
     const modal = document.getElementById('collectionModal');
     const cancelBtn = document.getElementById('cancelCollection');
-    const MAX_PROPERTIES = 10;
+    const saveBtn = document.getElementById('saveCollection');
 
-    function resetPreview() {
-      previewImg.style.display = 'none';
-      previewVideo.style.display = 'none';
-    }
-
-    function showPreview(file) {
-      resetPreview();
-      const url = URL.createObjectURL(file);
-      if (file.type.startsWith('image')) {
-        previewImg.src = url;
-        previewImg.style.display = 'block';
-      } else if (file.type.startsWith('video')) {
-        previewVideo.src = url;
-        previewVideo.style.display = 'block';
-      }
-    }
-
-    dropArea.addEventListener('click', () => fileInput.click());
-
-    dropArea.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropArea.classList.add('drag-over');
-    });
-
-    dropArea.addEventListener('dragleave', () => {
-      dropArea.classList.remove('drag-over');
-    });
-
-    dropArea.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropArea.classList.remove('drag-over');
-      const file = e.dataTransfer.files[0];
-      if (file) {
-        fileInput.files = e.dataTransfer.files;
-        showPreview(file);
-      }
-    });
-
-    fileInput.addEventListener('change', () => {
-      const file = fileInput.files[0];
-      if (file) showPreview(file);
-    });
-
-    addPropertyBtn.addEventListener('click', () => {
-      const count = propertiesContainer.querySelectorAll('.property').length;
-      if (count < MAX_PROPERTIES) {
-        const div = document.createElement('div');
-        div.className = 'property';
-        div.innerHTML = `
-          <input type="text" placeholder="Property Name" class="property-name" />
-          <input type="text" placeholder="Property Value" class="property-value" />
-          <button type="button" class="removeProperty">-</button>
-        `;
-        propertiesContainer.appendChild(div);
-      } else {
-        alert('Maximum of 10 properties allowed.');
-      }
-    });
-
-    propertiesContainer.addEventListener('click', (e) => {
-      if (e.target.classList.contains('removeProperty')) {
-        e.target.parentElement.remove();
-      }
-    });
-
-    collectionDropdown.addEventListener('change', () => {
-      if (collectionDropdown.value === 'new') {
+    // Show modal if "Create New" selected
+    collectionSelect.addEventListener('change', () => {
+      if (collectionSelect.value === 'new') {
         modal.style.display = 'flex';
       }
     });
 
+    // Hide modal
     cancelBtn.addEventListener('click', () => {
       modal.style.display = 'none';
-      collectionDropdown.value = '';
+      collectionSelect.value = '';
     });
 
-    window.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.style.display = 'none';
-        collectionDropdown.value = '';
-      }
+    // Save collection
+    saveBtn.addEventListener('click', () => {
+      const name = document.getElementById('collectionName').value;
+      if (!name) return alert('Please enter a collection name.');
+
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      collectionSelect.appendChild(option);
+      collectionSelect.value = name;
+
+      modal.style.display = 'none';
     });
   </script>
 </body>

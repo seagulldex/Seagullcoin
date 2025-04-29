@@ -287,6 +287,26 @@ apiRouter.post('/update-profile', upload.single('profile_picture'), async (req, 
     }
 });
 
+app.get('/nfts', async (req, res) => {
+  // Replace this with actual logic to fetch from your NFT database or files
+  res.json([
+    {
+      name: "Seagull Sunset",
+      description: "A seagull enjoying a golden sunset.",
+      media: "https://example.com/nft1.png",
+      price: "1.2",
+      fileType: "image",
+      onSale: true,
+      rarity: "Rare",
+      dateMinted: "2025-04-27",
+      collection: {
+        name: "Coastal Birds",
+        icon: "https://example.com/coastal_birds_logo.png"
+      }
+    },
+    // Add more NFTs...
+  ]);
+});
 
 // ====== Mount API Router ======
 app.use('/api', apiRouter);

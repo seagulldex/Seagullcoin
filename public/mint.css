@@ -1,70 +1,124 @@
+/* General Body Styling */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
-  background: #f0f0f0;
+  background: #000; /* Black background */
+  color: #fff; /* White text color for contrast */
 }
+
+/* Container Styling */
 .container {
   max-width: 600px;
   margin: auto;
   padding: 20px;
-  background: #fff;
+  background: #fff; /* White background for the form container */
   margin-top: 40px;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
+
+/* Header Styling */
 header h1 {
   text-align: center;
+  color: #fff; /* White text for the header */
 }
+
+/* Input, Textarea, Select, Button Styling */
 input, textarea, select, button {
   display: block;
   width: 100%;
   margin: 10px 0;
   padding: 10px;
   font-size: 1em;
+  border-radius: 4px;
+  background-color: #333; /* Dark background for input fields */
+  color: #fff; /* White text inside input fields */
+  border: 1px solid #444;
 }
+
+/* Drop Area Styling */
 .drop-area {
   border: 2px dashed #ccc;
   padding: 20px;
   text-align: center;
   cursor: pointer;
+  background-color: #222; /* Dark background for drop area */
 }
+
 .drop-area.drag-over {
-  background-color: #e0e0e0;
+  background-color: #444; /* Slightly lighter background when dragging over */
 }
+
+/* Image and Video Preview Styling */
 #previewWrapper img, #previewWrapper video {
   max-width: 100%;
   margin-top: 10px;
 }
+
+/* Property Styling */
 .property {
   display: flex;
   gap: 10px;
   margin: 5px 0;
 }
+
 .property input {
   flex: 1;
 }
+
 .property button {
   flex: 0 0 auto;
+  background-color: #ff6600; /* Button color */
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
 }
+
+.property button:hover {
+  background-color: #ff3300; /* Darker orange on hover */
+}
+
+/* Modal Styling */
 .modal {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.5); /* Semi-transparent black background */
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
+/* Modal Content Styling */
 .modal-content {
-  background: white;
+  background: #fff; /* White background for modal content */
   padding: 20px;
   border-radius: 8px;
   width: 90%;
   max-width: 400px;
+  color: #000; /* Dark text color for modal content */
 }
+
+/* Modal Actions (Save/Cancel buttons) */
 .modal-actions {
   display: flex;
   justify-content: space-between;
   margin-top: 20px;
 }
+
+button#saveCollection {
+  background-color: #4CAF50; /* Green background for save button */
+  color: white;
+}
+
+button#cancelCollection {
+  background-color: #f44336; /* Red background for cancel button */
+  color: white;
+}
+
+button#saveCollection:hover, button#cancelCollection:hover {
+  opacity: 0.8; /* Slight opacity change on hover */
+}
+

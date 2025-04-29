@@ -1,35 +1,71 @@
-[
-  {
-    "name": "Seagull Sunset",
-    "description": "A seagull enjoying a golden sunset by the coast.",
-    "image": "https://example.com/nfts/seagull_sunset.png",
-    "collection": "Coastal Birds",
-    "price_seagullcoin": "1.2",
-    "rarity": "Rare",
-    "on_sale": true,
-    "file_type": "image",
-    "minted_on": "2025-04-25"
-  },
-  {
-    "name": "Urban Wings",
-    "description": "A city-dwelling seagull perched on a skyscraper.",
-    "image": "https://example.com/nfts/urban_wings.gif",
-    "collection": "Urban Birds",
-    "price_seagullcoin": "0.75",
-    "rarity": "Common",
-    "on_sale": false,
-    "file_type": "video",
-    "minted_on": "2025-04-26"
-  },
-  {
-    "name": "Storm Glide",
-    "description": "A rare sight of a seagull gliding through a storm.",
-    "image": "https://example.com/nfts/storm_glide.png",
-    "collection": "Extreme Flight",
-    "price_seagullcoin": "2.5",
-    "rarity": "Legendary",
-    "on_sale": true,
-    "file_type": "image",
-    "minted_on": "2025-04-27"
-  }
-]
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explore NFTs</title>
+  <link rel="stylesheet" href="nft.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Explore NFTs</h1>
+    </header>
+
+    <div class="filters">
+      <h2>Filters</h2>
+      <label>Price Range</label>
+      <input type="number" placeholder="Min SGLCN" />
+      <input type="number" placeholder="Max SGLCN" />
+
+      <label>Collection</label>
+      <select>
+        <option value="">All</option>
+        <option value="collection1">Cool Gulls</option>
+        <option value="collection2">Sky Kings</option>
+      </select>
+
+      <label>Rarity</label>
+      <select>
+        <option value="">Any</option>
+        <option>Common</option>
+        <option>Rare</option>
+        <option>Epic</option>
+        <option>Legendary</option>
+      </select>
+
+      <label>Type</label>
+      <select>
+        <option value="">All</option>
+        <option value="image">Image</option>
+        <option value="video">Video</option>
+      </select>
+
+      <label>Sort by</label>
+      <select>
+        <option>Newest</option>
+        <option>Lowest Price</option>
+        <option>Highest Price</option>
+        <option>Rarest</option>
+      </select>
+    </div>
+
+    <div class="nft-grid">
+      <div class="nft-card">
+        <img src="https://via.placeholder.com/150" alt="NFT" />
+        <h3>Seagull #1</h3>
+        <p><img src="seagullcoin-logo.png" class="sglcn-icon" /> 0.5 SGLCN</p>
+        <p class="collection-tag">Cool Gulls</p>
+      </div>
+
+      <div class="nft-card">
+        <video src="sample.mp4" controls></video>
+        <h3>GullVision</h3>
+        <p><img src="seagullcoin-logo.png" class="sglcn-icon" /> 1.2 SGLCN</p>
+        <p class="collection-tag">Sky Kings</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

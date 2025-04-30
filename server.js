@@ -18,7 +18,8 @@ import { client, fetchNFTs } from './xrplClient.js'; // Named import
 import xrpl from 'xrpl';
 import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
 import NftModel from './models/nftModel.js';  // Correct single import
-import OfferModel from './models/offerModel.js'; // Adjust path if necessary
+import OfferModel from './models/offerModel.js';
+import mongoose from 'mongoose';
 
 // At the top of your server.js
 const NodeCache = require('node-cache');
@@ -28,6 +29,18 @@ const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });  // Cache for 
 dotenv.config();
 
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
+
+const offerSchema = new mongoose.Schema({
+  nftokenId: { type: String, required: true },
+  offerIndex: { type: String, required: true },
+  amount: { type: String, required: true },
+  destination: { type: String }, // optional
+  flags: { type: Number },
+  createdAt: { type: Date, default: Date.now }
+});
+
+// You can name it whatever you want, 'OfferModel' is standard.
+const OfferModel = mongoose.model('Offer', offerSchema);
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -262,3 +275,4 @@ app.listen(PORT, () => {
   console.log(`SGLCN-X20 Minting API running on port ${PORT}`);
 });
 
+ 

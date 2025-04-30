@@ -1,97 +1,42 @@
 openapi: 3.0.0
 info:
   title: SGLCN-X20 Minting API
-  description: API for minting and interacting with SeagullCoin-based NFTs.
   version: 1.0.0
+  description: |
+    Public API for minting NFTs with SeagullCoin (SGLCN-X20) only.
+    - Mint NFTs by paying 0.5 SeagullCoin.
+    - No XRP purchases allowed.
+    - Only SeagullCoin (X20 token) allowed for offers, mints, and sales.
+    - Supports CORS for marketplaces like bidds.com and xrp.cafe.
   contact:
     name: Bored Seagull Club
     email: boredseagulls@gmail.com
     url: https://linktr.ee/boredseagullclub
 
 servers:
-  - url: 'https://sglcn-x20-api.glitch.me/api'
+  - url: 'https://sglcn-x20-api.glitch.me'
+    description: Main API server
 
 paths:
-  /login/start:
-    get:
-      summary: Start XUMM OAuth2 login
-      description: Creates a XUMM SignIn payload and returns payload info.
-      responses:
-        '200':
-          description: Payload created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  payloadUuid:
-                    type: string
-                    description: UUID of the XUMM payload
-                  qrUrl:
-                    type: string
-                    description: URL of the QR code for user login
-
-  /login/check:
-    get:
-      summary: Check XUMM OAuth2 login status
-      description: Checks if a user has successfully logged in via XUMM.
-      parameters:
-        - in: query
-          name: payloadUuid
-          required: true
-          schema:
-            type: string
-          description: The XUMM payload UUID to check login status
-      responses:
-        '200':
-          description: Login status (signed or not)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  signed:
-                    type: boolean
-                    description: Whether the payload was signed (login success)
-                  walletAddress:
-                    type: string
-                    nullable: true
-                    description: The XRPL wallet address of the logged-in user
-        '400':
-          description: Missing or invalid payloadUuid
-        '500':
-          description: Server error checking login status
-
-  /mint:
+  /login:
     post:
-      summary: Mint a new NFT
-      description: Allows users to mint a new NFT with a SeagullCoin payment.
+      summary: Initiate XUMM login session
+      operationId: loginUser
+      tags:
+        - Authentication
       requestBody:
-        required: true
+        required: false
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               properties:
-                nft_file:
+                userToken:
                   type: string
-                  format: binary
-                  description: The file representing the NFT media.
-                nft_name:
-                  type: string
-                  description: The name of the NFT.
-                nft_description:
-                  type: string
-                  description: The description of the NFT.
-                domain:
-                  type: string
-                  description: Optional domain name associated with the NFT.
-                properties:
-                  type: string
-                  description: Optional JSON string of NFT properties.
+                  description: Optional existing XUMM user token
       responses:
         '200':
-          description: NFT successfully minted
+          description: Login payload generated
           content:
             application/json:
               schema:
@@ -99,68 +44,206 @@ paths:
                 properties:
                   success:
                     type: boolean
-                  nftId:
+                    example: true
+                  loginPayload:
+                    type: object
+                    description: XUMM login payload details
+                  qrUrl:
                     type: string
-                  message:
+                    description: QR URL for user to scan
+                  websocketUrl:
                     type: string
-        '400':
-          description: Missing required fields
-        '402':
-          description: Payment required (0.5 SeagullCoin)
+                    description: WebSocket URL for real-time updates
         '500':
-          description: Internal server error
+          description: Error initiating login
 
-  /check-ownership/{nftId}:
-    get:
-      summary: Check NFT ownership
-      description: Checks if a user owns a specific NFT.
-      parameters:
-        - in: path
-          name: nftId
-          required: true
-          schema:
-            type: string
-          description: The NFT ID to check ownership for
-      responses:
-        '200':
-          description: Ownership information
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  owner:
-                    type: string
-                    description: Wallet address of the NFT owner
-        '400':
-          description: Missing NFT ID
-        '404':
-          description: Ownership not found
-        '500':
-          description: Internal server error
-
-  /buy-nft:
+  /pay:
     post:
-      summary: Buy an NFT
-      description: Allows users to buy an NFT by sending a SeagullCoin transaction.
+      summary: Initiate payment of 0.5 SeagullCoin
+      operationId: initiatePayment
+      tags:
+        - Payment
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - walletAddress
+              properties:
+                walletAddress:
+                  type: string
+                  description: Wallet address initiating payment
+      responses:
+        '200':
+          description: Payment initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  paymentId:
+                    type: string
+        '400':
+          description: Invalid request (missing or invalid wallet address)
+        '500':
+          description: Server error during payment initiation
+
+  /mint:
+    post:
+      summary: Mint a new NFT after payment
+      operationId: mintNFT
+      tags:
+        - NFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - walletAddress
+                - metadata
+              properties:
+                walletAddress:
+                  type: string
+                  description: Wallet address minting the NFT
+                metadata:
+                  type: object
+                  description: NFT metadata (e.g., name, description, image link, etc.)
+      responses:
+        '200':
+          description: NFT minted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  nftokenId:
+                    type: string
+        '400':
+          description: Invalid mint request (missing metadata, etc.)
+        '500':
+          description: Server error during minting
+
+  /user:
+    get:
+      summary: Get connected user wallet info
+      operationId: getUser
+      tags:
+        - User
+      parameters:
+        - name: token
+          in: query
+          description: XUMM user token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User wallet info returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  walletAddress:
+                    type: string
+                  balance:
+                    type: number
+                    format: float
+        '400':
+          description: Invalid token or missing token
+        '500':
+          description: Server error fetching user wallet info
+
+  /nfts:
+    get:
+      summary: List all minted NFTs
+      operationId: listNFTs
+      tags:
+        - NFT
+      responses:
+        '200':
+          description: List of all NFTs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    metadata:
+                      type: object
+                      description: NFT metadata (e.g., name, description)
+        '500':
+          description: Server error listing NFTs
+
+  /nft/{nftId}:
+    get:
+      summary: Get NFT details
+      operationId: getNFT
+      tags:
+        - NFT
+      parameters:
+        - name: nftId
+          in: path
+          required: true
+          description: NFTokenID of the NFT to fetch
+          schema:
+            type: string
+      responses:
+        '200':
+          description: NFT details returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  metadata:
+                    type: object
+        '404':
+          description: NFT not found
+        '500':
+          description: Server error fetching NFT
+
+  /buy-nft:
+    post:
+      summary: Buy an NFT by sending a SeagullCoin transaction
+      operationId: buyNFT
+      tags:
+        - NFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nftId
+                - price
+                - currency
               properties:
                 nftId:
                   type: string
-                  description: The ID of the NFT to buy
+                  description: NFT ID to purchase
                 price:
                   type: number
                   format: float
-                  description: The price of the NFT in SeagullCoin
+                  description: Price of the NFT in SeagullCoin
                 currency:
                   type: string
                   enum: [SeagullCoin]
-                  description: The currency used for the purchase (must be SeagullCoin)
+                  description: Currency for purchase (must be SeagullCoin)
       responses:
         '200':
           description: NFT successfully purchased
@@ -173,22 +256,44 @@ paths:
                     type: boolean
                   txHash:
                     type: string
-                  message:
-                    type: string
         '400':
           description: Invalid parameters or wrong currency
         '402':
-          description: Insufficient SeagullCoin payment
+          description: Insufficient SeagullCoin
         '500':
-          description: Internal server error
+          description: Server error during purchase
 
-  /nft-listings:
-    get:
-      summary: Get all NFT listings
-      description: Returns all active NFT listings on the platform.
+  /sell-nft:
+    post:
+      summary: Sell an NFT on the marketplace
+      operationId: sellNFT
+      tags:
+        - NFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nftId
+                - price
+                - currency
+              properties:
+                nftId:
+                  type: string
+                  description: NFT ID to list for sale
+                price:
+                  type: number
+                  format: float
+                  description: Price to list NFT for in SeagullCoin
+                currency:
+                  type: string
+                  enum: [SeagullCoin]
+                  description: Currency in which the NFT is listed (must be SeagullCoin)
       responses:
         '200':
-          description: A list of all NFT listings
+          description: NFT successfully listed for sale
           content:
             application/json:
               schema:
@@ -196,29 +301,27 @@ paths:
                 properties:
                   success:
                     type: boolean
-                  listings:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        nftId:
-                          type: string
-                        price:
-                          type: number
-                          format: float
-                        owner:
-                          type: string
+                  message:
+                    type: string
+        '400':
+          description: Invalid parameters or wrong currency
+        '500':
+          description: Server error during listing
 
   /unlist-nft:
     post:
       summary: Unlist an NFT from sale
-      description: Unlist an NFT from the marketplace if the user is the owner.
+      operationId: unlistNFT
+      tags:
+        - NFT
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - nftId
               properties:
                 nftId:
                   type: string
@@ -238,43 +341,33 @@ paths:
         '400':
           description: User not logged in or unauthorized action
         '500':
-          description: Internal server error
+          description: Server error during unlisting
 
-  /sell-nft:
-    post:
-      summary: Sell an NFT
-      description: List an NFT for sale in the marketplace with a price in SeagullCoin.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                nftId:
-                  type: string
-                  description: The NFT ID to list for sale
-                price:
-                  type: number
-                  format: float
-                  description: The sale price in SeagullCoin
-                currency:
-                  type: string
-                  enum: [SeagullCoin]
-                  description: The currency in which the NFT is listed (must be SeagullCoin)
+  /check-ownership/{nftId}:
+    get:
+      summary: Check NFT ownership
+      operationId: checkOwnership
+      tags:
+        - NFT
+      parameters:
+        - name: nftId
+          in: path
+          required: true
+          description: The NFT ID to check ownership for
+          schema:
+            type: string
       responses:
         '200':
-          description: NFT successfully listed for sale
+          description: Ownership info returned
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
-                  message:
+                  owner:
                     type: string
-        '400':
-          description: Invalid parameters or wrong currency
+                    description: Wallet address of the NFT owner
+        '404':
+          description: Ownership not found
         '500':
-          description: Internal server error
+          description: Server error during ownership check

@@ -130,7 +130,7 @@ const NFT = sequelize.define('NFT', {
   }
 }, { timestamps: true });
 
-// Verify SeagullCoin payment before minting
+// Utility function to verify SeagullCoin payment
 async function verifySeagullCoinPayment(walletAddress) {
   try {
     const balance = await getSeagullCoinBalance(walletAddress);
@@ -143,7 +143,32 @@ async function verifySeagullCoinPayment(walletAddress) {
   }
 }
 
-// Mint an NFT
+// Utility function to get SeagullCoin balance
+async function getSeagullCoinBalance(walletAddress) {
+  try {
+    const response = await client.request({
+      command: 'account_info',
+      account: walletAddress
+    });
+    const balance = response.result.account_data.Balances.find(b => b.currency === SEAGULLCOIN_HEX);
+    return balance ? parseFloat(balance.value) : 0;
+  } catch (error) {
+    throw new Error('Error getting balance: ' + error.message);
+  }
+}
+
+// Function to upload NFT metadata to NFT.Storage
+async function uploadToNFTStorage(file) {
+  try {
+    const fileUpload = new File([file.buffer], file.originalname, { type: file.mimetype });
+    const metadata = await nftStorageClient.store({ name: 'NFT', description: 'NFT minted on SeagullCoin', image: fileUpload });
+    return metadata;
+  } catch (error) {
+    throw new Error('NFT upload failed: ' + error.message);
+  }
+}
+
+// Minting logic
 async function mintNFT(walletAddress, nftData) {
   try {
     const ipfsMetadata = await uploadToNFTStorage(nftData.file);
@@ -158,31 +183,6 @@ async function mintNFT(walletAddress, nftData) {
     return { status: 'success', txHash: txResult.result.tx_json.hash };
   } catch (error) {
     throw new Error('Minting failed: ' + error.message);
-  }
-}
-
-// Upload file to NFT.Storage
-async function uploadToNFTStorage(file) {
-  try {
-    const fileUpload = new File([file.buffer], file.originalname, { type: file.mimetype });
-    const metadata = await nftStorageClient.store({ name: 'NFT', description: 'NFT minted on SeagullCoin', image: fileUpload });
-    return metadata;
-  } catch (error) {
-    throw new Error('NFT upload failed: ' + error.message);
-  }
-}
-
-// Function to get balance of SeagullCoin (SGLCN-X20) in a wallet
-async function getSeagullCoinBalance(walletAddress) {
-  try {
-    const response = await client.request({
-      command: 'account_info',
-      account: walletAddress
-    });
-    const balance = response.result.account_data.Balances.find(b => b.currency === SEAGULLCOIN_HEX);
-    return balance ? parseFloat(balance.value) : 0;
-  } catch (error) {
-    throw new Error('Error getting balance: ' + error.message);
   }
 }
 
@@ -201,7 +201,6 @@ app.post('/mint', mintingLimiter, async (req, res) => {
 // Fetch recent NFTs (mocked here)
 app.get('/nfts', async (req, res) => {
   try {
-    // Fetch NFTs from cache or mock database
     let cachedNFTs = nftCache.get('recentNFTs');
     if (!cachedNFTs) {
       cachedNFTs = [{ name: 'NFT 1', cid: 'QmXyz...' }, { name: 'NFT 2', cid: 'QmAbc...' }];
@@ -210,6 +209,21 @@ app.get('/nfts', async (req, res) => {
     res.status(200).json(cachedNFTs);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching NFTs: ' + error.message });
+  }
+});
+
+// API endpoint for user login (XUMM login required)
+app.post('/login', async (req, res) => {
+  try {
+    const { xummPayload } = req.body; // Assume it's a valid XUMM payload for authentication
+    const decoded = jwt.verify(xummPayload, process.env.JWT_SECRET_KEY);  // Verify token
+    const user = await User.findOne({ where: { walletAddress: decoded.walletAddress } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ message: 'Login successful', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Error logging in: ' + error.message });
   }
 });
 
@@ -223,81 +237,15 @@ const swaggerOptions = {
       description: 'API to manage and mint SeagullCoin-based NFTs',
     },
   },
-  apis: ['./server.js'], // Path to the API docs
+  apis: ['./server.js'],
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Transfer NFT endpoint
-app.post('/transfer', async (req, res) => {
-  try {
-    const { fromWallet, toWallet, nftId } = req.body;
-    const tx = {
-      TransactionType: 'NFTokenTransfer',
-      Account: fromWallet,
-      Destination: toWallet,
-      NFTokenID: nftId
-    };
-    const signedTx = await client.autofill(tx);
-    const txResult = await client.submit(signedTx);
-    res.status(200).json({ status: 'success', txHash: txResult.result.tx_json.hash });
-  } catch (error) {
-    res.status(500).json({ message: 'Error transferring NFT: ' + error.message });
-  }
-});
+// Additional Transaction Endpoints (like Delist, Transfer, Accept Offer, etc.) can be added similarly
 
-// Delist NFT endpoint
-app.post('/delist', async (req, res) => {
-  try {
-    const { nftId } = req.body;
-    // Logic to remove NFT from sale listing or marketplace
-    res.status(200).json({ status: 'success', message: 'NFT delisted' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error delisting NFT: ' + error.message });
-  }
-});
-
-// Accept Offer endpoint
-app.post('/accept-offer', async (req, res) => {
-  try {
-    const { nftId, offerAmount, offerWallet } = req.body;
-    // Logic to accept the offer for an NFT
-    res.status(200).json({ status: 'success', message: 'Offer accepted', nftId, offerAmount, offerWallet });
-  } catch (error) {
-    res.status(500).json({ message: 'Error accepting offer: ' + error.message });
-  }
-});
-
-// Reject Offer endpoint
-app.post('/reject-offer', async (req, res) => {
-  try {
-    const { nftId, offerWallet } = req.body;
-    // Logic to reject the offer for an NFT
-    res.status(200).json({ status: 'success', message: 'Offer rejected', nftId, offerWallet });
-  } catch (error) {
-    res.status(500).json({ message: 'Error rejecting offer: ' + error.message });
-  }
-});
-
-// Burn NFT endpoint
-app.post('/burn', async (req, res) => {
-  try {
-    const { nftId, walletAddress } = req.body;
-    const tx = {
-      TransactionType: 'NFTokenBurn',
-      Account: walletAddress,
-      NFTokenID: nftId
-    };
-    const signedTx = await client.autofill(tx);
-    const txResult = await client.submit(signedTx);
-    res.status(200).json({ status: 'success', message: 'NFT burned', txHash: txResult.result.tx_json.hash });
-  } catch (error) {
-    res.status(500).json({ message: 'Error burning NFT: ' + error.message });
-  }
-});
-
-// Start the server
+// Start server
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  logger.info(`Server is running on port ${port}`);
 });

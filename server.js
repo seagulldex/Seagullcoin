@@ -72,19 +72,22 @@ app.use(session({
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// ===== MongoDB Init =====
-(async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('Connected to MongoDB');
-    app.listen(port, () => {
-      console.log(`SGLCN-X20 Minting API running on port ${port}`);
-    });
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
-  }
-})();
+// ===== SQLite Init =====
+// Initialize SQLite database
+const db = new sqlite3.Database('./database.db'); // Creates or opens the database file
+
+db.serialize(() => {
+  // Create a 'users' table if it doesn't exist
+  db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT)");
+
+  // Example: Insert a new user (this can be adapted as per your requirement)
+  const stmt = db.prepare("INSERT INTO users (name) VALUES (?)");
+  stmt.run('SeagullCoin User');
+  stmt.finalize();
+});
+
+db.close(); // Close the SQLite connection when done
+
 
 // ===== Health Check =====
 app.get('/health', async (req, res) => {

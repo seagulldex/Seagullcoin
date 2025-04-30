@@ -18,6 +18,9 @@ import mongoose from 'mongoose';
 import NodeCache from 'node-cache';
 import { fetchSeagullCoinBalance } from './xrplClient.js'; // adjust path if needed
 import { open } from 'sqlite';
+import * as sqlite from 'sqlite';
+
+
 
 // Import your business logic modules
 import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, burnNFTLogic } from './mintingLogic.js';

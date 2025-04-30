@@ -23,6 +23,7 @@
     "nft.storage": "^6.4.1",
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
+    "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.3",

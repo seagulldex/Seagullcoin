@@ -130,3 +130,24 @@ process.on('uncaughtException', err => {
 
 // Export raw client if needed
 export { client };
+
+export async function fetchSeagullCoinBalance(walletAddress) {
+  try {
+    await ensureConnected(); // Ensures the client is connected before making the request
+
+    const accountInfo = await client.request({
+      command: 'account_lines',
+      account: walletAddress
+    });
+
+    const balance = accountInfo.result.lines.find(line =>
+      line.currency === 'SeagullCoin' &&
+      line.issuer === process.env.SGLCN_ISSUER
+    )?.balance || '0';
+
+    return { balance };
+  } catch (error) {
+    console.error('Error fetching SeagullCoin balance:', error);
+    throw error;
+  }
+}

@@ -243,3 +243,31 @@ export const transferNFT = async (nftId, buyerWallet) => {
     throw error;
   }
 };
+
+/** Reject XRP offers for NFTs */
+export const rejectXRPOffer = async (nftId) => {
+  try {
+    const rejectOfferPayload = {
+      transaction: {
+        TransactionType: 'NFTokenCancelOffer',
+        Account: SERVICE_WALLET,
+        NFTokenID: nftId,
+      },
+    };
+
+    const rejectResponse = await fetch(`${XUMM_API_URL}/payload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
+      body: JSON.stringify(rejectOfferPayload),
+    });
+
+    const rejectData = await rejectResponse.json();
+    if (!rejectData.success) throw new Error('Offer rejection failed');
+
+    return rejectData;
+  } catch (error) {
+    console.error('Error rejecting XRP offer:', error);
+    throw error;
+  }
+};
+

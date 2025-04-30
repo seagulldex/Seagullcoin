@@ -33,7 +33,7 @@
     "nodemon": "^2.0.22"
   },
   "engines": {
-    "node": "18.x"
+    "node": "16.x"
   },
   "keywords": [
     "seagullcoin",

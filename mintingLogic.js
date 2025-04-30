@@ -297,3 +297,28 @@ export const burnNFT = async (nftId) => {
     throw error;
   }
 };
+
+/** Validate SeagullCoin payment of 0.5 SGLCN */
+export const validateSeagullCoinPayment = async (walletAddress) => {
+  try {
+    const response = await fetch(`${XUMM_API_URL}/user/${walletAddress}/transactions`, {
+      headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
+    });
+    const data = await response.json();
+
+    if (!data.transactions) return false;
+
+    // Validate if payment for minting is SeagullCoin (0.5)
+    return data.transactions.some(tx => {
+      if (tx.txjson.TransactionType !== 'Payment') return false;
+      if (!tx.txjson.Amount || typeof tx.txjson.Amount !== 'object') return false;
+      
+      return tx.txjson.Amount.currency === '53656167756C6C436F696E000000000000000000' // SeagullCoin hex
+        && tx.txjson.Amount.issuer === SGLCN_ISSUER
+        && parseFloat(tx.txjson.Amount.value) >= 0.5;
+    });
+  } catch (error) {
+    console.error('Error validating SeagullCoin payment:', error);
+    return false;
+  }
+};

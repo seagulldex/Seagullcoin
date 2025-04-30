@@ -168,6 +168,19 @@ app.get('/listings', async (req, res) => {
   }
 });
 
+app.get('/api/balance/:walletAddress', async (req, res) => {
+  const walletAddress = req.params.walletAddress;
+
+  try {
+    const balanceData = await fetchSeagullCoinBalance(walletAddress); // You can use your xrplClient here
+    res.json({ balance: balanceData.balance });
+  } catch (err) {
+    console.error('Error fetching balance:', err);
+    res.status(500).json({ error: 'Failed to fetch SeagullCoin balance.' });
+  }
+});
+
+
 // ===== Get NFT Details =====
 app.get('/nft/:nftokenId', async (req, res) => {
   const { nftokenId } = req.params;
@@ -179,6 +192,19 @@ app.get('/nft/:nftokenId', async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve NFT details.', message: err.message });
   }
 });
+
+app.get('/api/nfts/:walletAddress', async (req, res) => {
+  const walletAddress = req.params.walletAddress;
+
+  try {
+    const nfts = await fetchNFTs(walletAddress); // Implement fetching NFTs for the wallet
+    res.json(nfts);
+  } catch (err) {
+    console.error('Error fetching NFTs:', err);
+    res.status(500).json({ error: 'Failed to fetch NFTs.' });
+  }
+});
+
 
 // ===== Get Recently Minted NFTs =====
 app.get('/recent', async (req, res) => {

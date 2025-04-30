@@ -1,0 +1,69 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Board</title>
+</head>
+<body>
+  <h1>Community Board</h1>
+
+  <!-- Post Form -->
+  <form id="postForm">
+    <input type="text" id="username" placeholder="Your Name" required />
+    <textarea id="content" placeholder="Write your post..." required></textarea>
+    <button type="submit">Post</button>
+  </form>
+
+  <h2>Posts:</h2>
+  <div id="postList">
+    <!-- Posts will appear here -->
+  </div>
+
+  <script>
+    // Function to fetch and display all posts
+    async function getPosts() {
+      const response = await fetch('/api/posts');
+      const posts = await response.json();
+      const postList = document.getElementById('postList');
+      postList.innerHTML = ''; // Clear any existing posts
+
+      posts.forEach(post => {
+        const postElement = document.createElement('div');
+        postElement.innerHTML = `
+          <h3>${post.username}</h3>
+          <p>${post.content}</p>
+          <small>${new Date(post.created_at).toLocaleString()}</small>
+        `;
+        postList.appendChild(postElement);
+      });
+    }
+
+    // Handle post form submission
+    document.getElementById('postForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const content = document.getElementById('content').value;
+
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, content })
+      });
+
+      if (response.ok) {
+        getPosts(); // Refresh the post list
+        document.getElementById('username').value = ''; // Clear input
+        document.getElementById('content').value = ''; // Clear content
+      } else {
+        alert('Error creating post');
+      }
+    });
+
+    // Load posts when the page loads
+    window.onload = getPosts;
+  </script>
+</body>
+</html>

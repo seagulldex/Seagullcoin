@@ -28,6 +28,10 @@ import { MongoClient, ServerApiVersion } from 'mongodb';
 
 // ===== Init App and Env =====
 dotenv.config();
+
+
+
+
 const app = express();
 const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
@@ -68,25 +72,28 @@ app.use(session({
   saveUninitialized: true,
 }));
 
+
 // ===== Swagger Docs =====
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // ===== SQLite Init =====
 // Initialize SQLite database
-const db = new sqlite3.Database('./database.db'); // Creates or opens the database file
+import sqlite3 from 'sqlite3';
+const { Database } = sqlite3;
+
+const db = new Database('./database.db');
 
 db.serialize(() => {
-  // Create a 'users' table if it doesn't exist
   db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT)");
 
-  // Example: Insert a new user (this can be adapted as per your requirement)
   const stmt = db.prepare("INSERT INTO users (name) VALUES (?)");
   stmt.run('SeagullCoin User');
   stmt.finalize();
 });
 
-db.close(); // Close the SQLite connection when done
+db.close();
+ // Close the SQLite connection when done
 
 
 // ===== Health Check =====

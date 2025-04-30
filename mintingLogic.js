@@ -271,3 +271,29 @@ export const rejectXRPOffer = async (nftId) => {
   }
 };
 
+/** Burn NFT */
+export const burnNFT = async (nftId) => {
+  try {
+    const burnPayload = {
+      transaction: {
+        TransactionType: 'NFTokenBurn',
+        Account: SERVICE_WALLET,
+        NFTokenID: nftId,
+      },
+    };
+
+    const burnResponse = await fetch(`${XUMM_API_URL}/payload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
+      body: JSON.stringify(burnPayload),
+    });
+
+    const burnData = await burnResponse.json();
+    if (!burnData.success) throw new Error('NFT burning failed');
+
+    return burnData;
+  } catch (error) {
+    console.error('Error burning NFT:', error);
+    throw error;
+  }
+};

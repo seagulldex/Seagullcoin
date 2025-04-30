@@ -17,7 +17,6 @@ import xrpl from 'xrpl';
 import mongoose from 'mongoose';
 import NodeCache from 'node-cache';
 import { fetchSeagullCoinBalance } from './xrplClient.js'; // adjust path if needed
-import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 
 // Import your business logic modules

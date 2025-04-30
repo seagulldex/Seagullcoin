@@ -92,6 +92,42 @@ paths:
         '500':
           description: Server error during payment initiation
 
+  /validate-payment:
+    post:
+      summary: Validate the payment for NFT minting
+      operationId: validatePayment
+      tags:
+        - Payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paymentId
+              properties:
+                paymentId:
+                  type: string
+                  description: Payment ID for validation
+      responses:
+        '200':
+          description: Payment successfully validated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: string
+                    description: Payment status (e.g., successful, pending)
+        '400':
+          description: Invalid payment ID or missing data
+        '500':
+          description: Server error during payment validation
+
   /mint:
     post:
       summary: Mint a new NFT after payment
@@ -131,36 +167,68 @@ paths:
         '500':
           description: Server error during minting
 
-  /user:
+  /collections:
     get:
-      summary: Get connected user wallet info
-      operationId: getUser
+      summary: List all NFT collections
+      operationId: listCollections
       tags:
-        - User
-      parameters:
-        - name: token
-          in: query
-          description: XUMM user token
-          required: true
-          schema:
-            type: string
+        - Collections
       responses:
         '200':
-          description: User wallet info returned
+          description: List of all collections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    collectionId:
+                      type: string
+                    name:
+                      type: string
+                    logo:
+                      type: string
+        '500':
+          description: Server error listing collections
+
+    post:
+      summary: Create a new NFT collection
+      operationId: createCollection
+      tags:
+        - Collections
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - logo
+              properties:
+                name:
+                  type: string
+                  description: Collection name
+                logo:
+                  type: string
+                  description: URL or IPFS link to the collection logo
+      responses:
+        '201':
+          description: Collection created successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  walletAddress:
+                  success:
+                    type: boolean
+                  collectionId:
                     type: string
-                  balance:
-                    type: number
-                    format: float
         '400':
-          description: Invalid token or missing token
+          description: Missing or invalid collection data
         '500':
-          description: Server error fetching user wallet info
+          description: Server error during collection creation
 
   /nfts:
     get:
@@ -186,42 +254,213 @@ paths:
         '500':
           description: Server error listing NFTs
 
-  /nft/{nftId}:
-    get:
-      summary: Get NFT details
-      operationId: getNFT
+    post:
+      summary: Create a new NFT
+      operationId: createNFT
       tags:
         - NFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - metadata
+              properties:
+                metadata:
+                  type: object
+                  description: NFT metadata (e.g., name, description, image link, etc.)
+      responses:
+        '201':
+          description: NFT created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  nftokenId:
+                    type: string
+        '400':
+          description: Invalid NFT creation request (missing metadata, etc.)
+        '500':
+          description: Server error during NFT creation
+
+    patch:
+      summary: Update NFT metadata
+      operationId: updateNFT
+      tags:
+        - NFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nftId
+                - metadata
+              properties:
+                nftId:
+                  type: string
+                  description: NFT ID to update
+                metadata:
+                  type: object
+                  description: Updated metadata for the NFT
+      responses:
+        '200':
+          description: NFT metadata updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          description: Invalid NFT ID or metadata
+        '500':
+          description: Server error during NFT update
+
+  /offers:
+    get:
+      summary: Get all offers on NFTs
+      operationId: listOffers
+      tags:
+        - Offers
+      responses:
+        '200':
+          description: List of all NFT offers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    offerId:
+                      type: string
+                    nftId:
+                      type: string
+                    amount:
+                      type: number
+                      format: float
+        '500':
+          description: Server error listing offers
+
+    post:
+      summary: Create a new offer to buy an NFT
+      operationId: createOffer
+      tags:
+        - Offers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nftId
+                - amount
+              properties:
+                nftId:
+                  type: string
+                  description: The NFT ID for the offer
+                amount:
+                  type: number
+                  format: float
+                  description: The offer amount in SeagullCoin
+      responses:
+        '201':
+          description: Offer created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  offerId:
+                    type: string
+        '400':
+          description: Invalid offer request
+        '500':
+          description: Server error creating offer
+
+    delete:
+      summary: Reject an NFT offer
+      operationId: rejectOffer
+      tags:
+        - Offers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - offerId
+              properties:
+                offerId:
+                  type: string
+                  description: Offer ID to reject
+      responses:
+        '200':
+          description: Offer successfully rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          description: Invalid offer ID
+        '500':
+          description: Server error rejecting offer
+
+  /transactions:
+    get:
+      summary: Get all user transactions
+      operationId: listTransactions
+      tags:
+        - Transactions
       parameters:
-        - name: nftId
-          in: path
+        - name: walletAddress
+          in: query
           required: true
-          description: NFTokenID of the NFT to fetch
+          description: Wallet address to retrieve transactions for
           schema:
             type: string
       responses:
         '200':
-          description: NFT details returned
+          description: List of all transactions
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  metadata:
-                    type: object
-        '404':
-          description: NFT not found
+                type: array
+                items:
+                  type: object
+                  properties:
+                    transactionId:
+                      type: string
+                    amount:
+                      type: number
+                      format: float
+                    type:
+                      type: string
+                      description: Transaction type (e.g., mint, buy, sell)
         '500':
-          description: Server error fetching NFT
+          description: Server error listing transactions
 
-  /buy-nft:
+  /accept-offer:
     post:
-      summary: Buy an NFT by sending a SeagullCoin transaction
-      operationId: buyNFT
+      summary: Accept an NFT offer
+      operationId: acceptOffer
       tags:
-        - NFT
+        - Offers
       requestBody:
         required: true
         content:
@@ -229,24 +468,18 @@ paths:
             schema:
               type: object
               required:
+                - offerId
                 - nftId
-                - price
-                - currency
               properties:
+                offerId:
+                  type: string
+                  description: Offer ID to accept
                 nftId:
                   type: string
-                  description: NFT ID to purchase
-                price:
-                  type: number
-                  format: float
-                  description: Price of the NFT in SeagullCoin
-                currency:
-                  type: string
-                  enum: [SeagullCoin]
-                  description: Currency for purchase (must be SeagullCoin)
+                  description: NFT ID to be sold
       responses:
         '200':
-          description: NFT successfully purchased
+          description: Offer accepted successfully
           content:
             application/json:
               schema:
@@ -254,120 +487,7 @@ paths:
                 properties:
                   success:
                     type: boolean
-                  txHash:
-                    type: string
         '400':
-          description: Invalid parameters or wrong currency
-        '402':
-          description: Insufficient SeagullCoin
+          description: Invalid offer or NFT ID
         '500':
-          description: Server error during purchase
-
-  /sell-nft:
-    post:
-      summary: Sell an NFT on the marketplace
-      operationId: sellNFT
-      tags:
-        - NFT
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - nftId
-                - price
-                - currency
-              properties:
-                nftId:
-                  type: string
-                  description: NFT ID to list for sale
-                price:
-                  type: number
-                  format: float
-                  description: Price to list NFT for in SeagullCoin
-                currency:
-                  type: string
-                  enum: [SeagullCoin]
-                  description: Currency in which the NFT is listed (must be SeagullCoin)
-      responses:
-        '200':
-          description: NFT successfully listed for sale
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-        '400':
-          description: Invalid parameters or wrong currency
-        '500':
-          description: Server error during listing
-
-  /unlist-nft:
-    post:
-      summary: Unlist an NFT from sale
-      operationId: unlistNFT
-      tags:
-        - NFT
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - nftId
-              properties:
-                nftId:
-                  type: string
-                  description: The NFT ID to unlist
-      responses:
-        '200':
-          description: NFT successfully unlisted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-        '400':
-          description: User not logged in or unauthorized action
-        '500':
-          description: Server error during unlisting
-
-  /check-ownership/{nftId}:
-    get:
-      summary: Check NFT ownership
-      operationId: checkOwnership
-      tags:
-        - NFT
-      parameters:
-        - name: nftId
-          in: path
-          required: true
-          description: The NFT ID to check ownership for
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Ownership info returned
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  owner:
-                    type: string
-                    description: Wallet address of the NFT owner
-        '404':
-          description: Ownership not found
-        '500':
-          description: Server error during ownership check
+          description: Server error accepting offer

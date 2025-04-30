@@ -20,34 +20,13 @@ import NodeCache from 'node-cache';
 import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer } from './mintingLogic.js';
 import { client, fetchNFTs } from './xrplClient.js';
 import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
-import { OfferModel } from './models/offerModel.js'; // Fix here: Importing the OfferModel only once
+import { OfferModel } from './models/offerModel.js';
 
 // ===== Init App and Env =====
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
-
-// Connect to MongoDB and Start Server
-(async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log('Connected to MongoDB');
-    app.listen(port, () => {
-      console.log(`Server running on port ${port}`);
-    });
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
-  }
-})();
-
-// ===== Config =====
-dotenv.config();
-
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
 
 // Fix __dirname for ES modules
@@ -60,6 +39,13 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// ===== Multer Upload Setup (must come before routes) =====
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
+});
+const upload = multer({ storage });
+
 // ===== Rate limiting =====
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -67,7 +53,7 @@ const limiter = rateLimit({
   message: { error: 'Too many requests from this IP, please try again later.' },
 });
 
-// Middleware
+// ===== Middleware =====
 app.use(limiter);
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
@@ -81,6 +67,20 @@ app.use(session({
 // ===== Swagger Docs =====
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// ===== MongoDB Init =====
+(async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('Connected to MongoDB');
+    app.listen(port, () => {
+      console.log(`SGLCN-X20 Minting API running on port ${port}`);
+    });
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  }
+})();
 
 // ===== Health Check =====
 app.get('/health', async (req, res) => {
@@ -101,7 +101,7 @@ app.get('/health', async (req, res) => {
 async function rejectOffersImmediately(nftokenId) {
   const offers = await OfferModel.find({ nftokenId });
   for (let offer of offers) {
-    await rejectXRPOffer(offer.offerIndex);  // Call to reject offer
+    await rejectXRPOffer(offer.offerIndex);
   }
 }
 
@@ -131,9 +131,7 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
     const walletAddress = req.session.walletAddress;
     const mintResult = await mintNFT(metadata, walletAddress);
 
-    // Immediately reject XRP offers after minting
     await rejectOffersImmediately(mintResult.nftokenId);
-
     res.json({ success: true, mintResult });
   } catch (err) {
     console.error('Minting error:', err);
@@ -144,18 +142,18 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
 // ===== Background Offer Cleanup (every 30 seconds) =====
 setInterval(async () => {
   console.log('Checking for unauthorized offers...');
-  const offers = await OfferModel.find({ flags: { $ne: 0 } });  // Non-zero flags are unauthorized offers
+  const offers = await OfferModel.find({ flags: { $ne: 0 } });
   for (let offer of offers) {
-    await rejectXRPOffer(offer.offerIndex);  // Reject the unauthorized offer
+    await rejectXRPOffer(offer.offerIndex);
   }
-}, 30000);  // 30 seconds interval
+}, 30000);
 
 // ===== Root Route =====
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the SGLCN-X20 Minting API. Visit /api-docs for documentation.' });
 });
 
-// ======= XUMM OAuth =======
+// ===== XUMM OAuth =====
 app.get('/login', (req, res) => {
   const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://sglcn-x20-api.glitch.me/callback')}&state=randomstring123`;
   res.redirect(authUrl);
@@ -190,15 +188,4 @@ app.get('/xumm/callback', async (req, res) => {
     console.error('XUMM OAuth callback error:', err);
     res.status(500).json({ error: 'OAuth callback processing failed.' });
   }
-});
-
-// ===== Multer Upload Setup =======
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
-});
-const upload = multer({ storage });
-
-app.listen(port, () => {
-  console.log(`SGLCN-X20 Minting API running on port ${port}`);
 });

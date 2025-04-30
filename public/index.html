@@ -74,6 +74,14 @@
                 </div>
             </div>
         </section>
+
+        <div id="minting-progress" style="display:none;">
+            <p>Minting in Progress... Please wait.</p>
+        </div>
+
+        <div id="minting-result" style="display:none;">
+            <p id="minting-message"></p>
+        </div>
     </main>
 
     <footer>
@@ -105,6 +113,28 @@
             }
         }
 
+        function showMintingProgress() {
+            document.getElementById('minting-progress').style.display = 'block';
+            document.getElementById('minting-result').style.display = 'none';
+        }
+
+        function hideMintingProgress() {
+            document.getElementById('minting-progress').style.display = 'none';
+        }
+
+        function showMintingResult(success, message) {
+            hideMintingProgress();
+            document.getElementById('minting-result').style.display = 'block';
+            const mintingMessage = document.getElementById('minting-message');
+            if (success) {
+                mintingMessage.innerText = `Minting Successful! NFT ID: ${message}`;
+                mintingMessage.style.color = 'green';
+            } else {
+                mintingMessage.innerText = `Minting Failed: ${message}`;
+                mintingMessage.style.color = 'red';
+            }
+        }
+
         // Click to start login
         document.getElementById('connect-wallet-btn').addEventListener('click', async () => {
             const res = await fetch('/api/login');
@@ -123,6 +153,36 @@
         function unlockMinting() {
             const mintButton = document.getElementById('mint-button');
             if (mintButton) mintButton.disabled = false;
+        }
+
+        async function startMinting() {
+            showMintingProgress();
+
+            const nftData = {
+                name: 'Example NFT',
+                description: 'This is an example NFT.',
+                imageUrl: 'https://example.com/nft-image.jpg',
+                // Add any other necessary data
+            };
+
+            try {
+                const response = await fetch('/api/mint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(nftData),
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showMintingResult(true, result.nftId);
+                } else {
+                    showMintingResult(false, result.message);
+                }
+            } catch (error) {
+                showMintingResult(false, 'An error occurred during minting. Please try again.');
+            }
         }
 
         // Run login check on page load

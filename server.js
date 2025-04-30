@@ -17,6 +17,8 @@ import xrpl from 'xrpl';
 import mongoose from 'mongoose';
 import NodeCache from 'node-cache';
 import { fetchSeagullCoinBalance } from './xrplClient.js'; // adjust path if needed
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
 
 // Import your business logic modules
 import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, burnNFTLogic } from './mintingLogic.js';
@@ -84,17 +86,83 @@ const { Database } = sqlite3;
 
 const db = new Database('./database.db');
 
+// Ensure the tables for users and messages exist
 db.serialize(() => {
+  // Create users table if it doesn't exist
   db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT)");
 
+  // Create messages table if it doesn't exist
+  db.run(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sender TEXT NOT NULL,
+      recipient TEXT NOT NULL,
+      message TEXT NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Insert a test user
   const stmt = db.prepare("INSERT INTO users (name) VALUES (?)");
   stmt.run('SeagullCoin User');
   stmt.finalize();
 });
 
-db.close();
- // Close the SQLite connection when done
+// ===== Send Message Route =====
+app.post('/send-message', async (req, res) => {
+  const { sender, recipient, messageContent } = req.body;
 
+  // Validate input
+  if (!sender || !recipient || !messageContent) {
+    return res.status(400).json({ error: 'Sender, recipient, and message content are required.' });
+  }
+
+  try {
+    // Prepare the SQL query to insert a new message
+    const query = `INSERT INTO messages (sender, recipient, message) VALUES (?, ?, ?)`;
+    
+    // Insert the message into the database
+    db.run(query, [sender, recipient, messageContent], function (err) {
+      if (err) {
+        console.error('Error sending message:', err);
+        return res.status(500).json({ error: 'Failed to send message.' });
+      }
+      
+      res.json({ success: true, message: 'Message sent successfully.' });
+    });
+  } catch (err) {
+    console.error('Error sending message:', err);
+    res.status(500).json({ error: 'Failed to send message.' });
+  }
+});
+
+// ===== Get Messages Route =====
+app.get('/get-messages', async (req, res) => {
+  const { walletAddress } = req.query;
+
+  // Validate input
+  if (!walletAddress) {
+    return res.status(400).json({ error: 'Wallet address is required.' });
+  }
+
+  try {
+    // Prepare the SQL query to get all messages where the wallet is either the sender or recipient
+    const query = `SELECT * FROM messages WHERE sender = ? OR recipient = ? ORDER BY timestamp DESC`;
+
+    // Execute the query and return messages
+    db.all(query, [walletAddress, walletAddress], (err, rows) => {
+      if (err) {
+        console.error('Error fetching messages:', err);
+        return res.status(500).json({ error: 'Failed to fetch messages.' });
+      }
+
+      res.json({ success: true, messages: rows });
+    });
+  } catch (err) {
+    console.error('Error fetching messages:', err);
+    res.status(500).json({ error: 'Failed to fetch messages.' });
+  }
+});
 
 // ===== Health Check =====
 app.get('/health', async (req, res) => {
@@ -157,6 +225,74 @@ app.post('/list', async (req, res) => {
   }
 });
 
+// Endpoint to accept an offer
+app.post('/accept-offer', async (req, res) => {
+  const { nftokenId, offerId } = req.body;
+
+  try {
+    // Logic to accept the offer (e.g., transfer NFT to the buyer)
+    await acceptOffer(nftokenId, offerId);
+
+    res.json({ success: true, message: 'Offer accepted successfully.' });
+  } catch (err) {
+    console.error('Error accepting offer:', err);
+    res.status(500).json({ error: 'Failed to accept the offer.' });
+  }
+});
+
+// Endpoint to reject an offer
+app.post('/reject-offer', async (req, res) => {
+  const { nftokenId, offerId } = req.body;
+
+  try {
+    // Logic to reject the offer
+    await rejectOffer(nftokenId, offerId);
+
+    res.json({ success: true, message: 'Offer rejected.' });
+  } catch (err) {
+    console.error('Error rejecting offer:', err);
+    res.status(500).json({ error: 'Failed to reject the offer.' });
+  }
+});
+
+// Buy NFT (using SeagullCoin)
+app.post('/buy-nft', async (req, res) => {
+  const { nftokenId, price } = req.body;
+  const { walletAddress } = req.session;
+
+  try {
+    const paymentValid = await verifySeagullCoinPayment(walletAddress, price);
+    if (!paymentValid) {
+      return res.status(402).json({ error: 'Insufficient SeagullCoin balance.' });
+    }
+
+    // Proceed with buying logic (transfer SeagullCoin, update ownership, etc.)
+    await buyNFT(nftokenId, walletAddress);
+
+    res.json({ success: true, message: 'NFT purchased successfully.' });
+  } catch (err) {
+    console.error('Error purchasing NFT:', err);
+    res.status(500).json({ error: 'Failed to purchase NFT.' });
+  }
+});
+
+// List an NFT for sale
+app.post('/sell-nft', async (req, res) => {
+  const { nftokenId, price } = req.body;
+  const { walletAddress } = req.session;
+
+  try {
+    // Validate the ownership and price
+    await listNFTForSale(nftokenId, walletAddress, price);
+
+    res.json({ success: true, message: 'NFT listed for sale.' });
+  } catch (err) {
+    console.error('Error listing NFT for sale:', err);
+    res.status(500).json({ error: 'Failed to list NFT for sale.' });
+  }
+});
+
+
 // ===== Burn NFT Route =====
 app.post('/burn', async (req, res) => {
   const { nftokenId } = req.body;
@@ -187,6 +323,120 @@ app.get('/nft/:nftokenId', async (req, res) => {
   }
 });
 
+// Endpoint to update profile picture
+app.post('/update-profile-picture', async (req, res) => {
+  const { walletAddress } = req.session;
+  const profilePic = req.file; // Image file uploaded
+
+  if (!profilePic) return res.status(400).json({ error: 'Profile picture is required.' });
+
+  try {
+    // Upload image to NFT.Storage or any other service for persistence
+    const ipfsResult = await nftStorage.store({ file: profilePic.path });
+    const profilePicUrl = ipfsResult.url;
+
+    // Save to user profile in your DB (or session storage)
+    await updateUserProfile(walletAddress, { profilePicUrl });
+
+    res.json({ success: true, profilePicUrl });
+  } catch (err) {
+    console.error('Error updating profile picture:', err);
+    res.status(500).json({ error: 'Failed to update profile picture.' });
+  }
+});
+
+// Endpoint to update username
+app.post('/update-username', async (req, res) => {
+  const { walletAddress } = req.session;
+  const { username } = req.body;
+
+  if (!username) return res.status(400).json({ error: 'Username is required.' });
+
+  try {
+    // Save to user profile in your DB (or session storage)
+    await updateUserProfile(walletAddress, { username });
+
+    res.json({ success: true, username });
+  } catch (err) {
+    console.error('Error updating username:', err);
+    res.status(500).json({ error: 'Failed to update username.' });
+  }
+});
+
+// Like an NFT
+app.post('/like-nft', async (req, res) => {
+  const { nftokenId } = req.body;
+  const { walletAddress } = req.session;
+
+  try {
+    // Handle liking an NFT (increment likes counter or save liked NFTs)
+    await likeNFT(walletAddress, nftokenId);
+
+    res.json({ success: true, message: 'NFT liked.' });
+  } catch (err) {
+    console.error('Error liking NFT:', err);
+    res.status(500).json({ error: 'Failed to like NFT.' });
+  }
+});
+
+// Get platform metrics
+app.get('/metrics', async (req, res) => {
+  try {
+    const totalNFTs = await getTotalNFTs();
+    const totalCollections = await getTotalCollections();
+    const totalUsers = await getTotalUsers();
+
+    res.json({
+      totalNFTs,
+      totalCollections,
+      totalUsers,
+    });
+  } catch (err) {
+    console.error('Error fetching metrics:', err);
+    res.status(500).json({ error: 'Failed to fetch metrics.' });
+  }
+});
+
+// ========= Messages =============
+
+// POST endpoint to send a message
+app.post('/send-message', async (req, res) => {
+  const { sender, recipient, messageContent } = req.body;
+
+  if (!sender || !recipient || !messageContent) {
+    return res.status(400).json({ error: 'Sender, recipient, and message content are required.' });
+  }
+
+  try {
+    const query = `INSERT INTO messages (sender, recipient, message) VALUES (?, ?, ?)`;
+    await db.run(query, [sender, recipient, messageContent]);
+
+    res.json({ success: true, message: 'Message sent successfully.' });
+  } catch (err) {
+    console.error('Error sending message:', err);
+    res.status(500).json({ error: 'Failed to send message.' });
+  }
+});
+
+// GET endpoint to retrieve messages for a user
+app.get('/get-messages', async (req, res) => {
+  const { walletAddress } = req.query;
+
+  if (!walletAddress) {
+    return res.status(400).json({ error: 'Wallet address is required.' });
+  }
+
+  try {
+    const query = `SELECT * FROM messages WHERE sender = ? OR recipient = ? ORDER BY timestamp DESC`;
+    const messages = await db.all(query, [walletAddress, walletAddress]);
+
+    res.json({ success: true, messages });
+  } catch (err) {
+    console.error('Error fetching messages:', err);
+    res.status(500).json({ error: 'Failed to fetch messages.' });
+  }
+});
+
 // ===== Get Recently Minted NFTs =====
 app.get('/recent', async (req, res) => {
   try {
@@ -197,6 +447,32 @@ app.get('/recent', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch recent NFTs.' });
   }
 });
+
+// Get all NFTs for the logged-in user
+app.get('/user-nfts', async (req, res) => {
+  const { walletAddress } = req.session;
+
+  try {
+    const nfts = await getUserNFTs(walletAddress); // Function to fetch NFTs for a user
+    res.json({ nfts });
+  } catch (err) {
+    console.error('Error fetching NFTs:', err);
+    res.status(500).json({ error: 'Failed to fetch NFTs.' });
+  }
+});
+
+// Get a list of all collections
+app.get('/collections', async (req, res) => {
+  try {
+    const collections = await getAllCollections(); // Function to fetch all collections
+    res.json({ collections });
+  } catch (err) {
+    console.error('Error fetching collections:', err);
+    res.status(500).json({ error: 'Failed to fetch collections.' });
+  }
+});
+
+
 
 // ===== XUMM OAuth =====
 app.get('/login', (req, res) => {

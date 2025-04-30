@@ -144,6 +144,14 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
   }
 });
 
+const mintResult = await mintNFT(metadata, walletAddress);
+
+// Clean up local file after uploading to NFT.Storage
+fs.unlinkSync(nft_file.path);
+
+res.json({ success: true, mintResult });
+
+
 // ===== Listing NFT Route =====
 app.post('/list', async (req, res) => {
   const { nftokenId, price, duration } = req.body;

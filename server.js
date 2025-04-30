@@ -18,7 +18,7 @@ import mongoose from 'mongoose';
 import NodeCache from 'node-cache';
 
 // Import your business logic modules
-import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, validateSeagullCoinPayment } from './mintingLogic.js';
+import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, validateSeagullCoinPayment } from './mintingLogic.js';  // <-- Added this import
 import { client, fetchNFTs } from './xrplClient.js';
 import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
 import { OfferModel } from './models/offerModel.js';

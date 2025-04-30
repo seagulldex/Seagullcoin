@@ -1,40 +1,18 @@
-// models/nftModel.js
-import fs from 'fs';
-const filePath = './data/nfts.json';
+import mongoose from 'mongoose';
 
-function readNFTs() {
-  if (!fs.existsSync(filePath)) return [];
-  return JSON.parse(fs.readFileSync(filePath));
-}
+// Define your NFT schema
+const nftSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  nftokenId: { type: String, required: true, unique: true },
+  owner: { type: String, required: true },  // The owner could be the wallet address
+  imageUrl: { type: String, required: true },  // Store file URL or path
+  properties: mongoose.Schema.Types.Mixed,  // Store any additional properties
+  createdAt: { type: Date, default: Date.now },
+});
 
-function writeNFTs(nfts) {
-  fs.writeFileSync(filePath, JSON.stringify(nfts, null, 2));
-}
+// Create a model using the schema
+const NFTModel = mongoose.model('NFT', nftSchema);
 
-const NFTModel = {
-  getAll: () => readNFTs(),
-
-  save: (nft) => {
-    const nfts = readNFTs();
-    nfts.push(nft);
-    writeNFTs(nfts);
-  },
-
-  getById: (id) => readNFTs().find(nft => nft.id === id),
-
-  update: (id, updatedNft) => {
-    const nfts = readNFTs();
-    const index = nfts.findIndex(n => n.id === id);
-    if (index !== -1) {
-      nfts[index] = { ...nfts[index], ...updatedNft };
-      writeNFTs(nfts);
-    }
-  },
-
-  delete: (id) => {
-    const nfts = readNFTs().filter(nft => nft.id !== id);
-    writeNFTs(nfts);
-  }
-};
-
-export default NFTModel;
+// Export the model
+export { NFTModel };

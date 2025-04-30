@@ -18,12 +18,13 @@ import mongoose from 'mongoose';
 import NodeCache from 'node-cache';
 import { fetchSeagullCoinBalance } from './xrplClient.js'; // adjust path if needed
 
-
 // Import your business logic modules
-import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, validateSeagullCoinPayment } from './mintingLogic.js';  // <-- Added this import
+import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, validateSeagullCoinPayment, burnNFTLogic } from './mintingLogic.js';  // Added burnNFTLogic import
 import { client, fetchNFTs } from './xrplClient.js';
 import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
 import { OfferModel } from './models/offerModel.js';
+import { NFTModel } from './models/nftModel.js';  // Added a new model for NFT management
+import { MongoClient, ServerApiVersion } from 'mongodb';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -146,42 +147,23 @@ app.post('/list', async (req, res) => {
   }
 });
 
-// ===== Cancel Offer Route =====
-app.post('/cancelOffer', async (req, res) => {
-  const { offerIndex } = req.body;
+// ===== Burn NFT Route =====
+app.post('/burn', async (req, res) => {
+  const { nftokenId } = req.body;
 
   try {
-    await rejectXRPOffer(offerIndex);
-    res.json({ success: true, message: 'Offer cancelled.' });
+    if (!nftokenId) {
+      return res.status(400).json({ error: 'NFT ID is required for burning.' });
+    }
+
+    // Burn the NFT
+    const burnResult = await burnNFTLogic(nftokenId);
+    res.json({ success: true, message: `NFT with ID ${nftokenId} successfully burned.` });
   } catch (err) {
-    console.error('Offer cancellation error:', err);
-    res.status(500).json({ error: 'Failed to cancel offer.', message: err.message });
+    console.error('Burning error:', err);
+    res.status(500).json({ error: 'Failed to burn NFT.', message: err.message });
   }
 });
-
-// ===== Get All Listings =====
-app.get('/listings', async (req, res) => {
-  try {
-    const listings = await getAllNFTListings();
-    res.json({ listings });
-  } catch (err) {
-    console.error('Listings retrieval error:', err);
-    res.status(500).json({ error: 'Failed to retrieve listings.', message: err.message });
-  }
-});
-
-app.get('/api/balance/:walletAddress', async (req, res) => {
-  const walletAddress = req.params.walletAddress;
-
-  try {
-    const balanceData = await fetchSeagullCoinBalance(walletAddress); // You can use your xrplClient here
-    res.json({ balance: balanceData.balance });
-  } catch (err) {
-    console.error('Error fetching balance:', err);
-    res.status(500).json({ error: 'Failed to fetch SeagullCoin balance.' });
-  }
-});
-
 
 // ===== Get NFT Details =====
 app.get('/nft/:nftokenId', async (req, res) => {
@@ -194,19 +176,6 @@ app.get('/nft/:nftokenId', async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve NFT details.', message: err.message });
   }
 });
-
-app.get('/api/nfts/:walletAddress', async (req, res) => {
-  const walletAddress = req.params.walletAddress;
-
-  try {
-    const nfts = await fetchNFTs(walletAddress); // Implement fetching NFTs for the wallet
-    res.json(nfts);
-  } catch (err) {
-    console.error('Error fetching NFTs:', err);
-    res.status(500).json({ error: 'Failed to fetch NFTs.' });
-  }
-});
-
 
 // ===== Get Recently Minted NFTs =====
 app.get('/recent', async (req, res) => {

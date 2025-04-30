@@ -19,7 +19,7 @@ import NodeCache from 'node-cache';
 import { fetchSeagullCoinBalance } from './xrplClient.js'; // adjust path if needed
 
 // Import your business logic modules
-import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, validateSeagullCoinPayment, burnNFTLogic } from './mintingLogic.js';  // Added burnNFTLogic import
+import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, burnNFTLogic } from './mintingLogic.js';
 import { client, fetchNFTs } from './xrplClient.js';
 import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
 import { OfferModel } from './models/offerModel.js';

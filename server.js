@@ -1161,36 +1161,36 @@ app.get('/user-nfts', async (req, res) => {
 });
 
 /**
- * @swagger
- * /getusernfts:
- *   get:
- *     summary: Get NFTs for a specific wallet address
- *     parameters:
- *       - in: query
- *         name: walletAddress
- *         schema:
- *           type: string
- *         required: false
- *         description: Wallet address to fetch NFTs for
- *     responses:
- *       200:
- *         description: NFTs retrieved
- */
+ * @swagger
+ * /getusernfts:
+ *   get:
+ *     summary: Get NFTs for a specific wallet address
+ *     parameters:
+ *       - in: query
+ *         name: walletAddress
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Wallet address to fetch NFTs for
+ *     responses:
+ *       200:
+ *         description: NFTs retrieved
+ */
 app.get('/getusernfts',
-  query('walletAddress').optional().isString().isLength({ min: 25 }).withMessage('Invalid wallet address'),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  query('walletAddress').optional().isString().isLength({ min: 25 }).withMessage('Invalid wallet address'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { walletAddress } = req.query;
-    try {
-      const nfts = await getUserNFTs(walletAddress);
-      res.json({ nfts });
-    } catch (err) {
-      console.error('Error fetching NFTs:', err);
-      res.status(500).json({ error: 'Failed to fetch NFTs.' });
-    }
-  }
+    const { walletAddress } = req.query;
+    try {
+      const nfts = await getUserNFTs(walletAddress);
+      res.json({ nfts });
+    } catch (err) {
+      console.error('Error fetching NFTs:', err);
+      res.status(500).json({ error: 'Failed to fetch NFTs.' });
+    }
+  }
 );
 
 // Get a list of all collections

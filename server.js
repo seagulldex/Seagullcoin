@@ -899,10 +899,14 @@ app.post('/api/like-nft', async (req, res) => {
   // like-nft logic here
 });
 
-app.get('/gettotalnfts', async (req, res) => {
-    // Logic to get the total number of NFTs from your database
-    const totalNFTs = await getTotalNFTs(); // Replace with actual logic
-    res.json({ totalNFTs });
+app.get('/api/stats/nfts', async (req, res) => {
+  try {
+    const totalNFTs = await getTotalNFTs();
+    res.json({ total: totalNFTs });
+  } catch (err) {
+    console.error('Error fetching total NFTs:', err);
+    res.status(500).json({ error: 'Failed to retrieve total NFTs' });
+  }
 });
 
 /**
@@ -1019,6 +1023,9 @@ app.get('/metrics', async (req, res) => {
  *       200:
  *         description: Metrics retrieved successfully
  */
+
+
+// ========= Messages =============
 
 
 // ========= Messages =============

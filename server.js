@@ -44,7 +44,53 @@ const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
 const db = new sqlite3.Database('./database.db');
 
+/**
+ * Helper to get total number of NFTs minted
+ */
+async function getTotalNFTs() {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT COUNT(*) AS count FROM nfts', (err, row) => {
+      if (err) reject(err);
+      else resolve(row.count);
+    });
+  });
+}
 
+/**
+ * Helper to get most liked NFTs
+ */
+async function getMostLikedNFTs() {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT nft_id, COUNT(*) AS likes_count FROM likes GROUP BY nft_id ORDER BY likes_count DESC LIMIT 10', (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+}
+
+/**
+ * Helper to get the total number of users
+ */
+async function getTotalUsers() {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT COUNT(*) AS count FROM users', (err, row) => {
+      if (err) reject(err);
+      else resolve(row.count);
+    });
+  });
+}
+
+/**
+ * Helper to get total mints by all users
+ */
+async function getTotalMints() {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT SUM(total_mints) AS total FROM users', (err, row) => {
+      if (err) reject(err);
+      else resolve(row.total);
+    });
+  });
+}
 
 export { getTotalNFTs, getMostLikedNFTs, getTotalUsers, getTotalMints };
 
@@ -853,7 +899,6 @@ app.post('/api/like-nft', async (req, res) => {
   // like-nft logic here
 });
 
-
 app.get('/gettotalnfts', async (req, res) => {
     // Logic to get the total number of NFTs from your database
     const totalNFTs = await getTotalNFTs(); // Replace with actual logic
@@ -918,7 +963,6 @@ app.get('/gettotalcollections', async (req, res) => {
 app.get('/api/stats/collections', async (req, res) => {
   // get-total-collections logic here
 });
-
 
 app.get('/gettotalusers', async (req, res) => {
     // Logic to get the total number of users

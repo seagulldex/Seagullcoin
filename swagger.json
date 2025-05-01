@@ -3,55 +3,20 @@
   "info": {
     "title": "SGLCN-X20 Minting API",
     "version": "1.0.0",
-    "description": "Public API for minting NFTs with SeagullCoin (SGLCN-X20) only.\n- Mint NFTs by paying 0.5 SeagullCoin.\n- No XRP purchases allowed.\n- Only SeagullCoin (X20 token) allowed for offers, mints, and sales.\n- Supports CORS for marketplaces like bidds.com and xrp.cafe."
+    "description": "OpenAPI specification for the SeagullCoin (SGLCN-X20) NFT Minting Platform."
   },
   "servers": [
     {
-      "url": "https://sglcn-x20-api.glitch.me",
-      "description": "Main API server"
+      "url": "https://outgoing-destiny-bladder.glitch.me"
     }
   ],
   "paths": {
     "/login": {
       "post": {
         "summary": "Initiate XUMM login session",
-        "operationId": "loginUser",
-        "tags": ["Authentication"],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "userToken": {
-                    "type": "string",
-                    "description": "Optional existing XUMM user token"
-                  }
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "Login payload generated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "loginPayload": { "type": "object" },
-                    "qrUrl": { "type": "string" },
-                    "websocketUrl": { "type": "string" }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Error initiating login"
+            "description": "Success"
           }
         }
       }
@@ -59,283 +24,385 @@
     "/pay": {
       "post": {
         "summary": "Initiate payment of 0.5 SeagullCoin",
-        "operationId": "initiatePayment",
-        "tags": ["Payment"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["walletAddress"],
-                "properties": {
-                  "walletAddress": {
-                    "type": "string",
-                    "description": "Wallet address initiating payment"
-                  }
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "Payment initiated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean" },
-                    "paymentId": { "type": "string" }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "description": "Invalid request" },
-          "500": { "description": "Server error" }
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/validate-payment": {
+      "post": {
+        "summary": "Validate the payment for NFT minting",
+        "responses": {
+          "200": {
+            "description": "Valid"
+          }
         }
       }
     },
     "/mint": {
       "post": {
         "summary": "Mint a new NFT after payment",
-        "operationId": "mintNFT",
-        "tags": ["NFT"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["walletAddress", "metadata"],
-                "properties": {
-                  "walletAddress": {
-                    "type": "string",
-                    "description": "Wallet address minting the NFT"
-                  },
-                  "metadata": {
-                    "type": "object",
-                    "description": "NFT metadata (name, description, image link, etc.)"
-                  }
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "NFT minted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean" },
-                    "nftokenId": { "type": "string" }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "description": "Invalid mint request" },
-          "500": { "description": "Server error" }
+            "description": "NFT minted"
+          }
         }
       }
     },
-    "/user": {
-      "get": {
-        "summary": "Get connected user wallet info",
-        "operationId": "getUser",
-        "tags": ["User"],
-        "parameters": [
-          {
-            "name": "token",
-            "in": "query",
-            "description": "XUMM user token",
-            "required": true,
-            "schema": { "type": "string" }
-          }
-        ],
+    "/burn": {
+      "post": {
+        "summary": "Burn an existing NFT",
         "responses": {
           "200": {
-            "description": "User wallet info returned",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "walletAddress": { "type": "string" },
-                    "balance": { "type": "number", "format": "float" }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "description": "Invalid token" },
-          "500": { "description": "Server error" }
+            "description": "NFT burned"
+          }
         }
       }
     },
     "/nfts": {
       "get": {
         "summary": "List all minted NFTs",
-        "operationId": "listNFTs",
-        "tags": ["NFT"],
         "responses": {
           "200": {
-            "description": "List of all NFTs",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": { "type": "string" },
-                      "metadata": { "type": "object" }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": { "description": "Server error" }
+            "description": "List of NFTs"
+          }
         }
       }
     },
-    "/nft/{nftId}": {
+    "/nfts/{id}": {
       "get": {
-        "summary": "Get NFT details",
-        "operationId": "getNFT",
-        "tags": ["NFT"],
+        "summary": "Retrieve a specific NFT",
         "parameters": [
           {
-            "name": "nftId",
+            "name": "id",
             "in": "path",
             "required": true,
-            "description": "NFTokenID",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "NFT details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": { "type": "string" },
-                    "metadata": { "type": "object" }
-                  }
-                }
-              }
-            }
-          },
-          "404": { "description": "NFT not found" },
-          "500": { "description": "Server error" }
+            "description": "NFT details"
+          }
         }
       }
     },
-    "/make-offer": {
+    "/nfts/{id}/like": {
       "post": {
-        "summary": "Make an offer for an NFT",
-        "operationId": "makeOffer",
-        "tags": ["Offer"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["walletAddress", "nftokenId", "amount"],
-                "properties": {
-                  "walletAddress": { "type": "string" },
-                  "nftokenId": { "type": "string" },
-                  "amount": { "type": "number", "format": "float" }
-                }
-              }
+        "summary": "Like an NFT",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           }
-        },
+        ],
         "responses": {
           "200": {
-            "description": "Offer created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean" },
-                    "offerId": { "type": "string" }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "description": "Invalid offer" },
-          "500": { "description": "Server error" }
-        }
-      }
-    },
-    "/reject-offer": {
-      "post": {
-        "summary": "Reject unauthorized XRP offers",
-        "operationId": "rejectOffer",
-        "tags": ["Offer"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["nftokenId", "offerId"],
-                "properties": {
-                  "nftokenId": { "type": "string" },
-                  "offerId": { "type": "string" }
-                }
-              }
-            }
+            "description": "Liked"
           }
-        },
-        "responses": {
-          "200": {
-            "description": "Offer rejected",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean" }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "description": "Invalid request" },
-          "500": { "description": "Server error" }
         }
       }
     },
-    "/api/health": {
+    "/nfts/{id}/likes": {
       "get": {
-        "summary": "Health check",
-        "tags": ["System"],
+        "summary": "Get number of likes on an NFT",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "API is running",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": { "type": "string", "example": "OK" }
-                  }
-                }
-              }
+            "description": "Likes count"
+          }
+        }
+      }
+    },
+    "/user/likes": {
+      "get": {
+        "summary": "Get NFTs liked by the authenticated user",
+        "responses": {
+          "200": {
+            "description": "Liked NFTs"
+          }
+        }
+      }
+    },
+    "/collections": {
+      "get": {
+        "summary": "List all NFT collections",
+        "responses": {
+          "200": {
+            "description": "List of collections"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new NFT collection",
+        "responses": {
+          "200": {
+            "description": "Collection created"
+          }
+        }
+      }
+    },
+    "/collections/{collectionId}": {
+      "get": {
+        "summary": "Get NFTs in a collection",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NFTs in collection"
+          }
+        }
+      }
+    },
+    "/offers": {
+      "post": {
+        "summary": "Create a new offer to buy or sell an NFT",
+        "responses": {
+          "200": {
+            "description": "Offer created"
+          }
+        }
+      }
+    },
+    "/offers/{offerId}": {
+      "delete": {
+        "summary": "Reject or cancel an offer",
+        "parameters": [
+          {
+            "name": "offerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Offer deleted"
+          }
+        }
+      }
+    },
+    "/accept-offer": {
+      "post": {
+        "summary": "Accept an offer",
+        "responses": {
+          "200": {
+            "description": "Offer accepted"
+          }
+        }
+      }
+    },
+    "/user": {
+      "get": {
+        "summary": "Get user profile details (authenticated)",
+        "responses": {
+          "200": {
+            "description": "User profile"
+          }
+        }
+      }
+    },
+    "/user/{walletAddress}": {
+      "get": {
+        "summary": "Get public user profile",
+        "parameters": [
+          {
+            "name": "walletAddress",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile"
+          }
+        }
+      }
+    },
+    "/user/username": {
+      "post": {
+        "summary": "Update username",
+        "responses": {
+          "200": {
+            "description": "Username updated"
+          }
+        }
+      }
+    },
+    "/user/avatar": {
+      "post": {
+        "summary": "Upload or update profile picture",
+        "responses": {
+          "200": {
+            "description": "Avatar updated"
+          }
+        }
+      }
+    },
+    "/messages": {
+      "post": {
+        "summary": "Send a message to another wallet",
+        "responses": {
+          "200": {
+            "description": "Message sent"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get inbox messages",
+        "responses": {
+          "200": {
+            "description": "Inbox"
+          }
+        }
+      }
+    },
+    "/messages/{walletAddress}": {
+      "get": {
+        "summary": "Get conversation with a specific wallet",
+        "parameters": [
+          {
+            "name": "walletAddress",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NFT": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "collectionId": {
+            "type": "string"
+          },
+          "likes": {
+            "type": "integer"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "wallet": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          }
+        }
+      },
+      "Collection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          }
+        }
+      },
+      "Offer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nftId": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "sender": {
+            "type": "string"
+          },
+          "recipient": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

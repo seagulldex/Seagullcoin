@@ -19,7 +19,6 @@ import NodeCache from 'node-cache';
 import { fetchSeagullCoinBalance } from './xrplClient.js'; // adjust path if needed
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
-import { createTables } from './dbSetup.js';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
 

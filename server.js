@@ -1151,8 +1151,8 @@ app.get('/collections', async (req, res) => {
  */
 
 
+// Get all collections
 app.get('/getallcollections', async (req, res) => {
-  // Fetch all collections from the database
   db.all("SELECT * FROM collections", [], (err, rows) => {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -1160,6 +1160,7 @@ app.get('/getallcollections', async (req, res) => {
     res.json(rows);
   });
 });
+
 /**
  * @swagger
  * /getallcollections:
@@ -1170,6 +1171,7 @@ app.get('/getallcollections', async (req, res) => {
  *         description: Collections retrieved successfully
  */
 
+// Create a collection
 app.post('/create-collection',
   body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Collection name is required'),
   body('description').optional().isString().isLength({ max: 300 }),
@@ -1230,6 +1232,7 @@ app.get('/xumm/callback', async (req, res) => {
   }
 });
 
+// Start the server
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server running');
-});
+})

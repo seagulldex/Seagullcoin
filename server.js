@@ -42,7 +42,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
-
+const { body, validationResult } = require('express-validator');
 const db = new sqlite3.Database('./database.db', (err) => {
   if (err) {
     console.error('Failed to connect to SQLite database:', err);
@@ -94,6 +94,15 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // ===== SQLite Init =====
 // Initialize SQLite database
+
+const db = new sqlite3.Database('./database.db', (err) => {
+  if (err) {
+    console.error('Failed to connect to SQLite database:', err);
+  } else {
+    console.log('Connected to SQLite database.');
+    createTables(db);
+  }
+});
 
 // Ensure the tables for users and messages exist
 db.serialize(() => {
@@ -153,39 +162,27 @@ app.post('/api/posts', (req, res) => {
 });
 
 // ===== Send Message Route =====
-app.post('/send-message', async (req, res) => {
-  const { sender, recipient, messageContent } = req.body;
+app.post('/send-message',
+  body('recipient').isString().isLength({ min: 25 }).withMessage('Invalid recipient address'),
+  body('message').isString().isLength({ min: 1, max: 500 }).withMessage('Message must be between 1 and 500 characters'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  // Validate input
-  if (!sender || !recipient || !messageContent) {
-    return res.status(400).json({ error: 'Sender, recipient, and message content are required.' });
+    const sender = req.session?.walletAddress;
+    if (!sender) return res.status(401).json({ error: 'Wallet not connected.' });
+
+    const { recipient, message } = req.body;
+
+    try {
+      await sendMessage(sender, recipient, message);
+      res.json({ success: true, message: 'Message sent.' });
+    } catch (err) {
+      console.error('Error sending message:', err);
+      res.status(500).json({ error: 'Failed to send message.' });
+    }
   }
-
-  try {
-    // Prepare the SQL query to insert a new message
-    const query = `INSERT INTO messages (sender, recipient, message) VALUES (?, ?, ?)`;
-    
-    // Insert the message into the database
-    db.run(query, [sender, recipient, messageContent], function (err) {
-      if (err) {
-        console.error('Error sending message:', err);
-        return res.status(500).json({ error: 'Failed to send message.' });
-      }
-      
-      res.json({ success: true, message: 'Message sent successfully.' });
-    });
-  } catch (err) {
-    console.error('Error sending message:', err);
-    res.status(500).json({ error: 'Failed to send message.' });
-  }
-});
-
-db.run(`CREATE TABLE IF NOT EXISTS posts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL,
-  content TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-)`);
+);
 
 /**
  * @swagger
@@ -277,14 +274,20 @@ app.get('/health', async (req, res) => {
  */
 
 // ===== Minting Route =====
-app.post('/mint', upload.single('nft_file'), async (req, res) => {
-  const { nft_name, nft_description, domain, properties } = req.body;
-  const nft_file = req.file;
+app.post('/mint',
+  body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Name is required (max 100 chars)'),
+  body('description').isString().isLength({ max: 500 }).optional({ checkFalsy: true }),
+  body('image').isURL().withMessage('Image must be a valid URL'),
+  body('domain').optional({ checkFalsy: true }).isString(),
+  body('properties').optional().isObject(),
+  body('collectionId').optional().isNumeric(),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  try {
-    if (!nft_name || !nft_description || !nft_file) {
-      return res.status(400).json({ error: 'NFT name, description, and file are required.' });
-    }
+    // Proceed with minting logic
+  }
+);
 
     const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
     if (!paymentValid) {
@@ -487,6 +490,27 @@ app.post('/reject-offer', async (req, res) => {
  *         description: Offer rejected
  */
 
+
+// ===== Offer Management Routes =====
+
+
+// Reject an offer
+app.post('/reject-offer', async (req, res) => {
+  const { offerId } = req.body;
+
+  if (!offerId) {
+    return res.status(400).json({ error: 'Offer ID is required.' });
+  }
+
+  try {
+    const result = await rejectOffer(offerId);
+    res.json({ success: true, result });
+  } catch (err) {
+    console.error('Error rejecting offer:', err);
+    res.status(500).json({ error: 'Failed to reject offer.', message: err.message });
+  }
+});
+
 // Endpoint to reject an offer
 app.post('/reject-offer', async (req, res) => {
   const { nftokenId, offerId } = req.body;
@@ -501,6 +525,26 @@ app.post('/reject-offer', async (req, res) => {
     res.status(500).json({ error: 'Failed to reject the offer.' });
   }
 });
+
+/**
+ * @swagger
+ * /reject-offer:
+ *   post:
+ *     summary: Reject an NFT offer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               offerID:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Offer rejected
+ */
+
 
 // Buy NFT (using SeagullCoin)
 app.post('/buynft', async (req, res) => {
@@ -671,6 +715,29 @@ app.post('/update-profile-picture', async (req, res) => {
     // Save to user profile in your DB (or session storage)
     await updateUserProfile(walletAddress, { profilePicUrl });
 
+/**
+ * @swagger
+ * /update-profile-picture:
+ *   post:
+ *     summary: Update profile picture
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               walletAddress:
+ *                 type: string
+ *               profilePicture:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Profile picture updated
+ */
+
+
 app.post('/updateuserprofile', async (req, res) => {
     const { userAddress, profileData } = req.body;
     // Logic to update the user's profile in your database
@@ -715,7 +782,28 @@ app.post('/updateuserprofile', async (req, res) => {
 app.put('/api/user/profile', async (req, res) => {
   // update-user-profile logic here
 });
-
+/**
+ * @swagger
+ * /update-profile:
+ *   post:
+ *     summary: Update user profile details
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               walletAddress:
+ *                 type: string
+ *               username:
+ *                 type: string
+ *               bio:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ */
 
 // Endpoint to update username
 app.post('/update-username', async (req, res) => {
@@ -734,22 +822,47 @@ app.post('/update-username', async (req, res) => {
     res.status(500).json({ error: 'Failed to update username.' });
   }
 });
+/**
+ * @swagger
+ * /update-username:
+ *   post:
+ *     summary: Update a user's display name
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               walletAddress:
+ *                 type: string
+ *               username:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Username updated successfully
+ */
 
 // Like an NFT
-app.post('/like-nft', async (req, res) => {
-  const { nftokenId } = req.body;
-  const { walletAddress } = req.session;
+app.post('/like-nft',
+  body('nftokenId').isString().isLength({ min: 10 }).withMessage('Invalid NFT ID'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  try {
-    // Handle liking an NFT (increment likes counter or save liked NFTs)
-    await likeNFT(walletAddress, nftokenId);
+    const { nftokenId } = req.body;
+    const walletAddress = req.session?.walletAddress;
+    if (!walletAddress) return res.status(401).json({ error: 'Wallet not connected.' });
 
-    res.json({ success: true, message: 'NFT liked.' });
-  } catch (err) {
-    console.error('Error liking NFT:', err);
-    res.status(500).json({ error: 'Failed to like NFT.' });
+    try {
+      await likeNFT(walletAddress, nftokenId);
+      res.json({ success: true, message: 'NFT liked.' });
+    } catch (err) {
+      console.error('Error liking NFT:', err);
+      res.status(500).json({ error: 'Failed to like NFT.' });
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -930,6 +1043,23 @@ app.get('/get-messages', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch messages.' });
   }
 });
+/**
+ * @swagger
+ * /get-messages:
+ *   get:
+ *     summary: Retrieve messages for a user
+ *     parameters:
+ *       - in: query
+ *         name: walletAddress
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Wallet address to fetch messages for
+ *     responses:
+ *       200:
+ *         description: Messages retrieved
+ */
+
 
 
 // ===== Get Recently Minted NFTs =====
@@ -966,12 +1096,24 @@ app.get('/user-nfts', async (req, res) => {
   }
 });
 
-app.get('/getusernfts', async (req, res) => {
-    const { userAddress } = req.query;
-    // Query your database or external service to fetch NFTs for the user
-    const userNFTs = await getNFTsByUserAddress(userAddress); // Replace with actual logic
-    res.json(userNFTs);
-});
+app.get('/getusernfts',
+  query('walletAddress').optional().isString().isLength({ min: 25 }).withMessage('Invalid wallet address'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+/**
+ * @swagger
+ * /user-nfts:
+ *   get:
+ *     summary: Get NFTs for the logged-in user
+ *     responses:
+ *       200:
+ *         description: NFTs retrieved
+ */
+
+    // Proceed to fetch NFTs
+  }
+);
 
 // Get a list of all collections
 app.get('/collections', async (req, res) => {
@@ -1012,6 +1154,18 @@ app.get('/getallcollections', async (req, res) => {
  *       200:
  *         description: Collections retrieved successfully
  */
+
+app.post('/create-collection',
+  body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Collection name is required'),
+  body('description').optional().isString().isLength({ max: 300 }),
+  body('icon').isURL().withMessage('Collection icon must be a valid URL'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    // Proceed with collection creation
+  }
+);
 
 
 // ===== XUMM OAuth =====
@@ -1069,7 +1223,3 @@ app.get('/xumm/callback', async (req, res) => {
     res.status(500).json({ error: 'OAuth callback processing failed.' });
   }
 });
-
-
-
-

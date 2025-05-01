@@ -179,6 +179,28 @@ db.run(`CREATE TABLE IF NOT EXISTS posts (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )`);
 
+/**
+ * @swagger
+ * /send-message:
+ *   post:
+ *     summary: Send a message to the community board
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               walletAddress:
+ *                 type: string
+ *               message:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Message sent successfully
+ */
+
+
 // ===== Get Messages Route =====
 app.get('/get-messages', async (req, res) => {
   const { walletAddress } = req.query;
@@ -207,6 +229,21 @@ app.get('/get-messages', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /get-messages:
+ *   get:
+ *     summary: Get all messages from the community board
+ *     parameters:
+ *       - in: query
+ *         name: walletAddress
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Messages retrieved successfully
+ */
+
 // ===== Health Check =====
 app.get('/health', async (req, res) => {
   try {
@@ -221,6 +258,15 @@ app.get('/health', async (req, res) => {
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Health check endpoint
+ *     responses:
+ *       200:
+ *         description: API is healthy
+ */
 
 // ===== Minting Route =====
 app.post('/mint', upload.single('nft_file'), async (req, res) => {
@@ -255,6 +301,33 @@ app.post('/mint', upload.single('nft_file'), async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /mint:
+ *   post:
+ *     summary: Mint a new NFT
+ *     consumes:
+ *       - multipart/form-data
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nft_file:
+ *                 type: string
+ *                 format: binary
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: NFT minted successfully
+ */
+
+
 // ===== Listing NFT Route =====
 app.post('/list', async (req, res) => {
   const { nftokenId, price, duration } = req.body;
@@ -268,10 +341,57 @@ app.post('/list', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /nft/{nftokenId}:
+ *   get:
+ *     summary: Get NFT details by token ID
+ *     parameters:
+ *       - in: path
+ *         name: nftokenId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: NFT data retrieved
+ */
+
+
 app.get('/listings', async (req, res) => {
   const listings = await getAllNFTListings();
   res.json({ success: true, listings });
 });
+
+/**
+ * @swagger
+ * /api/list-nft:
+ *   post:
+ *     summary: List an NFT for sale
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftId:
+ *                 type: string
+ *               sellerAddress:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *                 example: 0.5
+ *     responses:
+ *       200:
+ *         description: NFT listed for sale successfully
+ *       400:
+ *         description: Invalid data or insufficient SeagullCoin
+ */
+app.post('/api/list-nft', async (req, res) => {
+  // list-nft logic here
+});
+
 
 // Remove duplicate route definitions
 
@@ -300,6 +420,30 @@ app.post('/accept-offer', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /accept-offer:
+ *   post:
+ *     summary: Accept an NFT offer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               offerId:
+ *                 type: string
+ *               userAddress:
+ *                 type: string
+ *               nftId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Offer accepted
+ */
+
+
 // Reject an offer
 app.post('/reject-offer', async (req, res) => {
   const { offerId } = req.body;
@@ -316,25 +460,28 @@ app.post('/reject-offer', async (req, res) => {
     res.status(500).json({ error: 'Failed to reject offer.', message: err.message });
   }
 });
+/**
+ * @swagger
+ * /reject-offer:
+ *   post:
+ *     summary: Reject an NFT offer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               offerId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Offer rejected
+ */
+
 
 // ===== Offer Management Routes =====
 
-// Accept an offer
-app.post('/accept-offer', async (req, res) => {
-  const { offerId } = req.body;
-
-  if (!offerId) {
-    return res.status(400).json({ error: 'Offer ID is required.' });
-  }
-
-  try {
-    const result = await acceptOffer(offerId);
-    res.json({ success: true, result });
-  } catch (err) {
-    console.error('Error accepting offer:', err);
-    res.status(500).json({ error: 'Failed to accept offer.', message: err.message });
-  }
-});
 
 // Reject an offer
 app.post('/reject-offer', async (req, res) => {
@@ -375,6 +522,27 @@ app.post('/buynft', async (req, res) => {
     const result = await buyNFT(nftId, buyerAddress, priceInSeagullCoin); // Replace with actual logic
     res.json(result);
 });
+/**
+ * @swagger
+ * /buynft:
+ *   post:
+ *     summary: Buy an NFT using SeagullCoin
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftId:
+ *                 type: string
+ *               buyerAddress:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: NFT purchased successfully
+ */
+
 
 // List an NFT for sale
 app.post('/sell-nft', async (req, res) => {
@@ -391,6 +559,28 @@ app.post('/sell-nft', async (req, res) => {
     res.status(500).json({ error: 'Failed to list NFT for sale.' });
   }
 });
+
+/**
+ * @swagger
+ * /sell-nft:
+ *   post:
+ *     summary: List an NFT for sale
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftokenId:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: NFT listed for sale
+ */
+
 
 
 // ===== Burn NFT Route =====
@@ -411,6 +601,26 @@ app.post('/burn', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /burn:
+ *   post:
+ *     summary: Burn an NFT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftokenId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: NFT burned successfully
+ */
+
+
 // ===== Get NFT Details =====
 app.get('/nft/:nftokenId', async (req, res) => {
   const { nftokenId } = req.params;
@@ -422,6 +632,42 @@ app.get('/nft/:nftokenId', async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve NFT details.', message: err.message });
   }
 });
+
+
+app.get('/api/nft/:id', async (req, res) => {
+  // get-nft-by-id logic here
+});
+
+/**
+ * @swagger
+ * /api/nft/{id}:
+ *   get:
+ *     summary: Get details of an NFT by its ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: The ID of the NFT
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: NFT details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   example: "nft-123"
+ *                 name:
+ *                   type: string
+ *                   example: "SeagullCoin NFT"
+ *                 price:
+ *                   type: number
+ *                   example: 0.5
+ */
 
 // Endpoint to update profile picture
 app.post('/update-profile-picture', async (req, res) => {
@@ -451,6 +697,38 @@ app.post('/updateuserprofile', async (req, res) => {
     res.status(500).json({ error: 'Failed to update profile picture.' });
   }
 });
+
+/**
+ * @swagger
+ * /api/user/profile:
+ *   put:
+ *     summary: Update user's profile (name, avatar, etc.)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               profileData:
+ *                 type: object
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                   avatar:
+ *                     type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       400:
+ *         description: Invalid data or error updating profile
+ */
+app.put('/api/user/profile', async (req, res) => {
+  // update-user-profile logic here
+});
+
 
 // Endpoint to update username
 app.post('/update-username', async (req, res) => {
@@ -486,11 +764,60 @@ app.post('/like-nft', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/like-nft:
+ *   post:
+ *     summary: Like an NFT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftId:
+ *                 type: string
+ *               userAddress:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: NFT liked successfully
+ *       400:
+ *         description: Invalid data or already liked
+ */
+app.post('/api/like-nft', async (req, res) => {
+  // like-nft logic here
+});
+
+
 app.get('/gettotalnfts', async (req, res) => {
     // Logic to get the total number of NFTs from your database
     const totalNFTs = await getTotalNFTs(); // Replace with actual logic
     res.json({ totalNFTs });
 });
+
+/**
+ * @swagger
+ * /api/stats/nfts:
+ *   get:
+ *     summary: Get total number of SeagullCoin NFTs minted
+ *     responses:
+ *       200:
+ *         description: Total NFTs retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total:
+ *                   type: integer
+ *                   example: 100
+ */
+app.get('/api/stats/nfts', async (req, res) => {
+  // get-total-nfts logic here
+});
+
 
 app.get('/gettotalcollections', async (req, res) => {
     // Logic to get the total number of collections
@@ -498,11 +825,55 @@ app.get('/gettotalcollections', async (req, res) => {
     res.json({ totalCollections });
 });
 
+/**
+ * @swagger
+ * /api/stats/collections:
+ *   get:
+ *     summary: Get total number of NFT collections
+ *     responses:
+ *       200:
+ *         description: Total collections retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total:
+ *                   type: integer
+ *                   example: 10
+ */
+app.get('/api/stats/collections', async (req, res) => {
+  // get-total-collections logic here
+});
+
+
 app.get('/gettotalusers', async (req, res) => {
     // Logic to get the total number of users
     const totalUsers = await getTotalUsers(); // Replace with actual logic
     res.json({ totalUsers });
 });
+
+/**
+ * @swagger
+ * /api/stats/users:
+ *   get:
+ *     summary: Get total number of users
+ *     responses:
+ *       200:
+ *         description: Total users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total:
+ *                   type: integer
+ *                   example: 500
+ */
+app.get('/api/stats/users', async (req, res) => {
+  // get-total-users logic here
+});
+
 
 // Get platform metrics
 app.get('/metrics', async (req, res) => {
@@ -521,6 +892,17 @@ app.get('/metrics', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch metrics.' });
   }
 });
+
+/**
+ * @swagger
+ * /metrics:
+ *   get:
+ *     summary: Get platform metrics
+ *     responses:
+ *       200:
+ *         description: Metrics retrieved successfully
+ */
+
 
 // ========= Messages =============
 
@@ -562,12 +944,6 @@ app.get('/get-messages', async (req, res) => {
   }
 });
 
-app.post('/likenft', async (req, res) => {
-    const { nftId, userAddress } = req.body;
-    // Logic to add a "like" to the NFT (store in your database)
-    const result = await likeNFT(nftId, userAddress); // Replace with actual logic
-    res.json(result);
-});
 
 // ===== Get Recently Minted NFTs =====
 app.get('/recent', async (req, res) => {
@@ -579,6 +955,16 @@ app.get('/recent', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch recent NFTs.' });
   }
 });
+/**
+ * @swagger
+ * /recent:
+ *   get:
+ *     summary: Get recently minted NFTs
+ *     responses:
+ *       200:
+ *         description: Recent NFTs retrieved
+ */
+
 
 // Get all NFTs for the logged-in user
 app.get('/user-nfts', async (req, res) => {
@@ -610,6 +996,16 @@ app.get('/collections', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch collections.' });
   }
 });
+/**
+ * @swagger
+ * /collections:
+ *   get:
+ *     summary: Get public NFT collections
+ *     responses:
+ *       200:
+ *         description: Public collections retrieved
+ */
+
 
 app.get('/getallcollections', async (req, res) => {
   // Fetch all collections from the database
@@ -620,16 +1016,45 @@ app.get('/getallcollections', async (req, res) => {
     res.json(rows);
   });
 });
+/**
+ * @swagger
+ * /getallcollections:
+ *   get:
+ *     summary: Get all NFT collections
+ *     responses:
+ *       200:
+ *         description: Collections retrieved successfully
+ */
+
 
 // ===== XUMM OAuth =====
 app.get('/login', (req, res) => {
   const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://sglcn-x20-api.glitch.me/callback')}&state=randomstring123`;
   res.redirect(authUrl);
 });
+/**
+ * @swagger
+ * /login:
+ *   get:
+ *     summary: Redirect to XUMM login
+ *     responses:
+ *       302:
+ *         description: Redirect to XUMM
+ */
 
 app.get('/xumm/callback', async (req, res) => {
   const { code } = req.query;
   if (!code) return res.status(400).json({ error: 'Missing authorization code.' });
+
+/**
+ * @swagger
+ * /xumm/callback:
+ *   get:
+ *     summary: Handle XUMM OAuth2 callback
+ *     responses:
+ *       200:
+ *         description: Login processed
+ */
 
   try {
     const response = await fetch('https://xumm.app/api/v1/oauth/token', {

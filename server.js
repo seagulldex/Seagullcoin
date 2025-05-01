@@ -19,11 +19,9 @@ import NodeCache from 'node-cache';
 import { fetchSeagullCoinBalance } from './xrplClient.js'; // adjust path if needed
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
-import { getTotalUsers, getTotalNFTs, getMostLikedNFTs, getTotalMints } from './dbHelpers.js';
 import { createTables } from './dbSetup.js';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
-import { getAllCollections } from './dbHelpers.js'; // Adjust the path to where it’s defined
 
 
 
@@ -48,7 +46,6 @@ const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SER
 const db = new sqlite3.Database('./database.db');
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 
-export { getTotalNFTs, getMostLikedNFTs, getTotalUsers, getTotalMints };
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -971,6 +968,25 @@ app.get('/api/stats/users', async (req, res) => {
 
 
 // Get platform metrics
+
+// Get total users
+async function getTotalUsers() {
+  // Logic to get the total number of users (for example, querying a database)
+  // Here's a mock example, replace with actual logic
+  return 500;  // Replace with your actual logic to fetch user count
+}
+
+// Example for SQLite:
+async function getTotalNFTs() {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT COUNT(*) AS count FROM nfts', (err, row) => {
+      if (err) return reject(err);
+      resolve(row.count);
+    });
+  });
+}
+
+
 app.get('/metrics', async (req, res) => {
   try {
     const totalNFTs = await getTotalNFTs();
@@ -1140,6 +1156,18 @@ app.get('/getusernfts',
 );
 
 // Get a list of all collections
+
+// Example for MongoDB:
+// Example for SQLite:
+async function getAllCollections() {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT DISTINCT collection_name FROM nfts', (err, rows) => {  // Adjust the query based on your database structure
+      if (err) return reject(err);
+      resolve(rows.map(row => row.collection_name)); // Assuming collection_name is the column that stores collection names
+    });
+  });
+}
+
 app.get('/collections', async (req, res) => {
   try {
     const collections = await getAllCollections(); // Function to fetch all collections

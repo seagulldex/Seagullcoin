@@ -19,9 +19,10 @@ import NodeCache from 'node-cache';
 import { fetchSeagullCoinBalance } from './xrplClient.js'; // adjust path if needed
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
-import { getTotalNFTs, getMostLikedNFTs, getTotalUsers, getTotalMints } from './dbHelpers.js';
+import { getTotalUsers, getTotalNFTs, getMostLikedNFTs, getTotalMints } from './dbHelpers.js';
 import { createTables } from './dbSetup.js';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
+
 
 // Import your business logic modules
 import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, burnNFTLogic } from './mintingLogic.js';
@@ -41,7 +42,11 @@ const app = express();
 const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
-const { body, validationResult } = require('express-validator');
+const db = new sqlite3.Database('./database.db');
+
+
+
+export { getTotalNFTs, getMostLikedNFTs, getTotalUsers, getTotalMints };
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -848,6 +853,7 @@ app.post('/api/like-nft', async (req, res) => {
   // like-nft logic here
 });
 
+
 app.get('/gettotalnfts', async (req, res) => {
     // Logic to get the total number of NFTs from your database
     const totalNFTs = await getTotalNFTs(); // Replace with actual logic
@@ -912,6 +918,7 @@ app.get('/gettotalcollections', async (req, res) => {
 app.get('/api/stats/collections', async (req, res) => {
   // get-total-collections logic here
 });
+
 
 app.get('/gettotalusers', async (req, res) => {
     // Logic to get the total number of users

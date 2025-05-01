@@ -81,6 +81,9 @@ app.use(session({
   saveUninitialized: true,
 }));
 
+app.get('/', (req, res) => {
+  res.send("Root endpoint is working!");
+});
 
 // ===== Swagger Docs =====
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
@@ -145,11 +148,7 @@ app.post('/api/posts', (req, res) => {
   stmt.finalize();
 });
 
-// ===== Send Message Route =====
-
-app.get('/', (req, res) => {
-  res.send("Root endpoint is working!");
-});
+// ===== Send Message Route ======
 
 
 app.post('/send-message',

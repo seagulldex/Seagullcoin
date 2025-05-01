@@ -18,6 +18,9 @@ import mongoose from 'mongoose';
 import NodeCache from 'node-cache';
 import { fetchSeagullCoinBalance } from './xrplClient.js'; // adjust path if needed
 import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
+import { getTotalNFTs, getMostLikedNFTs, getTotalUsers, getTotalMints } from './dbHelpers.js';
+import { createTables } from './dbSetup.js';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 
 
@@ -39,6 +42,15 @@ const app = express();
 const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
+
+const db = new sqlite3.Database('./database.db', (err) => {
+  if (err) {
+    console.error('Failed to connect to SQLite database:', err);
+  } else {
+    console.log('Connected to SQLite database.');
+    createTables(db);
+  }
+});
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -82,10 +94,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // ===== SQLite Init =====
 // Initialize SQLite database
-import sqlite3 from 'sqlite3';
-const { Database } = sqlite3;
-
-const db = new Database('./database.db');
 
 // Ensure the tables for users and messages exist
 db.serialize(() => {

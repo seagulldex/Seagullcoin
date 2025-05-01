@@ -257,3 +257,62 @@ export const burnNFTLogic = async (nftId) => {
     throw error;
   }
 };
+
+export const acceptOffer = async (nftId, buyerWallet) => {
+  try {
+    const acceptOfferPayload = {
+      transaction: {
+        TransactionType: 'NFTokenAcceptOffer',
+        Account: SERVICE_WALLET,
+        NFTokenID: nftId,
+        Taker: buyerWallet,
+        Amount: {
+          currency: '53656167756C6C436F696E000000000000000000',
+          issuer: SGLCN_ISSUER,
+          value: '0.5',
+        },
+        Flags: 0,
+      },
+    };
+
+    const acceptResponse = await fetch(`${XUMM_API_URL}/payload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
+      body: JSON.stringify(acceptOfferPayload),
+    });
+
+    const acceptData = await acceptResponse.json();
+    if (!acceptData.success) throw new Error('Offer acceptance failed');
+
+    return acceptData;
+  } catch (error) {
+    console.error('Error accepting offer:', error);
+    throw error;
+  }
+};
+export const rejectOffer = async (nftId) => {
+  try {
+    const rejectOfferPayload = {
+      transaction: {
+        TransactionType: 'NFTokenCancelOffer',
+        Account: SERVICE_WALLET,
+        NFTokenID: nftId,
+      },
+    };
+
+    const rejectResponse = await fetch(`${XUMM_API_URL}/payload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
+      body: JSON.stringify(rejectOfferPayload),
+    });
+
+    const rejectData = await rejectResponse.json();
+    if (!rejectData.success) throw new Error('Offer rejection failed');
+
+    return rejectData;
+  } catch (error) {
+    console.error('Error rejecting XRP offer:', error);
+    throw error;
+  }
+};
+

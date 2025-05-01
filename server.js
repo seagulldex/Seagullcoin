@@ -273,43 +273,48 @@ app.get('/listings', async (req, res) => {
   res.json({ success: true, listings });
 });
 
-// Endpoint to accept an offer
+// Remove duplicate route definitions
+
+// Accept an offer
 app.post('/accept-offer', async (req, res) => {
-  const { offerId } = req.body;
+  const { offerId, userAddress, nftId } = req.body;
+
+  if (!offerId || !userAddress || !nftId) {
+    return res.status(400).json({ error: 'Offer ID, user address, and NFT ID are required.' });
+  }
+
   try {
+    // Accept the offer logic
     const result = await acceptOffer(offerId);
-    res.json({ success: true, result });
-  } catch (err) {
-    console.error('Accept offer error:', err);
-    res.status(500).json({ error: 'Failed to accept offer.', message: err.message });
-  }
-});
-
-// Endpoint to reject an offer
-app.post('/reject-offer', async (req, res) => {
-  const { offerId } = req.body;
-  try {
-    const result = await rejectOffer(offerId);
-    res.json({ success: true, result });
-  } catch (err) {
-    console.error('Reject offer error:', err);
-    res.status(500).json({ error: 'Failed to reject offer.', message: err.message });
-  }
-});
-
-  // Logic to accept the offer
-  db.run("UPDATE offers SET status = 'accepted' WHERE id = ?", [offerId], (err) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    // Update NFT owner
+    
+    // Update NFT ownership
     db.run("UPDATE nfts SET owner_address = ? WHERE id = ?", [userAddress, nftId], (err) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
-      res.json({ message: 'Offer accepted and NFT ownership updated.' });
+      res.json({ success: true, message: 'Offer accepted and NFT ownership updated.' });
     });
-  });
+  } catch (err) {
+    console.error('Error accepting offer:', err);
+    res.status(500).json({ error: 'Failed to accept offer.', message: err.message });
+  }
+});
+
+// Reject an offer
+app.post('/reject-offer', async (req, res) => {
+  const { offerId } = req.body;
+
+  if (!offerId) {
+    return res.status(400).json({ error: 'Offer ID is required.' });
+  }
+
+  try {
+    const result = await rejectOffer(offerId);
+    res.json({ success: true, result });
+  } catch (err) {
+    console.error('Error rejecting offer:', err);
+    res.status(500).json({ error: 'Failed to reject offer.', message: err.message });
+  }
 });
 
 // ===== Offer Management Routes =====

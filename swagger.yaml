@@ -2,64 +2,40 @@ openapi: 3.0.0
 info:
   title: SGLCN-X20 Minting API
   version: 1.0.0
-  description: Public API for minting, managing, and transacting NFTs using SeagullCoin on XRPL.
 servers:
   - url: https://sglcn-x20-api.glitch.me
 paths:
   /login:
     post:
       summary: Initiate XUMM login session
-      tags: [Authentication]
       responses:
         '200':
-          description: XUMM login QR and reference
+          description: Login payload created
 
   /pay:
     post:
       summary: Initiate payment of 0.5 SeagullCoin
-      tags: [Payment]
       responses:
         '200':
-          description: Payment payload generated
+          description: Payment payload created
 
   /validate-payment:
     post:
       summary: Validate the payment for NFT minting
-      tags: [Payment]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                wallet:
-                  type: string
       responses:
         '200':
-          description: Payment status
+          description: Payment validated
 
   /mint:
     post:
       summary: Mint a new NFT after payment
-      tags: [NFT]
       responses:
         '200':
-          description: NFT minted
+          description: NFT minted successfully
 
   /burn:
     post:
       summary: Burn (delete) an existing NFT
-      tags: [NFT]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                nftId:
-                  type: string
       responses:
         '200':
           description: NFT burned
@@ -67,18 +43,16 @@ paths:
   /nfts:
     get:
       summary: List all minted NFTs
-      tags: [NFT]
       responses:
         '200':
-          description: All NFTs
+          description: List of NFTs
 
   /nfts/{id}:
     get:
       summary: Retrieve a specific NFT
-      tags: [NFT]
       parameters:
-        - in: path
-          name: id
+        - name: id
+          in: path
           required: true
           schema:
             type: string
@@ -86,79 +60,78 @@ paths:
         '200':
           description: NFT details
 
-  /collections:
-    get:
-      summary: List all NFT collections
-      tags: [Collections]
-      responses:
-        '200':
-          description: All collections
-
+  /nfts/{id}/like:
     post:
-      summary: Create a new NFT collection
-      tags: [Collections]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                icon:
-                  type: string
-                description:
-                  type: string
-      responses:
-        '201':
-          description: Collection created
-
-  /collections/{collectionId}:
-    get:
-      summary: Get NFTs in a collection
-      tags: [Collections]
+      summary: Like an NFT
       parameters:
-        - in: path
-          name: collectionId
+        - name: id
+          in: path
           required: true
           schema:
             type: string
       responses:
         '200':
-          description: NFTs in collection
+          description: Like registered
+
+  /nfts/{id}/likes:
+    get:
+      summary: Get number of likes on an NFT
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Like count
+
+  /user/likes:
+    get:
+      summary: Get NFTs liked by the authenticated user
+      responses:
+        '200':
+          description: Liked NFTs
+
+  /collections:
+    get:
+      summary: List all NFT collections
+      responses:
+        '200':
+          description: List of collections
+
+    post:
+      summary: Create a new NFT collection
+      responses:
+        '200':
+          description: Collection created
+
+  /collections/{collectionId}:
+    get:
+      summary: Get NFTs in a collection
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Collection NFTs
 
   /offers:
     post:
-      summary: Create a new offer
-      tags: [Offers]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                nftId:
-                  type: string
-                amount:
-                  type: string
-                direction:
-                  type: string
-                  enum: [buy, sell]
-                wallet:
-                  type: string
+      summary: Create a new offer to buy or sell an NFT
       responses:
         '200':
           description: Offer created
 
   /offers/{offerId}:
     delete:
-      summary: Reject/cancel offer
-      tags: [Offers]
+      summary: Reject or cancel an offer
       parameters:
-        - in: path
-          name: offerId
+        - name: offerId
+          in: path
           required: true
           schema:
             type: string
@@ -169,80 +142,66 @@ paths:
   /accept-offer:
     post:
       summary: Accept an offer
-      tags: [Offers]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                offerId:
-                  type: string
       responses:
         '200':
           description: Offer accepted
 
-  /offers/{nftId}:
+  /user:
     get:
-      summary: Get all offers for an NFT
-      tags: [Offers]
+      summary: Get user profile details (authenticated)
+      responses:
+        '200':
+          description: User details
+
+  /user/{walletAddress}:
+    get:
+      summary: Get public user profile
       parameters:
-        - in: path
-          name: nftId
+        - name: walletAddress
+          in: path
           required: true
           schema:
             type: string
       responses:
         '200':
-          description: List of offers for NFT
+          description: Public profile
 
-  /buy:
+  /user/username:
     post:
-      summary: Create a buy offer for an NFT
-      tags: [Buy & Sell]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                nftId:
-                  type: string
-                amount:
-                  type: string
-                buyerWallet:
-                  type: string
+      summary: Update username
       responses:
         '200':
-          description: Buy offer created
+          description: Username updated
 
-  /sell:
+  /user/avatar:
     post:
-      summary: List an NFT for sale
-      tags: [Buy & Sell]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                nftId:
-                  type: string
-                amount:
-                  type: string
-                sellerWallet:
-                  type: string
+      summary: Upload or update profile picture
       responses:
         '200':
-          description: Sell offer created
+          description: Avatar updated
 
-  /user:
+  /messages:
+    post:
+      summary: Send a message to another wallet
+      responses:
+        '200':
+          description: Message sent
+
     get:
-      summary: Get user profile details
-      tags: [User]
+      summary: Get inbox messages
       responses:
         '200':
-          description: User info
+          description: Message list
+
+  /messages/{walletAddress}:
+    get:
+      summary: Get conversation with a specific wallet
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation thread

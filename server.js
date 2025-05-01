@@ -43,14 +43,18 @@ const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
 const { body, validationResult } = require('express-validator');
-const db = new sqlite3.Database('./database.db', (err) => {
-  if (err) {
-    console.error('Failed to connect to SQLite database:', err);
-  } else {
-    console.log('Connected to SQLite database.');
-    createTables(db);
-  }
-});
+
+
+// Check if db is already defined before declaring it again
+if (!db) {
+  db = new sqlite3.Database('./database.db', (err) => {
+    if (err) {
+      console.error('Error opening database:', err.message);
+    } else {
+      console.log('Database connected successfully');
+    }
+  });
+}
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -93,16 +97,6 @@ const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // ===== SQLite Init =====
-// Initialize SQLite database
-
-const db = new sqlite3.Database('./database.db', (err) => {
-  if (err) {
-    console.error('Failed to connect to SQLite database:', err);
-  } else {
-    console.log('Connected to SQLite database.');
-    createTables(db);
-  }
-});
 
 // Ensure the tables for users and messages exist
 db.serialize(() => {
@@ -274,6 +268,23 @@ app.get('/health', async (req, res) => {
  */
 
 // ===== Minting Route =====
+
+async function createNFT(walletAddress, nftData) {
+  return new Promise((resolve, reject) => {
+    // Insert NFT into the database (you would also interact with the blockchain here)
+    db.run(
+      'INSERT INTO nfts (walletAddress, name, description, mediaUrl, collectionId) VALUES (?, ?, ?, ?, ?)',
+      [walletAddress, nftData.name, nftData.description, nftData.mediaUrl, nftData.collectionId],
+      function (err) {
+        if (err) {
+          return reject(err);
+        }
+        resolve({ success: true, nftId: this.lastID });
+      }
+    );
+  });
+}
+
 app.post('/mint',
   body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Name is required (max 100 chars)'),
   body('description').isString().isLength({ max: 500 }).optional({ checkFalsy: true }),
@@ -844,6 +855,22 @@ app.post('/update-username', async (req, res) => {
  */
 
 // Like an NFT
+
+async function likeNFT(walletAddress, nftId) {
+  return new Promise((resolve, reject) => {
+    // Check if the user has already liked the NFT (optional)
+    db.get('SELECT * FROM nft_likes WHERE walletAddress = ? AND nftId = ?', [walletAddress, nftId], (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+
+      // If already liked, reject
+      if (row) {
+        return reject(new Error('NFT already liked by this user.'));
+      }
+
+// Insert new
+
 app.post('/like-nft',
   body('nftokenId').isString().isLength({ min: 10 }).withMessage('Invalid NFT ID'),
   async (req, res) => {
@@ -890,6 +917,16 @@ app.post('/api/like-nft', async (req, res) => {
   // like-nft logic here
 });
 
+async function getTotalNFTs() {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT COUNT(*) AS total FROM nfts', (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(row.total);
+    });
+  });
+}
 
 app.get('/gettotalnfts', async (req, res) => {
     // Logic to get the total number of NFTs from your database
@@ -918,6 +955,16 @@ app.get('/api/stats/nfts', async (req, res) => {
   // get-total-nfts logic here
 });
 
+async function getTotalCollections() {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT COUNT(*) AS total FROM collections', (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(row.total);
+    });
+  });
+}
 
 app.get('/gettotalcollections', async (req, res) => {
     // Logic to get the total number of collections
@@ -946,6 +993,16 @@ app.get('/api/stats/collections', async (req, res) => {
   // get-total-collections logic here
 });
 
+async function getTotalUsers() {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT COUNT(*) AS total FROM users', (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(row.total);
+    });
+  });
+}
 
 app.get('/gettotalusers', async (req, res) => {
     // Logic to get the total number of users
@@ -1084,6 +1141,18 @@ app.get('/recent', async (req, res) => {
 
 
 // Get all NFTs for the logged-in user
+
+async function getUserNFTs(walletAddress) {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM nfts WHERE walletAddress = ? ORDER BY mintDate DESC', [walletAddress], (err, rows) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(rows);
+    });
+  });
+}
+
 app.get('/user-nfts', async (req, res) => {
   const { walletAddress } = req.session;
 

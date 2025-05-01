@@ -44,6 +44,9 @@ const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
 const { body, validationResult } = require('express-validator');
 
+// This should only be declared once in the file
+const sqlite3 = require('sqlite3').verbose();
+let db;
 
 // Check if db is already defined before declaring it again
 if (!db) {
@@ -296,32 +299,39 @@ app.post('/mint',
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    // Proceed with minting logic
+    try {
+      const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
+      if (!paymentValid) {
+        return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });
+      }
+
+      const {
+        name: nft_name,
+        description: nft_description,
+        image,
+        domain,
+        properties,
+      } = req.body;
+
+      const metadata = {
+        name: nft_name,
+        description: nft_description,
+        domain,
+        properties: properties || {},
+        image,
+      };
+
+      const walletAddress = req.session.walletAddress;
+      const mintResult = await mintNFT(metadata, walletAddress);
+
+      res.json({ success: true, mintResult });
+    } catch (err) {
+      console.error('Minting error:', err);
+      res.status(500).json({ error: 'Minting failed.', message: err.message });
+    }
   }
 );
 
-    const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
-    if (!paymentValid) {
-      return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });
-    }
-
-    const metadata = {
-      name: nft_name,
-      description: nft_description,
-      domain,
-      properties: properties ? JSON.parse(properties) : {},
-      file: nft_file.path,
-    };
-
-    const walletAddress = req.session.walletAddress;
-    const mintResult = await mintNFT(metadata, walletAddress);
-
-    res.json({ success: true, mintResult });
-  } catch (err) {
-    console.error('Minting error:', err);
-    res.status(500).json({ error: 'Minting failed.', message: err.message });
-  }
-});
 
 /**
  * @swagger
@@ -1256,15 +1266,15 @@ app.get('/xumm/callback', async (req, res) => {
   const { code } = req.query;
   if (!code) return res.status(400).json({ error: 'Missing authorization code.' });
 
-/**
- * @swagger
- * /xumm/callback:
- *   get:
- *     summary: Handle XUMM OAuth2 callback
- *     responses:
- *       200:
- *         description: Login processed
- */
+  /**
+   * @swagger
+   * /xumm/callback:
+   *   get:
+   *     summary: Handle XUMM OAuth2 callback
+   *     responses:
+   *       200:
+   *         description: Login processed
+   */
 
   try {
     const response = await fetch('https://xumm.app/api/v1/oauth/token', {
@@ -1291,4 +1301,10 @@ app.get('/xumm/callback', async (req, res) => {
     console.error('XUMM OAuth callback error:', err);
     res.status(500).json({ error: 'OAuth callback processing failed.' });
   }
+});
+
+// Start the server on the desired port
+const PORT = process.env.PORT || 3000; // Default to 3000 if not provided
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

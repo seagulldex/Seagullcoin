@@ -22,7 +22,10 @@ import sqlite3 from 'sqlite3';
 import { getTotalUsers, getTotalNFTs, getMostLikedNFTs, getTotalMints } from './dbHelpers.js';
 import { createTables } from './dbSetup.js';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
-import { body, validationResult } from 'express-validator';
+import { body, query, validationResult } from 'express-validator';
+import { getAllCollections } from './dbHelpers.js'; // Adjust the path to where it’s defined
+
+
 
 // Import your business logic modules
 import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, burnNFTLogic } from './mintingLogic.js';
@@ -560,6 +563,20 @@ app.post('/buy-nft',
  */
 
 // List an NFT for sale
+
+// Example logic for listing an NFT for sale
+async function listNFTForSale(nftId, sellerAddress, price) {
+  // Add your logic here, e.g.:
+  // - Validate NFT ownership
+  // - Insert or update a listing record in your database
+  // - Interact with XRPL to create an NFTokenOffer
+
+  console.log(`Listing NFT ${nftId} by ${sellerAddress} for ${price} SeagullCoin`);
+
+  // Mock result
+  return { success: true, message: 'NFT listed for sale' };
+}
+
 app.post('/sell-nft', async (req, res) => {
   const { nftokenId, price } = req.body;
   const { walletAddress } = req.session;
@@ -776,6 +793,16 @@ app.put('/api/user/profile', async (req, res) => {
  */
 
 // Endpoint to update username
+
+async function updateUserProfile(walletAddress, newProfileData) {
+  // Replace this with actual DB logic
+  // Example: Update user in your database
+  console.log(`Updating profile for ${walletAddress}:`, newProfileData);
+
+  // Simulate successful update
+  return { success: true, message: 'Profile updated' };
+}
+
 app.post('/update-username', async (req, res) => {
   const { walletAddress } = req.session;
   const { username } = req.body;

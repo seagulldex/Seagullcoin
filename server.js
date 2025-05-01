@@ -376,33 +376,6 @@ app.post('/buynft', async (req, res) => {
     res.json(result);
 });
 
-
-  
-
-    export const verifySeagullCoinPayment = async (walletAddress, price) => {
-  try {
-    const response = await fetch(`${XUMM_API_URL}/user/${walletAddress}/transactions`, {
-      headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
-    });
-    const data = await response.json();
-
-    if (!data.transactions) return false;
-
-    return data.transactions.some(tx => {
-      if (tx.txjson.TransactionType !== 'Payment') return false;
-      if (!tx.txjson.Amount || typeof tx.txjson.Amount !== 'object') return false;
-      
-      return tx.txjson.Amount.currency === '53656167756C6C436F696E000000000000000000' // SeagullCoin hex
-        && tx.txjson.Amount.issuer === SGLCN_ISSUER
-        && parseFloat(tx.txjson.Amount.value) >= parseFloat(price); // Compare with the provided price
-    });
-  } catch (error) {
-    console.error('Error verifying SeagullCoin payment:', error);
-    return false;
-  }
-};
-
-
 // List an NFT for sale
 app.post('/sell-nft', async (req, res) => {
   const { nftokenId, price } = req.body;

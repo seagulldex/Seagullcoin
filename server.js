@@ -44,21 +44,6 @@ const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
 const { body, validationResult } = require('express-validator');
 
-// This should only be declared once in the file
-const sqlite3 = require('sqlite3').verbose();
-let db;
-
-// Check if db is already defined before declaring it again
-if (!db) {
-  db = new sqlite3.Database('./database.db', (err) => {
-    if (err) {
-      console.error('Error opening database:', err.message);
-    } else {
-      console.log('Database connected successfully');
-    }
-  });
-}
-
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1175,23 +1160,37 @@ app.get('/user-nfts', async (req, res) => {
   }
 });
 
-app.get('/getusernfts',
-  query('walletAddress').optional().isString().isLength({ min: 25 }).withMessage('Invalid wallet address'),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 /**
- * @swagger
- * /user-nfts:
- *   get:
- *     summary: Get NFTs for the logged-in user
- *     responses:
- *       200:
- *         description: NFTs retrieved
- */
+ * @swagger
+ * /getusernfts:
+ *   get:
+ *     summary: Get NFTs for a specific wallet address
+ *     parameters:
+ *       - in: query
+ *         name: walletAddress
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Wallet address to fetch NFTs for
+ *     responses:
+ *       200:
+ *         description: NFTs retrieved
+ */
+app.get('/getusernfts',
+  query('walletAddress').optional().isString().isLength({ min: 25 }).withMessage('Invalid wallet address'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    // Proceed to fetch NFTs
-  }
+    const { walletAddress } = req.query;
+    try {
+      const nfts = await getUserNFTs(walletAddress);
+      res.json({ nfts });
+    } catch (err) {
+      console.error('Error fetching NFTs:', err);
+      res.status(500).json({ error: 'Failed to fetch NFTs.' });
+    }
+  }
 );
 
 // Get a list of all collections
@@ -1246,12 +1245,12 @@ app.post('/create-collection',
   }
 );
 
-
 // ===== XUMM OAuth =====
 app.get('/login', (req, res) => {
   const authUrl = `https://oauth2.xumm.app/auth?client_id=${XUMM_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://sglcn-x20-api.glitch.me/callback')}&state=randomstring123`;
   res.redirect(authUrl);
 });
+
 /**
  * @swagger
  * /login:
@@ -1264,7 +1263,9 @@ app.get('/login', (req, res) => {
 
 app.get('/xumm/callback', async (req, res) => {
   const { code } = req.query;
-  if (!code) return res.status(400).json({ error: 'Missing authorization code.' });
+  if (!code) {
+    return res.status(400).json({ error: 'Missing authorization code.' });
+  }
 
   /**
    * @swagger
@@ -1304,7 +1305,7 @@ app.get('/xumm/callback', async (req, res) => {
 });
 
 // Start the server on the desired port
-const PORT = process.env.PORT || 3000; // Default to 3000 if not provided
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

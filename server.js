@@ -275,24 +275,27 @@ app.get('/listings', async (req, res) => {
 
 // Endpoint to accept an offer
 app.post('/accept-offer', async (req, res) => {
-  const { nftokenId, offerId } = req.body;
-
+  const { offerId } = req.body;
   try {
-    // Logic to accept the offer (e.g., transfer NFT to the buyer)
-    await acceptOffer(nftokenId, offerId);
-
-    res.json({ success: true, message: 'Offer accepted successfully.' });
+    const result = await acceptOffer(offerId);
+    res.json({ success: true, result });
   } catch (err) {
-    console.error('Error accepting offer:', err);
+    console.error('Accept offer error:', err);
     res.status(500).json({ error: 'Failed to accept offer.', message: err.message });
   }
 });
 
-
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// Endpoint to reject an offer
+app.post('/reject-offer', async (req, res) => {
+  const { offerId } = req.body;
+  try {
+    const result = await rejectOffer(offerId);
+    res.json({ success: true, result });
+  } catch (err) {
+    console.error('Reject offer error:', err);
+    res.status(500).json({ error: 'Failed to reject offer.', message: err.message });
+  }
 });
-
 
   // Logic to accept the offer
   db.run("UPDATE offers SET status = 'accepted' WHERE id = ?", [offerId], (err) => {
@@ -369,21 +372,31 @@ app.post('/buynft', async (req, res) => {
 });
 
 
+  
+
+    export const verifySeagullCoinPayment = async (walletAddress, price) => {
   try {
-    const paymentValid = await verifySeagullCoinPayment(walletAddress, price);
-    if (!paymentValid) {
-      return res.status(402).json({ error: 'Insufficient SeagullCoin balance.' });
-    }
+    const response = await fetch(`${XUMM_API_URL}/user/${walletAddress}/transactions`, {
+      headers: { 'Authorization': `Bearer ${XUMM_API_KEY}` },
+    });
+    const data = await response.json();
 
-    // Proceed with buying logic (transfer SeagullCoin, update ownership, etc.)
-    await buyNFT(nftokenId, walletAddress);
+    if (!data.transactions) return false;
 
-    res.json({ success: true, message: 'NFT purchased successfully.' });
-  } catch (err) {
-    console.error('Error purchasing NFT:', err);
-    res.status(500).json({ error: 'Failed to purchase NFT.' });
+    return data.transactions.some(tx => {
+      if (tx.txjson.TransactionType !== 'Payment') return false;
+      if (!tx.txjson.Amount || typeof tx.txjson.Amount !== 'object') return false;
+      
+      return tx.txjson.Amount.currency === '53656167756C6C436F696E000000000000000000' // SeagullCoin hex
+        && tx.txjson.Amount.issuer === SGLCN_ISSUER
+        && parseFloat(tx.txjson.Amount.value) >= parseFloat(price); // Compare with the provided price
+    });
+  } catch (error) {
+    console.error('Error verifying SeagullCoin payment:', error);
+    return false;
   }
-});
+};
+
 
 // List an NFT for sale
 app.post('/sell-nft', async (req, res) => {
@@ -666,3 +679,7 @@ app.get('/xumm/callback', async (req, res) => {
     res.status(500).json({ error: 'OAuth callback processing failed.' });
   }
 });
+
+
+
+

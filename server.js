@@ -18,8 +18,7 @@ import mongoose from 'mongoose';
 import NodeCache from 'node-cache';
 import { fetchSeagullCoinBalance } from './xrplClient.js'; // adjust path if needed
 import { open } from 'sqlite';
-import * as sqlite from 'sqlite';
-
+import { acceptOffer, rejectOffer } from './mintingLogic.js';
 
 
 // Import your business logic modules
@@ -110,6 +109,41 @@ db.serialize(() => {
   stmt.finalize();
 });
 
+// 1. Get all posts (for the community board)
+app.get('/api/posts', (req, res) => {
+  db.all('SELECT * FROM posts ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) {
+      res.status(500).send('Error retrieving posts');
+      return;
+    }
+    res.json(rows); // Return all posts as JSON
+  });
+});
+
+// 2. Create a new post
+app.post('/api/posts', (req, res) => {
+  const { username, content } = req.body;
+  
+  if (!username || !content) {
+    return res.status(400).send('Username and content are required');
+  }
+
+  const stmt = db.prepare('INSERT INTO posts (username, content) VALUES (?, ?)');
+  stmt.run(username, content, function (err) {
+    if (err) {
+      return res.status(500).send('Error creating post');
+    }
+    // Respond with the newly created post's data (including auto-generated ID)
+    res.status(201).json({
+      id: this.lastID,
+      username,
+      content,
+      created_at: new Date().toISOString(),
+    });
+  });
+  stmt.finalize();
+});
+
 // ===== Send Message Route =====
 app.post('/send-message', async (req, res) => {
   const { sender, recipient, messageContent } = req.body;
@@ -137,6 +171,13 @@ app.post('/send-message', async (req, res) => {
     res.status(500).json({ error: 'Failed to send message.' });
   }
 });
+
+db.run(`CREATE TABLE IF NOT EXISTS posts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`);
 
 // ===== Get Messages Route =====
 app.get('/get-messages', async (req, res) => {
@@ -227,6 +268,11 @@ app.post('/list', async (req, res) => {
   }
 });
 
+app.get('/listings', async (req, res) => {
+  const listings = await getAllNFTListings();
+  res.json({ success: true, listings });
+});
+
 // Endpoint to accept an offer
 app.post('/accept-offer', async (req, res) => {
   const { nftokenId, offerId } = req.body;
@@ -238,7 +284,64 @@ app.post('/accept-offer', async (req, res) => {
     res.json({ success: true, message: 'Offer accepted successfully.' });
   } catch (err) {
     console.error('Error accepting offer:', err);
-    res.status(500).json({ error: 'Failed to accept the offer.' });
+    res.status(500).json({ error: 'Failed to accept offer.', message: err.message });
+  }
+});
+
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
+
+
+  // Logic to accept the offer
+  db.run("UPDATE offers SET status = 'accepted' WHERE id = ?", [offerId], (err) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    // Update NFT owner
+    db.run("UPDATE nfts SET owner_address = ? WHERE id = ?", [userAddress, nftId], (err) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ message: 'Offer accepted and NFT ownership updated.' });
+    });
+  });
+});
+
+// ===== Offer Management Routes =====
+
+// Accept an offer
+app.post('/accept-offer', async (req, res) => {
+  const { offerId } = req.body;
+
+  if (!offerId) {
+    return res.status(400).json({ error: 'Offer ID is required.' });
+  }
+
+  try {
+    const result = await acceptOffer(offerId);
+    res.json({ success: true, result });
+  } catch (err) {
+    console.error('Error accepting offer:', err);
+    res.status(500).json({ error: 'Failed to accept offer.', message: err.message });
+  }
+});
+
+// Reject an offer
+app.post('/reject-offer', async (req, res) => {
+  const { offerId } = req.body;
+
+  if (!offerId) {
+    return res.status(400).json({ error: 'Offer ID is required.' });
+  }
+
+  try {
+    const result = await rejectOffer(offerId);
+    res.json({ success: true, result });
+  } catch (err) {
+    console.error('Error rejecting offer:', err);
+    res.status(500).json({ error: 'Failed to reject offer.', message: err.message });
   }
 });
 
@@ -258,9 +361,13 @@ app.post('/reject-offer', async (req, res) => {
 });
 
 // Buy NFT (using SeagullCoin)
-app.post('/buy-nft', async (req, res) => {
-  const { nftokenId, price } = req.body;
-  const { walletAddress } = req.session;
+app.post('/buynft', async (req, res) => {
+    const { nftId, buyerAddress, priceInSeagullCoin } = req.body;
+    // Logic to process the purchase (ensure sufficient funds, transfer ownership, etc.)
+    const result = await buyNFT(nftId, buyerAddress, priceInSeagullCoin); // Replace with actual logic
+    res.json(result);
+});
+
 
   try {
     const paymentValid = await verifySeagullCoinPayment(walletAddress, price);
@@ -340,6 +447,13 @@ app.post('/update-profile-picture', async (req, res) => {
     // Save to user profile in your DB (or session storage)
     await updateUserProfile(walletAddress, { profilePicUrl });
 
+app.post('/updateuserprofile', async (req, res) => {
+    const { userAddress, profileData } = req.body;
+    // Logic to update the user's profile in your database
+    const result = await updateUserProfile(userAddress, profileData); // Replace with actual logic
+    res.json(result);
+});
+
     res.json({ success: true, profilePicUrl });
   } catch (err) {
     console.error('Error updating profile picture:', err);
@@ -379,6 +493,24 @@ app.post('/like-nft', async (req, res) => {
     console.error('Error liking NFT:', err);
     res.status(500).json({ error: 'Failed to like NFT.' });
   }
+});
+
+app.get('/gettotalnfts', async (req, res) => {
+    // Logic to get the total number of NFTs from your database
+    const totalNFTs = await getTotalNFTs(); // Replace with actual logic
+    res.json({ totalNFTs });
+});
+
+app.get('/gettotalcollections', async (req, res) => {
+    // Logic to get the total number of collections
+    const totalCollections = await getTotalCollections(); // Replace with actual logic
+    res.json({ totalCollections });
+});
+
+app.get('/gettotalusers', async (req, res) => {
+    // Logic to get the total number of users
+    const totalUsers = await getTotalUsers(); // Replace with actual logic
+    res.json({ totalUsers });
 });
 
 // Get platform metrics
@@ -439,6 +571,13 @@ app.get('/get-messages', async (req, res) => {
   }
 });
 
+app.post('/likenft', async (req, res) => {
+    const { nftId, userAddress } = req.body;
+    // Logic to add a "like" to the NFT (store in your database)
+    const result = await likeNFT(nftId, userAddress); // Replace with actual logic
+    res.json(result);
+});
+
 // ===== Get Recently Minted NFTs =====
 app.get('/recent', async (req, res) => {
   try {
@@ -463,6 +602,13 @@ app.get('/user-nfts', async (req, res) => {
   }
 });
 
+app.get('/getusernfts', async (req, res) => {
+    const { userAddress } = req.query;
+    // Query your database or external service to fetch NFTs for the user
+    const userNFTs = await getNFTsByUserAddress(userAddress); // Replace with actual logic
+    res.json(userNFTs);
+});
+
 // Get a list of all collections
 app.get('/collections', async (req, res) => {
   try {
@@ -474,7 +620,15 @@ app.get('/collections', async (req, res) => {
   }
 });
 
-
+app.get('/getallcollections', async (req, res) => {
+  // Fetch all collections from the database
+  db.all("SELECT * FROM collections", [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(rows);
+  });
+});
 
 // ===== XUMM OAuth =====
 app.get('/login', (req, res) => {

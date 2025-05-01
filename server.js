@@ -43,6 +43,9 @@ const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
 const { body, validationResult } = require('express-validator');
+const sqlite3 = require('sqlite3').verbose();
+const db = new sqlite3.Database('./database.db');
+
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -787,19 +790,19 @@ app.post('/update-username', async (req, res) => {
  */
 
 // Like an NFT
-
 async function likeNFT(walletAddress, nftId) {
   return new Promise((resolve, reject) => {
-    // Check if the user has already liked the NFT (optional)
     db.get('SELECT * FROM nft_likes WHERE walletAddress = ? AND nftId = ?', [walletAddress, nftId], (err, row) => {
       if (err) {
         return reject(err);
       }
-
-      // If already liked, reject
       if (row) {
         return reject(new Error('NFT already liked by this user.'));
       }
+      // Insert new like
+    });
+  });
+}
 
 // Insert new
 
@@ -1235,4 +1238,4 @@ app.get('/xumm/callback', async (req, res) => {
 // Start the server
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server running');
-})
+});

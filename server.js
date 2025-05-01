@@ -147,6 +147,11 @@ app.post('/api/posts', (req, res) => {
 
 // ===== Send Message Route =====
 
+app.get('/', (req, res) => {
+  res.send("Root endpoint is working!");
+});
+
+
 app.post('/send-message',
   body('recipient').isString().isLength({ min: 25 }).withMessage('Invalid recipient address'),
   body('message').isString().isLength({ min: 1, max: 500 }).withMessage('Message must be between 1 and 500 characters'),
@@ -285,7 +290,6 @@ app.post('/mint',
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
-      // Ensure SeagullCoin payment is verified before minting
       const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
       if (!paymentValid) {
         return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });
@@ -307,13 +311,9 @@ app.post('/mint',
         image,
       };
 
-      // Get the wallet address from the session (this could be XUMM-based)
       const walletAddress = req.session.walletAddress;
-
-      // Proceed with minting the NFT using the SeagullCoin payment
       const mintResult = await mintNFT(metadata, walletAddress);
 
-      // Return the result of the minting process
       res.json({ success: true, mintResult });
     } catch (err) {
       console.error('Minting error:', err);
@@ -321,6 +321,7 @@ app.post('/mint',
     }
   }
 );
+
 
 /**
  * @swagger
@@ -1274,5 +1275,5 @@ app.get('/xumm/callback', async (req, res) => {
 
 // Start the server
 app.listen(process.env.PORT || 3000, () => {
-  console.log('Server running');
+  console.log('Server running on port ' + (process.env.PORT || 3000));
 });

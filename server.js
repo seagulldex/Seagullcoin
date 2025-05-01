@@ -675,15 +675,21 @@ app.post('/update-profile-picture', async (req, res) => {
  *         description: Profile picture updated successfully
  */
 
-app.post('/updateuserprofile', async (req, res) => {
-    const { userAddress, profileData } = req.body;
-    // Logic to update the user's profile in your database
-    const result = await updateUserProfile(userAddress, profileData); // Replace with actual logic
-    res.json(result);
-});
+// Update profile picture
+app.post('/update-profile-picture', async (req, res) => {
+  const { walletAddress } = req.session;
+  const profilePic = req.file;
 
+  if (!walletAddress || !profilePic) {
+    return res.status(400).json({ error: 'Missing wallet address or profile picture.' });
+  }
+
+  try {
+    const ipfsResult = await nftStorage.store({ file: profilePic.path });
+    const profilePicUrl = ipfsResult.url;
+    await updateUserProfile(walletAddress, { profilePicUrl });
     res.json({ success: true, profilePicUrl });
-} catch (err) {
+  } catch (err) {
     console.error('Error updating profile picture:', err);
     res.status(500).json({ error: 'Failed to update profile picture.' });
   }
@@ -1172,7 +1178,21 @@ app.post('/create-collection',
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    // Proceed with collection creation
+    const { name, description, icon } = req.body;
+
+    try {
+      db.run("INSERT INTO collections (name, description, icon) VALUES (?, ?, ?)",
+        [name, description || '', icon],
+        function (err) {
+          if (err) {
+            return res.status(500).json({ error: 'Database insert failed.' });
+          }
+          res.json({ success: true, collectionId: this.lastID });
+        });
+    } catch (err) {
+      console.error('Error creating collection:', err);
+      res.status(500).json({ error: 'Failed to create collection.' });
+    }
   }
 );
 
@@ -1208,4 +1228,8 @@ app.get('/xumm/callback', async (req, res) => {
     console.error('XUMM OAuth callback error:', err);
     res.status(500).json({ error: 'OAuth callback processing failed.' });
   }
+});
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log('Server running');
 });

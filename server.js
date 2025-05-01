@@ -487,27 +487,6 @@ app.post('/reject-offer', async (req, res) => {
  *         description: Offer rejected
  */
 
-
-// ===== Offer Management Routes =====
-
-
-// Reject an offer
-app.post('/reject-offer', async (req, res) => {
-  const { offerId } = req.body;
-
-  if (!offerId) {
-    return res.status(400).json({ error: 'Offer ID is required.' });
-  }
-
-  try {
-    const result = await rejectOffer(offerId);
-    res.json({ success: true, result });
-  } catch (err) {
-    console.error('Error rejecting offer:', err);
-    res.status(500).json({ error: 'Failed to reject offer.', message: err.message });
-  }
-});
-
 // Endpoint to reject an offer
 app.post('/reject-offer', async (req, res) => {
   const { nftokenId, offerId } = req.body;

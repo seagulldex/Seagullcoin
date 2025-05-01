@@ -23,7 +23,6 @@ import { getTotalNFTs, getMostLikedNFTs, getTotalUsers, getTotalMints } from './
 import { createTables } from './dbSetup.js';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 
-
 // Import your business logic modules
 import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, burnNFTLogic } from './mintingLogic.js';
 import { client, fetchNFTs } from './xrplClient.js';
@@ -43,9 +42,6 @@ const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
 const { body, validationResult } = require('express-validator');
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('./database.db');
-
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -852,17 +848,6 @@ app.post('/api/like-nft', async (req, res) => {
   // like-nft logic here
 });
 
-async function getTotalNFTs() {
-  return new Promise((resolve, reject) => {
-    db.get('SELECT COUNT(*) AS total FROM nfts', (err, row) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(row.total);
-    });
-  });
-}
-
 app.get('/gettotalnfts', async (req, res) => {
     // Logic to get the total number of NFTs from your database
     const totalNFTs = await getTotalNFTs(); // Replace with actual logic
@@ -927,17 +912,6 @@ app.get('/gettotalcollections', async (req, res) => {
 app.get('/api/stats/collections', async (req, res) => {
   // get-total-collections logic here
 });
-
-async function getTotalUsers() {
-  return new Promise((resolve, reject) => {
-    db.get('SELECT COUNT(*) AS total FROM users', (err, row) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(row.total);
-    });
-  });
-}
 
 app.get('/gettotalusers', async (req, res) => {
     // Logic to get the total number of users

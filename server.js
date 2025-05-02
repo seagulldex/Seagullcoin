@@ -284,37 +284,87 @@ app.get('/health', async (req, res) => {
 
 // ===== Minting Route =====
 
- app.post('/mint', async (req, res) => {
-  const { walletAddress } = req.body;
+ app.post('/mint', upload.single('file'), async (req, res) => {
+  const { name, description, domain, properties, collectionName } = req.body;
+  const { walletAddress } = req.session;
+  const file = req.file;
+
+  if (!walletAddress || !file) {
+    return res.status(400).json({ error: 'Missing wallet address or uploaded file.' });
+  }
 
   try {
-    if (!client.isConnected()) await client.connect();
+    // Connect XRPL client
+    await client.connect();
 
-    const accountLines = await client.request({
-      method: 'account_lines',
-      params: [{ account: walletAddress }]
+    // Validate SeagullCoin trustline
+    const lines = await client.request({
+      command: 'account_lines',
+      account: walletAddress,
     });
 
-    const line = accountLines.result.lines.find(l =>
-      l.currency === SEAGULL_COIN_CODE && l.issuer === SEAGULL_COIN_ISSUER
+    const hasTrustline = lines.result.lines.some(
+      line => line.currency === SEAGULL_COIN_TRUSTLINE && line.issuer === SEAGULL_COIN_ISSUER
     );
 
-    const balance = line ? parseFloat(line.balance) : 0;
-
-    if (balance < 0.5) {
-      return res.status(400).json({ error: 'Insufficient SeagullCoin balance for minting.' });
+    if (!hasTrustline) {
+      return res.status(403).json({ error: 'Missing SeagullCoin trustline.' });
     }
 
-    // Proceed with mint logic...
-    return res.json({ message: 'Balance valid. Proceed to mint.' });
+    // Check if payment of 0.5 SeagullCoin was made to service wallet
+    const txs = await client.request({
+      command: 'account_tx',
+      account: walletAddress,
+      ledger_index_min: -1,
+      ledger_index_max: -1,
+      limit: 10,
+    });
+
+    const validPayment = txs.result.transactions.find(tx =>
+      tx.tx.TransactionType === 'Payment' &&
+      tx.tx.Destination === SERVICE_WALLET &&
+      tx.tx.Amount.currency === SEAGULL_COIN_TRUSTLINE &&
+      tx.tx.Amount.issuer === SEAGULL_COIN_ISSUER &&
+      parseFloat(tx.tx.Amount.value) >= MINT_COST
+    );
+
+    if (!validPayment) {
+      return res.status(402).json({ error: 'Missing or insufficient 0.5 SeagullCoin payment.' });
+    }
+
+    // Upload media and metadata to NFT.Storage
+    const metadata = {
+      name,
+      description,
+      domain,
+      properties: properties ? JSON.parse(properties) : {},
+    };
+
+    const fileData = fs.readFileSync(path.resolve(file.path));
+    const ipfsResult = await nftStorage.store({
+      image: new File([fileData], file.originalname, { type: file.mimetype }),
+      ...metadata,
+    });
+
+    // Call XRPL mint logic
+    const mintTx = await createNFT({
+      wallet: SERVICE_WALLET,
+      uri: ipfsResult.url,
+      destination: walletAddress,
+      collection: collectionName,
+    });
+
+    // Respond with minted NFT ID
+    res.status(200).json({ success: true, nftId: mintTx.nftoken_id, ipfsUrl: ipfsResult.url });
 
   } catch (err) {
-    console.error("Minting error:", err);
-    return res.status(500).json({ error: 'Minting failed due to server error.' });
+    console.error('Minting failed:', err);
+    res.status(500).json({ error: 'Failed to mint NFT', message: err.message });
+  } finally {
+    if (client.isConnected()) await client.disconnect();
+    if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path); // Cleanup
   }
 });
-
-
 
 /**
  * @swagger
@@ -1305,3 +1355,4 @@ app.get('/xumm/callback', async (req, res) => {
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server running on port ' + (process.env.PORT || 3000));
 });
+

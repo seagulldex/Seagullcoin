@@ -684,17 +684,47 @@ app.post('/sell-nft', async (req, res) => {
  *         description: NFT listed for sale
  */
 
-// Burn NFT
+// Burn NFT Logic
+async function burnNFT(walletAddress, nftTokenID) {
+  try {
+    const transaction = {
+      "TransactionType": "NFTokenBurn",
+      "Account": walletAddress,
+      "NFTokenID": nftTokenID,  // The ID of the NFT you want to burn
+    };
+
+    const preparedTx = await client.autofill(transaction);  // Prepare the transaction
+    const signedTx = client.sign(preparedTx, walletAddress);  // Sign the transaction with wallet address
+    const txResult = await client.submit(signedTx.tx_blob);  // Submit the transaction to XRPL
+
+    if (txResult.resultCode === "tesSUCCESS") {
+      console.log('NFT burned successfully!');
+      return true;
+    } else {
+      throw new Error('NFT burning failed.');
+    }
+  } catch (error) {
+    console.error('Error in burning NFT:', error);
+    throw error;
+  }
+}
+
+// Burn NFT route
 app.post('/burn', async (req, res) => {
   const { nftokenId } = req.body;
+  const { walletAddress } = req.session;  // Get the wallet address from session (or another method)
 
-  if (!nftokenId) {
-    return res.status(400).json({ error: 'NFT ID is required for burning.' });
+  if (!nftokenId || !walletAddress) {
+    return res.status(400).json({ error: 'NFT ID and wallet address are required for burning.' });
   }
 
   try {
-    const burnResult = await burnNFTLogic(nftokenId);
-    res.json({ success: true, message: `NFT with ID ${nftokenId} successfully burned.` });
+    const burnResult = await burnNFT(walletAddress, nftokenId);  // Pass both wallet address and NFT token ID
+    if (burnResult) {
+      return res.json({ success: true, message: `NFT with ID ${nftokenId} successfully burned.` });
+    } else {
+      return res.status(500).json({ error: 'Failed to burn NFT.' });
+    }
   } catch (err) {
     console.error('Burning error:', err);
     res.status(500).json({ error: 'Failed to burn NFT.', message: err.message });
@@ -1339,7 +1369,6 @@ app.post('/create-collection',
     }
   }
 );
-
 // XUMM OAuth callback route
 app.get('/xumm/callback', async (req, res) => {
   const { code } = req.query;

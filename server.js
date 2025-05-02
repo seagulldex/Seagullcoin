@@ -320,11 +320,17 @@ async function mintNFT(walletAddress, name, description, imageUri) {
 
     if (txResult.resultCode === "tesSUCCESS") {
       console.log('NFT minted successfully!');
+
+      // Log the mint transaction
+      logTransaction(walletAddress, name, 'mint', MINT_COST, 'success', txResult.tx_json.hash);
     } else {
       throw new Error('NFT minting failed.');
     }
   } catch (error) {
     console.error('Error in minting NFT:', error);
+
+    // Log the failed mint transaction
+    logTransaction(walletAddress, name, 'mint', MINT_COST, 'failed', null);
     throw error;
   }
 }
@@ -809,7 +815,48 @@ app.get('/transaction-history', (req, res) => {
         res.json(rows);
     });
 });
-
+/**
+ * @swagger
+ * /transaction-history:
+ *   get:
+ *     summary: Get all transactions for a wallet address.
+ *     description: Fetch the transaction history (mint, buy, sell, transfer) for a given wallet address.
+ *     parameters:
+ *       - in: query
+ *         name: walletAddress
+ *         required: true
+ *         description: The wallet address for which the transaction history is fetched.
+ *     responses:
+ *       200:
+ *         description: A list of transactions for the wallet address.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   transactionType:
+ *                     type: string
+ *                     description: The type of the transaction (mint, buy, sell, transfer).
+ *                   amount:
+ *                     type: number
+ *                     description: The amount involved in the transaction.
+ *                   status:
+ *                     type: string
+ *                     description: The status of the transaction (success, failed).
+ *                   transactionHash:
+ *                     type: string
+ *                     description: The transaction hash of the transaction.
+ *                   timestamp:
+ *                     type: string
+ *                     format: date-time
+ *                     description: The timestamp of when the transaction occurred.
+ *       400:
+ *         description: Invalid wallet address or missing wallet address parameter.
+ *       500:
+ *         description: Internal server error.
+ */
 
 // Update profile picture
 app.post('/update-profile-picture', async (req, res) => {
@@ -1324,128 +1371,4 @@ app.get('/getusernfts',
 
     const { walletAddress } = req.query;
     try {
-      const nfts = await getUserNFTs(walletAddress);
-      res.json({ nfts });
-    } catch (err) {
-      console.error('Error fetching NFTs:', err);
-      res.status(500).json({ error: 'Failed to fetch NFTs.' });
-    }
-  }
-);
-
-// Get a list of all collections
-
-// Example for MongoDB:
-// Example for SQLite:
-async function getAllCollections() {
-  return new Promise((resolve, reject) => {
-    db.all('SELECT DISTINCT collection_name FROM nfts', (err, rows) => {  // Adjust the query based on your database structure
-      if (err) return reject(err);
-      resolve(rows.map(row => row.collection_name)); // Assuming collection_name is the column that stores collection names
-    });
-  });
-}
-
-app.get('/collections', async (req, res) => {
-  try {
-    const collections = await getAllCollections(); // Function to fetch all collections
-    res.json({ collections });
-  } catch (err) {
-    console.error('Error fetching collections:', err);
-    res.status(500).json({ error: 'Failed to fetch collections.' });
-  }
-});
-/**
- * @swagger
- * /collections:
- *   get:
- *     summary: Get public NFT collections
- *     responses:
- *       200:
- *         description: Public collections retrieved
- */
-
-
-// Get all collections
-app.get('/getallcollections', async (req, res) => {
-  db.all("SELECT * FROM collections", [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(rows);
-  });
-});
-
-/**
- * @swagger
- * /getallcollections:
- *   get:
- *     summary: Get all NFT collections
- *     responses:
- *       200:
- *         description: Collections retrieved successfully
- */
-
-// Create a collection
-app.post('/create-collection',
-  body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Collection name is required'),
-  body('description').optional().isString().isLength({ max: 300 }),
-  body('icon').isURL().withMessage('Collection icon must be a valid URL'),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
-    const { name, description, icon } = req.body;
-
-    try {
-      db.run("INSERT INTO collections (name, description, icon) VALUES (?, ?, ?)",
-        [name, description || '', icon],
-        function (err) {
-          if (err) {
-            return res.status(500).json({ error: 'Database insert failed.' });
-          }
-          res.json({ success: true, collectionId: this.lastID });
-        });
-    } catch (err) {
-      console.error('Error creating collection:', err);
-      res.status(500).json({ error: 'Failed to create collection.' });
-    }
-  }
-);// XUMM OAuth callback route
-app.get('/xumm/callback', async (req, res) => {
-  const { code } = req.query;
-  if (!code) {
-    return res.status(400).json({ error: 'Missing authorization code.' });
-  }
-
-  try {
-    const response = await fetch('https://xumm.app/api/v1/oauth/token', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${Buffer.from(`${XUMM_CLIENT_ID}:${XUMM_CLIENT_SECRET}`).toString('base64')}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: XUMM_REDIRECT_URI,
-      }),
-    });
-
-    if (!response.ok) throw new Error('Failed to obtain access token.');
-
-    const data = await response.json();
-    req.session.xumm = data;
-    req.session.walletAddress = data.account;
-
-    res.redirect('/');
-  } catch (err) {
-    console.error('XUMM OAuth callback error:', err);
-    res.status(500).json({ error: 'OAuth callback processing failed.' });
-  }
-});
-
-// Start the server
-app.listen(process.env.PORT || 3000, () => {
-  console.log('Server running on port ' + (process.env.PORT || 3000));
-});
+      c

@@ -1,0 +1,135 @@
+<!-- messages.html or index.html (wherever your messaging component is located) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Messages</title>
+  <style>
+    /* General styles for the page */
+    body {
+      background-color: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    /* Form styles */
+    form {
+      margin-bottom: 20px;
+    }
+
+    input, textarea {
+      background-color: #333;
+      color: white;
+      border: 1px solid #444;
+      padding: 10px;
+      width: 100%;
+      margin-bottom: 10px;
+      border-radius: 12px;
+    }
+
+    button {
+      background-color: #5c6bc0;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #3f51b5;
+    }
+
+    /* Message container styles */
+    #messages-list {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .message {
+      background-color: #444;
+      border-radius: 20px;
+      padding: 10px;
+      margin-bottom: 15px;
+      width: fit-content;
+      max-width: 80%;
+      word-wrap: break-word;
+      display: inline-block;
+    }
+
+    /* Bubbly effect for the message */
+    .message.sender {
+      background-color: #6a1b9a;
+      align-self: flex-end;
+    }
+
+    .message.receiver {
+      background-color: #1976d2;
+    }
+
+    /* Styling for message text */
+    .message p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    /* Message container */
+    #messages-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Send Message Form -->
+  <div>
+    <h2>Send Message</h2>
+    <form id="send-message-form">
+      <input type="text" id="recipient-address" placeholder="Recipient Wallet Address" required />
+      <textarea id="message" placeholder="Type your message..." required></textarea>
+      <button type="submit">Send Message</button>
+    </form>
+  </div>
+
+  <!-- Inbox Messages -->
+  <div>
+    <h2>Your Messages</h2>
+    <div id="messages-container">
+      <div class="message sender">
+        <p>Hey! Just wanted to say hello.</p>
+      </div>
+      <div class="message receiver">
+        <p>Hi! How are you?</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // JavaScript to handle sending and displaying messages
+    document.getElementById('send-message-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      const recipientAddress = document.getElementById('recipient-address').value;
+      const messageContent = document.getElementById('message').value;
+
+      // Example of adding a new message to the inbox
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message', 'sender');
+      messageElement.innerHTML = `<p>${messageContent}</p>`;
+      
+      // Append the message to the container
+      document.getElementById('messages-container').appendChild(messageElement);
+      
+      // Optionally clear the form after sending the message
+      document.getElementById('recipient-address').value = '';
+      document.getElementById('message').value = '';
+    });
+  </script>
+
+</body>
+</html>

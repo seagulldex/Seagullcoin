@@ -329,11 +329,16 @@ paths:
               properties:
                 to:
                   type: string
+                  description: "The wallet address to send the message to"
+                  example: "rExampleRecipientAddress"
                 message:
                   type: string
+                  description: "The message content"
+                  example: "Hello, SeagullCoin community!"
       responses:
         '200':
           description: Message sent
+
     get:
       summary: Get inbox messages
       responses:

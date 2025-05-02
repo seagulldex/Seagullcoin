@@ -18,12 +18,12 @@ import { NFTStorage, File } from 'nft.storage';
 import xrpl from 'xrpl';
 import mongoose from 'mongoose';
 import NodeCache from 'node-cache';
-import { fetchSeagullCoinBalance } from './xrplClient.js'; // adjust path if needed
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
 import { getBalanceForCurrency } from './getBalanceForCurrency.js'; // Import your new function
+import { fetchSeagullCoinBalance } from './getBalanceForCurrency.js'; // Correct import
 
 
 

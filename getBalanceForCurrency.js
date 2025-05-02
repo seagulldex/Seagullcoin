@@ -1,5 +1,4 @@
 // getBalanceForCurrency.js
-
 import { Client } from 'xrpl'; // XRPL Client for network requests
 
 const SEAGULL_COIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";

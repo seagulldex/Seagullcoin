@@ -23,6 +23,7 @@ import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
+import { getBalanceForCurrency } from './getBalanceForCurrency.js'; // Import your new function
 
 
 
@@ -280,34 +281,21 @@ app.get('/health', async (req, res) => {
 
 // ===== Minting Route =====
 
-async function createNFT(walletAddress, nftData) {
-  return new Promise((resolve, reject) => {
-    // Insert NFT into the database (you would also interact with the blockchain here)
-    db.run(
-      'INSERT INTO nfts (walletAddress, name, description, mediaUrl, collectionId) VALUES (?, ?, ?, ?, ?)',
-      [walletAddress, nftData.name, nftData.description, nftData.mediaUrl, nftData.collectionId],
-      function (err) {
-        if (err) {
-          return reject(err);
-        }
-        resolve({ success: true, nftId: this.lastID });
-      }
-    );
-  });
-}
+// SeagullCoin Currency Hex ID: "53656167756C6C436F696E000000000000000000"
 
-// Payment verification function
-async function verifySeagullCoinPayment(walletAddress) {
+// A function to check SeagullCoin balance
+async function checkCurrencyBalance(walletAddress, currencyHexId) {
   try {
-    // Here, you would check the wallet balance or transaction to ensure the payment is 0.5 SeagullCoin
-    const balance = await getSeagullCoinBalance(walletAddress); // Replace with actual balance check
-    return balance >= 0.5; // Payment successful if balance is >= 0.5 SeagullCoin
+    // Replace this with actual logic to check the wallet's balance for SeagullCoin using the currency hex ID
+    const balance = await getBalanceForCurrency(walletAddress, currencyHexId); // Mocked function
+    return balance >= 0.5; // Ensuring the balance is >= 0.5 SeagullCoin
   } catch (error) {
-    console.error('Error verifying payment:', error);
+    console.error('Error verifying currency payment:', error);
     return false; // Payment verification failed
   }
 }
 
+// The /mint route for minting NFTs
 app.post('/mint', 
   body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Name is required (max 100 chars)'),
   body('description').isString().isLength({ max: 500 }).optional({ checkFalsy: true }),
@@ -320,14 +308,18 @@ app.post('/mint',
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
-      // Verify if the user has made the required SeagullCoin payment
+      // SeagullCoin Currency Hex ID
+      const seagullCoinCurrencyHexId = "53656167756C6C436F696E000000000000000000";
+
+      // Check if the user has sufficient SeagullCoin balance using the currency hex ID
       const walletAddress = req.session.walletAddress;
-      const paymentValid = await verifySeagullCoinPayment(walletAddress);
-      
+      const paymentValid = await checkCurrencyBalance(walletAddress, seagullCoinCurrencyHexId);
+
       if (!paymentValid) {
         return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });
       }
 
+      // If payment is valid, proceed to mint the NFT
       const {
         name: nft_name,
         description: nft_description,
@@ -344,10 +336,11 @@ app.post('/mint',
         image,
       };
 
-      // Mint the NFT (save it in the database and interact with blockchain if needed)
+      async function createNFT(walletAddress, nftData) { /* … */ }
+
+      // Create the NFT in the database (or blockchain, if necessary)
       const mintResult = await createNFT(walletAddress, metadata);
 
-      // Respond with success
       res.json({ success: true, mintResult });
     } catch (err) {
       console.error('Minting error:', err);

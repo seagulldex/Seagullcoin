@@ -601,31 +601,40 @@ async function buyNFT(nftId, buyerAddress, paymentAmount) {
   return { success: true, message: 'Purchase successful' };
 }
 
-app.post('/buy-nft',
-  body('nftId').isString().withMessage('NFT ID must be a string'),
-  body('buyerAddress').isString().isLength({ min: 25 }).withMessage('Invalid buyer address'),
-  body('priceInSeagullCoin').isFloat({ min: 0.1 }).withMessage('Invalid payment amount, must be greater than 0.1 SeagullCoin'),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+app.post('/buy-nft', async (req, res) => {
+  const { userAddress, nftId, price } = req.body;
+
+  try {
+    // Step 1: Check SeagullCoin balance before proceeding with the buy
+    const accountLines = await client.request({
+      method: 'account_lines',
+      params: [{ account: userAddress }],
+    });
+
+    const line = accountLines.result.lines.find(l =>
+      l.currency === SEAGULL_COIN_CODE && l.issuer === SEAGULL_COIN_ISSUER
+    );
+
+    const balance = line ? parseFloat(line.balance) : 0;
+
+    if (balance < price) {
+      return res.status(400).json({ error: 'Insufficient SeagullCoin balance for buying this NFT.' });
     }
 
-    const { nftId, buyerAddress, priceInSeagullCoin } = req.body;
+    // Step 2: Perform the buy action logic (e.g., deducting SeagullCoin and transferring NFT)
+    // You would likely want to transfer the SeagullCoin from the buyer to the seller here
 
-    try {
-      const result = await buyNFT(nftId, buyerAddress, priceInSeagullCoin);
-      if (result.success) {
-        return res.status(200).json({ message: result.message });
-      } else {
-        return res.status(400).json({ error: result.message });
-      }
-    } catch (err) {
-      console.error('Error during NFT purchase:', err);
-      return res.status(500).json({ error: 'Failed to purchase NFT' });
-    }
+    // Assuming the action was successful, log the transaction
+    logTransaction(userAddress, nftId, 'buy', price, 'success');
+
+    res.status(200).json({ message: 'NFT bought successfully.' });
+
+  } catch (error) {
+    console.error('Error buying NFT:', error);
+    logTransaction(userAddress, nftId, 'buy', price, 'failed');
+    res.status(500).json({ error: 'Failed to buy NFT.' });
   }
-);
+});
 
 /**
  * @swagger
@@ -1371,4 +1380,128 @@ app.get('/getusernfts',
 
     const { walletAddress } = req.query;
     try {
-      c
+      const nfts = await getUserNFTs(walletAddress);
+      res.json({ nfts });
+    } catch (err) {
+      console.error('Error fetching NFTs:', err);
+      res.status(500).json({ error: 'Failed to fetch NFTs.' });
+    }
+  }
+);
+
+// Get a list of all collections
+
+// Example for MongoDB:
+// Example for SQLite:
+async function getAllCollections() {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT DISTINCT collection_name FROM nfts', (err, rows) => {  // Adjust the query based on your database structure
+      if (err) return reject(err);
+      resolve(rows.map(row => row.collection_name)); // Assuming collection_name is the column that stores collection names
+    });
+  });
+}
+
+app.get('/collections', async (req, res) => {
+  try {
+    const collections = await getAllCollections(); // Function to fetch all collections
+    res.json({ collections });
+  } catch (err) {
+    console.error('Error fetching collections:', err);
+    res.status(500).json({ error: 'Failed to fetch collections.' });
+  }
+});
+/**
+ * @swagger
+ * /collections:
+ *   get:
+ *     summary: Get public NFT collections
+ *     responses:
+ *       200:
+ *         description: Public collections retrieved
+ */
+
+
+// Get all collections
+app.get('/getallcollections', async (req, res) => {
+  db.all("SELECT * FROM collections", [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(rows);
+  });
+});
+
+/**
+ * @swagger
+ * /getallcollections:
+ *   get:
+ *     summary: Get all NFT collections
+ *     responses:
+ *       200:
+ *         description: Collections retrieved successfully
+ */
+
+// Create a collection
+app.post('/create-collection',
+  body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Collection name is required'),
+  body('description').optional().isString().isLength({ max: 300 }),
+  body('icon').isURL().withMessage('Collection icon must be a valid URL'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { name, description, icon } = req.body;
+
+    try {
+      db.run("INSERT INTO collections (name, description, icon) VALUES (?, ?, ?)",
+        [name, description || '', icon],
+        function (err) {
+          if (err) {
+            return res.status(500).json({ error: 'Database insert failed.' });
+          }
+          res.json({ success: true, collectionId: this.lastID });
+        });
+    } catch (err) {
+      console.error('Error creating collection:', err);
+      res.status(500).json({ error: 'Failed to create collection.' });
+    }
+  }
+);// XUMM OAuth callback route
+app.get('/xumm/callback', async (req, res) => {
+  const { code } = req.query;
+  if (!code) {
+    return res.status(400).json({ error: 'Missing authorization code.' });
+  }
+
+  try {
+    const response = await fetch('https://xumm.app/api/v1/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${XUMM_CLIENT_ID}:${XUMM_CLIENT_SECRET}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: XUMM_REDIRECT_URI,
+      }),
+    });
+
+    if (!response.ok) throw new Error('Failed to obtain access token.');
+
+    const data = await response.json();
+    req.session.xumm = data;
+    req.session.walletAddress = data.account;
+
+    res.redirect('/');
+  } catch (err) {
+    console.error('XUMM OAuth callback error:', err);
+    res.status(500).json({ error: 'OAuth callback processing failed.' });
+  }
+});
+
+// Start the server
+app.listen(process.env.PORT || 3000, () => {
+  console.log('Server running on port ' + (process.env.PORT || 3000));
+});

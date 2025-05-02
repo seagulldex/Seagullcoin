@@ -7,7 +7,7 @@ import session from 'express-session';
 import cors from 'cors';
 import fetch from 'node-fetch';
 import path from 'path';
-import multer from 'multer';
+import multer from 'multer';  // CommonJS should work here
 import dotenv from 'dotenv';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -59,20 +59,23 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-//// ===== Multer Setup with File Size Limit (10MB) =====
+// ===== Multer Setup =====
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadsDir);  // Specify where the file will be stored
+    cb(null, uploadsDir);  // Set file destination to the uploads directory
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));  // Create unique filenames
+    cb(null, Date.now() + path.extname(file.originalname));  // Create a unique filename
   }
 });
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // Set file size limit (10MB)
-}).single('file');  // Field name for the uploaded file
+  limits: { fileSize: 10 * 1024 * 1024 },  // Limit file size to 10MB
+}).single('file');  // Expect a single file to be uploaded with the field name 'file'
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ===== Rate Limiting =====
 const limiter = rateLimit({

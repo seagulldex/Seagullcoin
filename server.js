@@ -73,6 +73,16 @@ db.serialize(() => {
   `);
 });
 
+// Create the user_profiles table if it doesn't exist
+  db.run(`
+    CREATE TABLE IF NOT EXISTS user_profiles (
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        avatar_url TEXT,
+        email TEXT,
+        wallet_address TEXT UNIQUE NOT NULL
+    )
+  `);
 
 // ===== Multer Setup =====
 const storage = multer.diskStorage({
@@ -1140,6 +1150,30 @@ app.put('/api/user/profile', async (req, res) => {
  *       200:
  *         description: Profile updated
  */
+
+// Endpoint to upload avatar
+app.post('/upload-avatar', (req, res) => {
+  upload(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: 'File upload failed', details: err.message });
+    }
+
+    const avatarPath = `/uploads/${req.file.filename}`;  // Path to the uploaded file
+    const walletAddress = req.body.wallet_address;  // Assuming the wallet address is passed in the body
+
+    // Save avatar path and wallet address in user_profiles table
+    db.run(
+      `UPDATE user_profiles SET avatar_url = ? WHERE wallet_address = ?`,
+      [avatarPath, walletAddress],
+      function (err) {
+        if (err) {
+          return res.status(500).json({ error: 'Database update failed', details: err.message });
+        }
+        res.json({ message: 'Avatar uploaded successfully', avatarUrl: avatarPath });
+      }
+    );
+  });
+});
 
 // Endpoint to update username
 

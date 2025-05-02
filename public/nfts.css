@@ -9,7 +9,7 @@ body {
 
 /* Header Styles */
 header {
-  background-color: #333; /* Dark header */
+  background-color: #222; /* Dark header for better contrast */
   color: white;
   padding: 10px 20px;
 }
@@ -45,7 +45,7 @@ header img {
 
 /* Hero Section */
 .hero {
-  background-color: #222; /* Darker background for hero section */
+  background-color: #1c1c1c; /* Darker background for hero section */
   padding: 20px;
   text-align: center;
 }
@@ -96,7 +96,8 @@ header img {
   font-size: 1em;
   margin: 5px;
   cursor: pointer;
-  background-color: #eee;
+  background-color: #444; /* Dark button background */
+  color: white;
   border: 1px solid #ccc;
   border-radius: 5px;
 }
@@ -114,16 +115,21 @@ header img {
 .nft-item {
   text-align: center;
   width: 250px;
-  background-color: #222; /* Darker background for each NFT item */
-  border-radius: 15px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: #333; /* Darker background for each NFT item */
+  border-radius: 25px; /* More rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Soft shadow for bubbly effect */
   overflow: hidden;
   padding: 15px;
+  transition: transform 0.3s ease-in-out;
+}
+
+.nft-item:hover {
+  transform: scale(1.05); /* Bubbly hover effect */
 }
 
 .nft-item img {
   width: 100%;
-  border-radius: 10px;
+  border-radius: 15px;
 }
 
 .nft-item p {
@@ -134,7 +140,7 @@ header img {
 
 /* Footer Styles */
 footer {
-  background-color: #333;
+  background-color: #222; /* Dark footer background */
   color: white;
   text-align: center;
   padding: 10px;

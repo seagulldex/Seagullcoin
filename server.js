@@ -385,6 +385,25 @@ app.post('/mint', upload.single('file'), async (req, res) => {
   }
 });
 
+app.post('/upload', (req, res) => {
+  upload(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      // Multer-specific errors (e.g. file too large)
+      return res.status(400).json({ error: err.message });
+    } else if (err) {
+      // Other errors
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    res.status(200).json({ success: true, filename: req.file.filename });
+  });
+});
+
+
 
 /**
  * @swagger

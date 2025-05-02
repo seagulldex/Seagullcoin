@@ -1106,43 +1106,6 @@ app.post('/send-message', async (req, res) => {
   }
 });
 
-// GET endpoint to retrieve messages for a user
-app.get('/get-messages', async (req, res) => {
-  const { walletAddress } = req.query;
-
-  if (!walletAddress) {
-    return res.status(400).json({ error: 'Wallet address is required.' });
-  }
-
-  try {
-    const query = `SELECT * FROM messages WHERE sender = ? OR recipient = ? ORDER BY timestamp DESC`;
-    const messages = await db.all(query, [walletAddress, walletAddress]);
-
-    res.json({ success: true, messages });
-  } catch (err) {
-    console.error('Error fetching messages:', err);
-    res.status(500).json({ error: 'Failed to fetch messages.' });
-  }
-});
-/**
- * @swagger
- * /get-messages:
- *   get:
- *     summary: Retrieve messages for a user
- *     parameters:
- *       - in: query
- *         name: walletAddress
- *         schema:
- *           type: string
- *         required: true
- *         description: Wallet address to fetch messages for
- *     responses:
- *       200:
- *         description: Messages retrieved
- */
-
-
-
 // ===== Get Recently Minted NFTs =====
 app.get('/recent', async (req, res) => {
   try {

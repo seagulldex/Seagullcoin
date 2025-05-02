@@ -47,8 +47,6 @@ const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
 const db = new sqlite3.Database('./database.db');
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
-const upload = multer({ dest: 'uploads/' });
-
 
 
 
@@ -62,13 +60,11 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-
-// Set up custom Multer storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
-});
-
+// ===== Multer Setup with File Size Limit (10MB) =====
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+}).single('nft_file'); // Use single to accept one file upload for the NFT file
 
 // ===== Rate Limiting =====
 const limiter = rateLimit({
@@ -285,16 +281,47 @@ app.get('/health', async (req, res) => {
  */
 
 // ===== Minting Route =====
+async function mintNFT(walletAddress, name, description, imageUri) {
+  try {
+    const transaction = {
+      "TransactionType": "NFTokenMint",
+      "Account": walletAddress,
+      "URI": imageUri,  // Store the IPFS metadata URL here
+      "Flags": 131072,  // Set the flags for minting (e.g., prevent secondary sales)
+    };
 
- app.post('/mint', async (req, res) => {
-  const { walletAddress } = req.body;
+    const preparedTx = await client.autofill(transaction);
+    const signedTx = client.sign(preparedTx, walletAddress); // Ensure you sign with the correct wallet's private key
+    const txResult = await client.submit(signedTx.tx_blob);
+
+    if (txResult.resultCode === "tesSUCCESS") {
+      console.log('NFT minted successfully!');
+    } else {
+      throw new Error('NFT minting failed.');
+    }
+  } catch (error) {
+    console.error('Error in minting NFT:', error);
+    throw error;
+  }
+}
+
+
+// Mint endpoint for uploading and minting NFTs
+app.post('/mint', upload.single('file'), async (req, res) => {
+  const { walletAddress, name, description } = req.body;
+
+  // Validate input
+  if (!walletAddress || !name || !description || !req.file) {
+    return res.status(400).json({ error: 'Wallet address, name, description, and file are required.' });
+  }
 
   try {
     if (!client.isConnected()) await client.connect();
 
+    // Check SeagullCoin balance for minting
     const accountLines = await client.request({
       method: 'account_lines',
-      params: [{ account: walletAddress }]
+      params: [{ account: walletAddress }],
     });
 
     const line = accountLines.result.lines.find(l =>
@@ -303,20 +330,50 @@ app.get('/health', async (req, res) => {
 
     const balance = line ? parseFloat(line.balance) : 0;
 
-    if (balance < 0.5) {
+    if (balance < MINT_COST) {
       return res.status(400).json({ error: 'Insufficient SeagullCoin balance for minting.' });
     }
 
-    // Proceed with mint logic...
-    return res.json({ message: 'Balance valid. Proceed to mint.' });
+    // Upload NFT file to NFT.Storage
+    const file = new File([req.file.buffer], req.file.originalname, { type: req.file.mimetype });
+    const metadata = {
+      name,
+      description,
+      image: await nftStorage.store(file), // Upload file to NFT.Storage
+    };
 
+    // Save metadata to a database (Optional: depends on your storage needs)
+    const newNFT = new NFTModel({
+      walletAddress,
+      name,
+      description,
+      metadataUri: metadata.image, // Store the IPFS URL of the image
+      mintedAt: new Date(),
+    });
+    await newNFT.save();
+
+    // Implement the minting logic (send a transaction to mint the NFT on XRPL)
+    try {
+      await mintNFT(walletAddress, name, description, metadata.image); // Call minting function
+    } catch (error) {
+      console.error('Error in minting NFT on XRPL:', error);
+      return res.status(500).json({ error: 'Failed to mint NFT on XRPL.' });
+    }
+
+    // Respond with success
+    return res.status(200).json({
+      message: 'NFT successfully minted!',
+      nft: {
+        name,
+        description,
+        metadataUri: metadata.image,
+      },
+    });
   } catch (err) {
-    console.error("Minting error:", err);
+    console.error('Minting error:', err);
     return res.status(500).json({ error: 'Minting failed due to server error.' });
   }
 });
-
-
 
 /**
  * @swagger

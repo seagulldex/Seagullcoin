@@ -28,7 +28,7 @@ import { getBalanceForCurrency } from './getBalanceForCurrency.js'; // Import yo
 
 
 // Import your business logic modules
-import { mintNFT, verifySeagullCoinPayment, rejectXRPOffer, burnNFTLogic } from './mintingLogic.js';
+import { mintNFT, rejectXRPOffer, burnNFTLogic } from './mintingLogic.js';
 import { client, fetchNFTs } from './xrplClient.js';
 import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
 import { OfferModel } from './models/offerModel.js';
@@ -283,12 +283,12 @@ app.get('/health', async (req, res) => {
 
 // SeagullCoin Currency Hex ID: "53656167756C6C436F696E000000000000000000"
 
-// at the top you already have:
-// import { fetchSeagullCoinBalance } from './xrplClient.js';
+// Importing fetchSeagullCoinBalance from xrplClient.js (already defined at the top)
 
+// Payment verification function
 async function verifySeagullCoinPayment(walletAddress) {
   const balance = await fetchSeagullCoinBalance(walletAddress); 
-  return balance >= 0.5;
+  return balance >= 0.5; // Ensuring the balance is >= 0.5 SeagullCoin
 }
 
 // The /mint route for minting NFTs
@@ -304,10 +304,9 @@ app.post('/mint',
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
-      // Check if the user has sufficient SeagullCoin balance using the currency hex ID
+      // Get the wallet address from the session (or other method you're using)
       const walletAddress = req.session.walletAddress;
-      const paymentValid = await verifySeagullCoinPayment(walletAddress);
-
+    
       if (!paymentValid) {
         return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });
       }
@@ -329,9 +328,12 @@ app.post('/mint',
         image,
       };
 
-      async function createNFT(walletAddress, nftData) { /* … */ }
+      // Function to create the NFT in the database (or blockchain, if necessary)
+      async function createNFT(walletAddress, nftData) { 
+        // Implement the logic to store and mint the NFT
+      }
 
-      // Create the NFT in the database (or blockchain, if necessary)
+      // Create the NFT and send response
       const mintResult = await createNFT(walletAddress, metadata);
 
       res.json({ success: true, mintResult });

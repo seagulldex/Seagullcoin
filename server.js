@@ -313,7 +313,7 @@ async function mintNFT(walletAddress, name, description, imageUri) {
   }
 }
 
-app.post('/mint', upload.single('file'), async (req, res) => {
+app.post('/mint', upload, async (req, res) => {
   const { walletAddress, name, description } = req.body;
 
   // Validate input
@@ -346,10 +346,13 @@ app.post('/mint', upload.single('file'), async (req, res) => {
 
     // Upload NFT file to NFT.Storage
     const file = new File([req.file.buffer], req.file.originalname, { type: req.file.mimetype });
+    const imageMetadata = await nftStorage.store(file);  // Upload file to NFT.Storage
+
+    // Store metadata for the NFT
     const metadata = {
       name,
       description,
-      image: await nftStorage.store(file), // Upload file to NFT.Storage
+      image: imageMetadata.url, // Store the IPFS URL of the image
     };
 
     // Save metadata to a database (Optional: depends on your storage needs)
@@ -379,31 +382,12 @@ app.post('/mint', upload.single('file'), async (req, res) => {
         metadataUri: metadata.image,
       },
     });
-  } catch (err) {
-    console.error('Minting error:', err);
-    return res.status(500).json({ error: 'Minting failed due to server error.' });
+
+  } catch (error) {
+    console.error('Error during minting process:', error);
+    return res.status(500).json({ error: 'Error during minting process.', details: error.message });
   }
 });
-
-app.post('/upload', (req, res) => {
-  upload(req, res, function (err) {
-    if (err instanceof multer.MulterError) {
-      // Multer-specific errors (e.g. file too large)
-      return res.status(400).json({ error: err.message });
-    } else if (err) {
-      // Other errors
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    res.status(200).json({ success: true, filename: req.file.filename });
-  });
-});
-
-
 
 /**
  * @swagger

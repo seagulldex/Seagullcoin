@@ -48,6 +48,10 @@ const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SER
 const db = new sqlite3.Database('./database.db');
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 
+const SEAGULL_COIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"; // Issuer address
+const SEAGULL_COIN_CODE = "SeagullCoin"; // Currency code
+const MINT_COST = 0.5; // Cost for minting in SeagullCoin
+const SEAGULL_COIN_TRUSTLINE = "SGLCN"; // Token identifier (SeagullCoin trustline)
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);

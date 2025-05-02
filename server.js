@@ -1,3 +1,5 @@
+
+
 // ===== Imports =====
 import express from 'express';
 import session from 'express-session';
@@ -294,6 +296,18 @@ async function createNFT(walletAddress, nftData) {
   });
 }
 
+// Payment verification function
+async function verifySeagullCoinPayment(walletAddress) {
+  try {
+    // Here, you would check the wallet balance or transaction to ensure the payment is 0.5 SeagullCoin
+    const balance = await getSeagullCoinBalance(walletAddress); // Replace with actual balance check
+    return balance >= 0.5; // Payment successful if balance is >= 0.5 SeagullCoin
+  } catch (error) {
+    console.error('Error verifying payment:', error);
+    return false; // Payment verification failed
+  }
+}
+
 app.post('/mint', 
   body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Name is required (max 100 chars)'),
   body('description').isString().isLength({ max: 500 }).optional({ checkFalsy: true }),
@@ -306,7 +320,10 @@ app.post('/mint',
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
-      const paymentValid = await verifySeagullCoinPayment(req.session.xumm);
+      // Verify if the user has made the required SeagullCoin payment
+      const walletAddress = req.session.walletAddress;
+      const paymentValid = await verifySeagullCoinPayment(walletAddress);
+      
       if (!paymentValid) {
         return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });
       }
@@ -327,9 +344,10 @@ app.post('/mint',
         image,
       };
 
-      const walletAddress = req.session.walletAddress;
-      const mintResult = await mintNFT(metadata, walletAddress);
+      // Mint the NFT (save it in the database and interact with blockchain if needed)
+      const mintResult = await createNFT(walletAddress, metadata);
 
+      // Respond with success
       res.json({ success: true, mintResult });
     } catch (err) {
       console.error('Minting error:', err);
@@ -337,7 +355,6 @@ app.post('/mint',
     }
   }
 );
-
 
 /**
  * @swagger
@@ -880,10 +897,26 @@ async function likeNFT(walletAddress, nftId) {
 
 // Insert new
 
+app.post('/like-nft',
+  body('nftokenId').isString().isLength({ min: 10 }).withMessage('Invalid NFT ID'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-app.post('/api/like-nft', async (req, res) => {
-  // like-nft logic here
-});
+    const { nftokenId } = req.body;
+    const walletAddress = req.session?.walletAddress;
+    if (!walletAddress) return res.status(401).json({ error: 'Wallet not connected.' });
+
+    try {
+      await likeNFT(walletAddress, nftokenId);
+      res.json({ success: true, message: 'NFT liked.' });
+    } catch (err) {
+      console.error('Error liking NFT:', err);
+      res.status(500).json({ error: 'Failed to like NFT.' });
+    }
+  }
+);
+
 /**
  * @swagger
  * /api/like-nft:
@@ -906,6 +939,9 @@ app.post('/api/like-nft', async (req, res) => {
  *       400:
  *         description: Invalid data or already liked
  */
+app.post('/api/like-nft', async (req, res) => {
+  // like-nft logic here
+});
 
 async function getTotalCollections() {
   return new Promise((resolve, reject) => {
@@ -1144,6 +1180,22 @@ app.get('/user-nfts', async (req, res) => {
  *       200:
  *         description: NFTs retrieved
  */
+app.get('/getusernfts',
+  query('walletAddress').optional().isString().isLength({ min: 25 }).withMessage('Invalid wallet address'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { walletAddress } = req.query;
+    try {
+      const nfts = await getUserNFTs(walletAddress);
+      res.json({ nfts });
+    } catch (err) {
+      console.error('Error fetching NFTs:', err);
+      res.status(500).json({ error: 'Failed to fetch NFTs.' });
+    }
+  }
+);
 
 // Get a list of all collections
 

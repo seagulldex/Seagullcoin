@@ -59,6 +59,10 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // ===== Multer Upload Setup =====
+const multer = require('multer');
+
+// Define uploads directory first
+const uploadsDir = path.join(__dirname, 'uploads');
 
 // Set up custom Multer storage
 const storage = multer.diskStorage({
@@ -908,30 +912,46 @@ async function likeNFT(walletAddress, nftId) {
 
 // Insert new
 
-db.run('INSERT INTO nft_likes (walletAddress, nftId) VALUES (?, ?)', [walletAddress, nftId], (err) => {
-  if (err) return reject(err);
-  resolve({ success: true });
-});
+import { validationResult } from 'express-validator';
+import sqlite3 from 'sqlite3';
 
+// Assuming you're using SQLite3 database
+const db = new sqlite3.Database('./database.db');
+
+// Like NFT endpoint
 app.post('/like-nft',
   body('nftokenId').isString().isLength({ min: 10 }).withMessage('Invalid NFT ID'),
   async (req, res) => {
+    // Validate input
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const { nftokenId } = req.body;
     const walletAddress = req.session?.walletAddress;
+
+    // Ensure wallet is connected
     if (!walletAddress) return res.status(401).json({ error: 'Wallet not connected.' });
 
     try {
-      await likeNFT(walletAddress, nftokenId);
-      res.json({ success: true, message: 'NFT liked.' });
-    } catch (err) {
-      console.error('Error liking NFT:', err);
-      res.status(500).json({ error: 'Failed to like NFT.' });
+      // Perform the database operation wrapped in a promise
+      const result = await new Promise((resolve, reject) => {
+        // Insert new like into the database
+        db.run('INSERT INTO nft_likes (walletAddress, nftId) VALUES (?, ?)', [walletAddress, nftokenId], function(err) {
+          if (err) return reject(err);  // Reject if there's an error
+          resolve({ success: true });   // Resolve on success
+        });
+      });
+
+      // Return the success result to the client
+      res.status(200).json(result);
+
+    } catch (error) {
+      // Handle any errors
+      console.error(error);
+      res.status(500).json({ error: 'An error occurred while liking the NFT' });
     }
-  }
-);
+  });
+
 
 /**
  * @swagger

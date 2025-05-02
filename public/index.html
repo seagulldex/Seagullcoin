@@ -6,24 +6,182 @@
     <title>SGLCN-X20 Minting Platform</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+    <style>
+        /* General Styling for Black Background and White Text */
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* SeagullCoin Logo - Positioned Above Navigation Bar */
+        .seagull-logo-container {
+            text-align: right;
+            padding: 10px;
+            background-color: #222; /* Optional background for logo area */
+            position: relative;
+            z-index: 10;
+        }
+
+        .seagull-logo {
+            height: 40px; /* Logo size increased */
+            width: auto;
+            display: inline-block;
+        }
+
+        .wallet-text {
+            font-size: 16px;
+            color: white;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        /* Navigation Bar - Horizontal Scroll */
+        header nav {
+            overflow-x: auto; /* Make the navigation bar scrollable */
+            white-space: nowrap; /* Prevent links from wrapping onto the next line */
+            padding: 10px 0;
+            position: relative;
+        }
+
+        header nav ul {
+            list-style: none;
+            padding-left: 0;
+            display: inline-block; /* Ensure the list of links stays in a single row */
+            margin-right: 60px; /* Ensure space for logo */
+        }
+
+        header nav ul li {
+            display: inline-block;
+            margin-right: 30px;
+            background-color: #333;
+            padding: 15px 25px;
+            border-radius: 25px; /* Rounded "bubbly" boxes */
+            transition: background-color 0.3s ease;
+        }
+
+        header nav ul li a {
+            text-decoration: none;
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            display: block;
+        }
+
+        header nav ul li:hover {
+            background-color: #555; /* Slight color change on hover */
+        }
+
+        /* Hero section */
+        .hero {
+            text-align: center;
+            padding: 50px 0;
+        }
+
+        /* Buttons with bubbly effect */
+        button {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 25px; /* Bubbly style for buttons */
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        /* Sections with bubbly boxes */
+        .user-profiles, .collections, .nfts, .hero {
+            margin: 20px;
+            padding: 20px;
+            background-color: #222;
+            border-radius: 15px; /* Rounded sections */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* NFT gallery and profiles */
+        .profile-scroll {
+            display: flex;
+            overflow-x: scroll;
+            gap: 15px;
+        }
+
+        .profile {
+            background-color: #444;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .profile:hover {
+            background-color: #555;
+        }
+
+        .nft-item {
+            background-color: #444;
+            padding: 20px;
+            border-radius: 15px;
+            transition: background-color 0.3s ease;
+        }
+
+        .nft-item:hover {
+            background-color: #555;
+        }
+
+        /* Footer Styling */
+        footer {
+            background-color: #333;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: 30px;
+        }
+
+        footer p {
+            margin: 0;
+            color: white;
+        }
+
+        /* User info section */
+        #user-info p {
+            background-color: #222;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        #user-nfts {
+            background-color: #222;
+            padding: 10px;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 <body>
+
+    <!-- SeagullCoin Logo Container (Above Navigation) -->
+    <div class="seagull-logo-container">
+        <a href="profile.html">
+            <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" 
+                 alt="SeagullCoin Logo" class="seagull-logo">
+        </a>
+        <span class="wallet-text">Wallet</span>
+    </div>
 
     <!-- Navigation -->
     <header>
         <nav>
-            <ul class="nav-links">
+            <ul>
                 <li><a href="index.html">Home</a></li>
                 <li><a href="nfts.html">NFTs</a></li>
                 <li><a href="mint.html">Mint NFT</a></li>
                 <li><a href="messages.html">Messages</a></li>
             </ul>
-            <!-- SeagullCoin Logo in Top Right -->
-            <a href="profile.html">
-    <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" 
-         alt="SeagullCoin Logo" class="seagull-logo">
-</a>
-
         </nav>
     </header>
 
@@ -129,69 +287,15 @@
             document.getElementById('minting-progress').style.display = 'none';
         }
 
-        function showMintingResult(success, message) {
-            hideMintingProgress();
-            document.getElementById('minting-result').style.display = 'block';
-            const mintingMessage = document.getElementById('minting-message');
-            if (success) {
-                mintingMessage.innerText = `Minting Successful! NFT ID: ${message}`;
-                mintingMessage.style.color = 'green';
-            } else {
-                mintingMessage.innerText = `Minting Failed: ${message}`;
-                mintingMessage.style.color = 'red';
-            }
-        }
-
-        // Click to start login
-        document.getElementById('connect-wallet-btn').addEventListener('click', async () => {
-            const res = await fetch('/api/login');
-            const data = await res.json();
-            if (data.next.always) {
-                window.location.href = data.next.always; // Redirect to XUMM login
-            }
-        });
-
-        // Dummy functions to lock/unlock minting
-        function lockMinting() {
-            const mintButton = document.getElementById('mint-button');
-            if (mintButton) mintButton.disabled = true;
-        }
-
         function unlockMinting() {
-            const mintButton = document.getElementById('mint-button');
-            if (mintButton) mintButton.disabled = false;
+            document.getElementById('minting-result').style.display = 'block';
         }
 
-        async function startMinting() {
-            showMintingProgress();
-
-            const nftData = {
-                name: 'Example NFT',
-                description: 'This is an example NFT.',
-                imageUrl: 'https://example.com/nft-image.jpg',
-            };
-
-            try {
-                const response = await fetch('/api/mint', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(nftData),
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    showMintingResult(true, result.nftId);
-                } else {
-                    showMintingResult(false, result.message);
-                }
-            } catch (error) {
-                showMintingResult(false, 'An error occurred during minting. Please try again.');
-            }
+        function lockMinting() {
+            document.getElementById('minting-result').style.display = 'none';
         }
 
-        // Run login check on page load
+        // Check login on page load
         checkLogin();
     </script>
 

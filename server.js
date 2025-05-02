@@ -767,47 +767,58 @@ app.post('/pay', async (req, res) => {
   }
 });
 
-/pay:
-  post:
-    summary: Verify SeagullCoin payment
-    description: Checks that the user has a trustline and has sent at least 0.5 SeagullCoin to the service wallet.
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              walletAddress:
-                type: string
-                example: rExampleWalletAddress123
-    responses:
-      200:
-        description: Payment verified
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                success:
-                  type: boolean
-                  example: true
-                txHash:
-                  type: string
-      402:
-        description: Payment not found
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                error:
-                  type: string
-                  example: "Payment of 0.5 SeagullCoin not found"
-      403:
-        description: Trustline missing
-      500:
-        description: Server error
+app.post('/pay', async (req, res) => {
+  const { walletAddress } = req.body;
+  if (!walletAddress) return res.status(400).json({ error: "Missing wallet address" });
+
+  try {
+    await client.connect();
+
+    // Check trustline
+    const lines = await client.request({
+      command: "account_lines",
+      account: walletAddress,
+    });
+
+    const hasTrustline = lines.result.lines.some(
+      line => line.currency === SEAGULL_COIN_TRUSTLINE && line.issuer === SEAGULL_COIN_ISSUER
+    );
+
+    if (!hasTrustline) {
+      return res.status(403).json({ error: "Missing SeagullCoin trustline" });
+    }
+
+    // Check recent payments
+    const txs = await client.request({
+      command: "account_tx",
+      account: walletAddress,
+      ledger_index_min: -1,
+      ledger_index_max: -1,
+      limit: 10,
+    });
+
+    const payment = txs.result.transactions.find(tx =>
+      tx.tx.TransactionType === "Payment" &&
+      tx.tx.Destination === SERVICE_WALLET &&
+      tx.tx.Amount.currency === SEAGULL_COIN_TRUSTLINE &&
+      tx.tx.Amount.issuer === SEAGULL_COIN_ISSUER &&
+      parseFloat(tx.tx.Amount.value) >= MINT_COST
+    );
+
+    if (!payment) {
+      return res.status(402).json({ error: "Payment of 0.5 SeagullCoin not found" });
+    }
+
+    return res.json({ success: true, txHash: payment.tx.hash });
+
+  } catch (err) {
+    console.error("Payment check failed:", err.message);
+    res.status(500).json({ error: "Payment verification failed" });
+  } finally {
+    if (client.isConnected()) await client.disconnect();
+  }
+});
+
 
 
 // Update profile picture

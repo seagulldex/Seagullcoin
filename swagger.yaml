@@ -192,6 +192,47 @@ paths:
       responses:
         '200':
           description: Message list
+/pay:
+  post:
+    summary: Verify SeagullCoin payment
+    description: Checks that the user has a trustline and has sent at least 0.5 SeagullCoin to the service wallet.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              walletAddress:
+                type: string
+                example: rExampleWalletAddress123
+    responses:
+      200:
+        description: Payment verified
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                txHash:
+                  type: string
+      402:
+        description: Payment not found
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: "Payment of 0.5 SeagullCoin not found"
+      403:
+        description: Trustline missing
+      500:
+        description: Server error
 
   /messages/{walletAddress}:
     get:

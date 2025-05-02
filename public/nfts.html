@@ -1,128 +1,244 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Browse NFTs | SGLCN-X20</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGLCN-X20 Minting Platform</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+    <style>
+        /* General Styling for Black Background and White Text */
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* SeagullCoin Logo - Positioned Above Navigation Bar */
+        .seagull-logo-container {
+            text-align: right;
+            padding: 10px;
+            background-color: #222; /* Optional background for logo area */
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 10;
+        }
+
+        .seagull-logo {
+            height: 20px; /* Logo size reduced */
+            width: auto;
+            display: inline-block;
+        }
+
+        .wallet-text {
+            font-size: 16px;
+            color: white;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        /* Navigation Bar - Horizontal Scroll */
+        header nav {
+            overflow-x: auto; /* Make the navigation bar scrollable */
+            white-space: nowrap; /* Prevent links from wrapping onto the next line */
+            padding: 10px 0;
+            position: relative;
+            margin-top: 60px; /* Prevent overlap with the logo */
+        }
+
+        /* Navigation Links */
+        header nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        header nav ul li {
+            display: inline-block;
+            margin: 0 20px;
+        }
+
+        header nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+        }
+
+        header nav ul li a:hover {
+            color: #aaa;
+        }
+
+        /* Main NFT Section */
+        main {
+            padding: 20px;
+        }
+
+        .hero {
+            text-align: center;
+        }
+
+        .search-bar input, .search-bar button {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        .search-bar button {
+            cursor: pointer;
+        }
+
+        .collection-header {
+            margin: 20px 0;
+        }
+
+        .nft-gallery {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .nft-item {
+            margin: 10px;
+            width: 250px;
+            text-align: center;
+        }
+
+        .nft-item img {
+            width: 100%;
+            height: auto;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #222;
+        }
+    </style>
 </head>
 <body>
-  <!-- SeagullCoin Logo Container (Above Navigation) -->
-  <div class="seagull-logo-container">
-    <a href="profile.html">
-      <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" 
-           alt="SeagullCoin Logo" class="seagull-logo">
-    </a>
-    <span class="wallet-text">Wallet</span>
-  </div>
 
-  <!-- Navigation -->
-  <header>
-    <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="nfts.html">NFTs</a></li>
-        <li><a href="mint.html">Mint NFT</a></li>
-        <li><a href="messages.html">Messages</a></li>
-      </ul>
-    </nav>
-  </header>
+    <!-- SeagullCoin Logo Container (Top-Right Corner) -->
+    <div class="seagull-logo-container">
+        <a href="profile.html">
+            <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" 
+                 alt="SeagullCoin Logo" class="seagull-logo">
+        </a>
+        <span class="wallet-text">Wallet</span>
+    </div>
 
-  <!-- Main NFT Section -->
-  <main>
-    <section class="hero">
-      <h1>Explore the Marketplace</h1>
-      <p>All NFTs minted with SeagullCoin (SGLCN-X20)</p>
-    </section>
+    <!-- Navigation -->
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="mint.html">Mint NFT</a></li>
+                <li><a href="messages.html">Messages</a></li>
+            </ul>
+        </nav>
+    </header>
 
-    <!-- Search Bar -->
-    <section class="search-bar">
-      <input type="text" id="search-name" placeholder="Search by name..." />
-      <input type="number" id="price-min" placeholder="Min price" step="0.01" />
-      <input type="number" id="price-max" placeholder="Max price" step="0.01" />
-      <button onclick="searchNFTs()">Search</button>
-      <button onclick="clearSearch()">Clear</button>
-    </section>
+    <!-- Main Content Section -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Explore the Marketplace</h1>
+            <p>All NFTs minted with SeagullCoin (SGLCN-X20)</p>
+        </section>
 
-    <!-- Collection Controls -->
-    <section class="collection-header">
-      <div class="scroll-buttons">
-        <button onclick="loadPrevious()">← Older Collections</button>
-        <button onclick="loadNext()">Newer Collections →</button>
-      </div>
-      <div class="dropdown-menu">
-        <label for="collection-select">Select Collection:</label>
-        <select id="collection-select" onchange="filterCollection(this.value)">
-          <option value="all">All Collections</option>
-          <option value="seagull-art">Seagull Art</option>
-          <option value="ocean-series">Ocean Series</option>
-          <option value="limited-edition">Limited Edition</option>
-        </select>
-      </div>
-    </section>
+        <!-- Search Bar -->
+        <section class="search-bar">
+            <input type="text" id="search-name" placeholder="Search by name..." />
+            <input type="number" id="price-min" placeholder="Min price" step="0.01" />
+            <input type="number" id="price-max" placeholder="Max price" step="0.01" />
+            <button onclick="searchNFTs()">Search</button>
+            <button onclick="clearSearch()">Clear</button>
+        </section>
 
-    <!-- NFT Gallery -->
-    <section class="nft-gallery" id="nft-gallery">
-      <div class="nft-item" data-collection="seagull-art" data-name="Seagull Art #1" data-price="2.5">
-        <img src="https://via.placeholder.com/250x250.png?text=NFT+1" alt="NFT 1" />
-        <p>Seagull Art #1<br><small>2.5 SGLCN</small></p>
-      </div>
-      <div class="nft-item" data-collection="seagull-art" data-name="Seagull Art #2" data-price="3.1">
-        <img src="https://via.placeholder.com/250x250.png?text=NFT+2" alt="NFT 2" />
-        <p>Seagull Art #2<br><small>3.1 SGLCN</small></p>
-      </div>
-      <div class="nft-item" data-collection="ocean-series" data-name="Ocean Series #1" data-price="1.75">
-        <img src="https://via.placeholder.com/250x250.png?text=NFT+3" alt="NFT 3" />
-        <p>Ocean Series #1<br><small>1.75 SGLCN</small></p>
-      </div>
-    </section>
-  </main>
+        <!-- Collection Controls -->
+        <section class="collection-header">
+            <div class="scroll-buttons">
+                <button onclick="loadPrevious()">← Older Collections</button>
+                <button onclick="loadNext()">Newer Collections →</button>
+            </div>
+            <div class="dropdown-menu">
+                <label for="collection-select">Select Collection:</label>
+                <select id="collection-select" onchange="filterCollection(this.value)">
+                    <option value="all">All Collections</option>
+                    <option value="seagull-art">Seagull Art</option>
+                    <option value="ocean-series">Ocean Series</option>
+                    <option value="limited-edition">Limited Edition</option>
+                </select>
+            </div>
+        </section>
 
-  <footer>
-    <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
-  </footer>
+        <!-- NFT Gallery -->
+        <section class="nft-gallery" id="nft-gallery">
+            <div class="nft-item" data-collection="seagull-art" data-name="Seagull Art #1" data-price="2.5">
+                <img src="https://via.placeholder.com/250x250.png?text=NFT+1" alt="NFT 1" />
+                <p>Seagull Art #1<br><small>2.5 SGLCN</small></p>
+            </div>
+            <div class="nft-item" data-collection="seagull-art" data-name="Seagull Art #2" data-price="3.1">
+                <img src="https://via.placeholder.com/250x250.png?text=NFT+2" alt="NFT 2" />
+                <p>Seagull Art #2<br><small>3.1 SGLCN</small></p>
+            </div>
+            <div class="nft-item" data-collection="ocean-series" data-name="Ocean Series #1" data-price="1.75">
+                <img src="https://via.placeholder.com/250x250.png?text=NFT+3" alt="NFT 3" />
+                <p>Ocean Series #1<br><small>1.75 SGLCN</small></p>
+            </div>
+        </section>
+    </main>
 
-  <script>
-    function filterCollection(value) {
-      const items = document.querySelectorAll('.nft-item');
-      items.forEach(item => {
-        const match = value === 'all' || item.dataset.collection === value;
-        item.style.display = match ? 'block' : 'none';
-      });
-    }
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+    </footer>
 
-    function loadPrevious() {
-      alert('Loading older collections...');
-    }
+    <script>
+        // Filter Collection
+        function filterCollection(value) {
+            const items = document.querySelectorAll('.nft-item');
+            items.forEach(item => {
+                const match = value === 'all' || item.dataset.collection === value;
+                item.style.display = match ? 'block' : 'none';
+            });
+        }
 
-    function loadNext() {
-      alert('Loading newer collections...');
-    }
+        // Load Previous and Next Collections
+        function loadPrevious() {
+            alert('Loading older collections...');
+        }
 
-    function searchNFTs() {
-      const name = document.getElementById('search-name').value.toLowerCase();
-      const min = parseFloat(document.getElementById('price-min').value);
-      const max = parseFloat(document.getElementById('price-max').value);
-      const items = document.querySelectorAll('.nft-item');
+        function loadNext() {
+            alert('Loading newer collections...');
+        }
 
-      items.forEach(item => {
-        const nftName = item.dataset.name.toLowerCase();
-        const price = parseFloat(item.dataset.price);
-        const matchesName = !name || nftName.includes(name);
-        const matchesMin = isNaN(min) || price >= min;
-        const matchesMax = isNaN(max) || price <= max;
+        // Search NFTs by name and price
+        function searchNFTs() {
+            const name = document.getElementById('search-name').value.toLowerCase();
+            const min = parseFloat(document.getElementById('price-min').value);
+            const max = parseFloat(document.getElementById('price-max').value);
+            const items = document.querySelectorAll('.nft-item');
 
-        item.style.display = matchesName && matchesMin && matchesMax ? 'block' : 'none';
-      });
-    }
+            items.forEach(item => {
+                const nftName = item.dataset.name.toLowerCase();
+                const price = parseFloat(item.dataset.price);
+                const matchesName = !name || nftName.includes(name);
+                const matchesMin = isNaN(min) || price >= min;
+                const matchesMax = isNaN(max) || price <= max;
 
-    function clearSearch() {
-      document.getElementById('search-name').value = '';
-      document.getElementById('price-min').value = '';
-      document.getElementById('price-max').value = '';
-      filterCollection(document.getElementById('collection-select').value);
-    }
-  </script>
+                item.style.display = matchesName && matchesMin && matchesMax ? 'block' : 'none';
+            });
+        }
+
+        // Clear Search Filters
+        function clearSearch() {
+            document.getElementById('search-name').value = '';
+            document.getElementById('price-min').value = '';
+            document.getElementById('price-max').value = '';
+            filterCollection(document.getElementById('collection-select').value);
+        }
+    </script>
+
 </body>
 </html>

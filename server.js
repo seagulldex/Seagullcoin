@@ -1,13 +1,10 @@
-
-
-
 // ===== Imports =====
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
 import fetch from 'node-fetch';
 import path from 'path';
-import multer from 'multer';  // CommonJS should work here
+import multer from 'multer';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -316,15 +313,17 @@ async function mintNFT(walletAddress, name, description, imageUri) {
   }
 }
 
-
-// Mint endpoint for uploading and minting NFTs
 app.post('/mint', upload.single('file'), async (req, res) => {
   const { walletAddress, name, description } = req.body;
 
   // Validate input
   if (!walletAddress || !name || !description || !req.file) {
+    console.error('Missing required fields: walletAddress, name, description, or file.');
     return res.status(400).json({ error: 'Wallet address, name, description, and file are required.' });
   }
+
+  // Debugging: log the file upload
+  console.log('File uploaded:', req.file);  // Check if the file is being uploaded properly
 
   try {
     if (!client.isConnected()) await client.connect();
@@ -385,6 +384,7 @@ app.post('/mint', upload.single('file'), async (req, res) => {
     return res.status(500).json({ error: 'Minting failed due to server error.' });
   }
 });
+
 
 /**
  * @swagger

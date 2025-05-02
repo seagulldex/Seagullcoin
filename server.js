@@ -204,14 +204,44 @@ app.post('/api/posts', (req, res) => {
 
 // ===== Send Message Route ======
 
-
 app.post('/send-message',
   body('recipient').isString().isLength({ min: 25 }).withMessage('Invalid recipient address'),
   body('message').isString().isLength({ min: 1, max: 500 }).withMessage('Message must be between 1 and 500 characters'),
   async (req, res) => {
     console.log('Received request:', req.body);  // Debugging
 
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());  // Debugging
+      return res.status(400).json({ errors: errors.array() });
+    }
 
+    const { recipient, message } = req.body;
+
+    // Assuming user is authenticated and their wallet address is stored in session or JWT token
+    const sender = req.user.walletAddress;  // Example: retrieve sender dynamically
+
+    if (!sender) {
+      return res.status(401).json({ error: 'Sender not authenticated' });
+    }
+
+    // Insert the message into the database
+    const stmt = db.prepare('INSERT INTO messages (sender, recipient, message) VALUES (?, ?, ?)');
+    stmt.run(sender, recipient, message, function (err) {
+      if (err) {
+        return res.status(500).send('Error sending message');
+      }
+      res.status(200).json({
+        id: this.lastID,
+        sender,
+        recipient,
+        message,
+        timestamp: new Date().toISOString()  // Or rely on the DB timestamp
+      });
+    });
+    stmt.finalize();
+  }
+);
 
 /**
  * @swagger
@@ -237,19 +267,20 @@ app.post('/send-message',
 
 // ===== Get Messages Route =====
 app.get('/get-messages', async (req, res) => {
-  const { walletAddress } = req.query;
+  const { walletAddress, page = 1, limit = 20 } = req.query;
 
-  // Validate input
   if (!walletAddress) {
     return res.status(400).json({ error: 'Wallet address is required.' });
   }
 
+  const offset = (page - 1) * limit;
+
   try {
     // Prepare the SQL query to get all messages where the wallet is either the sender or recipient
-    const query = `SELECT * FROM messages WHERE sender = ? OR recipient = ? ORDER BY timestamp DESC`;
+    const query = `SELECT * FROM messages WHERE sender = ? OR recipient = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?`;
 
     // Execute the query and return messages
-    db.all(query, [walletAddress, walletAddress], (err, rows) => {
+    db.all(query, [walletAddress, walletAddress, limit, offset], (err, rows) => {
       if (err) {
         console.error('Error fetching messages:', err);
         return res.status(500).json({ error: 'Failed to fetch messages.' });

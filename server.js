@@ -48,6 +48,7 @@ const db = new sqlite3.Database('./database.db');
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 
 
+
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -84,6 +85,7 @@ app.use(session({
   resave: false,
   saveUninitialized: true,
 }));
+app.use(express.static('public'));
 
 app.get('/', (req, res) => {
   res.send("Root endpoint is working!");

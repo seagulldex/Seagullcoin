@@ -25,7 +25,6 @@ import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
 
 // Import your business logic modules
-import { mintNFT, rejectXRPOffer, burnNFTLogic } from './mintingLogic.js';
 import { client, fetchNFTs } from './xrplClient.js';
 import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
 import { OfferModel } from './models/offerModel.js';
@@ -60,11 +59,15 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// ===== Multer Setup with File Size Limit (10MB) =====
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
-}).single('nft_file'); // Use single to accept one file upload for the NFT file
+// ===== Multer Disk Storage Setup =====
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir); // Use the uploadsDir you already defined
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
 
 // ===== Rate Limiting =====
 const limiter = rateLimit({

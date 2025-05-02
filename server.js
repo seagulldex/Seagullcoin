@@ -38,7 +38,7 @@ const SEAGULL_COIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"; // Issuer addr
 const SEAGULL_COIN_CODE = "SeagullCoin"; // Currency code
 const MINT_COST = 0.5; // Cost for minting in SeagullCoin
 const SEAGULL_COIN_TRUSTLINE = "SGLCN"; // Token identifier (SeagullCoin trustline)
-
+const { createNFT } = require('./xrpl-utils'); // assume you modularized the XRPL mint logic
 
 const app = express();
 const port = process.env.PORT || 3000;

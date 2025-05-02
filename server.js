@@ -849,6 +849,22 @@ app.post('/update-profile-picture', async (req, res) => {
  *         description: Profile picture updated successfully
  */
 
+// Helper function to log transactions
+function logTransaction(userAddress, nftId, transactionType, amount, status, transactionHash = null) {
+  const stmt = db.prepare(`
+    INSERT INTO transactions (user_address, nft_id, transaction_type, amount, status, transaction_hash)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  stmt.run(userAddress, nftId, transactionType, amount, status, transactionHash, function (err) {
+    if (err) {
+      console.error('Error logging transaction:', err);
+    } else {
+      console.log('Transaction logged successfully');
+    }
+  });
+  stmt.finalize();
+}
+
 app.post('/pay', async (req, res) => {
   const { walletAddress } = req.body;
   if (!walletAddress) return res.status(400).json({ error: "Missing wallet address" });

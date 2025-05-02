@@ -283,16 +283,12 @@ app.get('/health', async (req, res) => {
 
 // SeagullCoin Currency Hex ID: "53656167756C6C436F696E000000000000000000"
 
-// A function to check SeagullCoin balance
-async function checkCurrencyBalance(walletAddress, currencyHexId) {
-  try {
-    // Replace this with actual logic to check the wallet's balance for SeagullCoin using the currency hex ID
-    const balance = await getBalanceForCurrency(walletAddress, currencyHexId); // Mocked function
-    return balance >= 0.5; // Ensuring the balance is >= 0.5 SeagullCoin
-  } catch (error) {
-    console.error('Error verifying currency payment:', error);
-    return false; // Payment verification failed
-  }
+// at the top you already have:
+// import { fetchSeagullCoinBalance } from './xrplClient.js';
+
+async function verifySeagullCoinPayment(walletAddress) {
+  const balance = await fetchSeagullCoinBalance(walletAddress); 
+  return balance >= 0.5;
 }
 
 // The /mint route for minting NFTs
@@ -308,12 +304,9 @@ app.post('/mint',
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
-      // SeagullCoin Currency Hex ID
-      const seagullCoinCurrencyHexId = "53656167756C6C436F696E000000000000000000";
-
       // Check if the user has sufficient SeagullCoin balance using the currency hex ID
       const walletAddress = req.session.walletAddress;
-      const paymentValid = await checkCurrencyBalance(walletAddress, seagullCoinCurrencyHexId);
+      const paymentValid = await verifySeagullCoinPayment(walletAddress);
 
       if (!paymentValid) {
         return res.status(402).json({ error: '0.5 SeagullCoin payment required before minting.' });

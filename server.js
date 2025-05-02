@@ -73,6 +73,20 @@ db.serialize(() => {
   `);
 });
 
+// Create the Messages table if it doesn't exist
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      senderId TEXT NOT NULL,
+      receiverId TEXT NOT NULL,
+      content TEXT NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      status TEXT DEFAULT 'unread'
+    )
+  `);
+});
+
 // Create the user_profiles table if it doesn't exist
   db.run(`
     CREATE TABLE IF NOT EXISTS user_profiles (

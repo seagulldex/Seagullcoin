@@ -59,15 +59,20 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// ===== Multer Disk Storage Setup =====
+//// ===== Multer Setup with File Size Limit (10MB) =====
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir); // Use the uploadsDir you already defined
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);  // Specify where the file will be stored
   },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));  // Create unique filenames
   }
 });
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // Set file size limit (10MB)
+}).single('file');  // Field name for the uploaded file
 
 // ===== Rate Limiting =====
 const limiter = rateLimit({

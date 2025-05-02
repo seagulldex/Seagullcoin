@@ -22,6 +22,8 @@ import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
+import { getBalanceForCurrency } from './getBalanceForCurrency.js'; // Import your new function
+import { fetchSeagullCoinBalance } from './getBalanceForCurrency.js'; // Correct import
 
 
 
@@ -41,7 +43,6 @@ const SEAGULL_COIN_CODE = "SeagullCoin"; // Currency code
 const MINT_COST = 0.5; // Cost for minting in SeagullCoin
 const SEAGULL_COIN_TRUSTLINE = "SGLCN"; // Token identifier (SeagullCoin trustline)
 
-let isConnected = false;  // Declare isConnected globally
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -297,51 +298,28 @@ async function ensureConnected() {
   }
 }
 
-// Mint endpoint to create an NFT
+// Example of a mint endpoint
 app.post('/mint', async (req, res) => {
-  const { walletAddress } = req.body; // Wallet address passed in the body of the request
-
-  if (!walletAddress) {
-    return res.status(400).send('Wallet address is required');
-  }
-
   try {
-    await ensureConnected(); // Ensure we are connected to XRPL
+    const userAddress = req.body.walletAddress; // Assuming you are passing the wallet address in the request
 
-    // Fetch SeagullCoin balance from the wallet
+    // Fetch the user's SeagullCoin balance
+    const { balance: userBalance } = await fetchSeagullCoinBalance(userAddress);
 
-    // Check if the user has sufficient SeagullCoin balance to mint
-    if (userBalance < MINT_COST) {
-      return res.status(400).send('Insufficient balance for minting');
+    if (userBalance < 0.5) { // Assuming you want at least 0.5 SeagullCoin for minting
+      return res.status(400).json({ error: 'Insufficient SeagullCoin balance' });
     }
 
-    // Logic to mint the NFT (example placeholder logic)
-    // This is where you'd typically interact with the XRPL to create an NFToken
+    // Proceed with minting if the balance is sufficient
+    // Add minting logic here...
+    res.status(200).json({ message: 'Minting successful!' });
 
-    // Assuming successful mint
-    const mintTransaction = {
-      "TransactionType": "NFTokenMint",
-      "Account": walletAddress,
-      "Issuer": SEAGULL_COIN_ISSUER,
-      "Amount": MINT_COST.toString(), // SeagullCoin amount (converted to string)
-      "Currency": SEAGULL_COIN_CODE,
-      "TokenName": `Minted NFT by ${walletAddress}`, // Example token name
-      // Other token parameters go here
-    };
-
-    // Assuming this is how you'd sign and submit the minting transaction
-    // Here we're just sending back a successful response for now
-    res.status(200).json({
-      success: true,
-      message: 'NFT minted successfully',
-      transaction: mintTransaction, // Placeholder response
-    });
-
-  } catch (error) {
-    console.error('Error during minting process:', error);
-    res.status(500).send('Internal server error');
+  } catch (err) {
+    console.error('Minting error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 /**
  * @swagger
@@ -1246,7 +1224,7 @@ app.post('/create-collection',
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  const { name, description, icon } = req.body;
+    const { name, description, icon } = req.body;
 
     try {
       db.run("INSERT INTO collections (name, description, icon) VALUES (?, ?, ?)",

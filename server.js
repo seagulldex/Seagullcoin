@@ -529,21 +529,20 @@ async function buyNFT(nftId, buyerAddress, paymentAmount) {
   return { success: true, message: 'Purchase successful' };
 }
 
-
 app.post('/buy-nft',
-  body('nftId').isInt().withMessage('NFT ID must be an integer'),
+  body('nftId').isString().withMessage('NFT ID must be a string'),
   body('buyerAddress').isString().isLength({ min: 25 }).withMessage('Invalid buyer address'),
-  body('paymentAmount').isFloat({ min: 0.1 }).withMessage('Invalid payment amount, must be greater than 0.1 SeagullCoin'),
+  body('priceInSeagullCoin').isFloat({ min: 0.1 }).withMessage('Invalid payment amount, must be greater than 0.1 SeagullCoin'),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { nftId, buyerAddress, paymentAmount } = req.body;
+    const { nftId, buyerAddress, priceInSeagullCoin } = req.body;
 
     try {
-      const result = await buyNFT(nftId, buyerAddress, paymentAmount);
+      const result = await buyNFT(nftId, buyerAddress, priceInSeagullCoin);
       if (result.success) {
         return res.status(200).json({ message: result.message });
       } else {
@@ -556,10 +555,9 @@ app.post('/buy-nft',
   }
 );
 
-
 /**
  * @swagger
- * /buynft:
+ * /buy-nft:
  *   post:
  *     summary: Buy an NFT using SeagullCoin
  *     requestBody:
@@ -571,13 +569,20 @@ app.post('/buy-nft',
  *             properties:
  *               nftId:
  *                 type: string
+ *                 example: "0008000086E5FC84AB3A58D2C8DFF83AD3F59D16E0135FDFDA23B6E300000001"
  *               buyerAddress:
  *                 type: string
+ *                 example: "rEXAMPLEBUYERADDRESS1234567890ABCDEF"
  *               priceInSeagullCoin:
  *                 type: number
+ *                 example: 0.5
  *     responses:
  *       200:
  *         description: NFT purchased successfully
+ *       400:
+ *         description: Validation error or failed purchase
+ *       500:
+ *         description: Server error
  */
 
 // List an NFT for sale

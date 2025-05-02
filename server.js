@@ -6,6 +6,7 @@ import session from 'express-session';
 import cors from 'cors';
 import fetch from 'node-fetch';
 import path from 'path';
+import multer from 'multer';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -58,7 +59,6 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // ===== Multer Upload Setup =====
-const multer = require('multer');
 
 // Set up custom Multer storage
 const storage = multer.diskStorage({

@@ -1,248 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Profile - SGLCN-X20</title>
-  <style>
+<!-- profile.html -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Check if the user is logged in (authentication status stored in sessionStorage)
+        if (!sessionStorage.getItem("userLoggedIn")) {
+            // Redirect to login page if not logged in
+            window.location.href = "login.html";  // Or show a login modal
+        } else {
+            // If logged in, fetch and display user profile data
+            loadUserProfile();
+        }
+
+        // Function to load user profile (can fetch data via an API or XUMM SDK)
+        function loadUserProfile() {
+            const walletAddress = sessionStorage.getItem("walletAddress");  // Assuming wallet address is stored on login
+            // Use this wallet address to fetch profile details and display them
+            document.getElementById("wallet-address").innerText = walletAddress;
+
+            // You can fetch more data if needed, such as NFT collections, etc.
+            // Example:
+            // fetchUserProfileData(walletAddress);
+        }
+    });
+</script>
+
+<!-- Profile Content -->
+<div id="profile-container">
+    <h1>User Profile</h1>
+    <p>Wallet Address: <span id="wallet-address"></span></p>
+
+    <!-- Additional profile info can go here, like NFT collections, mint history, etc. -->
+</div>
+
+<meta charset="UTF-8">
+<title>Profile - SGLCN-X20</title>
+<style>
     body {
-      background-color: #000;
-      color: #fff;
-      font-family: 'Arial', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
+        background-color: #000;
+        color: #fff;
+        font-family: 'Arial', sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
     }
     h1 {
-      margin-top: 20px;
+        margin-top: 20px;
     }
     nav {
-      background: #111;
-      display: flex;
-      justify-content: center;
-      gap: 40px;
-      padding: 15px 0;
-      box-shadow: 0 0 10px #222;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+        background: #111;
+        display: flex;
+        justify-content: center;
+        gap: 40px;
+        padding: 15px 0;
+        box-shadow: 0 0 10px #222;
+        position: sticky;
+        top: 0;
+        z-index: 10;
     }
     nav a {
-      color: #fff;
-      text-decoration: none;
-      font-weight: bold;
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
     }
     nav a:hover {
-      text-decoration: underline;
+        text-decoration: underline;
     }
     .profile-container {
-      background: #111;
-      padding: 30px;
-      border-radius: 20px;
-      box-shadow: 0 0 10px #333;
-      width: 100%;
-      max-width: 500px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+        background: #111;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 0 10px #333;
+        width: 100%;
+        max-width: 500px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
     .profile-picture {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background-color: #222;
-      object-fit: cover;
-      margin-bottom: 20px;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background-color: #222;
+        object-fit: cover;
+        margin-bottom: 20px;
     }
     input[type="file"] {
-      display: none;
+        display: none;
     }
     .upload-label {
-      background-color: #333;
-      padding: 10px 20px;
-      border-radius: 15px;
-      cursor: pointer;
-      margin-bottom: 20px;
-      transition: background 0.3s;
+        background-color: #333;
+        padding: 10px 20px;
+        border-radius: 15px;
+        cursor: pointer;
+        margin-bottom: 20px;
+        transition: background 0.3s;
     }
     .upload-label:hover {
-      background-color: #555;
+        background-color: #555;
     }
     .input-box {
-      width: 100%;
-      margin-bottom: 20px;
+        width: 100%;
+        margin-bottom: 20px;
     }
     .input-box input, .input-box textarea {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 15px;
-      background: #222;
-      color: #fff;
-      font-size: 16px;
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 15px;
+        background: #222;
+        color: #fff;
+        font-size: 16px;
     }
     .input-box textarea {
-      resize: vertical;
-      min-height: 80px;
+        resize: vertical;
+        min-height: 80px;
     }
     button {
-      background: #444;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background 0.3s;
+        background: #444;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.3s;
     }
     button:hover {
-      background: #666;
+        background: #666;
     }
     .section {
-      margin-top: 40px;
-      width: 100%;
-      max-width: 900px;
+        margin-top: 40px;
+        width: 100%;
+        max-width: 900px;
     }
     .section h2 {
-      margin-bottom: 15px;
+        margin-bottom: 15px;
     }
     .nft-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 20px;
     }
     .nft-card {
-      background: #111;
-      border: 1px solid #333;
-      border-radius: 15px;
-      padding: 10px;
-      text-align: center;
+        background: #111;
+        border: 1px solid #333;
+        border-radius: 15px;
+        padding: 10px;
+        text-align: center;
     }
     .nft-card img {
-      width: 100%;
-      border-radius: 10px;
+        width: 100%;
+        border-radius: 10px;
     }
     .nft-actions button {
-      margin: 5px 5px 0 0;
+        margin: 5px 5px 0 0;
     }
-  </style>
-</head>
+</style>
+
 <body>
 
-  <nav>
-    <a href="/">Home</a>
-    <a href="/mint.html">Mint</a>
-    <a href="/nfts.html">NFTs</a>
-  </nav>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/mint.html">Mint</a>
+        <a href="/nfts.html">NFTs</a>
+    </nav>
 
-  <h1>My Profile</h1>
-  <div class="profile-container">
-    <img id="preview" class="profile-picture" src="default-avatar.png" alt="Profile Picture">
-    
-    <label for="file-upload" class="upload-label">Choose Profile Picture</label>
-    <input type="file" id="file-upload" accept="image/*">
-    
-    <div class="input-box">
-      <input type="text" id="username" placeholder="Enter your username">
+    <h1>My Profile</h1>
+    <div class="profile-container">
+        <img id="preview" class="profile-picture" src="default-avatar.png" alt="Profile Picture">
+        
+        <label for="file-upload" class="upload-label">Choose Profile Picture</label>
+        <input type="file" id="file-upload" accept="image/*">
+        
+        <div class="input-box">
+            <input type="text" id="username" placeholder="Enter your username">
+        </div>
+        
+        <div class="input-box">
+            <textarea id="description" placeholder="Tell others about yourself..."></textarea>
+        </div>
+        
+        <button onclick="saveProfile()">Save Changes</button>
     </div>
-    
-    <div class="input-box">
-      <textarea id="description" placeholder="Tell others about yourself..."></textarea>
-    </div>
-    
-    <button onclick="saveProfile()">Save Changes</button>
-  </div>
 
-  <div class="section" id="owned-nfts-section">
-    <h2>My NFTs</h2>
-    <div class="nft-grid" id="owned-nfts">
-      <!-- Owned NFTs will be loaded here -->
+    <div class="section" id="owned-nfts-section">
+        <h2>My NFTs</h2>
+        <div class="nft-grid" id="owned-nfts">
+            <!-- Owned NFTs will be loaded here -->
+        </div>
     </div>
-  </div>
 
-  <div class="section" id="listings-offers-section">
-    <h2>My Listings & Offers</h2>
-    <div class="nft-grid" id="listings-nfts">
-      <!-- Listed NFTs will be loaded here with cancel buttons -->
+    <div class="section" id="listings-offers-section">
+        <h2>My Listings & Offers</h2>
+        <div class="nft-grid" id="listings-nfts">
+            <!-- Listed NFTs will be loaded here with cancel buttons -->
+        </div>
+        <div class="nft-grid" id="offers-nfts">
+            <!-- Incoming offers will appear here with accept/reject buttons -->
+        </div>
     </div>
-    <div class="nft-grid" id="offers-nfts">
-      <!-- Incoming offers will appear here with accept/reject buttons -->
-    </div>
-  </div>
 
-  <script>
-    const fileInput = document.getElementById('file-upload');
-    const preview = document.getElementById('preview');
+    <script>
+        const fileInput = document.getElementById('file-upload');
+        const preview = document.getElementById('preview');
 
-    fileInput.addEventListener('change', function(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          preview.src = e.target.result;
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function saveProfile() {
+            const username = document.getElementById('username').value;
+            const profilePic = preview.src;
+            const description = document.getElementById('description').value;
+
+            console.log('Username:', username);
+            console.log('Profile Picture:', profilePic);
+            console.log('Bio:', description);
+
+            alert('Profile saved!');
         }
-        reader.readAsDataURL(file);
-      }
-    });
 
-    function saveProfile() {
-      const username = document.getElementById('username').value;
-      const profilePic = preview.src;
-      const description = document.getElementById('description').value;
+        // Simulated dynamic loading functions (replace with actual data fetch)
+        function loadOwnedNFTs() {
+            const container = document.getElementById('owned-nfts');
+            container.innerHTML = '<div class="nft-card"><img src="nft1.png"><p>My NFT #1</p></div>';
+        }
 
-      console.log('Username:', username);
-      console.log('Profile Picture:', profilePic);
-      console.log('Bio:', description);
+        function loadListingsAndOffers() {
+            const listingsContainer = document.getElementById('listings-nfts');
+            const offersContainer = document.getElementById('offers-nfts');
 
-      alert('Profile saved!');
-    }
+            listingsContainer.innerHTML = `
+                <div class="nft-card">
+                    <img src="nft2.png">
+                    <p>Listed NFT</p>
+                    <div class="nft-actions">
+                        <button onclick="cancelListing()">Cancel Listing</button>
+                    </div>
+                </div>`;
 
-    // Simulated dynamic loading functions (replace with actual data fetch)
-    function loadOwnedNFTs() {
-      const container = document.getElementById('owned-nfts');
-      container.innerHTML = '<div class="nft-card"><img src="nft1.png"><p>My NFT #1</p></div>';
-    }
+            offersContainer.innerHTML = `
+                <div class="nft-card">
+                    <img src="nft3.png">
+                    <p>Offer on My NFT</p>
+                    <div class="nft-actions">
+                        <button onclick="acceptOffer()">Accept</button>
+                        <button onclick="rejectOffer()">Reject</button>
+                    </div>
+                </div>`;
+        }
 
-    function loadListingsAndOffers() {
-      const listingsContainer = document.getElementById('listings-nfts');
-      const offersContainer = document.getElementById('offers-nfts');
+        function cancelListing() {
+            alert('Listing canceled.');
+        }
 
-      listingsContainer.innerHTML = `
-        <div class="nft-card">
-          <img src="nft2.png">
-          <p>Listed NFT</p>
-          <div class="nft-actions">
-            <button onclick="cancelListing()">Cancel Listing</button>
-          </div>
-        </div>`;
+        function acceptOffer() {
+            alert('Offer accepted.');
+        }
 
-      offersContainer.innerHTML = `
-        <div class="nft-card">
-          <img src="nft3.png">
-          <p>Offer on My NFT</p>
-          <div class="nft-actions">
-            <button onclick="acceptOffer()">Accept</button>
-            <button onclick="rejectOffer()">Reject</button>
-          </div>
-        </div>`;
-    }
+        function rejectOffer() {
+            alert('Offer rejected.');
+        }
 
-    function cancelListing() {
-      alert('Listing canceled.');
-    }
-
-    function acceptOffer() {
-      alert('Offer accepted.');
-    }
-
-    function rejectOffer() {
-      alert('Offer rejected.');
-    }
-
-    // Load dummy data on page load
-    loadOwnedNFTs();
-    loadListingsAndOffers();
-  </script>
+        // Load dummy data on page load
+        loadOwnedNFTs();
+        loadListingsAndOffers();
+    </script>
 
 </body>
 </html>

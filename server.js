@@ -55,6 +55,22 @@ const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+// Create the transactions table if it doesn't exist
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_address TEXT NOT NULL,
+        nft_id TEXT NOT NULL,
+        transaction_type TEXT NOT NULL,  -- (mint, buy, sell, transfer)
+        amount REAL NOT NULL,  -- SeagullCoin amount
+        status TEXT NOT NULL,  -- (success, failed)
+        transaction_hash TEXT,
+        date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+});
+
 
 // ===== Multer Setup =====
 const storage = multer.diskStorage({
@@ -784,6 +800,17 @@ app.get('/api/nft/:id', async (req, res) => {
  *         description: NFT details retrieved successfully
  */
 
+app.get('/transaction-history', (req, res) => {
+    const userAddress = req.query.userAddress;  // Assume the user address is passed in the query
+    db.all('SELECT * FROM transactions WHERE user_address = ?', [userAddress], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(rows);
+    });
+});
+
+
 // Update profile picture
 app.post('/update-profile-picture', async (req, res) => {
   const { walletAddress } = req.session;
@@ -1368,8 +1395,7 @@ app.post('/create-collection',
       res.status(500).json({ error: 'Failed to create collection.' });
     }
   }
-);
-// XUMM OAuth callback route
+);// XUMM OAuth callback route
 app.get('/xumm/callback', async (req, res) => {
   const { code } = req.query;
   if (!code) {

@@ -880,26 +880,10 @@ async function likeNFT(walletAddress, nftId) {
 
 // Insert new
 
-app.post('/like-nft',
-  body('nftokenId').isString().isLength({ min: 10 }).withMessage('Invalid NFT ID'),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { nftokenId } = req.body;
-    const walletAddress = req.session?.walletAddress;
-    if (!walletAddress) return res.status(401).json({ error: 'Wallet not connected.' });
-
-    try {
-      await likeNFT(walletAddress, nftokenId);
-      res.json({ success: true, message: 'NFT liked.' });
-    } catch (err) {
-      console.error('Error liking NFT:', err);
-      res.status(500).json({ error: 'Failed to like NFT.' });
-    }
-  }
-);
-
+app.post('/api/like-nft', async (req, res) => {
+  // like-nft logic here
+});
 /**
  * @swagger
  * /api/like-nft:
@@ -922,9 +906,6 @@ app.post('/like-nft',
  *       400:
  *         description: Invalid data or already liked
  */
-app.post('/api/like-nft', async (req, res) => {
-  // like-nft logic here
-});
 
 async function getTotalCollections() {
   return new Promise((resolve, reject) => {
@@ -1163,22 +1144,6 @@ app.get('/user-nfts', async (req, res) => {
  *       200:
  *         description: NFTs retrieved
  */
-app.get('/getusernfts',
-  query('walletAddress').optional().isString().isLength({ min: 25 }).withMessage('Invalid wallet address'),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
-    const { walletAddress } = req.query;
-    try {
-      const nfts = await getUserNFTs(walletAddress);
-      res.json({ nfts });
-    } catch (err) {
-      console.error('Error fetching NFTs:', err);
-      res.status(500).json({ error: 'Failed to fetch NFTs.' });
-    }
-  }
-);
 
 // Get a list of all collections
 

@@ -155,19 +155,36 @@ app.post('/send-message',
   body('recipient').isString().isLength({ min: 25 }).withMessage('Invalid recipient address'),
   body('message').isString().isLength({ min: 1, max: 500 }).withMessage('Message must be between 1 and 500 characters'),
   async (req, res) => {
+    console.log('Received request:', req.body);  // Debugging
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());  // Debugging
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { recipient, message } = req.body;
+    console.log("Recipient:", recipient);  // Debugging
+    console.log("Message:", message);    // Debugging
 
-    // Your logic for sending the message goes here
-    // Example: sendMessageToRecipient(recipient, message);
-
-    res.status(200).json({ message: 'Message sent successfully!' });
+    // Insert the message into the database
+    const stmt = db.prepare('INSERT INTO messages (sender, recipient, message) VALUES (?, ?, ?)');
+    stmt.run('SeagullCoin User', recipient, message, function (err) {
+      if (err) {
+        return res.status(500).send('Error sending message');
+      }
+      res.status(200).json({
+        id: this.lastID,
+        sender: 'SeagullCoin User',
+        recipient,
+        message,
+        timestamp: new Date().toISOString()
+      });
+    });
+    stmt.finalize();
   }
 );
+
 
 
 /**

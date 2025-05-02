@@ -681,18 +681,97 @@ async function listNFTForSale(nftId, sellerAddress, price) {
   return { success: true, message: 'NFT listed for sale' };
 }
 
-app.post('/sell-nft', async (req, res) => {
-  const { nftokenId, price } = req.body;
-  const { walletAddress } = req.session;
-
+// Transfer SeagullCoin function
+async function transferSeagullCoin(fromAddress, toAddress, amount) {
   try {
-    await listNFTForSale(nftokenId, walletAddress, price);
-    res.json({ success: true, message: 'NFT listed for sale.' });
-  } catch (err) {
-    console.error('Error listing NFT for sale:', err);
-    res.status(500).json({ error: 'Failed to list NFT for sale.' });
+    const transaction = {
+      "TransactionType": "Payment",
+      "Account": fromAddress,
+      "Destination": toAddress,
+      "Amount": client.xrpToDrops(amount),  // Convert SeagullCoin amount to drops
+      "Currency": SEAGULL_COIN_CODE, // SeagullCoin currency code
+      "Issuer": SEAGULL_COIN_ISSUER,  // SeagullCoin issuer address
+    };
+
+    const preparedTx = await client.autofill(transaction);
+    const signedTx = client.sign(preparedTx, fromAddress);  // Sign with buyer's private key
+    const txResult = await client.submit(signedTx.tx_blob);
+
+    if (txResult.resultCode === "tesSUCCESS") {
+      return { success: true, transactionHash: txResult.tx_json.hash };
+    } else {
+      throw new Error('SeagullCoin transfer failed.');
+    }
+  } catch (error) {
+    console.error('Error transferring SeagullCoin:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Transfer NFT function
+async function transferNFT(nftId, fromAddress, toAddress) {
+  try {
+    const transaction = {
+      "TransactionType": "NFTokenTransfer",
+      "Account": fromAddress,
+      "TokenID": nftId, // The ID of the NFT to transfer
+      "Destination": toAddress,
+      "Flags": 0, // Optional flags; modify as needed for your use case
+    };
+
+    const preparedTx = await client.autofill(transaction);
+    const signedTx = client.sign(preparedTx, fromAddress);  // Sign with seller's private key
+    const txResult = await client.submit(signedTx.tx_blob);
+
+    if (txResult.resultCode === "tesSUCCESS") {
+      return { success: true, transactionHash: txResult.tx_json.hash };
+    } else {
+      throw new Error('NFT transfer failed.');
+    }
+  } catch (error) {
+    console.error('Error transferring NFT:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// The /sell-nft endpoint
+app.post('/sell-nft', async (req, res) => {
+  const { userAddress, nftId, price, buyerAddress } = req.body;
+  
+  try {
+    // Verify that the user owns the NFT
+    const nft = await NFTModel.findById(nftId);
+    if (!nft || nft.walletAddress !== userAddress) {
+      return res.status(400).json({ error: 'You do not own this NFT.' });
+    }
+
+    // 1. Simulate transferring SeagullCoin from the buyer to the seller
+    const transferResult = await transferSeagullCoin(buyerAddress, userAddress, price);
+    if (!transferResult.success) {
+      return res.status(500).json({ error: 'Failed to process payment: ' + transferResult.error });
+    }
+
+    // 2. Simulate transferring the NFT from the seller to the buyer
+    const transferNFTResult = await transferNFT(nftId, userAddress, buyerAddress);
+    if (!transferNFTResult.success) {
+      return res.status(500).json({ error: 'Failed to transfer NFT: ' + transferNFTResult.error });
+    }
+
+    // Log the successful sell transaction
+    logTransaction(userAddress, nftId, 'sell', price, 'success');
+
+    res.status(200).json({ message: 'NFT successfully sold.' });
+  } catch (error) {
+    console.error('Error selling NFT:', error);
+    
+    // Log the failed sell transaction
+    logTransaction(userAddress, nftId, 'sell', price, 'failed');
+
+    res.status(500).json({ error: 'Failed to sell NFT.' });
   }
 });
+
+
 
 /**
  * @swagger

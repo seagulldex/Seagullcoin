@@ -894,6 +894,20 @@ app.get('/api/nft/:id', async (req, res) => {
  *         description: NFT details retrieved successfully
  */
 
+async function getTransactionHistory(walletAddress) {
+  const response = await fetch(`https://xumm.app/api/v1/account/${walletAddress}/transactions`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${XUMM_API_KEY}`,
+    },
+  });
+
+  if (!response.ok) throw new Error('Failed to fetch transaction history from XUMM');
+
+  const data = await response.json();
+  return data.transactions;
+}
+
 app.get('/transaction-history', (req, res) => {
     const userAddress = req.query.userAddress;  // Assume the user address is passed in the query
     db.all('SELECT * FROM transactions WHERE user_address = ?', [userAddress], (err, rows) => {
@@ -1323,8 +1337,7 @@ app.get('/api/stats/users', async (req, res) => {
 async function getTotalUsers() {
   // Logic to get the total number of users (for example, querying a database)
   // Here's a mock example, replace with actual logic
-  return 500;  // Replace with your actual logic to fetch user count
-}
+  return 500;  // Replace with your actual logic to fetch user count }
 
 // Example for SQLite:
 async function getTotalNFTs() {

@@ -58,11 +58,6 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// ===== Multer Upload Setup =====
-const multer = require('multer');
-
-// Define uploads directory first
-const uploadsDir = path.join(__dirname, 'uploads');
 
 // Set up custom Multer storage
 const storage = multer.diskStorage({
@@ -911,12 +906,6 @@ async function likeNFT(walletAddress, nftId) {
 }
 
 // Insert new
-
-import { validationResult } from 'express-validator';
-import sqlite3 from 'sqlite3';
-
-// Assuming you're using SQLite3 database
-const db = new sqlite3.Database('./database.db');
 
 // Like NFT endpoint
 app.post('/like-nft',

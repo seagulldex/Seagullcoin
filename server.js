@@ -59,10 +59,18 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // ===== Multer Upload Setup =====
+const multer = require('multer');
+const path = require('path');
+
+// Define uploads directory first
+const uploadsDir = path.join(__dirname, 'uploads');
+
+// Set up custom Multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
 });
+
 const upload = multer({ storage });
 
 // ===== Rate Limiting =====
@@ -767,60 +775,6 @@ app.post('/pay', async (req, res) => {
   }
 });
 
-app.post('/pay', async (req, res) => {
-  const { walletAddress } = req.body;
-  if (!walletAddress) return res.status(400).json({ error: "Missing wallet address" });
-
-  try {
-    await client.connect();
-
-    // Check trustline
-    const lines = await client.request({
-      command: "account_lines",
-      account: walletAddress,
-    });
-
-    const hasTrustline = lines.result.lines.some(
-      line => line.currency === SEAGULL_COIN_TRUSTLINE && line.issuer === SEAGULL_COIN_ISSUER
-    );
-
-    if (!hasTrustline) {
-      return res.status(403).json({ error: "Missing SeagullCoin trustline" });
-    }
-
-    // Check recent payments
-    const txs = await client.request({
-      command: "account_tx",
-      account: walletAddress,
-      ledger_index_min: -1,
-      ledger_index_max: -1,
-      limit: 10,
-    });
-
-    const payment = txs.result.transactions.find(tx =>
-      tx.tx.TransactionType === "Payment" &&
-      tx.tx.Destination === SERVICE_WALLET &&
-      tx.tx.Amount.currency === SEAGULL_COIN_TRUSTLINE &&
-      tx.tx.Amount.issuer === SEAGULL_COIN_ISSUER &&
-      parseFloat(tx.tx.Amount.value) >= MINT_COST
-    );
-
-    if (!payment) {
-      return res.status(402).json({ error: "Payment of 0.5 SeagullCoin not found" });
-    }
-
-    return res.json({ success: true, txHash: payment.tx.hash });
-
-  } catch (err) {
-    console.error("Payment check failed:", err.message);
-    res.status(500).json({ error: "Payment verification failed" });
-  } finally {
-    if (client.isConnected()) await client.disconnect();
-  }
-});
-
-
-
 // Update profile picture
 app.post('/update-profile-picture', async (req, res) => {
   const { walletAddress } = req.session;
@@ -958,6 +912,11 @@ async function likeNFT(walletAddress, nftId) {
 }
 
 // Insert new
+
+db.run('INSERT INTO nft_likes (walletAddress, nftId) VALUES (?, ?)', [walletAddress, nftId], (err) => {
+  if (err) return reject(err);
+  resolve({ success: true });
+});
 
 app.post('/like-nft',
   body('nftokenId').isString().isLength({ min: 10 }).withMessage('Invalid NFT ID'),

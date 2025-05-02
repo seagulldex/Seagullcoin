@@ -20,6 +20,7 @@ import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
+import { XummSdk } from 'xumm-sdk';
 
 
 // Import your business logic modules
@@ -32,7 +33,7 @@ import { MongoClient, ServerApiVersion } from 'mongodb';
 // ===== Init App and Env =====
 dotenv.config();
 
-const sdk = new XummSdk('your-xumm-api-key', 'your-xumm-api-secret');  // Replace with your XUMM API key and secret
+const sdk = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const SEAGULL_COIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"; // Issuer address
 const SEAGULL_COIN_CODE = "SeagullCoin"; // Currency code
 const MINT_COST = 0.5; // Cost for minting in SeagullCoin

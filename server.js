@@ -22,10 +22,6 @@ import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
-import { getBalanceForCurrency } from './getBalanceForCurrency.js'; // Import your new function
-import { fetchSeagullCoinBalance } from './getBalanceForCurrency.js'; // Correct import
-
-
 
 // Import your business logic modules
 import { mintNFT, rejectXRPOffer, burnNFTLogic } from './mintingLogic.js';
@@ -284,41 +280,36 @@ app.get('/health', async (req, res) => {
 
 // ===== Minting Route =====
 
-// Retry connection function for XRPL
-async function ensureConnected() {
-  if (!isConnected) {
-    try {
-      await client.connect(); // Ensure we are connected to XRPL
-      isConnected = true;
-      console.log('Connected to XRPL network');
-    } catch (error) {
-      console.error('Error connecting to XRPL:', error);
-      throw new Error('Failed to connect to XRPL');
-    }
-  }
-}
+ app.post('/mint', async (req, res) => {
+  const { walletAddress } = req.body;
 
-// Example of a mint endpoint
-app.post('/mint', async (req, res) => {
   try {
-    const userAddress = req.body.walletAddress; // Assuming you are passing the wallet address in the request
+    if (!client.isConnected()) await client.connect();
 
-    // Fetch the user's SeagullCoin balance
-    const { balance: userBalance } = await fetchSeagullCoinBalance(userAddress);
+    const accountLines = await client.request({
+      method: 'account_lines',
+      params: [{ account: walletAddress }]
+    });
 
-    if (userBalance < 0.5) { // Assuming you want at least 0.5 SeagullCoin for minting
-      return res.status(400).json({ error: 'Insufficient SeagullCoin balance' });
+    const line = accountLines.result.lines.find(l =>
+      l.currency === SEAGULL_COIN_CODE && l.issuer === SEAGULL_COIN_ISSUER
+    );
+
+    const balance = line ? parseFloat(line.balance) : 0;
+
+    if (balance < 0.5) {
+      return res.status(400).json({ error: 'Insufficient SeagullCoin balance for minting.' });
     }
 
-    // Proceed with minting if the balance is sufficient
-    // Add minting logic here...
-    res.status(200).json({ message: 'Minting successful!' });
+    // Proceed with mint logic...
+    return res.json({ message: 'Balance valid. Proceed to mint.' });
 
   } catch (err) {
-    console.error('Minting error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Minting error:", err);
+    return res.status(500).json({ error: 'Minting failed due to server error.' });
   }
 });
+
 
 
 /**

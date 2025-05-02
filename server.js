@@ -35,6 +35,8 @@ const SEAGULL_COIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"; // Issuer addr
 const SEAGULL_COIN_CODE = "SeagullCoin"; // Currency code
 const MINT_COST = 0.5; // Cost for minting in SeagullCoin
 const SEAGULL_COIN_TRUSTLINE = "SGLCN"; // Token identifier (SeagullCoin trustline)
+const XUMM_API_KEY = process.env.XUMM_API_KEY;
+const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
 
 
 const app = express();
@@ -369,7 +371,7 @@ app.post('/mint', upload, async (req, res) => {
     // Upload NFT file to NFT.Storage
     const file = new File([req.file.buffer], req.file.originalname, { type: req.file.mimetype });
     const imageMetadata = await nftStorage.store(file);  // Upload file to NFT.Storage
-
+    
     // Store metadata for the NFT
     const metadata = {
       name,
@@ -893,7 +895,6 @@ app.get('/api/nft/:id', async (req, res) => {
  *       200:
  *         description: NFT details retrieved successfully
  */
-
 async function getTransactionHistory(walletAddress) {
   const response = await fetch(`https://xumm.app/api/v1/account/${walletAddress}/transactions`, {
     method: 'GET',
@@ -907,6 +908,7 @@ async function getTransactionHistory(walletAddress) {
   const data = await response.json();
   return data.transactions;
 }
+
 
 app.get('/transaction-history', (req, res) => {
     const userAddress = req.query.userAddress;  // Assume the user address is passed in the query
@@ -1337,7 +1339,8 @@ app.get('/api/stats/users', async (req, res) => {
 async function getTotalUsers() {
   // Logic to get the total number of users (for example, querying a database)
   // Here's a mock example, replace with actual logic
-  return 500;  // Replace with your actual logic to fetch user count }
+  return 500;  // Replace with your actual logic to fetch user count
+}
 
 // Example for SQLite:
 async function getTotalNFTs() {

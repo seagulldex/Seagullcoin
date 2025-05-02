@@ -21,6 +21,7 @@ import sqlite3 from 'sqlite3';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
 
+
 // Import your business logic modules
 import { client, fetchNFTs } from './xrplClient.js';
 import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
@@ -31,6 +32,7 @@ import { MongoClient, ServerApiVersion } from 'mongodb';
 // ===== Init App and Env =====
 dotenv.config();
 
+const sdk = new XummSdk('your-xumm-api-key', 'your-xumm-api-secret');  // Replace with your XUMM API key and secret
 const SEAGULL_COIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"; // Issuer address
 const SEAGULL_COIN_CODE = "SeagullCoin"; // Currency code
 const MINT_COST = 0.5; // Cost for minting in SeagullCoin
@@ -332,6 +334,28 @@ app.get('/health', async (req, res) => {
  *       200:
  *         description: API is healthy
  */
+
+// Assuming XummSdk is initialized already
+
+// Endpoint to start the XUMM authentication
+app.get('/auth', async (req, res) => {
+    try {
+        // Generate an authentication payload
+        const payload = await sdk.payload.create({
+            txjson: {
+                "TransactionType": "AccountSet",
+                "Account": "user-wallet-address"  // This should be replaced with actual user data if needed
+            }
+        });
+
+        // Send the URL for the user to authenticate
+        res.json({ url: payload?.next.always });  // Redirect URL for the user to approve
+    } catch (error) {
+        console.error('Error creating XUMM authentication payload:', error);
+        res.status(500).json({ error: 'Error initiating XUMM authentication.' });
+    }
+});
+
 
 // ===== Minting Route =====
 async function mintNFT(walletAddress, name, description, imageUri) {
@@ -1613,6 +1637,7 @@ app.post('/create-collection',
       res.status(500).json({ error: 'Failed to create collection.' });
     }
   }
+  
 );// XUMM OAuth callback route
 app.get('/xumm/callback', async (req, res) => {
   const { code } = req.query;

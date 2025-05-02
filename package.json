@@ -30,7 +30,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.3",
     "xrpl": "^4.2.5",
-    "xumm-sdk": "^1.1.0",
+    "xumm-sdk": "^1.11.2",
     "yamljs": "^0.3.0"
   },
   "devDependencies": {

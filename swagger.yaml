@@ -4,10 +4,17 @@ info:
   version: 1.0.0
 servers:
   - url: https://sglcn-x20-api.glitch.me
+
 paths:
   /login:
     post:
       summary: Initiate XUMM login session
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         '200':
           description: Login payload created
@@ -15,6 +22,16 @@ paths:
   /pay:
     post:
       summary: Initiate payment of 0.5 SeagullCoin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                walletAddress:
+                  type: string
+                  example: rExampleWalletAddress123
       responses:
         '200':
           description: Payment payload created
@@ -64,6 +81,21 @@ paths:
   /mint:
     post:
       summary: Mint a new NFT after payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                image:
+                  type: string
+                walletAddress:
+                  type: string
       responses:
         '200':
           description: NFT minted successfully
@@ -71,6 +103,15 @@ paths:
   /burn:
     post:
       summary: Burn (delete) an existing NFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nftId:
+                  type: string
       responses:
         '200':
           description: NFT burned
@@ -104,6 +145,12 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         '200':
           description: Like registered
@@ -136,6 +183,19 @@ paths:
           description: List of collections
     post:
       summary: Create a new NFT collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                icon:
+                  type: string
       responses:
         '200':
           description: Collection created
@@ -156,6 +216,22 @@ paths:
   /offers:
     post:
       summary: Create a new offer to buy or sell an NFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nftId:
+                  type: string
+                amount:
+                  type: string
+                currency:
+                  type: string
+                type:
+                  type: string
+                  enum: [buy, sell]
       responses:
         '200':
           description: Offer created
@@ -176,6 +252,15 @@ paths:
   /accept-offer:
     post:
       summary: Accept an offer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId:
+                  type: string
       responses:
         '200':
           description: Offer accepted
@@ -203,6 +288,15 @@ paths:
   /user/username:
     post:
       summary: Update username
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
       responses:
         '200':
           description: Username updated
@@ -210,6 +304,15 @@ paths:
   /user/avatar:
     post:
       summary: Upload or update profile picture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                avatarUrl:
+                  type: string
       responses:
         '200':
           description: Avatar updated
@@ -217,6 +320,17 @@ paths:
   /messages:
     post:
       summary: Send a message to another wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to:
+                  type: string
+                message:
+                  type: string
       responses:
         '200':
           description: Message sent

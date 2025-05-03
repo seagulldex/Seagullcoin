@@ -7,17 +7,14 @@ servers:
 
 paths:
   /login:
-    post:
+    get:
       summary: Initiate XUMM login session
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
+      description: Redirects the user to the XUMM OAuth authorization page.
       responses:
-        '200':
-          description: Login payload created
+        '302':
+          description: Redirects to XUMM OAuth authorization page
+        '404':
+          description: Route not found
 
   /pay:
     post:
@@ -65,14 +62,6 @@ paths:
                     type: string
         '402':
           description: Payment not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Payment of 0.5 SeagullCoin not found"
         '403':
           description: Trustline missing
         '500':

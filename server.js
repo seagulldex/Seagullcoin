@@ -1755,6 +1755,13 @@ app.get('/xumm/callback', async (req, res) => {
   }
 });
 
+xumm.ping().then(response => {
+    console.log("XUMM connection successful", response);
+}).catch(error => {
+    console.error("Error connecting to XUMM:", error);
+});
+
+
 // Start the server
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server running on port ' + (process.env.PORT || 3000));

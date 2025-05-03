@@ -58,7 +58,6 @@ export async function verifyXummPayload(payloadUUID) {
   }
 }
 
-
 /**
  * Example function to get user info (wallet balance, etc.)
  */
@@ -76,9 +75,11 @@ export async function getUserInfo(accessToken) {
     }
 
     const userInfo = await response.json()
-    return userInfo  // Return the fetched user data (wallet, balance, etc.)
+    return userInfo
   } catch (error) {
     console.error('Error fetching user info:', error)
     throw new Error('Failed to fetch user info')
   }
 }
+
+export { xumm };

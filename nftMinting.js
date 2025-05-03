@@ -1,7 +1,8 @@
-import { xumm } from '../Xumm-utils.js';  // Importing xumm from Xumm-utils.js
+import { xumm } from './Xumm-utils.js';  // Import Xumm-utils.js in the same folder
 import { NFTStorage, File } from 'nft.storage';
 import mime from 'mime';
 import { Buffer } from 'buffer';
+import { createNftOfferPayload, verifyXummPayload, getUserInfo } from './Xumm-utils.js'; // Updated to reflect path
 
 const SERVICE_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U';
 const SEAGULL_COIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
@@ -14,12 +15,15 @@ const SEAGULL_COIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
 export async function confirmPayment(txId) {
   try {
     const tx = await xumm.payload.get(txId);
+
     if (tx.meta.signed !== true || !tx.response.txid) {
       return { success: false, reason: 'Transaction not signed or not resolved.' };
     }
+
     const txResult = await xumm.getTransaction(tx.response.txid);
     const txData = txResult.transaction;
     const amount = txData.Amount;
+
     const correctPayment =
       txData.Destination === SERVICE_WALLET &&
       typeof amount === 'object' &&

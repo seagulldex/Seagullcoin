@@ -467,7 +467,33 @@ app.post('/mint', upload, async (req, res) => {
       image: imageMetadata.url, // Store the IPFS URL of the image
     };
 
-    // Save metadata to a
+    // Save metadata to a database (Optional: depends on your storage needs)
+    const newNFT = new NFTModel({
+      walletAddress,
+      name,
+      description,
+      metadataUri: metadata.image, // Store the IPFS URL of the image
+      mintedAt: new Date(),
+    });
+    await newNFT.save();
+
+    // Implement the minting logic (send a transaction to mint the NFT on XRPL)
+    try {
+      await mintNFT(walletAddress, name, description, metadata.image); // Call minting function
+    } catch (error) {
+      console.error('Error in minting NFT on XRPL:', error);
+      return res.status(500).json({ error: 'Failed to mint NFT on XRPL.' });
+    }
+
+    // Respond with success
+    return res.status(200).json({
+      message: 'NFT successfully minted!',
+      nft: {
+        name,
+        description,
+        metadataUri: metadata.image,
+      },
+    });
 
   } catch (error) {
     console.error('Error during minting process:', error);
@@ -533,9 +559,7 @@ app.post('/list', async (req, res) => {
     console.error('Listing error:', err);
     res.status(500).json({ error: 'Failed to list NFT.', message: err.message });
   }
-});
-
-/**
+});/**
  * @swagger
  * /nft/{nftokenId}:
  *   get:
@@ -854,9 +878,7 @@ app.post('/sell-nft', async (req, res) => {
     const transferNFTResult = await transferNFT(nftId, userAddress, buyerAddress);
     if (!transferNFTResult.success) {
       return res.status(500).json({ error: 'Failed to transfer NFT: ' + transferNFTResult.error });
-    }
-
-    // Log the successful sell transaction
+    }// Log the successful sell transaction
     logTransaction(userAddress, nftId, 'sell', price, 'success');
 
     res.status(200).json({ message: 'NFT successfully sold.' });
@@ -1138,9 +1160,7 @@ app.post('/update-profile-picture', async (req, res) => {
  *     responses:
  *       200:
  *         description: Profile picture updated successfully
- */
-
-// Helper function to log transactions
+ */// Helper function to log transactions
 function logTransaction(userAddress, nftId, transactionType, amount, status, transactionHash = null) {
   const stmt = db.prepare(`
     INSERT INTO transactions (user_address, nft_id, transaction_type, amount, status, transaction_hash)
@@ -1400,10 +1420,7 @@ app.post('/like-nft',
       console.error(error);
       res.status(500).json({ error: 'An error occurred while liking the NFT' });
     }
-  });
-
-
-/**
+  });/**
  * @swagger
  * /api/like-nft:
  *   post:

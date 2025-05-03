@@ -210,8 +210,23 @@ app.post('/api/posts', (req, res) => {
 
 // ===== Send Message Route ======
 // XUMM OAuth login route
+app.post('/login', async (req, res) => {
+  const { xummPayload } = req.body;
+  try {
+    // Verify XUMM payload to fetch wallet address
+    const response = await verifyXummPayload(xummPayload);  // Corrected here
+    if (!response.success) {
+      return res.status(401).json({ error: 'Invalid wallet' });
+    }
 
-
+    // Store wallet address in session
+    req.session.walletAddress = response.walletAddress;
+    res.status(200).json({ message: 'Logged in successfully' });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Error logging in' });
+  }
+});
 
 
 app.post('/send-message',

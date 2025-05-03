@@ -43,9 +43,6 @@ const MINT_COST = 0.5; // Cost for minting in SeagullCoin
 const SEAGULL_COIN_LABEL = "SGLCN"; // Token identifier (SeagullCoin trustline)
 const XUMM_API_KEY = process.env.XUMM_API_KEY;
 const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
-const nftOfferResponse = await createNftOfferPayload(walletAddress, nftokenID, amount, true);
-console.log(nftOfferResponse); // This will print the resolved data, not a Promise.
-
 
 
 const app = express();
@@ -213,23 +210,7 @@ app.post('/api/posts', (req, res) => {
 
 // ===== Send Message Route ======
 // XUMM OAuth login route
-app.post('/login', async (req, res) => {
-  const { xummPayload } = req.body;
-  try {
-    // Verify XUMM payload to fetch wallet address
-    const response = await verifyXUMMPayload(xummPayload);
-    if (!response.success) {
-      return res.status(401).json({ error: 'Invalid wallet' });
-    }
 
-    // Store wallet address in session
-    req.session.walletAddress = response.walletAddress;
-    res.status(200).json({ message: 'Logged in successfully' });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: 'Error logging in' });
-  }
-});
 
 
 
@@ -585,31 +566,22 @@ app.post('/api/list-nft', async (req, res) => {
 
 // Remove duplicate route definitions
 
-app.post('/offer-nft', requireLogin, async (req, res) => {
-  const { nftId, offerPrice } = req.body;
-  const buyerWalletAddress = req.session.walletAddress;
-
-  if (!nftId || !offerPrice) {
-    return res.status(400).json({ error: 'NFT ID and offer price are required.' });
-  }
+// Example route for creating an NFT offer
+app.post('/create-nft-offer', async (req, res) => {
+  const { walletAddress, nftokenID, amount } = req.body;
 
   try {
-    // Check if the NFT exists
-    const nft = await getNFTDetails(nftId);
-    if (!nft) {
-      return res.status(404).json({ error: 'NFT not found.' });
-    }
+    // Call the async function to create the NFT offer
+    const nftOfferResponse = await createNftOfferPayload(walletAddress, nftokenID, amount, true);
+    console.log(nftOfferResponse); // Log the resolved response
 
-    // Record the offer for the NFT
-    await createNFTOffer(buyerWalletAddress, nftId, offerPrice);
-
-    res.json({ success: true, message: 'Offer made successfully.' });
-  } catch (err) {
-    console.error('Error making NFT offer:', err);
-    res.status(500).json({ error: 'Failed to make offer.' });
+    // Send the response back to the client
+    res.json(nftOfferResponse); 
+  } catch (error) {
+    console.error('Error creating NFT offer:', error);
+    res.status(500).json({ error: 'Failed to create NFT offer' });
   }
 });
-
 
 // Accept an offer
 app.post('/accept-offer', async (req, res) => {
@@ -1134,7 +1106,7 @@ app.post('/pay', async (req, res) => {
     });
 
     const hasTrustline = lines.result.lines.some(
-      line => line.currency === SEAGULL_COIN_TRUSTLINE && line.issuer === SEAGULL_COIN_ISSUER
+      line => line.currency === SEAGULL_COIN_LABEL && line.issuer === SEAGULL_COIN_ISSUER
     );
 
     if (!hasTrustline) {
@@ -1153,7 +1125,7 @@ app.post('/pay', async (req, res) => {
     const payment = txs.result.transactions.find(tx =>
       tx.tx.TransactionType === "Payment" &&
       tx.tx.Destination === SERVICE_WALLET &&
-      tx.tx.Amount.currency === SEAGULL_COIN_TRUSTLINE &&
+      tx.tx.Amount.currency === SEAGULL_COIN_LABEL &&
       tx.tx.Amount.issuer === SEAGULL_COIN_ISSUER &&
       parseFloat(tx.tx.Amount.value) >= MINT_COST
     );

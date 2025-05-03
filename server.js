@@ -55,7 +55,7 @@ const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SERVICE_WALLET } = process.env;
 const db = new sqlite3.Database('./database.db');
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
-
+const router = express.Router();
 
 
 
@@ -1783,6 +1783,9 @@ async function xrplPing() {
     console.error("Error connecting to XRPL:", error);
   }
 }
+
+app.use('/api', router);  // <- This mounts all your routes under /api
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

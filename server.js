@@ -47,6 +47,7 @@ const SEAGULL_COIN_LABEL = "SGLCN"; // Token identifier (SeagullCoin trustline)
 const XUMM_API_KEY = process.env.XUMM_API_KEY;
 const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+const xummApi = new XummSdk('your-xumm-api-key', 'your-xumm-api-secret');  // Replace with your XUMM API credentials
 
 
 
@@ -411,7 +412,6 @@ const verifyXummSignature = async (signature) => {
         console.log('Started signature verification process...');
         
         // Replace with actual XUMM API verification logic
-        // For example: XUMM API call to validate the signature (this is just a placeholder)
         const response = await xummApi.verifySignature(signature); // Actual verification logic here
 
         console.log('XUMM verification response:', response);
@@ -429,14 +429,42 @@ const verifyXummSignature = async (signature) => {
     }
 };
 
+// Function to create XUMM payment transaction for 0.5 SeagullCoin
+const createXummPayment = async (walletAddress) => {
+  try {
+    // Create a payment transaction for 0.5 SeagullCoin (converted to drops)
+    const xummPayload = {
+      "TransactionType": "Payment",
+      "Account": walletAddress,
+      "Amount": 0.5 * 1000000, // Convert 0.5 SeagullCoin to drops (1 SeagullCoin = 1,000,000 drops)
+      "Destination": SERVICE_WALLET, // Service wallet to receive the payment
+      "Currency": "SGLCN-X20", // SeagullCoin currency code
+      "Issuer": SEAGULL_COIN_ISSUER,
+      "DestinationTag": 0
+    };
+
+    const xummTx = await xumm.payload.create({ txjson: xummPayload });
+
+    // Send back the XUMM URL for the user to sign the transaction
+    return {
+      message: 'Sign the payment transaction to proceed with minting.',
+      xummUrl: `https://xumm.app/sign/${xummTx.data.uuid}` // Direct the user to the XUMM app
+    };
+  } catch (error) {
+    console.error('Error creating XUMM payment transaction:', error);
+    throw new Error('Payment creation failed.');
+  }
+};
+
+// Mint endpoint (POST /mint)
 app.post('/mint', async (req, res) => {
     try {
         console.log('Received mint request.');
 
-        // Get the signature from the request body
+        // Get the signature and necessary details from the request body
         const signature = req.body.signature;
-        const walletAddress = req.body.walletAddress; // Assuming walletAddress is part of the request
-        const nftData = req.body.nftData; // Get the NFT data from the request
+        const walletAddress = req.body.walletAddress;
+        const nftData = req.body.nftData;
 
         console.log('Verifying signature...');
         const isValid = await verifyXummSignature(signature);
@@ -447,27 +475,53 @@ app.post('/mint', async (req, res) => {
 
         console.log('Signature is valid, checking SeagullCoin balance...');
 
-        // Check if the user has enough SeagullCoin to mint
+        // Step 1: Check if the user has enough SeagullCoin to mint
         const hasSufficientFunds = await checkSeagullCoinBalance(walletAddress);
         
         if (!hasSufficientFunds) {
             return res.status(400).json({ error: 'Insufficient SeagullCoin balance to mint NFT.' });
         }
 
-        console.log('Sufficient funds, proceeding with minting...');
+        // Step 2: Initiate the XUMM payment request for 0.5 SeagullCoin
+        const paymentResponse = await createXummPayment(walletAddress);
         
-        // Proceed with minting
-        const nftId = await mintNFT(walletAddress, nftData); // Call your minting function
-        
-        console.log('NFT minted successfully with ID:', nftId);
+        // Step 3: Return the XUMM URL for the user to sign the payment
+        return res.status(200).json(paymentResponse);
 
-        // Return the minted NFT ID as a success response
-        return res.json({ nftId });
     } catch (error) {
         console.error('Error during minting process:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
+
+// Confirm payment and proceed with minting
+app.post('/confirm-payment', async (req, res) => {
+    try {
+        const paymentTransactionId = req.body.paymentTransactionId; // The payment tx ID from XUMM
+        const walletAddress = req.body.walletAddress;
+        const nftData = req.body.nftData;
+
+        // Step 1: Confirm that the payment was successful
+        const paymentStatus = await confirmPayment(paymentTransactionId); // Implement this function to check payment status
+
+        if (!paymentStatus.success) {
+            return res.status(400).json({ error: 'Payment confirmation failed.' });
+        }
+
+        console.log('Payment confirmed, proceeding with minting...');
+
+        // Step 2: Proceed with minting
+        const nftId = await mintNFT(walletAddress, nftData); // Mint the NFT after payment confirmation
+
+        // Step 3: Return minted NFT ID as confirmation
+        return res.json({ nftId });
+
+    } catch (error) {
+        console.error('Error during payment confirmation and minting:', error);
+        return res.status(500).json({ error: 'Error during payment confirmation and minting.' });
+    }
+});
+
 
 
 /**
@@ -1477,7 +1531,6 @@ app.get('/gettotalusers', async (req, res) => {
 app.get('/api/stats/users', async (req, res) => {
   // get-total-users logic here
 });
-
 
 // Get platform metrics
 

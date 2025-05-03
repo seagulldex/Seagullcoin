@@ -24,6 +24,8 @@ import { requireLogin } from './middleware.js'
 import { verifyXummPayload, createNftOfferPayload } from './xumm-utils.js'
 import { createNftOffer } from './xrpl-utils.js'
 import { Profile } from './profile.js'; // Adjust path to your models directory if needed
+import pkg from 'xumm-sdk';
+
 
 
 
@@ -44,6 +46,7 @@ const MINT_COST = 0.5; // Cost for minting in SeagullCoin
 const SEAGULL_COIN_LABEL = "SGLCN"; // Token identifier (SeagullCoin trustline)
 const XUMM_API_KEY = process.env.XUMM_API_KEY;
 const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
+const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 
 const app = express();
@@ -393,7 +396,6 @@ app.get('/auth', async (req, res) => {
     }
 });
 
-
 // ===== Minting Route =====
 async function mintNFT(walletAddress, name, description, imageUri) {
   try {
@@ -440,7 +442,7 @@ app.post('/mint', upload, async (req, res) => {
   try {
     if (!client.isConnected()) await client.connect();
 
-    // Check SeagullCoin balance for minting
+    // Step 1: Check SeagullCoin balance for minting
     const accountLines = await client.request({
       method: 'account_lines',
       params: [{ account: walletAddress }],
@@ -456,43 +458,24 @@ app.post('/mint', upload, async (req, res) => {
       return res.status(400).json({ error: 'Insufficient SeagullCoin balance for minting.' });
     }
 
-    // Upload NFT file to NFT.Storage
-    const file = new File([req.file.buffer], req.file.originalname, { type: req.file.mimetype });
-    const imageMetadata = await nftStorage.store(file);  // Upload file to NFT.Storage
-    
-    // Store metadata for the NFT
-    const metadata = {
-      name,
-      description,
-      image: imageMetadata.url, // Store the IPFS URL of the image
+    // Step 2: Create XUMM payment transaction for 0.5 SeagullCoin
+    const xummPayload = {
+      "TransactionType": "Payment",
+      "Account": walletAddress,
+      "Amount": MINT_COST * 1000000,  // Convert SeagullCoin to drops
+      "Destination": SERVICE_WALLET,  // Send to service wallet
+      "Currency": SEAGULL_COIN_CODE,
+      "Issuer": SEAGULL_COIN_ISSUER,
+      "DestinationTag": 0,
     };
 
-    // Save metadata to a database (Optional: depends on your storage needs)
-    const newNFT = new NFTModel({
-      walletAddress,
-      name,
-      description,
-      metadataUri: metadata.image, // Store the IPFS URL of the image
-      mintedAt: new Date(),
-    });
-    await newNFT.save();
+    const xummTx = await xumm.payload.create({ txjson: xummPayload });
 
-    // Implement the minting logic (send a transaction to mint the NFT on XRPL)
-    try {
-      await mintNFT(walletAddress, name, description, metadata.image); // Call minting function
-    } catch (error) {
-      console.error('Error in minting NFT on XRPL:', error);
-      return res.status(500).json({ error: 'Failed to mint NFT on XRPL.' });
-    }
-
-    // Respond with success
+    // Step 3: Send user to XUMM to sign the transaction
+    const txRequestUrl = `https://xumm.app/sign/${xummTx.data.uuid}`;
     return res.status(200).json({
-      message: 'NFT successfully minted!',
-      nft: {
-        name,
-        description,
-        metadataUri: metadata.image,
-      },
+      message: 'Sign the transaction to proceed with minting.',
+      xummUrl: txRequestUrl,  // Direct user to the XUMM sign request URL
     });
 
   } catch (error) {
@@ -559,7 +542,9 @@ app.post('/list', async (req, res) => {
     console.error('Listing error:', err);
     res.status(500).json({ error: 'Failed to list NFT.', message: err.message });
   }
-});/**
+});
+
+/**
  * @swagger
  * /nft/{nftokenId}:
  *   get:
@@ -608,10 +593,7 @@ app.get('/listings', async (req, res) => {
  */
 app.post('/api/list-nft', async (req, res) => {
   // list-nft logic here
-});
-
-
-// Remove duplicate route definitions
+});// Remove duplicate route definitions
 
 // Example route for creating an NFT offer
 app.post('/create-nft-offer', async (req, res) => {
@@ -878,7 +860,9 @@ app.post('/sell-nft', async (req, res) => {
     const transferNFTResult = await transferNFT(nftId, userAddress, buyerAddress);
     if (!transferNFTResult.success) {
       return res.status(500).json({ error: 'Failed to transfer NFT: ' + transferNFTResult.error });
-    }// Log the successful sell transaction
+    }
+
+    // Log the successful sell transaction
     logTransaction(userAddress, nftId, 'sell', price, 'success');
 
     res.status(200).json({ message: 'NFT successfully sold.' });
@@ -1020,9 +1004,7 @@ async function getTransactionHistory(walletAddress) {
     headers: {
       'Authorization': `Bearer ${XUMM_API_KEY}`,
     },
-  });
-
-  if (!response.ok) throw new Error('Failed to fetch transaction history from XUMM');
+  });if (!response.ok) throw new Error('Failed to fetch transaction history from XUMM');
 
   const data = await response.json();
   return data.transactions;
@@ -1160,7 +1142,9 @@ app.post('/update-profile-picture', async (req, res) => {
  *     responses:
  *       200:
  *         description: Profile picture updated successfully
- */// Helper function to log transactions
+ */
+
+// Helper function to log transactions
 function logTransaction(userAddress, nftId, transactionType, amount, status, transactionHash = null) {
   const stmt = db.prepare(`
     INSERT INTO transactions (user_address, nft_id, transaction_type, amount, status, transaction_hash)

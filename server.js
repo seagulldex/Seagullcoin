@@ -14,7 +14,6 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage';
 import xrpl from 'xrpl';
-import mongoose from 'mongoose';
 import NodeCache from 'node-cache';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
@@ -168,6 +167,22 @@ db.serialize(() => {
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  
+  const saveNFTToDatabase = (walletAddress, name, description, metadataUri) => {
+  const query = `
+    INSERT INTO nfts (walletAddress, name, description, metadataUri)
+    VALUES (?, ?, ?, ?)
+  `;
+  
+  db.run(query, [walletAddress, name, description, metadataUri], function(err) {
+    if (err) {
+      console.error('Error saving NFT to database:', err.message);
+    } else {
+      console.log(`NFT saved with ID: ${this.lastID}`);
+    }
+  });
+};
+
 
   // Insert a test user
   const stmt = db.prepare("INSERT INTO users (name) VALUES (?)");
@@ -452,33 +467,7 @@ app.post('/mint', upload, async (req, res) => {
       image: imageMetadata.url, // Store the IPFS URL of the image
     };
 
-    // Save metadata to a database (Optional: depends on your storage needs)
-    const newNFT = new NFTModel({
-      walletAddress,
-      name,
-      description,
-      metadataUri: metadata.image, // Store the IPFS URL of the image
-      mintedAt: new Date(),
-    });
-    await newNFT.save();
-
-    // Implement the minting logic (send a transaction to mint the NFT on XRPL)
-    try {
-      await mintNFT(walletAddress, name, description, metadata.image); // Call minting function
-    } catch (error) {
-      console.error('Error in minting NFT on XRPL:', error);
-      return res.status(500).json({ error: 'Failed to mint NFT on XRPL.' });
-    }
-
-    // Respond with success
-    return res.status(200).json({
-      message: 'NFT successfully minted!',
-      nft: {
-        name,
-        description,
-        metadataUri: metadata.image,
-      },
-    });
+    // Save metadata to a
 
   } catch (error) {
     console.error('Error during minting process:', error);
@@ -514,6 +503,26 @@ app.post('/mint', upload, async (req, res) => {
 
 
 // ===== Listing NFT Route =====
+
+
+app.post('/login', async (req, res) => {
+  const { xummPayload } = req.body;
+
+  try {
+    const verifiedPayload = await verifyXummPayload(xummPayload);
+
+    if (verifiedPayload) {
+      const walletAddress = verifiedPayload.account;
+
+      // Set session variable for the user
+      req.session.walletAddress = walletAddress;
+
+      res.status(200).json({ success: true, message: 'User authenticated', walletAddress });
+    }
+  } catch (error) {
+    res.status(400).json({ success: false, error: 'Payload verification failed' });
+  }
+});
 app.post('/list', async (req, res) => {
   const { nftokenId, price, duration } = req.body;
 

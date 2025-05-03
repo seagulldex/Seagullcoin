@@ -43,6 +43,8 @@ const MINT_COST = 0.5; // Cost for minting in SeagullCoin
 const SEAGULL_COIN_LABEL = "SGLCN"; // Token identifier (SeagullCoin trustline)
 const XUMM_API_KEY = process.env.XUMM_API_KEY;
 const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
+const nftOfferResponse = await createNftOfferPayload(walletAddress, nftokenID, amount, true);
+console.log(nftOfferResponse); // This will print the resolved data, not a Promise.
 
 
 

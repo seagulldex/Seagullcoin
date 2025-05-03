@@ -59,8 +59,6 @@ const db = new sqlite3.Database('./database.db');
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 const router = express.Router();
 
-
-
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1801,10 +1799,6 @@ app.use('/api', router);  // <- This mounts all your routes under /api
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");
 });
-
-console.log('Getting XUMM payload for:', payloadUuid);
-const result = await xumm.payload.get(payloadUuid);
-console.log('XUMM payload result:', result);
 
 
 xumm.ping().then(response => {

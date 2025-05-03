@@ -20,7 +20,7 @@ import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
-import { XummSdk } from 'xumm-sdk';
+import XummSdk from 'xumm-sdk';
 import { requireLogin } from './middleware.js'
 import { verifyXummPayload, createNftOfferPayload } from './xumm-utils.js'
 import { createNftOffer } from './xrpl-utils.js'

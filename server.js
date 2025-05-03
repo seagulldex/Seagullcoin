@@ -22,7 +22,7 @@ import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
 import { XummSdk } from 'xumm-sdk';
 import { requireLogin } from './middleware.js'
-
+import { createNftOfferPayload } from './xumm-utils.js'
 
 
 // Import your business logic modules

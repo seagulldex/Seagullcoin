@@ -1,9 +1,13 @@
+// xumm-utils.js
 import { XummSdk } from 'xumm-sdk'
 import dotenv from 'dotenv'
 dotenv.config()
 
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET)
 
+/**
+ * Creates a XUMM payload to sign an NFT offer (buy/sell).
+ */
 export async function createNftOfferPayload(walletAddress, nftokenID, amount, isSellOffer = true) {
   const payload = {
     txjson: {
@@ -20,19 +24,17 @@ export async function createNftOfferPayload(walletAddress, nftokenID, amount, is
     options: {
       submit: true,
       return_url: {
-        web: process.env.XUMM_REDIRECT_URI,
-        app: process.env.XUMM_REDIRECT_URI
+        app: process.env.XUMM_REDIRECT_URI,
+        web: process.env.XUMM_REDIRECT_URI
       }
     }
   }
 
-  const { created, resolved } = await xumm.payload.createAndSubscribe(payload, event => {
-    if (event.data.signed === true) return event.data
+  const response = await xumm.payload.createAndSubscribe(payload, event => {
+    if (event.data.signed === true) {
+      return event.data
+    }
   })
 
-  return {
-    uuid: created.uuid,
-    next: created.next,
-    signed: resolved?.signed
-  }
+  return response
 }

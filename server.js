@@ -29,7 +29,7 @@ import pkg from 'xumm-sdk';
 import { confirmPayment, mintNFT } from './nftminting.js';
 import checkSeagullCoinBalance from './checkSeagullCoinBalance.js'; // Import the checkSeagullCoinBalance function
 import FormData from 'form-data'; // For handling file uploads
-
+import { verifyXummSignature, createXummPayment } from './xummApi.js'; // Import XUMM functions
 
 
 
@@ -411,12 +411,13 @@ app.get('/auth', async (req, res) => {
 
 // ===== Minting Route =====
 // Mocking the actual signature verification with XUMM API
+// XUMM signature verification
 const verifyXummSignature = async (signature) => {
     try {
         console.log('Started signature verification process...');
         
         // Replace with actual XUMM API verification logic
-        const response = await xummApi.verifySignature(signature); // Actual verification logic here
+        const response = await xummApi.verifySignature(signature);  // Actual verification logic here
 
         console.log('XUMM verification response:', response);
 
@@ -436,7 +437,6 @@ const verifyXummSignature = async (signature) => {
 // Function to create XUMM payment transaction for 0.5 SeagullCoin
 const createXummPayment = async (walletAddress) => {
   try {
-    // Create a payment transaction for 0.5 SeagullCoin (converted to drops)
     const xummPayload = {
       "TransactionType": "Payment",
       "Account": walletAddress,
@@ -447,7 +447,7 @@ const createXummPayment = async (walletAddress) => {
       "DestinationTag": 0
     };
 
-    const xummTx = await xumm.payload.create({ txjson: xummPayload });
+    const xummTx = await xummApi.payload.create({ txjson: xummPayload });
 
     // Send back the XUMM URL for the user to sign the transaction
     return {
@@ -466,9 +466,7 @@ app.post('/mint', upload.single('file'), async (req, res) => {
         console.log('Received mint request.');
 
         // Get the signature and necessary details from the request body
-        const signature = req.body.signature;
-        const walletAddress = req.body.walletAddress;
-        const nftData = req.body.nftData; // Additional data related to the NFT
+        const { signature, walletAddress, nftData } = req.body;
 
         console.log('Verifying signature...');
         const isValid = await verifyXummSignature(signature);
@@ -480,7 +478,7 @@ app.post('/mint', upload.single('file'), async (req, res) => {
         console.log('Signature is valid, checking SeagullCoin balance...');
 
         // Step 1: Check if the user has enough SeagullCoin to mint
-        const hasSufficientFunds = await checkSeagullCoinBalance(walletAddress);
+        const hasSufficientFunds = await checkSeagullCoinBalance(walletAddress); // Implement this check in your logic
         
         if (!hasSufficientFunds) {
             return res.status(400).json({ error: 'Insufficient SeagullCoin balance to mint NFT.' });
@@ -506,16 +504,15 @@ app.post('/mint', upload.single('file'), async (req, res) => {
             description: nftData.description,
             ipfsUrl: ipfsUrl,
             walletAddress: walletAddress,
-            // Add more metadata as needed
         };
 
         // Assuming a function `saveMetadataToDB` that stores the NFT metadata
-        const nftId = await saveMetadataToDB(nftMetadata);
+        const nftId = await saveMetadataToDB(nftMetadata); // Ensure this function is implemented correctly
         console.log('NFT metadata saved with ID:', nftId);
 
         // Step 4: Initiate the XUMM payment request for 0.5 SeagullCoin
         const paymentResponse = await createXummPayment(walletAddress);
-        
+
         // Step 5: Return the XUMM URL for the user to sign the payment
         return res.status(200).json(paymentResponse);
 
@@ -528,9 +525,7 @@ app.post('/mint', upload.single('file'), async (req, res) => {
 // Confirm payment and proceed with minting (after user signs the payment)
 app.post('/confirm-payment', async (req, res) => {
     try {
-        const paymentTransactionId = req.body.paymentTransactionId; // The payment tx ID from XUMM
-        const walletAddress = req.body.walletAddress;
-        const nftData = req.body.nftData;
+        const { paymentTransactionId, walletAddress, nftData } = req.body;
 
         // Step 1: Confirm that the payment was successful
         const paymentStatus = await confirmPayment(paymentTransactionId); // Implement this function to check payment status
@@ -552,8 +547,6 @@ app.post('/confirm-payment', async (req, res) => {
         return res.status(500).json({ error: 'Error during payment confirmation and minting.' });
     }
 });
-
-
 
 /**
  * @swagger

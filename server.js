@@ -518,10 +518,7 @@ app.post('/confirm-payment', async (req, res) => {
         return res.json({ nftId });
 
     } catch (error) {
-        console.error('Error during payment confirmation and minting:', error);
-        return res.status(500).json({ error: 'Error during payment confirmation and minting.' });
-    }
-});
+      
 
 
 

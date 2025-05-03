@@ -580,6 +580,32 @@ app.post('/api/list-nft', async (req, res) => {
 
 // Remove duplicate route definitions
 
+app.post('/offer-nft', requireLogin, async (req, res) => {
+  const { nftId, offerPrice } = req.body;
+  const buyerWalletAddress = req.session.walletAddress;
+
+  if (!nftId || !offerPrice) {
+    return res.status(400).json({ error: 'NFT ID and offer price are required.' });
+  }
+
+  try {
+    // Check if the NFT exists
+    const nft = await getNFTDetails(nftId);
+    if (!nft) {
+      return res.status(404).json({ error: 'NFT not found.' });
+    }
+
+    // Record the offer for the NFT
+    await createNFTOffer(buyerWalletAddress, nftId, offerPrice);
+
+    res.json({ success: true, message: 'Offer made successfully.' });
+  } catch (err) {
+    console.error('Error making NFT offer:', err);
+    res.status(500).json({ error: 'Failed to make offer.' });
+  }
+});
+
+
 // Accept an offer
 app.post('/accept-offer', async (req, res) => {
   const { offerId, userAddress, nftId } = req.body;

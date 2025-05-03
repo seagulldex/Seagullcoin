@@ -25,6 +25,8 @@ import { verifyXummPayload, createNftOfferPayload, getUserInfo } from './xumm-ut
 import { createNftOffer } from './xrpl-utils.js'
 import { Profile } from './profile.js'; // Adjust path to your models directory if needed
 import pkg from 'xumm-sdk';
+import checkSeagullCoinBalance from './checkSeagullCoinBalance.js'; // Import the checkSeagullCoinBalance function
+
 
 
 
@@ -48,6 +50,7 @@ const XUMM_API_KEY = process.env.XUMM_API_KEY;
 const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const xummApi = new XummSdk('your-xumm-api-key', 'your-xumm-api-secret');  // Replace with your XUMM API credentials
+
 
 
 

@@ -28,6 +28,7 @@ import { Profile } from './profile.js'; // Adjust path to your models directory 
 import pkg from 'xumm-sdk';
 import { confirmPayment, mintNFT } from './nftminting.js';
 import checkSeagullCoinBalance from './checkSeagullCoinBalance.js'; // Import the checkSeagullCoinBalance function
+import FormData from 'form-data'; // For handling file uploads
 
 
 

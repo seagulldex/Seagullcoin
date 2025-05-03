@@ -230,10 +230,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Example of handling form submission in frontend:
-const mintNFT = async () => {
-  setLoading(true)
-
 
 app.post('/send-message',
   body('recipient').isString().isLength({ min: 25 }).withMessage('Invalid recipient address'),
@@ -384,6 +380,35 @@ app.get('/auth', async (req, res) => {
 
 
 // ===== Minting Route =====
+async function mintNFT(walletAddress, name, description, imageUri) {
+  try {
+    const transaction = {
+      "TransactionType": "NFTokenMint",
+      "Account": walletAddress,
+      "URI": imageUri,  // Store the IPFS metadata URL here
+      "Flags": 131072,  // Set the flags for minting (e.g., prevent secondary sales)
+    };
+
+    const preparedTx = await client.autofill(transaction);
+    const signedTx = client.sign(preparedTx, walletAddress); // Ensure you sign with the correct wallet's private key
+    const txResult = await client.submit(signedTx.tx_blob);
+
+    if (txResult.resultCode === "tesSUCCESS") {
+      console.log('NFT minted successfully!');
+
+      // Log the mint transaction
+      logTransaction(walletAddress, name, 'mint', MINT_COST, 'success', txResult.tx_json.hash);
+    } else {
+      throw new Error('NFT minting failed.');
+    }
+  } catch (error) {
+    console.error('Error in minting NFT:', error);
+
+    // Log the failed mint transaction
+    logTransaction(walletAddress, name, 'mint', MINT_COST, 'failed', null);
+    throw error;
+  }
+}
 
 app.post('/mint', upload, async (req, res) => {
   const { walletAddress, name, description } = req.body;

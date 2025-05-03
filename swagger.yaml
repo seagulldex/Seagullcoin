@@ -7,11 +7,37 @@ servers:
   - url: https://sglcn-x20-api.glitch.me
 paths:
   /login:
-    post:
+    get:
       summary: Initiate XUMM login session
+      description: This endpoint initiates the login session using the XUMM wallet and retrieves the wallet address from the XUMM payload.
+      parameters:
+        - name: xummPayload
+          in: query
+          required: true
+          description: The XUMM payload containing the wallet information.
+          schema:
+            type: string
+            example: "uuidv4_example_payload"
       responses:
         200:
           description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logged in successfully"
+                  walletAddress:
+                    type: string
+                    example: "rExampleWalletAddress123"
+        400:
+          description: Missing or invalid XUMM payload
+        401:
+          description: Invalid wallet address
+        500:
+          description: Server error
   /pay:
     post:
       summary: Initiate payment of 0.5 SeagullCoin

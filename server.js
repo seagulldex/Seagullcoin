@@ -234,11 +234,17 @@ app.post('/api/posts', (req, res) => {
 
 // ===== Send Message Route ======
 // XUMM OAuth login route
-app.post('/login', async (req, res) => {
-  const { xummPayload } = req.body;  // XUMM payload from frontend
+app.get('/login', async (req, res) => {
+  const { xummPayload } = req.query;  // Get the XUMM payload from the query params
+
+  if (!xummPayload) {
+    return res.status(400).json({ error: 'Missing XUMM payload.' });
+  }
+
   try {
     // Verify the XUMM payload to fetch wallet address
-    const response = await verifyXummPayload(xummPayload.uuidv4);  // UUIDv4 from payload
+    const response = await verifyXummPayload(xummPayload);  // Use the payload directly
+
     if (!response.success) {
       return res.status(401).json({ error: 'Invalid wallet' });
     }
@@ -251,6 +257,7 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Error logging in' });
   }
 });
+
 
 app.post('/send-message',
   body('recipient').isString().isLength({ min: 25 }).withMessage('Invalid recipient address'),

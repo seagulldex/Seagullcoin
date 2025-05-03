@@ -12,7 +12,7 @@
   ],
   "paths": {
     "/login": {
-      "post": {
+      "get": {
         "summary": "Initiate XUMM login session",
         "responses": {
           "200": {

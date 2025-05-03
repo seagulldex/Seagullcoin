@@ -206,6 +206,12 @@ app.post('/api/posts', (req, res) => {
 });
 
 // ===== Send Message Route ======
+// XUMM OAuth login route
+app.get('/login', (req, res) => {
+  const authUrl = `https://xumm.app/oauth2/authorize?response_type=code&client_id=${XUMM_CLIENT_ID}&redirect_uri=${encodeURIComponent(XUMM_REDIRECT_URI)}&scope=identity`;
+  res.redirect(authUrl);
+});
+
 
 app.post('/send-message',
   body('recipient').isString().isLength({ min: 25 }).withMessage('Invalid recipient address'),

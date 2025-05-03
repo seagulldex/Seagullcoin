@@ -1390,9 +1390,6 @@ app.post('/like-nft',
  *       400:
  *         description: Invalid data or already liked
  */
-app.post('/api/like-nft', async (req, res) => {
-  // like-nft logic here
-});
 
 async function getTotalCollections() {
   return new Promise((resolve, reject) => {
@@ -1727,4 +1724,4 @@ app.get('/xumm/callback', async (req, res) => {
 // Start the server
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server running on port ' + (process.env.PORT || 3000));
-});
+}); 

@@ -40,7 +40,7 @@ const sdk = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const SEAGULL_COIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"; // Issuer address
 const SEAGULL_COIN_CODE = "SeagullCoin"; // Currency code
 const MINT_COST = 0.5; // Cost for minting in SeagullCoin
-const SEAGULL_COIN_TRUSTLINE = "SGLCN"; // Token identifier (SeagullCoin trustline)
+const SEAGULL_COIN_LABEL = "SGLCN"; // Token identifier (SeagullCoin trustline)
 const XUMM_API_KEY = process.env.XUMM_API_KEY;
 const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
 

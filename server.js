@@ -17,6 +17,7 @@ import xrpl from 'xrpl';
 import NodeCache from 'node-cache';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
+import axios from 'axios';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
 import { XummSdk } from 'xumm-sdk';
@@ -49,7 +50,7 @@ const SEAGULL_COIN_LABEL = "SGLCN"; // Token identifier (SeagullCoin trustline)
 const XUMM_API_KEY = process.env.XUMM_API_KEY;
 const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
+const NFT_STORAGE_API_KEY = process.env.NFT_STORAGE_API_KEY;
 
 
 
@@ -406,6 +407,7 @@ app.get('/auth', async (req, res) => {
     }
 });
 
+
 // ===== Minting Route =====
 // Mocking the actual signature verification with XUMM API
 const verifyXummSignature = async (signature) => {
@@ -458,14 +460,14 @@ const createXummPayment = async (walletAddress) => {
 };
 
 // Mint endpoint (POST /mint)
-app.post('/mint', async (req, res) => {
+app.post('/mint', upload.single('file'), async (req, res) => {
     try {
         console.log('Received mint request.');
 
         // Get the signature and necessary details from the request body
         const signature = req.body.signature;
         const walletAddress = req.body.walletAddress;
-        const nftData = req.body.nftData;
+        const nftData = req.body.nftData; // Additional data related to the NFT
 
         console.log('Verifying signature...');
         const isValid = await verifyXummSignature(signature);
@@ -483,10 +485,37 @@ app.post('/mint', async (req, res) => {
             return res.status(400).json({ error: 'Insufficient SeagullCoin balance to mint NFT.' });
         }
 
-        // Step 2: Initiate the XUMM payment request for 0.5 SeagullCoin
+        // Step 2: Upload the file to NFT.Storage (IPFS)
+        const formData = new FormData();
+        formData.append("file", req.file.buffer, req.file.originalname);
+
+        const ipfsResponse = await axios.post('https://api.nft.storage/upload', formData, {
+            headers: {
+                'Authorization': `Bearer ${NFT_STORAGE_API_KEY}`,
+                'Content-Type': 'multipart/form-data',
+            }
+        });
+
+        const ipfsUrl = `https://ipfs.io/ipfs/${ipfsResponse.data.value.cid}`;
+        console.log('NFT file uploaded to IPFS:', ipfsUrl);
+
+        // Step 3: Store the NFT metadata in the database (e.g., name, description, IPFS URL)
+        const nftMetadata = {
+            name: nftData.name,
+            description: nftData.description,
+            ipfsUrl: ipfsUrl,
+            walletAddress: walletAddress,
+            // Add more metadata as needed
+        };
+
+        // Assuming a function `saveMetadataToDB` that stores the NFT metadata
+        const nftId = await saveMetadataToDB(nftMetadata);
+        console.log('NFT metadata saved with ID:', nftId);
+
+        // Step 4: Initiate the XUMM payment request for 0.5 SeagullCoin
         const paymentResponse = await createXummPayment(walletAddress);
         
-        // Step 3: Return the XUMM URL for the user to sign the payment
+        // Step 5: Return the XUMM URL for the user to sign the payment
         return res.status(200).json(paymentResponse);
 
     } catch (error) {
@@ -495,7 +524,7 @@ app.post('/mint', async (req, res) => {
     }
 });
 
-// Confirm payment and proceed with minting
+// Confirm payment and proceed with minting (after user signs the payment)
 app.post('/confirm-payment', async (req, res) => {
     try {
         const paymentTransactionId = req.body.paymentTransactionId; // The payment tx ID from XUMM
@@ -511,14 +540,17 @@ app.post('/confirm-payment', async (req, res) => {
 
         console.log('Payment confirmed, proceeding with minting...');
 
-        // Step 2: Proceed with minting
+        // Step 2: Proceed with minting the NFT on the XRPL
         const nftId = await mintNFT(walletAddress, nftData); // Mint the NFT after payment confirmation
 
         // Step 3: Return minted NFT ID as confirmation
         return res.json({ nftId });
 
     } catch (error) {
-      
+        console.error('Error during payment confirmation and minting:', error);
+        return res.status(500).json({ error: 'Error during payment confirmation and minting.' });
+    }
+});
 
 
 

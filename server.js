@@ -21,7 +21,7 @@ import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
 import { XummSdk } from 'xumm-sdk';
 import { requireLogin } from './middleware.js'
-import { verifyXummPayload, createNftOfferPayload } from './xumm-utils.js'
+import { verifyXummPayload, createNftOfferPayload, getUserInfo } from './xumm-utils.js';
 import { createNftOffer } from './xrpl-utils.js'
 import { Profile } from './profile.js'; // Adjust path to your models directory if needed
 import pkg from 'xumm-sdk';
@@ -1760,6 +1760,16 @@ app.get('/xumm/callback', async (req, res) => {
     console.error('XUMM OAuth callback error:', err);
     res.status(500).json({ error: 'OAuth callback processing failed.' });
   }
+});
+
+// Logout route to clear session data
+app.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to log out' });
+    }
+    res.status(200).json({ message: 'Logged out successfully' });
+  });
 });
 
 xumm.ping().then(response => {

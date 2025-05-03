@@ -1001,6 +1001,30 @@ async function getTransactionHistory(walletAddress) {
 }
 
 
+app.patch('/api/profile/:wallet', (req, res) => {
+  const wallet = req.params.wallet;
+  const { name, bio, socials, links, collectionCount, nftCount, banner, avatar } = req.body;
+  const sql = `
+    UPDATE users
+    SET name = ?, bio = ?, socials = ?, links = ?, collectionCount = ?, nftCount = ?, banner = ?, avatar = ?
+    WHERE wallet = ?
+  `;
+  const params = [
+    name || '', bio || '', JSON.stringify(socials || {}), JSON.stringify(links || {}),
+    collectionCount || 0, nftCount || 0, banner || '', avatar || '', wallet
+  ];
+  db.run(sql, params, function (err) {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ success: false, error: 'Database error' });
+    } else {
+      res.json({ success: true });
+    }
+  });
+});
+
+
+
 app.get('/transaction-history', (req, res) => {
     const userAddress = req.query.userAddress;  // Assume the user address is passed in the query
     db.all('SELECT * FROM transactions WHERE user_address = ?', [userAddress], (err, rows) => {

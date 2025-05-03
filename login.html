@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SeagullCoin NFT Minter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Login to SeagullCoin NFT Platform</h1>
+        <p>Connect your XUMM wallet to manage your NFTs and perform transactions.</p>
+        <button id="loginButton">Connect XUMM Wallet</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@xumm/sdk@latest"></script>
+    <script>
+        const xumm = new XummSdk("YOUR_XUMM_API_KEY");  // Replace with your XUMM API key
+
+        document.getElementById('loginButton').addEventListener('click', async () => {
+            try {
+                // Trigger the login with XUMM
+                const payload = await xumm.payload.create({
+                    TransactionType: 'SignIn'
+                });
+
+                // Redirect the user to XUMM wallet
+                window.location.href = `xumm://payload/${payload.uuid}`;
+            } catch (error) {
+                console.error("XUMM Authentication error:", error);
+            }
+        });
+    </script>
+</body>
+</html>

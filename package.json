@@ -17,6 +17,7 @@
     "express-validator": "^7.2.1",
     "file-type": "^20.5.0",
     "form-data": "^4.0.2",
+    "mime": "^4.0.7",
     "mime-types": "^2.1.35",
     "mongodb": "^6.16.0",
     "mongoose": "^8.14.1",

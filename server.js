@@ -25,10 +25,6 @@ import { verifyXummPayload, createNftOfferPayload, getUserInfo } from './xumm-ut
 import { createNftOffer } from './xrpl-utils.js'
 import { Profile } from './profile.js'; // Adjust path to your models directory if needed
 import pkg from 'xumm-sdk';
-import checkSeagullCoinBalance from './checkSeagullCoinBalance.js'; // Import the checkSeagullCoinBalance function
-import { confirmPayment, mintNFT } from './nftMinting.js';
-
-
 
 
 
@@ -51,8 +47,6 @@ const SEAGULL_COIN_LABEL = "SGLCN"; // Token identifier (SeagullCoin trustline)
 const XUMM_API_KEY = process.env.XUMM_API_KEY;
 const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-const xummApi = new XummSdk('your-xumm-api-key', 'your-xumm-api-secret');  // Replace with your XUMM API credentials
-
 
 
 
@@ -702,7 +696,6 @@ app.post('/accept-offer', async (req, res) => {
  *       200:
  *         description: Offer accepted
  */
-
 // Reject an offer
 app.post('/reject-offer', async (req, res) => {
   const { offerId, nftokenId } = req.body;
@@ -1152,7 +1145,6 @@ app.get('/transaction-history', (req, res) => {
  *       500:
  *         description: Internal server error.
  */
-
 // Update profile picture
 app.post('/update-profile-picture', async (req, res) => {
   const { walletAddress } = req.session;
@@ -1536,6 +1528,7 @@ app.get('/gettotalusers', async (req, res) => {
 app.get('/api/stats/users', async (req, res) => {
   // get-total-users logic here
 });
+
 
 // Get platform metrics
 

@@ -2,20 +2,16 @@ openapi: 3.0.0
 info:
   title: SGLCN-X20 Minting API
   version: 1.0.0
+  description: OpenAPI specification for the SeagullCoin (SGLCN-X20) NFT Minting Platform.
 servers:
   - url: https://sglcn-x20-api.glitch.me
-
 paths:
-  /api/login:
+  /login:
     post:
-      summary: "Login User"
-      description: "Login and get access token"
+      summary: Initiate XUMM login session
       responses:
-        '200':
-          description: "Successfully logged in"
-        '400':
-          description: "Invalid login credentials"
-
+        200:
+          description: Success
   /pay:
     post:
       summary: Initiate payment of 0.5 SeagullCoin
@@ -30,9 +26,8 @@ paths:
                   type: string
                   example: rExampleWalletAddress123
       responses:
-        '200':
+        200:
           description: Payment payload created
-
   /verify-payment:
     post:
       summary: Verify SeagullCoin payment
@@ -48,7 +43,7 @@ paths:
                   type: string
                   example: rExampleWalletAddress123
       responses:
-        '200':
+        200:
           description: Payment verified
           content:
             application/json:
@@ -60,13 +55,12 @@ paths:
                     example: true
                   txHash:
                     type: string
-        '402':
+        402:
           description: Payment not found
-        '403':
+        403:
           description: Trustline missing
-        '500':
+        500:
           description: Server error
-
   /mint:
     post:
       summary: Mint a new NFT after payment
@@ -86,9 +80,8 @@ paths:
                 walletAddress:
                   type: string
       responses:
-        '200':
+        200:
           description: NFT minted successfully
-
   /burn:
     post:
       summary: Burn (delete) an existing NFT
@@ -102,16 +95,14 @@ paths:
                 nftId:
                   type: string
       responses:
-        '200':
+        200:
           description: NFT burned
-
   /nfts:
     get:
       summary: List all minted NFTs
       responses:
-        '200':
+        200:
           description: List of NFTs
-
   /nfts/{id}:
     get:
       summary: Retrieve a specific NFT
@@ -122,9 +113,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        200:
           description: NFT details
-
   /nfts/{id}/like:
     post:
       summary: Like an NFT
@@ -141,9 +131,8 @@ paths:
             schema:
               type: object
       responses:
-        '200':
+        200:
           description: Like registered
-
   /nfts/{id}/likes:
     get:
       summary: Get number of likes on an NFT
@@ -154,21 +143,19 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        200:
           description: Like count
-
   /user/likes:
     get:
       summary: Get NFTs liked by the authenticated user
       responses:
-        '200':
+        200:
           description: Liked NFTs
-
   /collections:
     get:
       summary: List all NFT collections
       responses:
-        '200':
+        200:
           description: List of collections
     post:
       summary: Create a new NFT collection
@@ -186,9 +173,8 @@ paths:
                 icon:
                   type: string
       responses:
-        '200':
+        200:
           description: Collection created
-
   /collections/{collectionId}:
     get:
       summary: Get NFTs in a collection
@@ -199,9 +185,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        200:
           description: Collection NFTs
-
   /offers:
     post:
       summary: Create a new offer to buy or sell an NFT
@@ -214,17 +199,18 @@ paths:
               properties:
                 nftId:
                   type: string
-                amount:
-                  type: string
+                price:
+                  type: number
                 currency:
                   type: string
                 type:
                   type: string
-                  enum: [buy, sell]
+                  enum:
+                    - buy
+                    - sell
       responses:
-        '200':
+        200:
           description: Offer created
-
   /offers/{offerId}:
     delete:
       summary: Reject or cancel an offer
@@ -235,32 +221,20 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Offer cancelled
-
+        200:
+          description: Offer deleted
   /accept-offer:
     post:
       summary: Accept an offer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                offerId:
-                  type: string
       responses:
-        '200':
+        200:
           description: Offer accepted
-
   /user:
     get:
       summary: Get user profile details (authenticated)
       responses:
-        '200':
-          description: User details
-
+        200:
+          description: User profile
   /user/{walletAddress}:
     get:
       summary: Get public user profile
@@ -271,78 +245,11 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Public profile
-
+        200:
+          description: User profile
   /user/username:
     post:
       summary: Update username
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                username:
-                  type: string
       responses:
-        '200':
+        200:
           description: Username updated
-
-  /user/avatar:
-    post:
-      summary: Upload or update profile picture
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-      responses:
-        '200':
-          description: Avatar updated
-
-  /messages:
-    post:
-      summary: Send a message to another wallet
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                to:
-                  type: string
-                  description: "The wallet address to send the message to"
-                  example: "rExampleRecipientAddress"
-                message:
-                  type: string
-                  description: "The message content"
-                  example: "Hello, SeagullCoin community!"
-      responses:
-        '200':
-          description: Message sent
-
-    get:
-      summary: Get inbox messages
-      responses:
-        '200':
-          description: Message list
-
-  /messages/{walletAddress}:
-    get:
-      summary: Get conversation with a specific wallet
-      parameters:
-        - name: walletAddress
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Conversation thread

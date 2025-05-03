@@ -24,6 +24,8 @@ import { XummSdk } from 'xumm-sdk';
 import { requireLogin } from './middleware.js'
 import { verifyXummPayload, createNftOfferPayload } from './xumm-utils.js'
 import { createNftOffer } from './xrpl-utils.js'
+import { Profile } from './profile.js'; // Adjust path to your models directory if needed
+
 
 
 // Import your business logic modules
@@ -1021,6 +1023,27 @@ app.patch('/api/profile/:wallet', (req, res) => {
       res.json({ success: true });
     }
   });
+});
+
+
+// Get user profile information by wallet address
+app.get('/api/profile/:wallet', async (req, res) => {
+  try {
+    const wallet = req.params.wallet;
+    
+    // Fetch the profile data from the database using the wallet address
+    const profile = await Profile.findOne({ where: { walletAddress: wallet } });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    // Send the profile data as a response
+    return res.status(200).json(profile);
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 

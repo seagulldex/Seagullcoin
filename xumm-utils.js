@@ -57,3 +57,27 @@ export async function verifyXummPayload(payloadUUID) {
     throw new Error('Failed to verify XUMM payload.')
   }
 }
+
+/**
+ * Example function to get user info (wallet balance, etc.)
+ */
+export async function getUserInfo(accessToken) {
+  try {
+    const response = await fetch('https://xumm.app/api/v1/user', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user information.')
+    }
+
+    const userInfo = await response.json()
+    return userInfo  // Return the fetched user data (wallet, balance, etc.)
+  } catch (error) {
+    console.error('Error fetching user info:', error)
+    throw new Error('Failed to fetch user info')
+  }
+}

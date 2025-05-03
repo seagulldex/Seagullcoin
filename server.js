@@ -58,6 +58,7 @@ const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 
 
 
+
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -231,23 +232,22 @@ app.post('/api/posts', (req, res) => {
 // ===== Send Message Route ======
 // XUMM OAuth login route
 app.post('/login', async (req, res) => {
-  const { xummPayload } = req.body;
+  const { xummPayload } = req.body;  // XUMM payload from frontend
   try {
-    // Verify XUMM payload to fetch wallet address
-    const response = await verifyXummPayload(xummPayload);  // Corrected here
+    // Verify the XUMM payload to fetch wallet address
+    const response = await verifyXummPayload(xummPayload.uuidv4);  // UUIDv4 from payload
     if (!response.success) {
       return res.status(401).json({ error: 'Invalid wallet' });
     }
 
-    // Store wallet address in session
-    req.session.walletAddress = response.walletAddress;
-    res.status(200).json({ message: 'Logged in successfully' });
+    // Store the wallet address in session
+    req.session.walletAddress = response.data.account;  // Store wallet address in session
+    res.status(200).json({ message: 'Logged in successfully', walletAddress: response.data.account });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Error logging in' });
   }
 });
-
 
 app.post('/send-message',
   body('recipient').isString().isLength({ min: 25 }).withMessage('Invalid recipient address'),

@@ -25,6 +25,8 @@ import { verifyXummPayload, createNftOfferPayload, getUserInfo } from './xumm-ut
 import { createNftOffer } from './xrpl-utils.js'
 import { Profile } from './profile.js'; // Adjust path to your models directory if needed
 import pkg from 'xumm-sdk';
+import { confirmPayment, mintNFT } from './nftminting.js';
+import checkSeagullCoinBalance from './checkSeagullCoinBalance.js'; // Import the checkSeagullCoinBalance function
 
 
 

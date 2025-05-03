@@ -150,6 +150,7 @@ app.get('/', (req, res) => {
   res.send("Root endpoint is working!");
 });
 
+
 // ===== Swagger Docs =====
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

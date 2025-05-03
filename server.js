@@ -1772,6 +1772,24 @@ app.post('/logout', (req, res) => {
   });
 });
 
+// XRPL ping function
+async function xrplPing() {
+  try {
+    await client.connect(); // Connect to the XRPL network
+    const serverInfo = await client.request({ command: 'server_info' });
+    console.log("XRPL connection successful", serverInfo);
+    client.disconnect();  // Disconnect after ping
+  } catch (error) {
+    console.error("Error connecting to XRPL:", error);
+  }
+}
+
+// Call the XRPL ping when the server starts
+xrplPing().then(() => {
+  console.log("XRPL network connection check complete.");
+});
+
+
 xumm.ping().then(response => {
     console.log("XUMM connection successful", response);
 }).catch(error => {

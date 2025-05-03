@@ -1802,6 +1802,10 @@ xrplPing().then(() => {
   console.log("XRPL network connection check complete.");
 });
 
+console.log('Getting XUMM payload for:', payloadUuid);
+const result = await xumm.payload.get(payloadUuid);
+console.log('XUMM payload result:', result);
+
 
 xumm.ping().then(response => {
     console.log("XUMM connection successful", response);

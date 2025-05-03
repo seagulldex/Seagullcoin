@@ -47,8 +47,8 @@ export async function verifyXummPayload(payloadUUID) {
   try {
     const response = await xumm.payload.get(payloadUUID)
 
-    if (response.data.signed) {
-      return { success: true, data: response.data }
+    if (response?.meta?.signed === true) {
+      return { success: true, data: response }
     } else {
       throw new Error('Payload was not signed.')
     }
@@ -57,6 +57,7 @@ export async function verifyXummPayload(payloadUUID) {
     throw new Error('Failed to verify XUMM payload.')
   }
 }
+
 
 /**
  * Example function to get user info (wallet balance, etc.)

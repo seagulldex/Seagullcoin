@@ -1,4 +1,3 @@
-// xumm-utils.js
 import { XummSdk } from 'xumm-sdk'
 import dotenv from 'dotenv'
 dotenv.config()
@@ -37,4 +36,24 @@ export async function createNftOfferPayload(walletAddress, nftokenID, amount, is
   })
 
   return response
+}
+
+/**
+ * Verifies that the XUMM payload was signed by the user.
+ * @param {string} payloadUUID - The UUID of the payload to verify.
+ * @returns {object} - The payload verification result.
+ */
+export async function verifyXummPayload(payloadUUID) {
+  try {
+    const response = await xumm.payload.get(payloadUUID)
+
+    if (response.data.signed) {
+      return { success: true, data: response.data }
+    } else {
+      throw new Error('Payload was not signed.')
+    }
+  } catch (error) {
+    console.error('Error verifying XUMM payload:', error)
+    throw new Error('Failed to verify XUMM payload.')
+  }
 }

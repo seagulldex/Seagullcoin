@@ -405,92 +405,70 @@ app.get('/auth', async (req, res) => {
 });
 
 // ===== Minting Route =====
-async function mintNFT(walletAddress, name, description, imageUri) {
-  try {
-    const transaction = {
-      "TransactionType": "NFTokenMint",
-      "Account": walletAddress,
-      "URI": imageUri,  // Store the IPFS metadata URL here
-      "Flags": 131072,  // Set the flags for minting (e.g., prevent secondary sales)
-    };
+// Mocking the actual signature verification with XUMM API
+const verifyXummSignature = async (signature) => {
+    try {
+        console.log('Started signature verification process...');
+        
+        // Replace with actual XUMM API verification logic
+        // For example: XUMM API call to validate the signature (this is just a placeholder)
+        const response = await xummApi.verifySignature(signature); // Actual verification logic here
 
-    const preparedTx = await client.autofill(transaction);
-    const signedTx = client.sign(preparedTx, walletAddress); // Ensure you sign with the correct wallet's private key
-    const txResult = await client.submit(signedTx.tx_blob);
+        console.log('XUMM verification response:', response);
 
-    if (txResult.resultCode === "tesSUCCESS") {
-      console.log('NFT minted successfully!');
-
-      // Log the mint transaction
-      logTransaction(walletAddress, name, 'mint', MINT_COST, 'success', txResult.tx_json.hash);
-    } else {
-      throw new Error('NFT minting failed.');
+        if (response && response.isValid) {
+            console.log('Signature is valid.');
+            return true;
+        } else {
+            console.log('Signature is invalid.');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error during XUMM signature verification:', error);
+        throw new Error('XUMM signature verification failed');
     }
-  } catch (error) {
-    console.error('Error in minting NFT:', error);
+};
 
-    // Log the failed mint transaction
-    logTransaction(walletAddress, name, 'mint', MINT_COST, 'failed', null);
-    throw error;
-  }
-}
+app.post('/mint', async (req, res) => {
+    try {
+        console.log('Received mint request.');
 
-app.post('/mint', upload, async (req, res) => {
-  const { walletAddress, name, description } = req.body;
+        // Get the signature from the request body
+        const signature = req.body.signature;
+        const walletAddress = req.body.walletAddress; // Assuming walletAddress is part of the request
+        const nftData = req.body.nftData; // Get the NFT data from the request
 
-  // Validate input
-  if (!walletAddress || !name || !description || !req.file) {
-    console.error('Missing required fields: walletAddress, name, description, or file.');
-    return res.status(400).json({ error: 'Wallet address, name, description, and file are required.' });
-  }
+        console.log('Verifying signature...');
+        const isValid = await verifyXummSignature(signature);
 
-  // Debugging: log the file upload
-  console.log('File uploaded:', req.file);  // Check if the file is being uploaded properly
+        if (!isValid) {
+            return res.status(400).json({ error: 'Invalid signature' });
+        }
 
-  try {
-    if (!client.isConnected()) await client.connect();
+        console.log('Signature is valid, checking SeagullCoin balance...');
 
-    // Step 1: Check SeagullCoin balance for minting
-    const accountLines = await client.request({
-      method: 'account_lines',
-      params: [{ account: walletAddress }],
-    });
+        // Check if the user has enough SeagullCoin to mint
+        const hasSufficientFunds = await checkSeagullCoinBalance(walletAddress);
+        
+        if (!hasSufficientFunds) {
+            return res.status(400).json({ error: 'Insufficient SeagullCoin balance to mint NFT.' });
+        }
 
-    const line = accountLines.result.lines.find(l =>
-      l.currency === SEAGULL_COIN_CODE && l.issuer === SEAGULL_COIN_ISSUER
-    );
+        console.log('Sufficient funds, proceeding with minting...');
+        
+        // Proceed with minting
+        const nftId = await mintNFT(walletAddress, nftData); // Call your minting function
+        
+        console.log('NFT minted successfully with ID:', nftId);
 
-    const balance = line ? parseFloat(line.balance) : 0;
-
-    if (balance < MINT_COST) {
-      return res.status(400).json({ error: 'Insufficient SeagullCoin balance for minting.' });
+        // Return the minted NFT ID as a success response
+        return res.json({ nftId });
+    } catch (error) {
+        console.error('Error during minting process:', error);
+        return res.status(500).json({ error: 'Internal server error' });
     }
-
-    // Step 2: Create XUMM payment transaction for 0.5 SeagullCoin
-    const xummPayload = {
-      "TransactionType": "Payment",
-      "Account": walletAddress,
-      "Amount": MINT_COST * 1000000,  // Convert SeagullCoin to drops
-      "Destination": SERVICE_WALLET,  // Send to service wallet
-      "Currency": SEAGULL_COIN_CODE,
-      "Issuer": SEAGULL_COIN_ISSUER,
-      "DestinationTag": 0,
-    };
-
-    const xummTx = await xumm.payload.create({ txjson: xummPayload });
-
-    // Step 3: Send user to XUMM to sign the transaction
-    const txRequestUrl = `https://xumm.app/sign/${xummTx.data.uuid}`;
-    return res.status(200).json({
-      message: 'Sign the transaction to proceed with minting.',
-      xummUrl: txRequestUrl,  // Direct user to the XUMM sign request URL
-    });
-
-  } catch (error) {
-    console.error('Error during minting process:', error);
-    return res.status(500).json({ error: 'Error during minting process.', details: error.message });
-  }
 });
+
 
 /**
  * @swagger
@@ -1799,10 +1777,6 @@ app.use('/api', router);  // <- This mounts all your routes under /api
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");
 });
-
-const verifyXummSignature = async (signature) => {
-    // Logic to verify signature via XUMM API
-};
 
 
 xumm.ping().then(response => {

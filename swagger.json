@@ -11,7 +11,7 @@
     }
   ],
   "paths": {
-    "/login": {
+    "/api/login": {
       "post": {
         "summary": "Initiate XUMM login session",
         "responses": {

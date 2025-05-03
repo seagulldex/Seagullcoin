@@ -6,15 +6,15 @@ servers:
   - url: https://sglcn-x20-api.glitch.me
 
 paths:
-  /login:
-    get:
-      summary: Initiate XUMM login session
-      description: Redirects the user to the XUMM OAuth authorization page.
+  /api/login:
+    post:
+      summary: "Login User"
+      description: "Login and get access token"
       responses:
-        '302':
-          description: Redirects to XUMM OAuth authorization page
-        '404':
-          description: Route not found
+        '200':
+          description: "Successfully logged in"
+        '400':
+          description: "Invalid login credentials"
 
   /pay:
     post:

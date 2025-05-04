@@ -5,11 +5,34 @@ dotenv.config();
 const payloadUUID = 'your-payload-uuid'; // The UUID from the XUMM payload
 const expectedSigner = 'user-wallet-address'; // The wallet address of the user making the payment
 
-
 const SERVICE_WALLET = process.env.SERVICE_WALLET;  // Minting wallet (Service Wallet)
 const SGLCN_ISSUER = process.env.SGLCN_ISSUER;     // SeagullCoin issuer address
 const SGLCN_CODE = '53656167756C6C436F696E000000000000000000'; // Hex for SeagullCoin
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
+
+/**
+ * Validate the SeagullCoin payment details
+ * @param {object} tx - The transaction object
+ * @returns {Promise<{ success: boolean, reason?: string }>}
+ */
+async function validateSeagullCoinPayment(tx) {
+  const amount = tx.Amount;
+  console.log('Payment amount:', amount);
+
+  // Validate the currency is SeagullCoin and the amount is correct (0.5 SGLCN)
+  if (typeof amount !== 'object' || amount.currency !== SGLCN_CODE || amount.issuer !== SGLCN_ISSUER) {
+    console.log('Payment must be SeagullCoin (X20)');
+    return { success: false, reason: 'Payment must be SeagullCoin (X20)' };
+  }
+
+  // Ensure that the amount is exactly 0.5
+  if (parseFloat(amount.value) !== 0.5) {
+    console.log('Incorrect SeagullCoin amount');
+    return { success: false, reason: 'Incorrect SeagullCoin amount' };
+  }
+
+  return { success: true };
+}
 
 /**
  * Confirm the XUMM payment was signed and meets all SeagullCoin minting criteria.
@@ -73,20 +96,10 @@ export async function confirmPayment(payloadUUID, expectedSigner) {
       return { success: false, reason: 'Wrong destination' };
     }
 
-    const amount = tx.Amount;
-    // Log the payment amount
-    console.log('Payment amount:', amount);
-
-    // Validate the currency is SeagullCoin and the amount is correct (0.5 SGLCN)
-    if (typeof amount !== 'object' || amount.currency !== SGLCN_CODE || amount.issuer !== SGLCN_ISSUER) {
-      console.log('Payment must be SeagullCoin (X20)');
-      return { success: false, reason: 'Payment must be SeagullCoin (X20)' };
-    }
-
-    // Ensure that the amount is exactly 0.5
-    if (parseFloat(amount.value) !== 0.5) {
-      console.log('Incorrect SeagullCoin amount');
-      return { success: false, reason: 'Incorrect SeagullCoin amount' };
+    // Validate SeagullCoin payment
+    const validation = await validateSeagullCoinPayment(tx);
+    if (!validation.success) {
+      return validation;  // Return the error if validation fails
     }
 
     // All checks passed, mark payload as used to avoid reuse
@@ -96,7 +109,46 @@ export async function confirmPayment(payloadUUID, expectedSigner) {
     return { success: true }; // Payment is valid
 
   } catch (error) {
-    console.error('Payment verification failed:', error.message);
+    // Enhanced error handling for network/API issues
+    if (error.response) {
+      // API responded with an error
+      console.error('XUMM API error:', error.response.data);
+    } else if (error.request) {
+      // Request was made, but no response received
+      console.error('No response from XUMM API:', error.request);
+    } else {
+      // Something happened while setting up the request
+      console.error('Error during request setup:', error.message);
+    }
+
     return { success: false, reason: 'Error validating payment' }; // Return an error message if any step fails
   }
 }
+
+// Your existing SeagullCoin and minting logic
+
+async function processXummMinting(payloadUUID, expectedSigner) {
+  try {
+    // Validate the wallet address (using the expectedSigner for the minting)
+    if (typeof expectedSigner !== 'string' || expectedSigner.trim() === '') {
+      throw new Error('Invalid wallet address provided for minting');
+    }
+
+    console.log(`Processing minting for wallet: ${expectedSigner}`);
+
+    // Confirm payment before proceeding
+    const paymentConfirmed = await confirmPayment(payloadUUID, expectedSigner);
+    if (!paymentConfirmed.success) {
+      throw new Error(`Insufficient SeagullCoin for minting. Reason: ${paymentConfirmed.reason}`);
+    }
+
+    // Your minting logic (e.g., create an NFT transaction, interact with XRPL)
+    console.log(`Minting successful for wallet: ${expectedSigner}`);
+
+  } catch (error) {
+    console.error('Error during minting process for wallet:', expectedSigner, error.message);
+    throw new Error(`Minting failed for wallet ${expectedSigner}: ${error.message}`);
+  }
+}
+
+export { processXummMinting };

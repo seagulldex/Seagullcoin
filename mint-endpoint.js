@@ -1,4 +1,3 @@
-// mint-endpoint.js
 import { Router } from 'express';
 import { confirmPayment } from './confirmPaymentXumm.js'; // Correct path
 import { mintNFT } from './nftminting.js'; // Import mintNFT from your nftminting.js file
@@ -11,6 +10,16 @@ const router = Router();
  */
 router.post('/mint', async (req, res) => {
   const { walletAddress, nftData, txId } = req.body;
+
+  // Validate wallet address
+  if (!walletAddress || !isValidXRPAddress(walletAddress)) {
+    return res.status(400).json({ success: false, message: 'Invalid wallet address' });
+  }
+
+  // Validate nftData
+  if (!nftData || !nftData.name || !nftData.description || !nftData.filename || !nftData.fileBase64) {
+    return res.status(400).json({ success: false, message: 'Missing required NFT data' });
+  }
 
   try {
     // Step 1: Confirm the payment with the given txId

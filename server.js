@@ -36,6 +36,8 @@ import { processXummMinting } from './confirmPaymentXumm.js';
 import { confirmPayment } from './confirmPaymentXumm.js';
 import { xummApi } from './xrplClient.js';
 import mime from 'mime';
+import { initiateLogin, verifyLogin } from './xummlogin.js';  // Assuming the path is correct
+
 
 
 
@@ -70,6 +72,8 @@ const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 const router = express.Router();
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
+const userAddress = req.body.userAddress; // Assuming you get the address from the body of a request
+
 
 /**
  * Confirm a XUMM payment was signed and meets all SGLCN minting criteria.
@@ -247,9 +251,13 @@ app.use(session({
 }));
 app.use(express.static('public'));
 
+req.session.userAddress = userAddress;  // Storing user address in session
+
+
 app.get('/', (req, res) => {
   res.send("Root endpoint is working!");
 });
+
 
 
 // ===== Swagger Docs =====
@@ -359,6 +367,25 @@ app.get('/login', async (req, res) => {
     res.status(500).json({ error: 'Error logging in' });
   }
 });
+
+app.get('/verify-login/:payloadUUID', async (req, res) => {
+  const { payloadUUID } = req.params;
+  try {
+    const userAddress = await verifyLogin(payloadUUID);
+    console.log('User Address:', userAddress);  // Log the user address to see what is returned
+
+    if (userAddress) {
+      req.session.userAddress = userAddress;
+      res.json({ success: true, userAddress });
+    } else {
+      res.status(400).send('User did not sign the payload');
+    }
+  } catch (error) {
+    console.error('Error during login verification:', error);
+    res.status(500).send('Error verifying login');
+  }
+});
+
 
 app.get('/confirm-login/:payloadUUID', async (req, res) => {
   const { payloadUUID } = req.params;

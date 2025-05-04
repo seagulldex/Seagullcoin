@@ -589,7 +589,7 @@ async function getUserAddress() {
 
         // Now you can use userAddress
         console.log(userAddress);
-        req.session.userAddress = userAddress;  // Store in session
+        requireLogin.session.userAddress = userAddress;  // Store in session
     } catch (err) {
         console.error('Error getting user address:', err);
     }
@@ -1472,12 +1472,6 @@ app.get('/confirm-payment', async (req, res) => {
     res.status(500).send('Failed to confirm payment');
   }
 });
-
-// Server setup
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
-});
-
 
 // Logout route to clear session data
 app.post('/logout', (req, res) => {

@@ -408,6 +408,8 @@ app.get('/auth', async (req, res) => {
     }
 });
 
+console.log('XUMM Payload:', xummPayload);
+
 
 // ===== Minting Route =====
 // Mocking the actual signature verification with XUMM API

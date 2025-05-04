@@ -229,9 +229,6 @@ const upload = multer({
   },
 }).single('file'); // Expect a single file to be uploaded with the field name 'file'
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 // ===== Rate Limiting =====
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -240,28 +237,20 @@ const limiter = rateLimit({
 });
 
 // ===== Middleware =====
+// First session middleware
+app.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // 'true' if using HTTPS
+}));
+
+// Now, apply other middleware
 app.use(limiter);
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: true,
-}));
 app.use(express.static('public'));
-
-// Set up session middleware
-app.use(session({
-    secret: 'your-secret-key',  // A secret key for session encryption
-    resave: false,              // Don't save session if unmodified
-    saveUninitialized: true,    // Create session if one doesn't exist
-    cookie: { secure: false }   // Set to 'true' if using HTTPS
-}));
-
-app.get('/', (req, res) => {
-  res.send("Root endpoint is working!");
-});
 
 
 // ===== Swagger Docs =====

@@ -5,24 +5,11 @@ import { mintNFT } from './nftminting.js'; // Import mintNFT from your nftmintin
 import rippleAddressCodec from 'ripple-address-codec';
 const { isValidAddress } = rippleAddressCodec;
 
-
 // Create a client and connect
 const client = new xrpl.Client("wss://xrplcluster.com"); // or your preferred endpoint
 
 // Load your service wallet (replace with actual credentials)
-const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED)
-
-// Prepare mint transaction
-const tx = {
-  TransactionType: "NFTokenMint",
-  Account: wallet.classicAddress,
-  URI: mintResult.uriHex,
-  Flags: 0,
-  NFTokenTaxon: 0
-};
-
-
-// Disconnect after minting
+const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED); // Make sure SERVICE_WALLET_SEED is set in .env
 
 /**
  * Validate an XRP address.
@@ -63,10 +50,8 @@ router.post('/mint', async (req, res) => {
     }
 
     // Step 2: Proceed to mint the NFT
-    const mintResult = await mintNFT(walletAddress, nftData);
+    const mintResult = await mintNFT(walletAddress, nftData); // Call mintNFT, it should handle minting and return the mint result
 
-    const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED); // set in .env
-    
     // Step 3: Send the response back to the frontend with mint details
     return res.status(200).json({
       success: true,

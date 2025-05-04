@@ -39,6 +39,8 @@ export async function mintNFT(walletAddress, nftData) {
       uriHex: hexUri,
       metadata,
     };
+    
+    
   } catch (err) {
     console.error('Minting failed:', err);
     return { success: false, error: err.message || 'Unknown minting error' };

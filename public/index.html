@@ -310,8 +310,82 @@
     window.location.href = payloadURL;
   }
 }
+      
+      async function checkLogin() {
+  const res = await fetch('/api/check-login');
+  const data = await res.json();
 
-    </script>
+  if (res.ok) {
+    console.log('Logged in as', data.address);
+    // update UI with wallet address
+  } else {
+    console.log(data.error);
+    // optionally trigger login or show connect button
+  }
+}
+      <script>
+    // Check login status when page loads
+    async function checkLogin() {
+        const res = await fetch('/api/check-login');
+        const data = await res.json();
 
+        if (data.loggedIn) {
+            // User is logged in
+            const wallet = data.account;
+            localStorage.setItem('xummWallet', wallet);
+            document.getElementById('connect-wallet-btn').style.display = 'none';
+            document.getElementById('wallet-info').style.display = 'block';
+            document.getElementById('wallet-address').innerText = wallet;
+            
+            unlockMinting();
+        } else {
+            // Not logged in
+            document.getElementById('connect-wallet-btn').style.display = 'inline-block';
+            document.getElementById('wallet-info').style.display = 'none';
+            lockMinting();
+        }
+    }
+
+    // Function to show minting progress
+    function showMintingProgress() {
+        document.getElementById('minting-progress').style.display = 'block';
+        document.getElementById('minting-result').style.display = 'none';
+    }
+
+    // Function to hide minting progress
+    function hideMintingProgress() {
+        document.getElementById('minting-progress').style.display = 'none';
+    }
+
+    // Function to unlock minting
+    function unlockMinting() {
+        document.getElementById('minting-result').style.display = 'block';
+    }
+
+    // Function to lock minting
+    function lockMinting() {
+        document.getElementById('minting-result').style.display = 'none';
+    }
+
+    // Add event listener to the Connect Wallet button
+    document.getElementById('connect-wallet-btn').addEventListener('click', async () => {
+        try {
+            const res = await fetch('/api/initiate-login');
+            const data = await res.json();
+            
+            if (data.payloadURL) {
+                window.open(data.payloadURL, '_blank');
+            } else {
+                alert('Login failed. Try again.');
+            }
+        } catch (err) {
+            console.error('Login error:', err);
+            alert('Error connecting to XUMM');
+        }
+    });
+
+    // Check login on page load
+    checkLogin();
+</script>
 </body>
 </html>

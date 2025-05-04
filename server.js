@@ -589,6 +589,21 @@ async function getUserAddress() {
     }
 }
 
+app.get('/api/check-login', async (req, res) => {
+  const payloadUUID = req.session.xummPayload;
+
+  if (!payloadUUID) {
+    return res.status(401).json({ error: 'No login session found.' });
+  }
+
+  const userAddress = await verifyLogin(payloadUUID);
+  if (!userAddress) {
+    return res.status(401).json({ error: 'User has not signed the payload.' });
+  }
+
+  return res.json({ address: userAddress });
+});
+
 app.post('/list', async (req, res) => {
   const { nftokenId, price, duration } = req.body;
 

@@ -1,5 +1,5 @@
 // xummApi.js
-import { xummApi } from './xummClient.js';  // Import your xummApi instance if you have it
+import { xummApi } from './xrplClient.js';  // Import your xummApi instance if you have it
 
 // XUMM signature verification
 export const verifyXummSignature = async (signature) => {

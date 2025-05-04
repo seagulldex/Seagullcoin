@@ -1,9 +1,9 @@
-import Xumm from 'xumm-sdk';  // Correct default import for 'xumm-sdk'
+import xummSdk from 'xumm-sdk';  // Default import
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Initialize XUMM with your API credentials (using the default import)
-const xumm = new Xumm({
+// Initialize XUMM with your API credentials using the default import
+const xumm = new xummSdk.Xumm({
   apiKey: process.env.XUMM_API_KEY,
   apiSecret: process.env.XUMM_API_SECRET,
 });

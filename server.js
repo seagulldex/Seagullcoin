@@ -586,6 +586,20 @@ app.post('/login', async (req, res) => {
     res.status(400).json({ success: false, error: 'Payload verification failed' });
   }
 });
+
+async function getUserAddress() {
+    try {
+        const result = await xumm.ping();  // Example of checking connection to XUMM
+        const userAddress = result.user.address;  // Adjust based on actual response structure
+
+        // Now you can use userAddress
+        console.log(userAddress);
+        req.session.userAddress = userAddress;  // Store in session
+    } catch (err) {
+        console.error('Error getting user address:', err);
+    }
+}
+
 app.post('/list', async (req, res) => {
   const { nftokenId, price, duration } = req.body;
 
@@ -597,6 +611,7 @@ app.post('/list', async (req, res) => {
     res.status(500).json({ error: 'Failed to list NFT.', message: err.message });
   }
 });
+
 
 /**
  * @swagger
@@ -1490,12 +1505,6 @@ async function xrplPing() {
     console.error("Error connecting to XRPL:", error);
   }
 }
-
-app.use('/api', router);  // <- This mounts all your routes under /api
-
-console.log('User Address:', userAddress);
-req.session.userAddress = userAddress; // Storing user address in session
-
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

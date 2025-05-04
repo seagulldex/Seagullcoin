@@ -58,3 +58,28 @@ export async function verifyLogin(payloadUUID) {
     return handleError('Error verifying login');
   }
 }
+
+/**
+ * Middleware function to ensure the user is logged in.
+ * It checks if the user signed the XUMM payload.
+ */
+export async function requireLogin(req, res, next) {
+  try {
+    const payloadUUID = req.session.xummPayload;  // Assuming the payload UUID is stored in session
+
+    if (!payloadUUID) {
+      return res.status(401).json({ error: 'User is not logged in.' });
+    }
+
+    const userAddress = await verifyLogin(payloadUUID);
+    if (!userAddress) {
+      return res.status(401).json({ error: 'User has not signed the payload.' });
+    }
+
+    req.user = userAddress;  // Attach the user's wallet address to the request
+    next();  // Proceed to the next middleware/handler
+  } catch (err) {
+    console.error('Authentication error:', err);
+    return res.status(500).json({ error: 'Internal server error during authentication.' });
+  }
+}

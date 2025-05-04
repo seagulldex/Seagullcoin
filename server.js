@@ -36,6 +36,7 @@ import { confirmPayment } from './confirmPaymentXumm.js';
 import { xummApi } from './xrplClient.js';
 import mime from 'mime';
 import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the path is correct
+import { requireLogin } from './xummLogin.js';  // Adjust the path if needed
 
 
 
@@ -334,29 +335,15 @@ app.post('/api/posts', (req, res) => {
 app.use('/api', mintRouter);  // Assuming mintRouter handles your mint-related endpoints
 
 
-// ===== Send Message Route ======
-// XUMM OAuth login route
+// Route to initiate the login process by creating the XUMM payload
 app.get('/login', async (req, res) => {
-  const { xummPayload } = req.query;  // Get the XUMM payload from the query params
-
-  if (!xummPayload) {
-    return res.status(400).json({ error: 'Missing XUMM payload.' });
-  }
-
   try {
-    // Verify the XUMM payload to fetch wallet address
-    const response = await verifyXummPayload(xummPayload);  // Use the payload directly
-
-    if (!response.success) {
-      return res.status(401).json({ error: 'Invalid wallet' });
-    }
-
-    // Store the wallet address in session
-    req.session.walletAddress = response.data.account;  // Store wallet address in session
-    res.status(200).json({ message: 'Logged in successfully', walletAddress: response.data.account });
+    const { payloadUUID, payloadURL } = await initiateLogin();
+    // Send the URL to the user to sign the payload
+    res.status(200).json({ payloadUUID, payloadURL });
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: 'Error logging in' });
+    console.error('Error initiating login:', err);
+    res.status(500).json({ error: 'Error initiating login' });
   }
 });
 

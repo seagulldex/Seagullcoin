@@ -1,4 +1,8 @@
-import { XummOauth2Jwt } from 'xumm-oauth2-pkce';
+import pkg from 'xumm-oauth2-pkce';
+const { XummOauth2Jwt } = pkg;
+
+// ...rest of your code
+
 
 const xumm = new XummOauth2Jwt({
   clientId: process.env.XUMM_CLIENT_ID,

@@ -36,7 +36,6 @@ import { confirmPayment } from './confirmPaymentXumm.js';
 import { xummApi } from './xrplClient.js';
 import mime from 'mime';
 import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the path is correct
-import { requireLogin, getUser, logout } from './xummAuth.js'; // Adjust path if needed
 
 
 

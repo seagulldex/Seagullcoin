@@ -712,3 +712,663 @@ app.post('/buy-nft', async (req, res) => {
  *       500:
  *         description: Server error
  */
+
+// Helper function to log transactions
+function logTransaction(userAddress, nftId, transactionType, amount, status, transactionHash = null) {
+  const stmt = db.prepare(`
+    INSERT INTO transactions (user_address, nft_id, transaction_type, amount, status, transaction_hash)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  stmt.run(userAddress, nftId, transactionType, amount, status, transactionHash, function (err) {
+    if (err) {
+      console.error('Error logging transaction:', err);
+    } else {
+      console.log('Transaction logged successfully');
+    }
+  });
+  stmt.finalize();
+}
+
+app.post('/pay', async (req, res) => {
+  const { walletAddress } = req.body;
+  if (!walletAddress) return res.status(400).json({ error: "Missing wallet address" });
+
+  try {
+    await client.connect();
+
+    // Check trustline
+    const lines = await client.request({
+      command: "account_lines",
+      account: walletAddress,
+    });
+
+    const hasTrustline = lines.result.lines.some(
+      line => line.currency === SEAGULL_COIN_LABEL && line.issuer === SEAGULL_COIN_ISSUER
+    );
+
+    if (!hasTrustline) {
+      return res.status(403).json({ error: "Missing SeagullCoin trustline" });
+    }
+
+    // Check recent payments
+    const txs = await client.request({
+      command: "account_tx",
+      account: walletAddress,
+      ledger_index_min: -1,
+      ledger_index_max: -1,
+      limit: 10,
+    });
+
+    const payment = txs.result.transactions.find(tx =>
+      tx.tx.TransactionType === "Payment" &&
+      tx.tx.Destination === SERVICE_WALLET &&
+      tx.tx.Amount.currency === SEAGULL_COIN_LABEL &&
+      tx.tx.Amount.issuer === SEAGULL_COIN_ISSUER &&
+      parseFloat(tx.tx.Amount.value) >= MINT_COST
+    );
+
+    if (!payment) {
+      return res.status(402).json({ error: "Payment of 0.5 SeagullCoin not found" });
+    }
+
+    return res.json({ success: true, txHash: payment.tx.hash });
+
+  } catch (err) {
+    console.error("Payment check failed:", err.message);
+    res.status(500).json({ error: "Payment verification failed" });
+  } finally {
+    if (client.isConnected()) await client.disconnect();
+  }
+});
+
+// Update profile picture
+app.post('/update-profile-picture', async (req, res) => {
+  const { walletAddress } = req.session;
+  const profilePic = req.file;
+
+  if (!walletAddress || !profilePic) {
+    return res.status(400).json({ error: 'Missing wallet address or profile picture.' });
+  }
+
+  try {
+    const ipfsResult = await nftStorage.store({ file: profilePic.path });
+    const profilePicUrl = ipfsResult.url;
+    await updateUserProfile(walletAddress, { profilePicUrl });
+    res.json({ success: true, profilePicUrl });
+  } catch (err) {
+    console.error('Error updating profile picture:', err);
+    res.status(500).json({ error: 'Failed to update profile picture.' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/user/profile:
+ *   put:
+ *     summary: Update user's profile (name, avatar, etc.)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               profileData:
+ *                 type: object
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                   avatar:
+ *                     type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       400:
+ *         description: Invalid data or error updating profile
+ */
+app.put('/api/user/profile', async (req, res) => {
+  // update-user-profile logic here
+});
+/**
+ * @swagger
+ * /update-profile:
+ *   post:
+ *     summary: Update user profile details
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               walletAddress:
+ *                 type: string
+ *               username:
+ *                 type: string
+ *               bio:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ */
+
+// Endpoint to upload avatar
+app.post('/upload-avatar', (req, res) => {
+  upload(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: 'File upload failed', details: err.message });
+    }
+    
+    const avatarPath = `/uploads/${req.file.filename}`;  // Path to the uploaded file
+    const walletAddress = req.body.wallet_address;  // Assuming the wallet address is passed in the body
+
+    // Save avatar path and wallet address in user_profiles table
+    db.run(
+      `UPDATE user_profiles SET avatar_url = ? WHERE wallet_address = ?`,
+      [avatarPath, walletAddress],
+      function (err) {
+        if (err) {
+          return res.status(500).json({ error: 'Database update failed', details: err.message });
+        }
+        res.json({ message: 'Avatar uploaded successfully', avatarUrl: avatarPath });
+      }
+    );
+  });
+});
+
+// Endpoint to update username
+
+async function updateUserProfile(walletAddress, newProfileData) {
+  // Replace this with actual DB logic
+  // Example: Update user in your database
+  console.log(`Updating profile for ${walletAddress}:`, newProfileData);
+
+  // Simulate successful update
+  return { success: true, message: 'Profile updated' };
+}
+
+app.post('/update-username', async (req, res) => {
+  const { walletAddress } = req.session;
+  const { username } = req.body;
+
+  if (!username) return res.status(400).json({ error: 'Username is required.' });
+
+  try {
+    // Save to user profile in your DB (or session storage)
+    await updateUserProfile(walletAddress, { username });
+
+    res.json({ success: true, username });
+  } catch (err) {
+    console.error('Error updating username:', err);
+    res.status(500).json({ error: 'Failed to update username.' });
+  }
+});
+/**
+ * @swagger
+ * /update-username:
+ *   post:
+ *     summary: Update a user's display name
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               walletAddress:
+ *                 type: string
+ *               username:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Username updated successfully
+ */
+
+// Like an NFT
+async function likeNFT(walletAddress, nftId) {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT * FROM nft_likes WHERE walletAddress = ? AND nftId = ?', [walletAddress, nftId], (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      if (row) {
+        return reject(new Error('NFT already liked by this user.'));
+      }
+      // Insert new like
+    });
+  });
+}// Insert new
+
+// Like NFT endpoint
+app.post('/like-nft',
+  body('nftokenId').isString().isLength({ min: 10 }).withMessage('Invalid NFT ID'),
+  async (req, res) => {
+    // Validate input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { nftokenId } = req.body;
+    const walletAddress = req.session?.walletAddress;
+
+    // Ensure wallet is connected
+    if (!walletAddress) return res.status(401).json({ error: 'Wallet not connected.' });
+
+    try {
+      // Perform the database operation wrapped in a promise
+      const result = await new Promise((resolve, reject) => {
+        // Insert new like into the database
+        db.run('INSERT INTO nft_likes (walletAddress, nftId) VALUES (?, ?)', [walletAddress, nftokenId], function(err) {
+          if (err) return reject(err);  // Reject if there's an error
+          resolve({ success: true });   // Resolve on success
+        });
+      });
+
+      // Return the success result to the client
+      res.status(200).json(result);
+
+    } catch (error) {
+      // Handle any errors
+      console.error(error);
+      res.status(500).json({ error: 'An error occurred while liking the NFT' });
+    }
+  });/**
+ * @swagger
+ * /api/like-nft:
+ *   post:
+ *     summary: Like an NFT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftId:
+ *                 type: string
+ *               userAddress:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: NFT liked successfully
+ *       400:
+ *         description: Invalid data or already liked
+ */
+
+async function getTotalCollections() {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT COUNT(*) AS total FROM collections', (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(row.total);
+    });
+  });
+}
+
+app.get('/gettotalcollections', async (req, res) => {
+    // Logic to get the total number of collections
+    const totalCollections = await getTotalCollections(); // Replace with actual logic
+    res.json({ totalCollections });
+});
+
+/**
+ * @swagger
+ * /api/stats/collections:
+ *   get:
+ *     summary: Get total number of NFT collections
+ *     responses:
+ *       200:
+ *         description: Total collections retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total:
+ *                   type: integer
+ *                   example: 10
+ */
+app.get('/api/stats/collections', async (req, res) => {
+  // get-total-collections logic here
+});
+
+app.get('/gettotalusers', async (req, res) => {
+    // Logic to get the total number of users
+    const totalUsers = await getTotalUsers(); // Replace with actual logic
+    res.json({ totalUsers });
+});
+
+/**
+ * @swagger
+ * /api/stats/users:
+ *   get:
+ *     summary: Get total number of users
+ *     responses:
+ *       200:
+ *         description: Total users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total:
+ *                   type: integer
+ *                   example: 500
+ */
+app.get('/api/stats/users', async (req, res) => {
+  // get-total-users logic here
+});
+
+
+// Get platform metrics
+
+// Get total users
+async function getTotalUsers() {
+  // Logic to get the total number of users (for example, querying a database)
+  // Here's a mock example, replace with actual logic
+  return 500;  // Replace with your actual logic to fetch user count
+}
+
+// Example for SQLite:
+async function getTotalNFTs() {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT COUNT(*) AS count FROM nfts', (err, row) => {
+      if (err) return reject(err);
+      resolve(row.count);
+    });
+  });
+}
+
+
+app.get('/metrics', async (req, res) => {
+  try {
+    const totalNFTs = await getTotalNFTs();
+    const totalCollections = await getTotalCollections();
+    const totalUsers = await getTotalUsers();
+
+    res.json({
+      totalNFTs,
+      totalCollections,
+      totalUsers,
+    });
+  } catch (err) {
+    console.error('Error fetching metrics:', err);
+    res.status(500).json({ error: 'Failed to fetch metrics.' });
+  }
+});
+
+/**
+ * @swagger
+ * /metrics:
+ *   get:
+ *     summary: Get platform metrics
+ *     responses:
+ *       200:
+ *         description: Metrics retrieved successfully
+ */
+
+
+// ========= Messages =============
+
+
+// ========= Messages =============
+
+// POST endpoint to send a message
+app.post('/send-message', async (req, res) => {
+  const { sender, recipient, messageContent } = req.body;
+
+  if (!sender || !recipient || !messageContent) {
+    return res.status(400).json({ error: 'Sender, recipient, and message content are required.' });
+  }
+
+  try {
+    const query = `INSERT INTO messages (sender, recipient, message) VALUES (?, ?, ?)`;
+    await db.run(query, [sender, recipient, messageContent]);
+
+    res.json({ success: true, message: 'Message sent successfully.' });
+  } catch (err) {
+    console.error('Error sending message:', err);
+    res.status(500).json({ error: 'Failed to send message.' });
+  }
+});
+
+// ===== Get Recently Minted NFTs =====
+app.get('/recent', async (req, res) => {
+  try {
+    const recentNFTs = await fetchNFTs();  // Assuming you have a method to fetch recently minted NFTs
+    res.json({ recentNFTs });
+  } catch (err) {
+    console.error('Error fetching recent NFTs:', err);
+    res.status(500).json({ error: 'Failed to fetch recent NFTs.' });
+  }
+});
+/**
+ * @swagger
+ * /recent:
+ *   get:
+ *     summary: Get recently minted NFTs
+ *     responses:
+ *       200:
+ *         description: Recent NFTs retrieved
+ */
+
+
+// Get all NFTs for the logged-in user
+
+async function getUserNFTs(walletAddress) {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM nfts WHERE walletAddress = ? ORDER BY mintDate DESC', [walletAddress], (err, rows) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(rows);
+    });
+  });
+}app.get('/user-nfts', async (req, res) => {
+  const { walletAddress } = req.session;
+
+  try {
+    const nfts = await getUserNFTs(walletAddress); // Function to fetch NFTs for a user
+    res.json({ nfts });
+  } catch (err) {
+    console.error('Error fetching NFTs:', err);
+    res.status(500).json({ error: 'Failed to fetch NFTs.' });
+  }
+});
+
+/**
+ * @swagger
+ * /getusernfts:
+ *   get:
+ *     summary: Get NFTs for a specific wallet address
+ *     parameters:
+ *       - in: query
+ *         name: walletAddress
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Wallet address to fetch NFTs for
+ *     responses:
+ *       200:
+ *         description: NFTs retrieved
+ */
+app.get('/getusernfts',
+  query('walletAddress').optional().isString().isLength({ min: 25 }).withMessage('Invalid wallet address'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { walletAddress } = req.query;
+    try {
+      const nfts = await getUserNFTs(walletAddress);
+      res.json({ nfts });
+    } catch (err) {
+      console.error('Error fetching NFTs:', err);
+      res.status(500).json({ error: 'Failed to fetch NFTs.' });
+    }
+  }
+);
+
+// Get a list of all collections
+
+// Example for MongoDB:
+// Example for SQLite:
+async function getAllCollections() {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT DISTINCT collection_name FROM nfts', (err, rows) => {  // Adjust the query based on your database structure
+      if (err) return reject(err);
+      resolve(rows.map(row => row.collection_name)); // Assuming collection_name is the column that stores collection names
+    });
+  });
+}
+app.get('/collections', async (req, res) => {
+  try {
+    const collections = await getAllCollections(); // Function to fetch all collections
+    res.json({ collections });
+  } catch (err) {
+    console.error('Error fetching collections:', err);
+    res.status(500).json({ error: 'Failed to fetch collections.' });
+  }
+});
+/**
+ * @swagger
+ * /collections:
+ *   get:
+ *     summary: Get public NFT collections
+ *     responses:
+ *       200:
+ *         description: Public collections retrieved
+ */
+
+
+// Get all collections
+app.get('/getallcollections', async (req, res) => {
+  db.all("SELECT * FROM collections", [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(rows);
+  });
+});
+
+/**
+ * @swagger
+ * /getallcollections:
+ *   get:
+ *     summary: Get all NFT collections
+ *     responses:
+ *       200:
+ *         description: Collections retrieved successfully
+ */
+
+// Create a collection
+app.post('/create-collection',
+  body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Collection name is required'),
+  body('description').optional().isString().isLength({ max: 300 }),
+  body('icon').isURL().withMessage('Collection icon must be a valid URL'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { name, description, icon } = req.body;
+
+    try {
+      db.run("INSERT INTO collections (name, description, icon) VALUES (?, ?, ?)",
+        [name, description || '', icon],
+        function (err) {
+          if (err) {
+            return res.status(500).json({ error: 'Database insert failed.' });
+          }
+          res.json({ success: true, collectionId: this.lastID });
+        });
+    } catch (err) {
+      console.error('Error creating collection:', err);
+      res.status(500).json({ error: 'Failed to create collection.' });
+    }
+  }
+  
+);
+
+// XUMM OAuth callback route
+app.get('/xumm/callback', async (req, res) => {
+  const { code } = req.query;
+  if (!code) {
+    return res.status(400).json({ error: 'Missing authorization code.' });
+  }
+
+  try {
+    const response = await fetch('https://xumm.app/api/v1/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${XUMM_CLIENT_ID}:${XUMM_CLIENT_SECRET}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: XUMM_REDIRECT_URI,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to obtain access token.');
+    }
+
+    const data = await response.json();
+    req.session.xumm = data; // Store XUMM response in session
+    req.session.walletAddress = data.account; // Store wallet address
+
+    // Log success and redirect user to a success page (or dashboard)
+    console.log('OAuth2 success, user authenticated:', data.account);
+
+    res.redirect('/'); // Or any page you want after login
+  } catch (err) {
+    console.error('XUMM OAuth callback error:', err);
+    res.status(500).json({ error: 'OAuth callback processing failed.' });
+  }
+});
+
+// Logout route to clear session data
+app.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to log out' });
+    }
+    res.status(200).json({ message: 'Logged out successfully' });
+  });
+});
+
+// XRPL ping function
+async function xrplPing() {
+  try {
+    await client.connect(); // Connect to the XRPL network
+    const serverInfo = await client.request({ command: 'server_info' });
+    console.log("XRPL connection successful", serverInfo);
+    client.disconnect();  // Disconnect after ping
+  } catch (error) {
+    console.error("Error connecting to XRPL:", error);
+  }
+}
+
+app.use('/api', router);  // <- This mounts all your routes under /api
+
+
+// Call the XRPL ping when the server starts
+xrplPing().then(() => {
+  console.log("XRPL network connection check complete.");
+});
+
+
+xumm.ping().then(response => {
+    console.log("XUMM connection successful", response);
+}).catch(error => {
+    console.error("Error connecting to XUMM:", error);
+});
+
+
+// Start the server
+app.listen(process.env.PORT || 3000, () => {
+  console.log('Server running on port ' + (process.env.PORT || 3000));
+}); 

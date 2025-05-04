@@ -32,6 +32,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.3",
     "xrpl": "^4.2.5",
+    "xumm-oauth2-pkce": "^2.8.7",
     "xumm-sdk": "^1.11.2",
     "yamljs": "^0.3.0"
   },

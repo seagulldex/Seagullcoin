@@ -21,7 +21,6 @@ import axios from 'axios';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
 import { XummSdk } from 'xumm-sdk';
-import { requireLogin } from './middleware.js'
 import { verifyXummPayload, createNftOfferPayload, getUserInfo } from './xumm-utils.js';
 import { createNftOffer } from './xrpl-utils.js'
 import { Profile } from './profile.js'; // Adjust path to your models directory if needed
@@ -37,6 +36,7 @@ import { confirmPayment } from './confirmPaymentXumm.js';
 import { xummApi } from './xrplClient.js';
 import mime from 'mime';
 import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the path is correct
+import { requireLogin, getUser, logout } from './xummAuth.js'; // Adjust path if needed
 
 
 

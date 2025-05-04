@@ -14,6 +14,16 @@ export async function mintNFT(walletAddress, nftData) {
     if (!nftData?.name || !nftData?.description || !nftData?.fileBase64 || !nftData?.filename) {
       return { success: false, error: 'Missing required NFT fields (name, description, file)' };
     }
+    
+    // Validate properties (if present)
+    if (nftData.properties && typeof nftData.properties === 'object') {
+      for (const [key, value] of Object.entries(nftData.properties)) {
+        // Ensure the property key is a string and value is either string, number, or boolean
+        if (typeof key !== 'string' || !['string', 'number', 'boolean'].includes(typeof value)) {
+          return { success: false, error: `Invalid property type for ${key}. Expected string, number, or boolean, but got ${typeof value}.` };
+        }
+      }
+    }
 
     // Convert base64 image to File object
     const buffer = Buffer.from(nftData.fileBase64, 'base64');

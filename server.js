@@ -379,7 +379,19 @@ app.get('/confirm-login/:payloadUUID', async (req, res) => {
   }
 });
 
+// Example: Marking a payload as used (this could be triggered by a request)
+app.post('/payload', async (req, res) => {
+  const { uuid } = req.body;
 
+  if (await isPayloadUsed(uuid)) {
+    return res.status(400).send('Payload has already been used.');
+  }
+
+  // Mark the payload as used
+  await markPayloadUsed(uuid);
+
+  res.status(200).send('Payload marked as used.');
+});
 
 app.post('/send-message',
   body('recipient').isString().isLength({ min: 25 }).withMessage('Invalid recipient address'),

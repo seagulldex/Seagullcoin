@@ -347,6 +347,22 @@ app.get('/login', async (req, res) => {
   }
 });
 
+app.get("/xumm/connect", async (req, res) => {
+  try {
+    const payload = {
+      txjson: {
+        TransactionType: "SignIn"
+      }
+    };
+    const created = await xumm.payload.create(payload);
+    res.json({ redirect: created.next.always });
+  } catch (e) {
+    console.error("XUMM login failed", e);
+    res.status(500).json({ error: "XUMM login error" });
+  }
+});
+
+
 // Endpoint to initiate XUMM authorization
 app.get('/api/authorize', async (req, res) => {
     try {

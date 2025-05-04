@@ -1,7 +1,6 @@
 import xummSdk from 'xumm-sdk';
 const { Xumm } = xummSdk;
 
-
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -41,7 +40,6 @@ export const createXummPayment = async (walletAddress) => {
   }
 };
 
-
 // Confirm the payment transaction
 export const confirmPayment = async (payloadUuid) => {
   try {
@@ -50,13 +48,14 @@ export const confirmPayment = async (payloadUuid) => {
     if (!txDetails.meta.resolved_at) {
       return { success: false, reason: 'Transaction expired or not completed in time.' };
     }
-    
+
     if (!txDetails || !txDetails.response || !txDetails.response.dispatched) {
       return { success: false, reason: 'Transaction not signed or not submitted.' };
     }
 
     const tx = txDetails.response.txn;
 
+    // Strictly enforce SeagullCoin for the payment
     const isValid =
       tx.TransactionType === 'Payment' &&
       tx.Destination === SERVICE_WALLET &&
@@ -66,7 +65,7 @@ export const confirmPayment = async (payloadUuid) => {
 
     return isValid
       ? { success: true }
-      : { success: false, reason: 'Invalid payment details.' };
+      : { success: false, reason: 'Invalid payment details or wrong coin used.' };
   } catch (error) {
     console.error('Error confirming payment:', error);
     return { success: false, reason: 'Error confirming payment.' };

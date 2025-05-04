@@ -31,6 +31,7 @@ import checkSeagullCoinBalance from './checkSeagullCoinBalance.js'; // Import th
 import FormData from 'form-data'; // For handling file uploads
 import { verifyXummSignature, createXummPayment } from './xummApi.js'; // Import XUMM functions
 import mintRouter from './mint-endpoint.js'; // Your mint endpoint router
+import swaggerJSDoc from 'swagger-jsdoc';
 
 
 // Import your business logic modules
@@ -112,6 +113,29 @@ db.serialize(() => {
         wallet_address TEXT UNIQUE NOT NULL
     )
   `);
+
+// 1. **Swagger Definition** (Swagger configuration)
+const swaggerDefinition = {
+  openapi: '3.0.0',
+  info: {
+    title: 'SeagullCoin NFT Minting API',
+    version: '1.0.0',
+    description: 'API documentation for minting NFTs with SeagullCoin payment',
+  },
+  servers: [
+    {
+      url: 'http://sglcn-x20-api.glitch.me, // Change this URL when deploying
+    },
+  ],
+};
+
+// 2. **Swagger Setup** (Create options and generate Swagger spec)
+const options = {
+  swaggerDefinition,
+  apis: ['./mint-endpoint.js'], // Point to your API files (mint-endpoint.js)
+};
+
+
 
 // ===== Multer Setup =====
 const storage = multer.diskStorage({

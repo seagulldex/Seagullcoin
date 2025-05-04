@@ -72,3 +72,11 @@ export async function confirmPayment(payloadUUID, expectedSigner) {
     return { success: false, reason: 'Error validating payment' }; // Return an error message if any step fails
   }
 }
+
+console.log('Checking payment for payload:', payloadUUID);
+console.log('Payload details:', payload);
+console.log('Transaction details:', tx);
+console.log('Payment amount:', tx.Amount);
+console.log('Signer:', tx.Account);
+console.log('Expected signer:', expectedSigner);
+

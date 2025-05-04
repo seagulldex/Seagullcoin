@@ -1,29 +1,37 @@
-// payment.js
+import { Xumm } from 'xumm-sdk';
+import dotenv from 'dotenv';
 
-const xummApi = require('xumm-sdk'); // Ensure to require any necessary modules
+dotenv.config();
 
-// Service constants (you might want to define these in another config file)
-const SERVICE_WALLET = 'YOUR_SERVICE_WALLET';
-const SEAGULL_COIN_ISSUER = 'YOUR_SEAGULL_COIN_ISSUER';
+// Initialize XUMM with your API credentials
+const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-const createXummPayment = async (walletAddress) => {
+// Constants
+const SERVICE_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Replace with your real wallet
+const SEAGULL_COIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
+const SEAGULL_COIN_AMOUNT = '500000'; // 0.5 SeagullCoin in drops as a string
+
+// Create a XUMM payment payload
+export const createXummPayment = async (walletAddress) => {
   try {
     const xummPayload = {
-      "TransactionType": "Payment",
-      "Account": walletAddress,
-      "Amount": 0.5 * 1000000, // Convert 0.5 SeagullCoin to drops (1 SeagullCoin = 1,000,000 drops)
-      "Destination": SERVICE_WALLET, // Service wallet to receive the payment
-      "Currency": "SGLCN-X20", // SeagullCoin currency code
-      "Issuer": SEAGULL_COIN_ISSUER,
-      "DestinationTag": 0
+      TransactionType: 'Payment',
+      Account: walletAddress,
+      Destination: SERVICE_WALLET,
+      Amount: {
+        currency: 'SeagullCoin',
+        issuer: SEAGULL_COIN_ISSUER,
+        value: '0.5'
+      },
+      DestinationTag: 0
     };
 
-    const xummTx = await xummApi.payload.create({ txjson: xummPayload });
+    const xummTx = await xumm.payload.create({ txjson: xummPayload });
 
-    // Send back the XUMM URL for the user to sign the transaction
     return {
       message: 'Sign the payment transaction to proceed with minting.',
-      xummUrl: `https://xumm.app/sign/${xummTx.data.uuid}` // Direct the user to the XUMM app
+      uuid: xummTx.uuid,
+      xummUrl: `https://xumm.app/sign/${xummTx.uuid}`
     };
   } catch (error) {
     console.error('Error creating XUMM payment transaction:', error);
@@ -31,6 +39,29 @@ const createXummPayment = async (walletAddress) => {
   }
 };
 
-module.exports = {
-  createXummPayment
+// Confirm the payment transaction
+export const confirmPayment = async (payloadUuid) => {
+  try {
+    const txDetails = await xumm.payload.get(payloadUuid);
+
+    if (!txDetails || !txDetails.response || !txDetails.response.dispatched) {
+      return { success: false, reason: 'Transaction not signed or not submitted.' };
+    }
+
+    const tx = txDetails.response.txn;
+
+    const isValid =
+      tx.TransactionType === 'Payment' &&
+      tx.Destination === SERVICE_WALLET &&
+      tx.Amount.currency === 'SeagullCoin' &&
+      tx.Amount.issuer === SEAGULL_COIN_ISSUER &&
+      tx.Amount.value === '0.5';
+
+    return isValid
+      ? { success: true }
+      : { success: false, reason: 'Invalid payment details.' };
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    return { success: false, reason: 'Error confirming payment.' };
+  }
 };

@@ -35,6 +35,7 @@ import swaggerJSDoc from 'swagger-jsdoc';
 import { processXummMinting } from './payment.js';
 import { confirmPayment } from './confirmPaymentXumm.js';
 import { xummApi } from './xrplClient.js';
+import mime from 'mime';
 
 
 
@@ -164,19 +165,20 @@ const options = {
 
 
 // ===== Multer Setup =====
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);  // Set file destination to the uploads directory
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));  // Create a unique filename
-  }
-});
-
+// Setup multer to handle file uploads
+const storage = multer.memoryStorage(); // Store files in memory
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 },  // Limit file size to 10MB
-}).single('file');  // Expect a single file to be uploaded with the field name 'file'
+  limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
+  fileFilter: (req, file, cb) => {
+    const mimeType = mime.getType(file.originalname);
+    // Only allow image files (you can add more types if needed)
+    if (!mimeType || !mimeType.startsWith('image/')) {
+      return cb(new Error('Invalid file type. Only images are allowed.'));
+    }
+    cb(null, true); // Accept the file
+  },
+}).single('file'); // Expect a single file to be uploaded with the field name 'file'
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

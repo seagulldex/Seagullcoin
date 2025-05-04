@@ -1,6 +1,6 @@
 // mint-endpoint.js
 import { Router } from 'express';
-import { confirmPayment } from './server.js'; // Correct import path for confirmPayment
+import { confirmPayment } from './confirmPaymentxumm.js'; // Correct path
 import { mintNFT } from './nftminting.js'; // Import mintNFT from your nftminting.js file
 
 const router = Router();

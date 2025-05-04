@@ -68,6 +68,15 @@ const db = new sqlite3.Database('./database.db');
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 const router = express.Router();
 
+const usedPayloads = new Set(); // In-memory cache to prevent reuse
+
+/**
+ * Confirm a XUMM payment was signed and meets all SGLCN minting criteria.
+ * @param {string} payloadUUID - The XUMM payload UUID from the client.
+ * @param {string} expectedSigner - The wallet address of the user.
+ * @returns {Promise<{ success: boolean, reason?: string }>}
+ */
+
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1351,6 +1360,32 @@ app.get('/xumm/callback', async (req, res) => {
     res.status(500).json({ error: 'OAuth callback processing failed.' });
   }
 });
+
+// Endpoint to confirm payment after XUMM wallet transaction
+app.get('/confirm-payment', async (req, res) => {
+  const { payloadUuid } = req.query;
+
+  if (!payloadUuid) {
+    return res.status(400).send('Missing payloadUuid');
+  }
+
+  try {
+    // Call confirmPayment from confirmPaymentxumm.js to verify payment
+    await confirmPayment(payloadUuid); // This will handle the confirmation logic
+    
+    // If payment is successful, proceed with minting or other actions
+    res.send('Payment confirmed and processed');
+  } catch (err) {
+    console.error('Error confirming payment:', err);
+    res.status(500).send('Failed to confirm payment');
+  }
+});
+
+// Server setup
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
+});
+
 
 // Logout route to clear session data
 app.post('/logout', (req, res) => {

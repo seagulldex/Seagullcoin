@@ -25,6 +25,7 @@
     "nft.storage": "^6.4.1",
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
+    "ripple-address-codec": "^5.0.0",
     "socket.io": "^4.8.1",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",

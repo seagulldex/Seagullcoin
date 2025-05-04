@@ -1,6 +1,17 @@
 import { Router } from 'express';
 import { confirmPayment } from './confirmPaymentXumm.js'; // Correct path
 import { mintNFT } from './nftminting.js'; // Import mintNFT from your nftminting.js file
+import rippleAddressCodec from 'ripple-address-codec';
+const { isValidAddress } = rippleAddressCodec;
+
+/**
+ * Validate an XRP address.
+ * @param {string} address - The XRP wallet address to validate.
+ * @returns {boolean} - Returns true if the address is valid, otherwise false.
+ */
+function isValidXRPAddress(address) {
+  return isValidAddress(address);
+}
 
 const router = Router();
 
@@ -111,6 +122,5 @@ router.post('/mint', async (req, res) => {
  *       500:
  *         description: Server error during minting
  */
-
 
 export default router;

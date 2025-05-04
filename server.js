@@ -36,7 +36,7 @@ import { processXummMinting } from './confirmPaymentXumm.js';
 import { confirmPayment } from './confirmPaymentXumm.js';
 import { xummApi } from './xrplClient.js';
 import mime from 'mime';
-import { initiateLogin, verifyLogin } from './xummlogin.js';  // Assuming the path is correct
+import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the path is correct
 
 
 
@@ -72,7 +72,7 @@ const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 const router = express.Router();
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
-const userAddress = req.body.userAddress; // Assuming you get the address from the body of a request
+
 
 
 /**
@@ -251,13 +251,11 @@ app.use(session({
 }));
 app.use(express.static('public'));
 
-req.session.userAddress = userAddress;  // Storing user address in session
 
 
 app.get('/', (req, res) => {
   res.send("Root endpoint is working!");
 });
-
 
 
 // ===== Swagger Docs =====
@@ -1494,6 +1492,9 @@ async function xrplPing() {
 }
 
 app.use('/api', router);  // <- This mounts all your routes under /api
+
+console.log('User Address:', userAddress);
+req.session.userAddress = userAddress; // Storing user address in session
 
 
 // Call the XRPL ping when the server starts

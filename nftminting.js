@@ -1,24 +1,22 @@
-// nftminting.js
-import { xumm } from './xumm-utils.js';
-import { NFTStorage, File } from 'nft.storage';
-import mime from 'mime';
-import { Buffer } from 'buffer';
-import { confirmPayment } from './confirmPaymentXumm.js';  // Import from server.js, not payment.js
-
 export async function mintNFT(walletAddress, nftData) {
   try {
-    // Basic validation for the wallet address (make sure it's a valid XRPL address)
+    // Validate wallet address
     if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(walletAddress)) {
-      throw new Error('Invalid XRPL wallet address.');
+      return { success: false, error: 'Invalid XRPL wallet address.' };
     }
 
-    // Step 1: Convert base64 file to File object
+    // Validate NFT data
+    if (!nftData.name || !nftData.description || !nftData.fileBase64 || !nftData.filename) {
+      return { success: false, error: 'Missing NFT metadata or file.' };
+    }
+
+    // Convert base64 to File object
     const buffer = Buffer.from(nftData.fileBase64, 'base64');
     const file = new File([buffer], nftData.filename, {
       type: mime.getType(nftData.filename),
     });
 
-    // Step 2: Store metadata in NFT.Storage
+    // Store on NFT.Storage
     const client = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
     const metadata = await client.store({
       name: nftData.name,
@@ -27,32 +25,32 @@ export async function mintNFT(walletAddress, nftData) {
       properties: nftData.properties || {},
     });
 
-    // Step 3: Ensure that minting is only allowed with SeagullCoin (SGLCN-X20)
+    // Prepare XRPL mint transaction
     const tx = {
       TransactionType: 'NFTokenMint',
       Account: walletAddress,
       URI: Buffer.from(metadata.url).toString('hex').toUpperCase(),
-      Flags: 8, // Ensuring the token is transferable
+      Flags: 8,
       NFTokenTaxon: 0,
-      TransferFee: 0, // No transfer fee for minting
+      TransferFee: 0,
       Amount: {
-        currency: 'SeagullCoin',  // Only SeagullCoin is allowed for minting
-        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer address
-        value: '0.5', // 0.5 SeagullCoin required for minting
+        currency: 'SeagullCoin',
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+        value: '0.5',
       },
     };
 
-    // Step 4: Create the XUMM payload for SeagullCoin transaction
+    // Create XUMM payload
     const payload = await xumm.payload.create({ txjson: tx });
 
-    // Step 5: Return the metadata URL and XUMM mint payload URL
     return {
+      success: true,
       nftStorageUrl: metadata.url,
       mintPayloadUrl: `https://xumm.app/sign/${payload.uuid}`,
       mintPayloadId: payload.uuid,
     };
   } catch (err) {
     console.error('Minting failed:', err);
-    throw new Error('Minting failed: ' + err.message);
+    return { success: false, error: 'Minting failed: ' + err.message };
   }
 }

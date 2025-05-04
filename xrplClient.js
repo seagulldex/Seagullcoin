@@ -3,6 +3,8 @@ import XummSdk from 'xumm-sdk';
 import dotenv from 'dotenv';
 dotenv.config();
 
+export const xrplClient = new xrpl.Client('wss://xrplcluster.com');
+
 const client = new xrpl.Client('wss://xrplcluster.com');
 let isConnected = false;
 

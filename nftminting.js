@@ -3,7 +3,7 @@ import { xumm } from './xumm-utils.js';
 import { NFTStorage, File } from 'nft.storage';
 import mime from 'mime';
 import { Buffer } from 'buffer';
-import { confirmPayment } from './server.js';  // Import from server.js, not payment.js
+import { confirmPayment } from './confirmPaymentXumm.js';  // Import from server.js, not payment.js
 
 export async function mintNFT(walletAddress, nftData) {
   try {

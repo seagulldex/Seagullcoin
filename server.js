@@ -413,30 +413,8 @@ console.log('XUMM Payload:', xummPayload);
 
 // ===== Minting Route =====
 // Mocking the actual signature verification with XUMM API
-// XUMM signature verification
-const verifyXummSignature = async (signature) => {
-    try {
-        console.log('Started signature verification process...');
-        
-        // Replace with actual XUMM API verification logic
-        const response = await xummApi.verifySignature(signature);  // Actual verification logic here
+// Remove the second instance of the `verifyXummSignature` function
 
-        console.log('XUMM verification response:', response);
-
-        if (response && response.isValid) {
-            console.log('Signature is valid.');
-            return true;
-        } else {
-            console.log('Signature is invalid.');
-            return false;
-        }
-    } catch (error) {
-        console.error('Error during XUMM signature verification:', error);
-        throw new Error('XUMM signature verification failed');
-    }
-};
-
-// Function to create XUMM payment transaction for 0.5 SeagullCoin
 const createXummPayment = async (walletAddress) => {
   try {
     const xummPayload = {
@@ -549,6 +527,7 @@ app.post('/confirm-payment', async (req, res) => {
         return res.status(500).json({ error: 'Error during payment confirmation and minting.' });
     }
 });
+
 
 /**
  * @swagger

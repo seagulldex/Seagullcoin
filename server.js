@@ -32,7 +32,7 @@ import FormData from 'form-data'; // For handling file uploads
 import { verifyXummSignature, createXummPayment } from './xummApi.js'; // Import XUMM functions
 import mintRouter from './mint-endpoint.js'; // Your mint endpoint router
 import swaggerJSDoc from 'swagger-jsdoc';
-import { processXummMinting } from './payment.js';
+import { processXummMinting } from './confirmPaymentXumm.js';
 import { confirmPayment } from './confirmPaymentXumm.js';
 import { xummApi } from './xrplClient.js';
 import mime from 'mime';

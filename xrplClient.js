@@ -1,17 +1,20 @@
 import xrpl from 'xrpl';
 import XummSdk from 'xumm-sdk';
 import dotenv from 'dotenv';
+import axios from 'axios';
 dotenv.config();
 
-export const xrplClient = new xrpl.Client('wss://xrplcluster.com');
-
+// Single XRPL client instance
 const client = new xrpl.Client('wss://xrplcluster.com');
 let isConnected = false;
 
+// XUMM SDK instance
 const xummApi = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-export { xummApi, client };
 
-// XRPL disconnect handler
+// Export the instances
+export { client, xummApi };
+
+/** XRPL disconnect handler */
 client.on('disconnected', () => {
   isConnected = false;
   console.warn("XRPL client disconnected.");
@@ -76,43 +79,39 @@ export async function fetchNFTs(address) {
 }
 
 /**
- * Fetch full details about a single NFT by its ID.
- * @param {string} nftId - NFT ID (hex).
- * @returns {Promise<object|null>}
+ * Decode URI and return basic info from an NFT object.
+ * @param {object} nft - NFT object from account_nfts
  */
-export async function getNFTDetails(nftId) {
+export function decodeNFTBasicInfo(nft) {
+  const uri = nft.URI ? Buffer.from(nft.URI, 'hex').toString('utf8') : '';
+  return {
+    nftId: nft.NFTokenID,
+    issuer: nft.Issuer,
+    uri,
+    rawURI: nft.URI,
+    flags: nft.Flags,
+    transferFee: nft.TransferFee,
+  };
+}
+
+/**
+ * Fetch metadata from the URI (usually an IPFS link).
+ * @param {string} uri - The URI in hex format.
+ * @returns {Promise<object|null>} - Decoded JSON metadata or null if error.
+ */
+export async function fetchNFTMetadata(uri) {
   try {
-    await ensureConnected();
-    const response = await client.request({
-      command: "nft_info",
-      nft_id: nftId,
-    });
-
-    if (response.result?.nft_info) {
-      const info = response.result.nft_info;
-      const uri = Buffer.from(info.URI || '', 'hex').toString('utf8');
-
-      return {
-        nftId,
-        owner: info.Owner,
-        issuer: info.Issuer,
-        uri,
-        rawURI: info.URI,
-        flags: info.Flags,
-        transferFee: info.TransferFee,
-      };
-    }
-
-    console.warn('No NFT info returned for:', nftId);
-    return null;
+    const decodedURI = Buffer.from(uri, 'hex').toString('utf8');
+    const response = await axios.get(decodedURI);
+    return response.data || null;
   } catch (error) {
-    console.error('Error fetching NFT details:', error.message);
-    return { error: true, message: error.message };
+    console.error('Error fetching NFT metadata from URI:', error.message);
+    return null;
   }
 }
 
 /**
- * Get SeagullCoin balance from a trustline.
+ * Fetch SeagullCoin balance from trustline.
  * @param {string} walletAddress
  * @returns {Promise<{balance: string}>}
  */
@@ -126,8 +125,7 @@ export async function fetchSeagullCoinBalance(walletAddress) {
     });
 
     const line = accountInfo.result.lines.find(l =>
-      l.currency === 'SeagullCoin' &&
-      l.issuer === process.env.SGLCN_ISSUER
+      l.currency === 'SeagullCoin' && l.issuer === process.env.SGLCN_ISSUER
     );
 
     return { balance: line?.balance || '0' };
@@ -137,7 +135,35 @@ export async function fetchSeagullCoinBalance(walletAddress) {
   }
 }
 
-/** Disconnect XRPL client gracefully. */
+/**
+ * Fetch active offers for an NFT.
+ * @param {string} nftId
+ * @returns {Promise<object[]>}
+ */
+export async function getNFTokenOffers(nftId) {
+  try {
+    await ensureConnected();
+    const offers = await client.request({
+      command: "nft_sell_offers",
+      nft_id: nftId
+    });
+    return offers.result.offers || [];
+  } catch (e) {
+    console.error("Error fetching NFT offers:", e.message);
+    return [];
+  }
+}
+
+/**
+ * Filter NFTs by SeagullCoin issuer.
+ * @param {object[]} nfts - List of NFTs to filter.
+ * @returns {object[]} - Filtered NFTs that are issued by SeagullCoin.
+ */
+export function filterNFTsBySeagullCoinIssuer(nfts) {
+  return nfts.filter(nft => nft.Issuer === process.env.SGLCN_ISSUER);
+}
+
+/** Gracefully disconnect XRPL client */
 export async function disconnectClient() {
   try {
     if (client.isConnected()) {
@@ -151,7 +177,7 @@ export async function disconnectClient() {
   }
 }
 
-// Handle process shutdown and uncaught errors
+// Cleanup handlers
 process.on('SIGINT', async () => {
   await disconnectClient();
   setTimeout(() => process.exit(0), 500);

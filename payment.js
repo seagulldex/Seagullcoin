@@ -1,6 +1,6 @@
 
 import xrpl from 'xrpl';  // Import the xrpl library properly
-import { xrplClient, xummApi } from './xrplClient.js';  // Ensure you have correct imports
+import { client, xummApi } from './xrplClient.js';  // Use 'client' as it is exported in xrplClient.js
 import dotenv from 'dotenv';
 dotenv.config();
 

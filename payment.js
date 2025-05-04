@@ -39,11 +39,16 @@ export const createXummPayment = async (walletAddress) => {
   }
 };
 
+
 // Confirm the payment transaction
 export const confirmPayment = async (payloadUuid) => {
   try {
     const txDetails = await xumm.payload.get(payloadUuid);
 
+    if (!txDetails.meta.resolved_at) {
+      return { success: false, reason: 'Transaction expired or not completed in time.' };
+    }
+    
     if (!txDetails || !txDetails.response || !txDetails.response.dispatched) {
       return { success: false, reason: 'Transaction not signed or not submitted.' };
     }

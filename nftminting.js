@@ -8,6 +8,10 @@ import { confirmPayment } from './payment.js'; // Importing the payment module
 
 export async function mintNFT(walletAddress, nftData) {
   try {
+    // Basic validation for the wallet address (make sure it's a valid XRPL address)
+    if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(walletAddress)) {
+      throw new Error('Invalid XRPL wallet address.');
+    }
     
     // Step 1: Convert base64 file to File object
     const buffer = Buffer.from(nftData.fileBase64, 'base64');

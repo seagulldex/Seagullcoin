@@ -140,6 +140,51 @@ db.serialize(() => {
   `);
 });
 
+// Initialize SQLite Database
+const initDB = async () => {
+  db = await open({
+    filename: './payloads.db',
+    driver: sqlite3.Database,
+  });
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS used_payloads (
+      uuid TEXT PRIMARY KEY,
+      used_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+};
+
+// Cleanup expired or rejected payloads
+const cleanupExpiredPayloads = async () => {
+  try {
+    // Set the expiration threshold (e.g., 24 hours ago)
+    const expirationThreshold = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
+
+    // Delete expired payloads based on creation time or status
+    await db.run(
+      `DELETE FROM used_payloads WHERE createdAt < ? OR meta_signed = false`,
+      expirationThreshold
+    );
+
+    console.log('Expired or rejected payloads have been cleaned up.');
+  } catch (err) {
+    console.error('Error during payload cleanup:', err);
+  }
+};
+
+initDB();
+
+// Mark payload as used in the database
+const markPayloadUsed = async (uuid) => {
+  await db.run(`INSERT OR IGNORE INTO used_payloads (uuid) VALUES (?)`, uuid);
+};
+
+// Check if payload is already used
+const isPayloadUsed = async (uuid) => {
+  const row = await db.get(`SELECT 1 FROM used_payloads WHERE uuid = ?`, uuid);
+  return !!row;
+};
 
 // 1. **Swagger Definition** (Swagger configuration)
 const swaggerDefinition = {
@@ -1423,6 +1468,9 @@ xumm.ping().then(response => {
 }).catch(error => {
     console.error("Error connecting to XUMM:", error);
 });
+
+// Run the cleanup job periodically (every 24 hours for example)
+setInterval(cleanupExpiredPayloads, 24 * 60 * 60 * 1000); // Every 24 hours
 
 
 // Start the server

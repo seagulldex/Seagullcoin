@@ -1,6 +1,8 @@
-import { Xumm } from 'xumm-sdk';
-import dotenv from 'dotenv';
+import xummSdk from 'xumm-sdk';
+const { Xumm } = xummSdk;
 
+
+import dotenv from 'dotenv';
 dotenv.config();
 
 // Initialize XUMM with your API credentials

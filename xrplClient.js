@@ -1,5 +1,13 @@
 import xrpl from 'xrpl';
 
+import pkg from 'xumm-sdk';
+const { Xumm } = pkg;
+
+import dotenv from 'dotenv';
+dotenv.config();
+
+export const xummApi = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+
 const client = new xrpl.Client('wss://xrplcluster.com');
 let isConnected = false;
 

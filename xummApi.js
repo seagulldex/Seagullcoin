@@ -1,64 +1,51 @@
-import axios from 'axios';
+// xummApi.js
+import { xummApi } from './xummClient.js';  // Import your xummApi instance if you have it
 
-// Define your XUMM API key and endpoint
-const XUMM_API_KEY = 'YOUR_XUMM_API_KEY'; // Replace with your XUMM API Key
-const XUMM_API_URL = 'https://xumm.app/api/v1'; // XUMM API base URL
-
-// Function to verify the signature using XUMM API
+// XUMM signature verification
 export const verifyXummSignature = async (signature) => {
     try {
-        const response = await axios.post(
-            `${XUMM_API_URL}/payloads/${signature}`,
-            {},
-            {
-                headers: {
-                    Authorization: `Bearer ${XUMM_API_KEY}`
-                }
-            }
-        );
+        console.log('Started signature verification process...');
         
-        // Check if the signature is valid
-        if (response.data.meta.validated) {
+        // Replace with actual XUMM API verification logic
+        const response = await xummApi.verifySignature(signature);  // Actual verification logic here
+
+        console.log('XUMM verification response:', response);
+
+        if (response && response.isValid) {
+            console.log('Signature is valid.');
             return true;
         } else {
-            throw new Error('Invalid signature');
+            console.log('Signature is invalid.');
+            return false;
         }
     } catch (error) {
-        console.error('Error during signature verification:', error);
+        console.error('Error during XUMM signature verification:', error);
         throw new Error('XUMM signature verification failed');
     }
 };
 
-// Function to create a payment transaction through XUMM
+// Function to create XUMM payment transaction for 0.5 SeagullCoin
 export const createXummPayment = async (walletAddress) => {
-    try {
-        const payload = {
-            "TransactionType": "Payment",
-            "Account": walletAddress,
-            "Amount": 0.5 * 1000000, // Convert 0.5 SeagullCoin to drops (1 SeagullCoin = 1,000,000 drops)
-            "Destination": 'SERVICE_WALLET_ADDRESS', // Replace with your service wallet address
-            "Currency": "SGLCN-X20",
-            "Issuer": 'SEAGULL_COIN_ISSUER', // Replace with SeagullCoin issuer
-            "DestinationTag": 0
-        };
+  try {
+    const xummPayload = {
+      "TransactionType": "Payment",
+      "Account": walletAddress,
+      "Amount": 0.5 * 1000000, // Convert 0.5 SeagullCoin to drops (1 SeagullCoin = 1,000,000 drops)
+      "Destination": SERVICE_WALLET, // Service wallet to receive the payment
+      "Currency": "SGLCN-X20", // SeagullCoin currency code
+      "Issuer": SEAGULL_COIN_ISSUER,
+      "DestinationTag": 0
+    };
 
-        const response = await axios.post(
-            `${XUMM_API_URL}/payloads`,
-            payload,
-            {
-                headers: {
-                    Authorization: `Bearer ${XUMM_API_KEY}`
-                }
-            }
-        );
+    const xummTx = await xummApi.payload.create({ txjson: xummPayload });
 
-        const uuid = response.data.uuid;
-        return {
-            message: 'Sign the payment transaction to proceed with minting.',
-            xummUrl: `https://xumm.app/sign/${uuid}` // URL for the user to sign the transaction
-        };
-    } catch (error) {
-        console.error('Error during payment creation:', error);
-        throw new Error('XUMM payment creation failed');
-    }
+    // Send back the XUMM URL for the user to sign the transaction
+    return {
+      message: 'Sign the payment transaction to proceed with minting.',
+      xummUrl: `https://xumm.app/sign/${xummTx.data.uuid}` // Direct the user to the XUMM app
+    };
+  } catch (error) {
+    console.error('Error creating XUMM payment transaction:', error);
+    throw new Error('Payment creation failed.');
+  }
 };

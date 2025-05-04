@@ -347,6 +347,23 @@ app.get('/login', async (req, res) => {
   }
 });
 
+// Endpoint to initiate XUMM authorization
+app.get('/api/authorize', async (req, res) => {
+    try {
+        const response = await xumm.authorize();
+        if (response?.data?.next) {
+            // Store the QR link or request data in session for later use
+            req.session.authRequest = response.data.next;
+            res.json({ url: response.data.next });
+        } else {
+            res.status(500).json({ error: 'Failed to create XUMM authorization request' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 // Route to verify if the user signed the payload (could be called after the user signed in XUMM)
 app.get('/verify-login/:payloadUUID', async (req, res) => {
   const { payloadUUID } = req.params;

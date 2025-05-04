@@ -1,13 +1,9 @@
 // nftminting.js
-
 import { xumm } from './xumm-utils.js';
 import { NFTStorage, File } from 'nft.storage';
 import mime from 'mime';
 import { Buffer } from 'buffer';
-import { confirmPayment as paymentConfirmation } from './payment.js'; // Importing the payment module
-
-// Export the confirmPayment function from this file
-export { confirmPayment } from './payment.js';  // Export the correct function
+import { confirmPayment } from './server.js';  // Import from server.js, not payment.js
 
 export async function mintNFT(walletAddress, nftData) {
   try {

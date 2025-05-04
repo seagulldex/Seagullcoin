@@ -26,10 +26,10 @@ import { verifyXummPayload, createNftOfferPayload, getUserInfo } from './xumm-ut
 import { createNftOffer } from './xrpl-utils.js'
 import { Profile } from './profile.js'; // Adjust path to your models directory if needed
 import pkg from 'xumm-sdk';
-import { confirmPayment, mintNFT } from './nftminting.js';
+import { mintNFT } from './nftminting.js';
 import checkSeagullCoinBalance from './checkSeagullCoinBalance.js'; // Import the checkSeagullCoinBalance function
 import FormData from 'form-data'; // For handling file uploads
-import { verifyXummSignature, createXummPayment } from './xummApi.js'; // Import XUMM functions
+import { verifyXummSignature, } from './xummApi.js'; // Import XUMM functions
 import mintRouter from './mint-endpoint.js'; // Your mint endpoint router
 import swaggerJSDoc from 'swagger-jsdoc';
 
@@ -516,8 +516,6 @@ app.get('/auth', async (req, res) => {
         res.status(500).json({ error: 'Error initiating XUMM authentication.' });
     }
 });
-
-console.log('XUMM Payload:', xummPayload);
 
 
 

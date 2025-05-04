@@ -34,6 +34,7 @@ import mintRouter from './mint-endpoint.js'; // Your mint endpoint router
 import swaggerJSDoc from 'swagger-jsdoc';
 import { processXummMinting } from './payment.js';
 import { confirmPayment } from './confirmPaymentXumm.js';
+import { xummApi } from './xrplClient.js';
 
 
 
@@ -304,6 +305,26 @@ app.get('/login', async (req, res) => {
     res.status(500).json({ error: 'Error logging in' });
   }
 });
+
+app.get('/confirm-login/:payloadUUID', async (req, res) => {
+  const { payloadUUID } = req.params;
+
+  try {
+    const { data: payload } = await xummApi.payload.get(payloadUUID);
+    
+    if (payload.meta.signed === true) {
+      const walletAddress = payload.response.account; // Get the wallet address
+      // Store the wallet address (e.g., session or database)
+      return res.json({ success: true, walletAddress });
+    } else {
+      return res.json({ success: false, message: 'Payload not signed' });
+    }
+  } catch (error) {
+    console.error('Error confirming login:', error);
+    return res.status(500).json({ error: 'Failed to confirm login' });
+  }
+});
+
 
 
 app.post('/send-message',

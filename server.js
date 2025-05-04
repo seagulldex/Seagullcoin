@@ -347,21 +347,22 @@ app.get('/login', async (req, res) => {
   }
 });
 
+// Route to verify if the user signed the payload (could be called after the user signed in XUMM)
 app.get('/verify-login/:payloadUUID', async (req, res) => {
   const { payloadUUID } = req.params;
+
   try {
     const userAddress = await verifyLogin(payloadUUID);
-    console.log('User Address:', userAddress);  // Log the user address to see what is returned
-
     if (userAddress) {
-      req.session.userAddress = userAddress;
-      res.json({ success: true, userAddress });
+      // Store the wallet address in session
+      req.session.walletAddress = userAddress;
+      res.status(200).json({ success: true, walletAddress: userAddress });
     } else {
-      res.status(400).send('User did not sign the payload');
+      res.status(400).json({ error: 'User did not sign the payload' });
     }
   } catch (error) {
     console.error('Error during login verification:', error);
-    res.status(500).send('Error verifying login');
+    res.status(500).json({ error: 'Error verifying login' });
   }
 });
 
@@ -371,10 +372,11 @@ app.get('/confirm-login/:payloadUUID', async (req, res) => {
 
   try {
     const { data: payload } = await xummApi.payload.get(payloadUUID);
-    
+
     if (payload.meta.signed === true) {
       const walletAddress = payload.response.account; // Get the wallet address
       // Store the wallet address (e.g., session or database)
+      req.session.walletAddress = walletAddress;  // Store the wallet address in session
       return res.json({ success: true, walletAddress });
     } else {
       return res.json({ success: false, message: 'Payload not signed' });
@@ -385,7 +387,13 @@ app.get('/confirm-login/:payloadUUID', async (req, res) => {
   }
 });
 
-// Example: Marking a payload as used (this could be triggered by a request)
+// Protected route to check if the user is logged in before proceeding
+app.get('/dashboard', requireLogin, (req, res) => {
+  // If this route is reached, the user is logged in (because of requireLogin middleware)
+  res.json({ success: true, message: 'Welcome to your dashboard!', user: req.user });
+});
+
+// Example: Marking a payload as used (could be triggered by a request)
 app.post('/payload', async (req, res) => {
   const { uuid } = req.body;
 

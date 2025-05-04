@@ -1,8 +1,7 @@
 import { xummApi } from './xrplClient.js';  // Assuming xummApi is already configured
 import dotenv from 'dotenv';
 import { handleError, logError } from './errorHandler.js';  // Assuming a custom error handler
-import express from 'express';
-import session from 'express-session'; // Import express-session
+
 
 dotenv.config();
 
@@ -56,13 +55,18 @@ export async function verifyLogin(payloadUUID) {
     // Retrieve the payload to check if the user signed it
     const response = await xummApi.payload.get(payloadUUID);
 
+    if (response.data.expired) {
+      console.log('XUMM payload has expired.');
+      return null;
+    }
+
     if (response.data.signed) {
       const userAddress = response.data.response.account;
       console.log('User signed in with address:', userAddress);
-      return userAddress;  // Return the user's wallet address
+      return userAddress;
     } else {
       console.log('User did not sign the payload.');
-      return null;  // Return null if the payload was not signed
+      return null;
     }
   } catch (error) {
     // Log and handle error
@@ -70,6 +74,7 @@ export async function verifyLogin(payloadUUID) {
     return handleError('Error verifying login');
   }
 }
+
 
 /**
  * Middleware function to ensure the user is logged in.

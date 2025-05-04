@@ -298,6 +298,19 @@
 
         // Check login on page load
         checkLogin();
+      
+      async function checkLoginAndRetry() {
+  const res = await fetch('/api/check-login');
+  const data = await res.json();
+
+  if (data.error === 'User has not signed the payload.') {
+    // trigger new login
+    const loginRes = await fetch('/api/initiate-login');
+    const { payloadURL } = await loginRes.json();
+    window.location.href = payloadURL;
+  }
+}
+
     </script>
 
 </body>

@@ -48,9 +48,9 @@ router.post('/mint', async (req, res) => {
     // Step 3: Send the response back to the frontend with mint details
     return res.status(200).json({
       success: true,
-      nftStorageUrl: mintResult.nftStorageUrl,
-      mintPayloadUrl: mintResult.mintPayloadUrl,
-      mintPayloadId: mintResult.mintPayloadId,
+      nftStorageUrl: mintResult.uri,        // Corrected this to use the URI from mintNFT
+      mintPayloadUrl: mintResult.uri,      // Same URI as mintResult.uri
+      mintPayloadId: mintResult.uriHex,    // Use the hex-encoded URI
     });
 
   } catch (error) {

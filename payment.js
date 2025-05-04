@@ -1,65 +1,43 @@
-import xrpl from 'xrpl';  // Import the xrpl library properly
-import { client, xummApi } from './xrplClient.js';  // Use 'client' as it is exported in xrplClient.js
+// payment.js
+import xrpl from 'xrpl';  // Import the xrpl library
+import { client } from './xrplClient.js';  // Assume 'client' is properly configured for XRPL connection
 import dotenv from 'dotenv';
 dotenv.config();
 
-/**
- * Verify the payment of SeagullCoin (SGLCN) for minting.
- * This checks if the payment has been made to the correct wallet and verifies the balance.
- * @param {string} walletAddress - The XUMM wallet address to check for SeagullCoin payment.
- * @param {number} amount - The required SeagullCoin amount for minting (0.5 in this case).
- * @returns {Promise<boolean>} - Returns true if the payment is confirmed, otherwise false.
- */
-export async function confirmPayment(walletAddress, amount) {
-  try {
-    // Fetch the SeagullCoin balance from the wallet address
-    const { balance } = await fetchSeagullCoinBalance(walletAddress);
-
-    // Check if the balance is sufficient for the minting cost
-    if (parseFloat(balance) >= amount) {
-      console.log(`Payment of ${amount} SeagullCoin confirmed for wallet ${walletAddress}.`);
-      return true; // Payment confirmed
-    }
-
-    console.log(`Insufficient balance. Wallet ${walletAddress} has ${balance} SeagullCoin.`);
-    return false; // Insufficient balance
-  } catch (error) {
-    console.error('Error confirming payment:', error.message);
-    return false; // Error in payment confirmation
-  }
-}
+// Define constants for SeagullCoin issuer and minting cost
+const SEAGULLCOIN_ISSUER = process.env.SGLCN_ISSUER;  // SeagullCoin Issuer address
+const MINTING_COST = 0.5;  // Minting cost in SeagullCoin (0.5 SGLCN)
 
 /**
- * Fetch SeagullCoin balance for a specific wallet address.
- * @param {string} walletAddress - The address of the XRPL wallet.
- * @returns {Promise<{balance: string}>} - The balance of SeagullCoin in the wallet.
+ * Fetch SeagullCoin balance for the given wallet address.
+ * @param {string} walletAddress - The wallet address to check for SeagullCoin balance.
+ * @returns {Promise<number>} - The SeagullCoin balance of the wallet.
  */
 async function fetchSeagullCoinBalance(walletAddress) {
   try {
-    // Make sure the XRPL client is connected and ready
-    await ensureConnected();
-
-    // Request the account lines for the wallet (check for SeagullCoin trustline)
+    await ensureConnected(); // Ensure the XRPL client is connected
+    
+    // Request the account_lines to get the SeagullCoin balance
     const accountInfo = await client.request({
       command: 'account_lines',
       account: walletAddress
     });
 
-    // Find the SeagullCoin line
-    const line = accountInfo.result.lines.find(l =>
-      l.currency === 'SeagullCoin' && l.issuer === process.env.SGLCN_ISSUER
+    // Find the SeagullCoin balance for the specified issuer
+    const line = accountInfo.result.lines.find(line => 
+      line.currency === 'SeagullCoin' && line.issuer === SEAGULLCOIN_ISSUER
     );
 
-    // If SeagullCoin is found in the trustline, return the balance
-    return { balance: line ? line.balance : '0' };
+    // Return balance if found, otherwise return 0
+    return line ? parseFloat(line.balance) : 0;
   } catch (error) {
     console.error('Error fetching SeagullCoin balance:', error.message);
-    throw error; // Propagate error for further handling
+    throw new Error('Error fetching SeagullCoin balance');
   }
 }
 
 /**
- * Ensure XRPL client is connected before making requests.
+ * Ensure the XRPL client is connected.
  */
 async function ensureConnected() {
   try {
@@ -69,34 +47,47 @@ async function ensureConnected() {
     }
   } catch (error) {
     console.error('Error connecting to XRPL client:', error.message);
-    throw error; // Throw error if unable to connect
+    throw new Error('Connection failed');
   }
 }
 
 /**
- * Process the XUMM payload for minting. This would interact with the XUMM SDK.
- * @param {string} userAddress - The user's wallet address.
- * @param {number} amount - The SeagullCoin amount required.
- * @returns {Promise<void>}
+ * Confirm that the wallet has enough SeagullCoin for minting.
+ * @param {string} walletAddress - The user's wallet address to check for SeagullCoin balance.
+ * @returns {Promise<object>} - Returns an object indicating success or failure.
  */
-export async function processXummMinting(userAddress, amount) {
+export async function confirmPayment(walletAddress) {
   try {
-    // Convert SeagullCoin (SGLCN) to drops (XRP units) if needed. We assume the value is in SeagullCoin
-    const amountInDrops = xrpl.xrpToDrops(amount); // This assumes SeagullCoin is treated similarly to XRP in conversion.
+    // Fetch the current balance of SeagullCoin
+    const balance = await fetchSeagullCoinBalance(walletAddress);
 
-    // Create a XUMM payload to mint an NFT
-    const payload = await xummApi.payload.create({
-      txjson: {
-        TransactionType: 'Payment',
-        Account: process.env.SERVICE_WALLET,  // Your service wallet (minting wallet)
-        Amount: amountInDrops,               // Convert SeagullCoin to drops (XRP units) for transaction
-        Destination: userAddress,            // User's wallet address
-        SendMax: amountInDrops,              // Ensure exact amount is sent (or max allowed)
-      }
-    });
+    // Check if the balance is sufficient for minting
+    if (balance >= MINTING_COST) {
+      console.log(`Payment of ${MINTING_COST} SeagullCoin confirmed for wallet ${walletAddress}.`);
+      return { success: true, balance };
+    }
 
-    console.log('XUMM Payload created:', payload);
+    // Log insufficient balance
+    console.log(`Insufficient balance. Wallet ${walletAddress} has ${balance} SeagullCoin.`);
+    return { success: false, message: 'Insufficient balance' };
   } catch (error) {
-    console.error('Error processing XUMM minting payload:', error.message);
+    console.error('Error confirming payment:', error.message);
+    return { success: false, message: error.message };
+  }
+}
+// payment.js
+
+/**
+ * Function to handle minting process for XUMM wallet.
+ * @param {string} walletAddress - The wallet address to process the minting for.
+ */
+export async function processXummMinting(walletAddress) {
+  try {
+    // Example logic for minting
+    console.log(`Processing minting for wallet: ${walletAddress}`);
+    // Your minting logic (e.g., validate payment, interact with XRPL, etc.)
+  } catch (error) {
+    console.error('Error during minting process:', error.message);
+    throw error; // Optionally, rethrow if you want to handle it further upstream
   }
 }

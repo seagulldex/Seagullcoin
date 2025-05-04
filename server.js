@@ -30,7 +30,7 @@ import { confirmPayment, mintNFT } from './nftminting.js';
 import checkSeagullCoinBalance from './checkSeagullCoinBalance.js'; // Import the checkSeagullCoinBalance function
 import FormData from 'form-data'; // For handling file uploads
 import { verifyXummSignature, createXummPayment } from './xummApi.js'; // Import XUMM functions
-
+import mintRouter from './mint-endpoint.js'; // Your mint endpoint router
 
 
 // Import your business logic modules
@@ -508,53 +508,7 @@ app.post('/confirm-payment', async (req, res) => {
         const { paymentTransactionId, walletAddress, nftData } = req.body;
 
         // Step 1: Confirm that the payment was successful
-        const paymentStatus = await confirmPayment(paymentTransactionId); // Implement this function to check payment status
-
-        if (!paymentStatus.success) {
-            return res.status(400).json({ error: 'Payment confirmation failed.' });
-        }
-
-        console.log('Payment confirmed, proceeding with minting...');
-
-        // Step 2: Proceed with minting the NFT on the XRPL
-        const nftId = await mintNFT(walletAddress, nftData); // Mint the NFT after payment confirmation
-
-        // Step 3: Return minted NFT ID as confirmation
-        return res.json({ nftId });
-
-    } catch (error) {
-        console.error('Error during payment confirmation and minting:', error);
-        return res.status(500).json({ error: 'Error during payment confirmation and minting.' });
-    }
-});
-
-
-/**
- * @swagger
- * /mint:
- *   post:
- *     summary: Mint a new NFT
- *     consumes:
- *       - multipart/form-data
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             properties:
- *               nft_file:
- *                 type: string
- *                 format: binary
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *     responses:
- *       200:
- *         description: NFT minted successfully
- */
-
+    
 
 // ===== Listing NFT Route =====
 

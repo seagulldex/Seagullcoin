@@ -1,10 +1,22 @@
 import { xummApi } from './xrplClient.js';  // Assuming xummApi is already configured
 import dotenv from 'dotenv';
 import { handleError, logError } from './errorHandler.js';  // Assuming a custom error handler
+import express from 'express';
+import session from 'express-session'; // Import express-session
 
 dotenv.config();
 
 const SERVICE_WALLET = process.env.SERVICE_WALLET;
+
+export function checkOrigin(req, res, next) {
+  const trustedOrigins = ['https://sglcn-x20-api.glitch.me'];
+
+  if (!trustedOrigins.includes(req.get('Origin'))) {
+    return res.status(403).json({ error: 'Invalid origin' });
+  }
+
+  next();  // Proceed to the next middleware if the origin is valid
+}
 
 /**
  * Initiate login by creating a payload for the user to sign.

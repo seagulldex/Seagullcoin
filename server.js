@@ -251,7 +251,13 @@ app.use(session({
 }));
 app.use(express.static('public'));
 
-
+// Set up session middleware
+app.use(session({
+    secret: 'your-secret-key',  // A secret key for session encryption
+    resave: false,              // Don't save session if unmodified
+    saveUninitialized: true,    // Create session if one doesn't exist
+    cookie: { secure: false }   // Set to 'true' if using HTTPS
+}));
 
 app.get('/', (req, res) => {
   res.send("Root endpoint is working!");

@@ -1,4 +1,3 @@
-
 import xrpl from 'xrpl';  // Import the xrpl library properly
 import { client, xummApi } from './xrplClient.js';  // Use 'client' as it is exported in xrplClient.js
 import dotenv from 'dotenv';
@@ -41,7 +40,7 @@ async function fetchSeagullCoinBalance(walletAddress) {
     await ensureConnected();
 
     // Request the account lines for the wallet (check for SeagullCoin trustline)
-    const accountInfo = await xrplClient.request({
+    const accountInfo = await client.request({
       command: 'account_lines',
       account: walletAddress
     });
@@ -64,9 +63,9 @@ async function fetchSeagullCoinBalance(walletAddress) {
  */
 async function ensureConnected() {
   try {
-    if (!xrplClient.isConnected()) {
+    if (!client.isConnected()) {
       console.log('XRPL client not connected, attempting to connect...');
-      await xrplClient.connect();
+      await client.connect();
     }
   } catch (error) {
     console.error('Error connecting to XRPL client:', error.message);
@@ -82,14 +81,17 @@ async function ensureConnected() {
  */
 export async function processXummMinting(userAddress, amount) {
   try {
+    // Convert SeagullCoin (SGLCN) to drops (XRP units) if needed. We assume the value is in SeagullCoin
+    const amountInDrops = xrpl.xrpToDrops(amount); // This assumes SeagullCoin is treated similarly to XRP in conversion.
+
     // Create a XUMM payload to mint an NFT
     const payload = await xummApi.payload.create({
       txjson: {
         TransactionType: 'Payment',
         Account: process.env.SERVICE_WALLET,  // Your service wallet (minting wallet)
-        Amount: xrpl.xrpToDrops(amount),     // Convert SeagullCoin to drops (XRP units)
+        Amount: amountInDrops,               // Convert SeagullCoin to drops (XRP units) for transaction
         Destination: userAddress,            // User's wallet address
-        SendMax: xrpl.xrpToDrops(amount),   // Ensure exact amount is sent
+        SendMax: amountInDrops,              // Ensure exact amount is sent (or max allowed)
       }
     });
 

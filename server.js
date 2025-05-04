@@ -204,8 +204,6 @@ app.get('/', (req, res) => {
   res.send("Root endpoint is working!");
 });
 
-// 3. **Swagger UI Middleware** to serve documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ===== Swagger Docs =====
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));

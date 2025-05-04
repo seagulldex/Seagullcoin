@@ -1,5 +1,5 @@
 import xrpl from 'xrpl';
-import XummSdk from 'xumm-sdk';
+import { XummSdk } from 'xumm-sdk';
 import dotenv from 'dotenv';
 import axios from 'axios';
 dotenv.config();

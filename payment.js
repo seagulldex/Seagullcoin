@@ -1,11 +1,12 @@
-import xummSdk from 'xumm-sdk';
-const { Xumm } = xummSdk;
-
+import Xumm from 'xumm-sdk';  // Correct default import for 'xumm-sdk'
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Initialize XUMM with your API credentials
-const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+// Initialize XUMM with your API credentials (using the default import)
+const xumm = new Xumm({
+  apiKey: process.env.XUMM_API_KEY,
+  apiSecret: process.env.XUMM_API_SECRET,
+});
 
 // Constants
 const SERVICE_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Replace with your real wallet
@@ -48,14 +49,13 @@ export const confirmPayment = async (payloadUuid) => {
     if (!txDetails.meta.resolved_at) {
       return { success: false, reason: 'Transaction expired or not completed in time.' };
     }
-
+    
     if (!txDetails || !txDetails.response || !txDetails.response.dispatched) {
       return { success: false, reason: 'Transaction not signed or not submitted.' };
     }
 
     const tx = txDetails.response.txn;
 
-    // Strictly enforce SeagullCoin for the payment
     const isValid =
       tx.TransactionType === 'Payment' &&
       tx.Destination === SERVICE_WALLET &&
@@ -65,7 +65,7 @@ export const confirmPayment = async (payloadUuid) => {
 
     return isValid
       ? { success: true }
-      : { success: false, reason: 'Invalid payment details or wrong coin used.' };
+      : { success: false, reason: 'Invalid payment details.' };
   } catch (error) {
     console.error('Error confirming payment:', error);
     return { success: false, reason: 'Error confirming payment.' };

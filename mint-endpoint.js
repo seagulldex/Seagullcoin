@@ -11,9 +11,6 @@ import sanitizeHtml from 'sanitize-html';
 import { requireLogin } from './xummLogin.js';
 
 
-nftData.name = sanitizeHtml(nftData.name, { allowedTags: [], allowedAttributes: {} });
-nftData.description = sanitizeHtml(nftData.description, { allowedTags: [], allowedAttributes: {} });
-
 // Create a client and connect
 const client = new xrpl.Client("wss://xrplcluster.com"); // or your preferred endpoint
 
@@ -47,6 +44,10 @@ router.post('/mint', async (req, res) => {
   if (!nftData || !nftData.name || !nftData.description || !nftData.filename || !nftData.fileBase64) {
     return res.status(400).json({ success: false, message: 'Missing required NFT data' });
   }
+  // Move sanitization here
+  nftData.name = sanitizeHtml(nftData.name, { allowedTags: [], allowedAttributes: {} });
+  nftData.description = sanitizeHtml(nftData.description, { allowedTags: [], allowedAttributes: {} });
+  
   
   if (nftData.collectionId && typeof nftData.collectionId !== 'string') {
   return res.status(400).json({ success: false, message: 'Invalid collection ID' });
@@ -144,6 +145,7 @@ try {
   console.error('Failed to insert NFT into DB:', err.message);
 }
 
+    await trackUserMinting(walletAddress);
 
     // Step 3: Send the response back to the frontend with mint details
     req.session.mintAllowed = false;

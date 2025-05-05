@@ -738,10 +738,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.get("/login/status", async (req, res) => {
-  const uuid = req.query.uuid;
-  if (!uuid) return res.status(400).json({ error: "Mis
-
 async function getUserAddress() {
     try {
         const result = await xumm.ping();  // Example of checking connection to XUMM
@@ -754,6 +750,49 @@ async function getUserAddress() {
         console.error('Error getting user address:', err);
     }
 }
+
+app.get("/login/status", async (req, res) => {
+  const uuid = req.query.uuid;
+  if (!uuid) return res.status(400).json({ error: "Missing uuid" });
+
+  try {
+    const result = await xumm.payload.get(uuid);
+
+    if (result.meta.signed === true) {
+      const wallet = result.response.account;
+      return res.json({ signed: true, wallet });
+    } else if (result.meta.signed === false) {
+      return res.json({ signed: false, rejected: true });
+    } else {
+      return res.json({ signed: false, pending: true });
+    }
+  } catch (err) {
+    res.status(500).json({ error: "Failed to check login status", details: err.message });
+  }
+});
+
+// Create a login payload (step before user signs in with XUMM)
+app.get('/create-login-payload', async (req, res) => {
+  try {
+    const payload = {
+      txjson: {
+        TransactionType: "SignIn"
+      }
+    };
+
+    const created = await xumm.payload.create(payload);
+
+    res.json({
+      payloadUUID: created.uuid,
+      payloadURL: created.next.always
+    });
+  } catch (err) {
+    console.error('Error creating login payload:', err);
+    res.status(500).json({ error: 'Failed to create login payload' });
+  }
+});
+
+
 
 app.get('/api/check-login', async (req, res) => {
   const payloadUUID = req.session.xummPayload;

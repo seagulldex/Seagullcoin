@@ -110,6 +110,30 @@ db.serialize(() => {
   `);
 });
 
+// Initialize SQLite database
+const dbPromise = open({
+  filename: './payments.db', // Database file name
+  driver: sqlite3.Database
+});
+
+// Create a table for payments if it doesn't exist
+async function createPaymentTable() {
+  const db = await dbPromise;
+  await db.run(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      payloadUUID TEXT UNIQUE,
+      senderAddress TEXT,
+      amount REAL,
+      currency TEXT,
+      status TEXT,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
+
+createPaymentTable().catch(console.error);
+
 // Create the Messages table if it doesn't exist
 db.serialize(() => {
   db.run(`

@@ -54,4 +54,5 @@ const createTables = () => {
   console.log("Database tables initialized.");
 };
 
+
 module.exports = { createTables };

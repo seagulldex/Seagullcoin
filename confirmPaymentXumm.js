@@ -10,7 +10,7 @@ const expectedSigner = 'user-wallet-address'; // The wallet address of the user 
 const SERVICE_WALLET = process.env.SERVICE_WALLET;  // Minting wallet (Service Wallet)
 const SGLCN_ISSUER = process.env.SGLCN_ISSUER;     // SeagullCoin issuer address
 const SGLCN_CODE = '53656167756C6C436F696E000000000000000000'; // Hex for SeagullCoin
-const usedPayloads = new Set(); // In-memory cache to prevent reuse
+
 
 /**
  * Validate the SeagullCoin payment details

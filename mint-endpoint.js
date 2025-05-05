@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { confirmPayment } from './confirmPaymentXumm.js'; // Correct path
 import { mintNFT } from './nftminting.js'; // Import mintNFT from your nftminting.js file
 import rippleAddressCodec from 'ripple-address-codec';
-import db from './dbsetup.js';
+import { db } from './dbsetup.js';
 const { isValidAddress } = rippleAddressCodec;
 import { insertMintedNFT } from './dbsetup.js'; // adjust path if needed
 import logger from './logger.js';

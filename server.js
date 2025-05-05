@@ -461,22 +461,27 @@ router.post('/mint', async (req, res) => {
       message: 'Required NFT data is missing. Please provide valid name, description, filename, and file.',
     });
   }
+  
+  nftData.name = sanitizeHtml(nftData.name, { allowedTags: [], allowedAttributes: {} });
+  nftData.description = sanitizeHtml(nftData.description, { allowedTags: [], allowedAttributes: {} });
 
   // Payment Confirmation Step
-  try {
-    const paymentConfirmation = await confirmPayment(txId);
-    if (!paymentConfirmation.success) {
-      return res.status(400).json({
+  // Step 1: Confirm the payment with the given txId
+    try {
+      const paymentConfirmation = await confirmPayment(txId); // Await the confirmPayment function
+      if (!paymentConfirmation.success) {
+        return res.status(400).json({
+          success: false,
+          message: paymentConfirmation.reason,
+        });
+      }
+    } catch (error) {
+      console.error('Error confirming payment:', error.message);
+      return res.status(500).json({
         success: false,
-        message: paymentConfirmation.reason,  // User-friendly reason from confirmPayment
+        message: 'Error confirming the payment.',
       });
     }
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Error confirming payment. Please check your transaction and try again.',
-    });
-  }
 
   // NFT data validation
   try {

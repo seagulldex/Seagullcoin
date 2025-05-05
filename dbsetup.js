@@ -1,4 +1,6 @@
-const sqlite3 = require('sqlite3').verbose();
+import sqlite3 from 'sqlite3';
+
+// Open database connection
 const db = new sqlite3.Database('./database.db');
 
 // SQL to create tables if they don't exist
@@ -43,16 +45,42 @@ const createMintingTransactionsTable = `
   );
 `;
 
-// Function to initialize the database schema
-const createTables = () => {
-  db.serialize(() => {
-    db.run(createNFTsTable);
-    db.run(createLikesTable);
-    db.run(createUsersTable);
-    db.run(createMintingTransactionsTable);
+const createPaymentsTable = `
+  CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    payload_uuid TEXT NOT NULL UNIQUE,
+    wallet_address TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    token_code TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+`;
+
+// Function to wrap db.run in a Promise for async/await usage
+const runQuery = (query, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.run(query, params, function(err) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(this);
+      }
+    });
   });
-  console.log("Database tables initialized.");
 };
 
+// Function to initialize the database schema
+const createTables = async () => {
+  try {
+    await runQuery(createNFTsTable);
+    await runQuery(createLikesTable);
+    await runQuery(createUsersTable);
+    await runQuery(createMintingTransactionsTable);
+    await runQuery(createPaymentsTable); // <-- added
+    console.log("Database tables initialized.");
+  } catch (error) {
+    console.error("Error initializing database tables:", error);
+  }
+};
 
-module.exports = { createTables };
+export { createTables };

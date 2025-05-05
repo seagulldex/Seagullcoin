@@ -285,6 +285,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
+const mintLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 3, // limit each IP to 3 mints per 10 minutes
+  message: {
+    success: false,
+    message: 'Too many mint attempts from this IP, please try again later.'
+  }
+});
 
 // ===== Swagger Docs =====
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));

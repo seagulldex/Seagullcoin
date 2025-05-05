@@ -6,7 +6,7 @@ import rippleAddressCodec from 'ripple-address-codec';
 import db from './dbsetup.js';
 const { isValidAddress } = rippleAddressCodec;
 import { insertMintedNFT } from './dbsetup.js'; // adjust path if needed
-
+import logger from './logger.js';
 
 
 // Create a client and connect

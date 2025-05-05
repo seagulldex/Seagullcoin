@@ -279,7 +279,7 @@ app.use(session({
     secret: 'your-secret-key',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false } // 'true' if using HTTPS
+    cookie: { maxAge: 5 * 60 * 1000 } // 5 minutes
 }));
 
 // Now, apply other middleware

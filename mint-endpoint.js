@@ -42,6 +42,10 @@ router.post('/mint', async (req, res) => {
   if (!nftData || !nftData.name || !nftData.description || !nftData.filename || !nftData.fileBase64) {
     return res.status(400).json({ success: false, message: 'Missing required NFT data' });
   }
+  
+  if (nftData.collectionId && typeof nftData.collectionId !== 'string') {
+  return res.status(400).json({ success: false, message: 'Invalid collection ID' });
+}
 
   try {
     // Step 1: Confirm the payment with the given txId

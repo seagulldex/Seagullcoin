@@ -163,6 +163,22 @@
     </style>
 </head>
 <body>
+  
+  <script>
+    document.getElementById('connect-wallet-btn').addEventListener('click', async () => {
+        const res = await fetch('/api/xumm-login');
+        const data = await res.json();
+
+        if (data && data.qr_url) {
+            window.open(data.qr_url, '_blank');
+        } else {
+            alert('Failed to initiate login.');
+        }
+    });
+
+    checkLogin(); // Call checkLogin on page load
+</script>
+
 
     <!-- SeagullCoin Logo Container (Above Navigation) -->
     <div class="seagull-logo-container">

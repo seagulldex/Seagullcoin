@@ -55,7 +55,7 @@ export async function verifyLogin(payloadUUID) {
     // Retrieve the payload to check if the user signed it
     const response = await xummApi.payload.get(payloadUUID);
 
-    if (response.data.expired) {
+    if (response.data.meta.expires_in_seconds <= 0) {
       console.log('XUMM payload has expired.');
       return null;
     }

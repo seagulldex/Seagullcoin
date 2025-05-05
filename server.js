@@ -462,9 +462,18 @@ router.post('/mint', async (req, res) => {
     });
   }
   
-  nftData.name = sanitizeHtml(nftData.name, { allowedTags: [], allowedAttributes: {} }).trim();
-  nftData.description = sanitizeHtml(nftData.description, { allowedTags: [], allowedAttributes: {} }).trim();
+  const cleanText = (text) => {
+  const sanitized = sanitizeHtml(text, {
+    allowedTags: [],
+    allowedAttributes: {},
+  }).trim();
 
+  // Optional: Keep common emoji characters (non-stripping by default)
+  return sanitized.replace(/[\u0000-\u001F\u007F]+/g, ''); // removes control chars
+};
+  
+  nftData.name = cleanText(nftData.name);
+  nftData.description = cleanText(nftData.description);
 
   // Payment Confirmation Step
   // Step 1: Confirm the payment with the given txId
@@ -504,7 +513,8 @@ router.post('/mint', async (req, res) => {
 
   // Process NFT minting
   try {
-    const mintResult = await mintNFT(walletAddress, nftData); 
+    const mintResult = await mintNFT(walletAddress, nftData);
+    console.log('Mint result:', mintResult);
     if (!mintResult.uri.startsWith('ipfs://')) {
       return res.status(500).json({
         success: false,

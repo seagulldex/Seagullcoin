@@ -118,9 +118,12 @@ const trackUserMinting = (walletAddress) => {
   });
 };
 
-
     // Step 2: Proceed to mint the NFT
     const mintResult = await mintNFT(walletAddress, nftData); // Call mintNFT, it should handle minting and return the mint result
+
+    if (!mintResult.uri.startsWith('ipfs://')) {
+  return res.status(500).json({ success: false, message: 'Invalid IPFS URI returned from minting.' });
+}
 
 console.log('NFT Minted:', {
   wallet: walletAddress,

@@ -3,7 +3,17 @@ import sqlite3 from 'sqlite3';
 // Initialize the database
 const db = new sqlite3.Database('./database.db');
 
-// SQL to create tables if they don't exist
+// SQL to create tables and indexes
+const createUsersTable = `
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet_address TEXT NOT NULL UNIQUE,
+    total_mints INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_wallet_address_users ON users(wallet_address);
+`;
+
 const createNFTsTable = `
   CREATE TABLE IF NOT EXISTS nfts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -14,25 +24,7 @@ const createNFTsTable = `
     collection_id TEXT,
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
-`;
-
-const createLikesTable = `
-  CREATE TABLE IF NOT EXISTS likes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_wallet TEXT NOT NULL,
-    nft_id INTEGER NOT NULL,
-    liked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (nft_id) REFERENCES nfts(id)
-  );
-`;
-
-const createUsersTable = `
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    wallet_address TEXT NOT NULL UNIQUE,
-    total_mints INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
+  CREATE INDEX IF NOT EXISTS idx_token_id_nfts ON nfts(token_id);
 `;
 
 const createMintingTransactionsTable = `
@@ -44,6 +36,7 @@ const createMintingTransactionsTable = `
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (nft_id) REFERENCES nfts(id)
   );
+  CREATE INDEX IF NOT EXISTS idx_wallet_address_minting_transactions ON minting_transactions(wallet_address);
 `;
 
 const createPaymentsTable = `
@@ -56,6 +49,18 @@ const createPaymentsTable = `
     status TEXT DEFAULT 'confirmed',
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE INDEX IF NOT EXISTS idx_wallet_address_payments ON payments(wallet_address);
+`;
+
+const createLikesTable = `
+  CREATE TABLE IF NOT EXISTS likes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_wallet TEXT NOT NULL,
+    nft_id INTEGER NOT NULL,
+    liked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (nft_id) REFERENCES nfts(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_user_wallet_likes ON likes(user_wallet);
 `;
 
 const createMintedNFTsTable = `
@@ -70,9 +75,10 @@ const createMintedNFTsTable = `
     collection_id TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE INDEX IF NOT EXISTS idx_token_id_minted_nfts ON minted_nfts(token_id);
 `;
 
-// Create a helper function to run a query and return a promise
+// Helper function to run a query and return a promise
 const runQuery = (query) => {
   return new Promise((resolve, reject) => {
     db.run(query, (err) => {
@@ -88,19 +94,20 @@ const runQuery = (query) => {
 // Function to initialize the database schema
 const createTables = async () => {
   try {
-    // Create tables sequentially
-    await runQuery(createNFTsTable);
-    await runQuery(createLikesTable);
+    // Create tables and indexes sequentially
     await runQuery(createUsersTable);
+    await runQuery(createNFTsTable);
     await runQuery(createMintingTransactionsTable);
     await runQuery(createPaymentsTable);
+    await runQuery(createLikesTable);
     await runQuery(createMintedNFTsTable);
-    console.log("Database tables initialized.");
+    console.log("Database tables and indexes initialized.");
   } catch (err) {
     console.error("Error initializing tables:", err);
   }
 };
 
+// Function to insert a minted NFT into the database
 const insertMintedNFT = (nft) => {
   const { wallet, token_id, uri, name, description, properties, collection_id } = nft;
 

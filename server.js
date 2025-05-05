@@ -463,6 +463,14 @@ router.post('/mint', async (req, res) => {
   }
 });
 
+router.get('/mint-history/:wallet', async (req, res) => {
+  const { wallet } = req.params;
+  db.all(`SELECT * FROM minted_nfts WHERE wallet = ? ORDER BY id DESC`, [wallet], (err, rows) => {
+    if (err) return res.status(500).json({ success: false, message: 'DB error' });
+    res.json({ success: true, nfts: rows });
+  });
+});
+
 
 app.post('/send-message',
   body('recipient').isString().isLength({ min: 25 }).withMessage('Invalid recipient address'),

@@ -1669,7 +1669,7 @@ app.get('/authenticate', async (req, res) => {
   try {
     const payload = {
       "TransactionType": "SignIn",
-      "Destination": "your-website-url-or-hash",
+      "Destination": "https://sglcn-x20-api.glitch.me",
       "Account": req.session.walletAddress // Optional: can pass existing wallet if user is logged in
     };
 

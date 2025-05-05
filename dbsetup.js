@@ -52,6 +52,7 @@ const createPaymentsTable = `
     wallet_address TEXT NOT NULL,
     amount TEXT NOT NULL,
     token_code TEXT NOT NULL,
+    status TEXT DEFAULT 'confirmed',
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 `;
@@ -68,10 +69,6 @@ const runQuery = (query) => {
     });
   });
 };
-
-const alterPaymentsTable = `
-  ALTER TABLE payments ADD COLUMN status TEXT DEFAULT 'confirmed';
-`;
 
 // Function to initialize the database schema (now asynchronous)
 const createTables = async () => {

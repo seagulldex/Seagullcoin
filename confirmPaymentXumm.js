@@ -13,6 +13,7 @@ const SGLCN_ISSUER = process.env.SGLCN_ISSUER;     // SeagullCoin issuer address
 const SGLCN_CODE = '53656167756C6C436F696E000000000000000000'; // Hex for SeagullCoin
 
 
+
 /**
  * Validate the SeagullCoin payment details
  * @param {object} tx - The transaction object

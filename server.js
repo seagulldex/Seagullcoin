@@ -738,6 +738,10 @@ app.post('/login', async (req, res) => {
   }
 });
 
+app.get("/login/status", async (req, res) => {
+  const uuid = req.query.uuid;
+  if (!uuid) return res.status(400).json({ error: "Mis
+
 async function getUserAddress() {
     try {
         const result = await xumm.ping();  // Example of checking connection to XUMM

@@ -40,6 +40,10 @@ import { requireLogin } from './xummLogin.js';  // Adjust the path if needed
 import { createTables } from './dbsetup.js';
 import { insertMintedNFT } from './dbsetup.js';
 import sanitizeHtml from 'sanitize-html';
+import rippleAddressCodec from 'ripple-address-codec';
+const { isValidAddress } = rippleAddressCodec;
+
+
 
 // Initialize the database tables
 createTables();
@@ -437,40 +441,107 @@ app.post('/payload', async (req, res) => {
   res.status(200).send('Payload marked as used.');
 });
 
+function isValidXRPAddress(address) {
+  return isValidAddress(address);
+}
 router.post('/mint', async (req, res) => {
-  try {
-    const sessionPayment = req.session?.payment;
+  const { walletAddress, nftData, txId } = req.body;
 
-    if (!sessionPayment?.paid) {
-      return res.status(403).json({ error: 'Payment not confirmed' });
-    }
+  // Early validation for wallet and NFT data
+  if (!walletAddress || !isValidXRPAddress(walletAddress)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid wallet address. Please check and try again.',
+    });
+  }
 
-    const wallet = sessionPayment.wallet;
+  if (!nftData || !nftData.name || !nftData.description || !nftData.filename || !nftData.fileBase64) {
+    return res.status(400).json({
+      success: false,
+      message: 'Required NFT data is missing. Please provide valid name, description, filename, and file.',
+    });
+  }
 
-    // Continue with mint logic here, e.g.:
-    const txJson = {
-      TransactionType: 'NFTokenMint',
-      Account: wallet,
-      URI: req.body.encodedURI,
-      Flags: 8,
-      NFTokenTaxon: 0,
-      TransferFee: 0
-    };
+  // Payment Confirmation Step
+  try {
+    const paymentConfirmation = await confirmPayment(txId);
+    if (!paymentConfirmation.success) {
+      return res.status(400).json({
+        success: false,
+        message: paymentConfirmation.reason,  // User-friendly reason from confirmPayment
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error confirming payment. Please check your transaction and try again.',
+    });
+  }
 
-    const payload = {
-      txjson: txJson,
-      options: { submit: true }
-    };
+  // NFT data validation
+  try {
+    Buffer.from(nftData.fileBase64, 'base64');
+  } catch (e) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid file data. Please make sure your file is properly encoded in base64.',
+    });
+  }
 
-    const mintPayload = await xummSDK.payload.create(payload);
+  const base64Size = Buffer.from(nftData.fileBase64, 'base64').length;
+  if (base64Size > 5 * 1024 * 1024) { // 5MB limit
+    return res.status(400).json({
+      success: false,
+      message: 'File size exceeds the 5MB limit. Please reduce the size and try again.',
+    });
+  }
 
-    res.json({ success: true, uuid: mintPayload.uuid, next: mintPayload.next.always });
+  // Process NFT minting
+  try {
+    const mintResult = await mintNFT(walletAddress, nftData); 
+    if (!mintResult.uri.startsWith('ipfs://')) {
+      return res.status(500).json({
+        success: false,
+        message: 'Minting failed. Invalid IPFS URI returned.',
+      });
+    }
 
-  } catch (err) {
-    console.error('Mint error:', err);
-    res.status(500).json({ error: 'Minting failed' });
-  }
+    // Insert minted NFT into DB
+    try {
+      await insertMintedNFT({
+        wallet: walletAddress,
+        token_id: mintResult.tokenId,
+        uri: mintResult.uri,
+        name: nftData.name,
+        description: nftData.description,
+        properties: JSON.stringify(nftData.properties || {}),
+        collection_id: nftData.collectionId || null,
+      });
+      console.log('NFT successfully stored in DB.');
+    } catch (err) {
+      console.error('Error saving NFT to DB:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Error saving NFT data to the database.',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      nftStorageUrl: mintResult.uri,
+      mintPayloadUrl: mintResult.uri,
+      mintPayloadId: mintResult.uriHex,
+    });
+
+  } catch (error) {
+    console.error('Minting process failed:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error during the minting process. Please try again later.',
+    });
+  }
 });
+
 
 
 router.get('/mint-history/:wallet', async (req, res) => {

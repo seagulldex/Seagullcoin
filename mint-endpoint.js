@@ -7,8 +7,10 @@ import db from './dbsetup.js';
 const { isValidAddress } = rippleAddressCodec;
 import { insertMintedNFT } from './dbsetup.js'; // adjust path if needed
 import logger from './logger.js';
+import sanitizeHtml from 'sanitize-html';
 
-
+nftData.name = sanitizeHtml(nftData.name, { allowedTags: [], allowedAttributes: {} });
+nftData.description = sanitizeHtml(nftData.description, { allowedTags: [], allowedAttributes: {} });
 
 // Create a client and connect
 const client = new xrpl.Client("wss://xrplcluster.com"); // or your preferred endpoint

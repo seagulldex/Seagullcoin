@@ -52,15 +52,18 @@ router.post('/mint', async (req, res) => {
         message: paymentConfirmation.reason,
       });
     }
-// Basic input size checks
-if (nftData.name.length > 100 || nftData.description.length > 1000) {
-  return res.status(400).json({ success: false, message: 'Name or description too long.' });
-}
+
 
 // Basic input size checks
 if (nftData.name.length > 100 || nftData.description.length > 1000) {
   return res.status(400).json({ success: false, message: 'Name or description too long.' });
 }
+    try {
+  Buffer.from(nftData.fileBase64, 'base64');
+} catch (e) {
+  return res.status(400).json({ success: false, message: 'Invalid base64 file data.' });
+}
+
 
 const base64Size = Buffer.from(nftData.fileBase64, 'base64').length;
 if (base64Size > 5 * 1024 * 1024) { // 5MB limit
@@ -181,6 +184,11 @@ try {
  *         description: Invalid payment or input
  *       500:
  *         description: Server error during minting
+ *     components:
+ *       schemas:
+ *         collectionId:
+ *           type: string
+ *           description: Optional collection ID to group NFTs
  */
 
 export default router;

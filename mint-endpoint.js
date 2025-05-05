@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { confirmPayment } from './confirmPaymentXumm.js'; // Correct path
 import { mintNFT } from './nftminting.js'; // Import mintNFT from your nftminting.js file
 import rippleAddressCodec from 'ripple-address-codec';
+import db from './dbsetup.js';
 const { isValidAddress } = rippleAddressCodec;
 
 // Create a client and connect
@@ -48,9 +49,27 @@ router.post('/mint', async (req, res) => {
         message: paymentConfirmation.reason,
       });
     }
+// Basic input size checks
+if (nftData.name.length > 100 || nftData.description.length > 1000) {
+  return res.status(400).json({ success: false, message: 'Name or description too long.' });
+}
+
+const base64Size = Buffer.from(nftData.fileBase64, 'base64').length;
+if (base64Size > 5 * 1024 * 1024) { // 5MB limit
+  return res.status(400).json({ success: false, message: 'File exceeds 5MB limit.' });
+}
+
 
     // Step 2: Proceed to mint the NFT
     const mintResult = await mintNFT(walletAddress, nftData); // Call mintNFT, it should handle minting and return the mint result
+
+console.log('NFT Minted:', {
+  wallet: walletAddress,
+  tokenId: mintResult.tokenId,
+  uri: mintResult.uri,
+  uriHex: mintResult.uriHex
+});
+
 
     // Step 3: Send the response back to the frontend with mint details
     return res.status(200).json({

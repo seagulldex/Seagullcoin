@@ -57,6 +57,18 @@ const createPaymentsTable = `
   );
 `;
 
+db.serialize(() => {
+  db.run(`CREATE TABLE IF NOT EXISTS minted_nfts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet TEXT,
+    token_id TEXT,
+    uri TEXT,
+    name TEXT,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+});
+
 // Helper function to run a query and return a promise
 const runQuery = (query) => {
   return new Promise((resolve, reject) => {
@@ -87,3 +99,4 @@ const createTables = async () => {
 
 // Exporting the `db` instance and `createTables` function
 export { db, createTables };
+export default db;

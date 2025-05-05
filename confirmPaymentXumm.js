@@ -1,7 +1,7 @@
 import { xummApi } from './xrplClient.js'; // Assuming xummApi is already configured
 import dotenv from 'dotenv';
 dotenv.config();
-import { db } from './db.js'; // Assumes you created and exported db from db.js or server.js
+import { db } from './dbsetup.js'; // Assumes you created and exported db from db.js or server.js
 
 
 const payloadUUID = 'your-payload-uuid'; // The UUID from the XUMM payload

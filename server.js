@@ -51,7 +51,7 @@ import { MongoClient, ServerApiVersion } from 'mongodb';
 // ===== Init App and Env =====
 dotenv.config();
 
-const xummsdk = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+const xummSDK = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const SEAGULL_COIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"; // Issuer address
 const SEAGULL_COIN_CODE = "SeagullCoin"; // Currency code
 const MINT_COST = 0.5; // Cost for minting in SeagullCoin
@@ -60,7 +60,6 @@ const XUMM_API_KEY = process.env.XUMM_API_KEY;
 const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const NFT_STORAGE_API_KEY = process.env.NFT_STORAGE_API_KEY;
-
 
 
 const app = express();
@@ -530,7 +529,7 @@ app.get('/health', async (req, res) => {
 app.get('/auth', async (req, res) => {
     try {
         // Generate an authentication payload
-        const payload = await sdk.payload.create({
+        const payload = await xummSDK.payload.create({
             txjson: {
                 "TransactionType": "AccountSet",
                 "Account": "user-wallet-address"  // This should be replaced with actual user data if needed

@@ -1,110 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGLCN-X20 Minting Platform</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Correct CDN for XUMM SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/xumm-sdk@1.1.0/dist/xumm-sdk.bundle.min.js"></script>
-    <style>
-        body {
-            background-color: black;
-            color: white;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SGLCN-X20 Minting Platform</title>
+  <link rel="stylesheet" href="style.css">
 
-        /* Your existing styles remain the same here */
-        /* SeagullCoin Logo, Navigation, Hero, etc. */
-    </style>
+  <!-- Correct XUMM SDK CDN -->
+  <script src="https://xumm.app/assets/cdn/xumm.min.js"></script>
 </head>
 <body>
 
-  <!-- SeagullCoin Logo and Navigation Sections are here -->
+  <main>
+    <section class="hero">
+      <h1>Welcome to SeagullCoin NFT Marketplace</h1>
+      <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
+      <button id="connect-wallet-btn">Connect Wallet via XUMM</button>
+      <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
+    </section>
+  </main>
 
-    <main>
-        <section class="hero">
-            <h1>Welcome to SeagullCoin NFT Marketplace</h1>
-            <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
-            <button id="connect-wallet-btn">Connect Wallet via XUMM</button>
-            <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
-        </section>
+  <script>
+    window.onload = function () {
+      if (typeof Xumm !== 'function') {
+        alert("Failed to load XUMM SDK. Please check your connection or CDN path.");
+        return;
+      }
 
-        <!-- User Info Section -->
-        <div id="user-info">
-            <p id="user-balance">Loading balance...</p>
-            <div id="user-nfts">Loading NFTs...</div>
-        </div>
+      const xumm = new Xumm('ee60e1a3-8c08-4cdd-bfa9-accada591684'); // REPLACE with your actual XUMM API Key
 
-    </main>
+      document.getElementById("connect-wallet-btn").addEventListener("click", async () => {
+        try {
+          const session = await xumm.authorize();
+          console.log("Authorized XUMM session:", session);
 
-    <footer>
-        <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
-    </footer>
-
-    <!-- Include the necessary scripts -->
-    <script>
-        // Ensure the XUMM SDK is loaded and available before calling it
-        window.onload = function() {
-            if (typeof XUMM === 'undefined') {
-                console.error('XUMM SDK is not loaded.');
-                return;
-            }
-
-            // Add the event listener for the connect wallet button
-            document.getElementById('connect-wallet-btn').addEventListener('click', async () => {
-                try {
-                    console.log("Button clicked, attempting to connect to XUMM...");
-
-                    // Initialize the XUMM SDK
-                    const xumm = new XUMM();
-
-                    // Attempt to initiate the wallet connection
-                    const response = await xumm.authorize();
-
-                    if (response) {
-                        console.log("XUMM Wallet connected:", response);
-                        checkLogin(); // Call the function to check login status after connecting
-                    }
-                } catch (error) {
-                    console.error("Error connecting wallet:", error);
-                    alert('Error connecting wallet: ' + error.message);
-                }
-            });
-
-            // Check login status when page loads
-            async function checkLogin() {
-                const res = await fetch('/api/check-login');
-                const data = await res.json();
-
-                if (data.loggedIn) {
-                    const wallet = data.account;
-                    localStorage.setItem('xummWallet', wallet);
-                    document.getElementById('connect-wallet-btn').style.display = 'none';
-                    document.getElementById('wallet-info').style.display = 'block';
-                    document.getElementById('wallet-address').innerText = wallet;
-                    unlockMinting();
-                } else {
-                    document.getElementById('connect-wallet-btn').style.display = 'inline-block';
-                    document.getElementById('wallet-info').style.display = 'none';
-                    lockMinting();
-                }
-            }
-
-            // Unlock minting (UI behavior)
-            function unlockMinting() {
-                // Enable mint button or actions
-            }
-
-            // Lock minting (UI behavior)
-            function lockMinting() {
-                // Disable mint button or actions
-            }
-
-            checkLogin(); // Check login status on page load
-        };
-    </script>
+          const account = session.me.account;
+          localStorage.setItem('xummWallet', account);
+          document.getElementById('wallet-address').innerText = account;
+          document.getElementById('wallet-info').style.display = 'block';
+          document.getElementById('connect-wallet-btn').style.display = 'none';
+        } catch (e) {
+          console.error("XUMM connect error:", e);
+          alert("Failed to connect wallet: " + e.message);
+        }
+      });
+    };
+  </script>
 </body>
 </html>

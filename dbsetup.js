@@ -101,6 +101,29 @@ const createTables = async () => {
   }
 };
 
+const insertMintedNFT = (nft) => {
+  const { wallet, token_id, uri, name, description, properties, collection_id } = nft;
+
+  return new Promise((resolve, reject) => {
+    const query = `
+      INSERT INTO minted_nfts (wallet, token_id, uri, name, description, properties, collection_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    db.run(
+      query,
+      [wallet, token_id, uri, name, description, properties || null, collection_id || null],
+      function (err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this.lastID); // return inserted row ID
+        }
+      }
+    );
+  });
+};
+
+
 // Exporting the `db` instance and `createTables` function
-export { db, createTables };
+export { db, createTables, insertMintedNFT };
 export default db;

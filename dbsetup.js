@@ -1,4 +1,3 @@
-// dbsetup.js
 import sqlite3 from 'sqlite3';
 
 // Initialize the database
@@ -57,16 +56,32 @@ const createPaymentsTable = `
   );
 `;
 
-// Function to initialize the database schema
-const createTables = () => {
-  db.serialize(() => {
-    db.run(createNFTsTable);
-    db.run(createLikesTable);
-    db.run(createUsersTable);
-    db.run(createMintingTransactionsTable);
-    db.run(createPaymentsTable); // added the payments table
+// Helper function to run a query and return a promise
+const runQuery = (query) => {
+  return new Promise((resolve, reject) => {
+    db.run(query, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
   });
-  console.log("Database tables initialized.");
+};
+
+// Function to initialize the database schema (now asynchronous)
+const createTables = async () => {
+  try {
+    // Create tables sequentially
+    await runQuery(createNFTsTable);
+    await runQuery(createLikesTable);
+    await runQuery(createUsersTable);
+    await runQuery(createMintingTransactionsTable);
+    await runQuery(createPaymentsTable);
+    console.log("Database tables initialized.");
+  } catch (err) {
+    console.error("Error initializing tables:", err);
+  }
 };
 
 // Exporting the `db` instance and `createTables` function

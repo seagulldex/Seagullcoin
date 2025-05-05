@@ -79,6 +79,34 @@ if (!isValidExtension) {
   return res.status(400).json({ success: false, message: 'Invalid file type.' });
 }
 
+const trackUserMinting = (walletAddress) => {
+  return new Promise((resolve, reject) => {
+    const checkQuery = `SELECT * FROM users WHERE wallet_address = ?`;
+    db.get(checkQuery, [walletAddress], (err, user) => {
+      if (err) {
+        return reject(err);
+      }
+      
+      if (!user) {
+        const insertQuery = `INSERT INTO users (wallet_address) VALUES (?)`;
+        db.run(insertQuery, [walletAddress], function (err) {
+          if (err) {
+            return reject(err);
+          }
+          resolve(this.lastID);  // Return new user ID
+        });
+      } else {
+        const updateQuery = `UPDATE users SET total_mints = total_mints + 1 WHERE wallet_address = ?`;
+        db.run(updateQuery, [walletAddress], function (err) {
+          if (err) {
+            return reject(err);
+          }
+          resolve(user.id);  // Return existing user ID
+        });
+      }
+    });
+  });
+};
 
 
     // Step 2: Proceed to mint the NFT
@@ -190,5 +218,4 @@ try {
  *           type: string
  *           description: Optional collection ID to group NFTs
  */
-
 export default router;

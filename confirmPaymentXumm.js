@@ -38,6 +38,34 @@ async function validateSeagullCoinPayment(tx) {
   return { success: true };
 }
 
+const verifyPayment = (walletAddress, tokenCode, expectedAmount = '0.5') => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT * FROM payments
+      WHERE wallet_address = ? AND token_code = ? AND status = 'confirmed'
+      ORDER BY timestamp DESC LIMIT 1
+    `;
+    
+    db.get(query, [walletAddress, tokenCode], (err, payment) => {
+      if (err) {
+        return reject(err);
+      }
+      
+      if (!payment) {
+        return reject(new Error('Payment not found or not confirmed.'));
+      }
+      
+      if (payment.amount !== expectedAmount) {
+        return reject(new Error(`Incorrect payment amount. Expected: ${expectedAmount}, Found: ${payment.amount}`));
+      }
+      
+      resolve(payment);  // Payment is valid
+    });
+  });
+};
+
+export { verifyPayment };
+
 /**
  * Confirm the XUMM payment was signed and meets all SeagullCoin minting criteria.
  * @param {string} payloadUUID - The XUMM payload UUID from the client.

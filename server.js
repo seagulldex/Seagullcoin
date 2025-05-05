@@ -39,7 +39,7 @@ import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the pa
 import { requireLogin } from './xummLogin.js';  // Adjust the path if needed
 import { createTables } from './dbsetup.js';
 import { insertMintedNFT } from './dbsetup.js';
-
+import sanitizeHtml from 'sanitize-html';
 
 // Initialize the database tables
 createTables();
@@ -66,7 +66,7 @@ const XUMM_API_KEY = process.env.XUMM_API_KEY;
 const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const NFT_STORAGE_API_KEY = process.env.NFT_STORAGE_API_KEY;
-
+const nftData = requireLogin.body;
 
 
 
@@ -472,8 +472,24 @@ router.post('/mint', async (req, res) => {
   }
 });
 
+// Log the mint
+logger.info('NFT Minted', {
+  wallet: walletAddress,
+  tokenId: mintResult.tokenId,
+  uri: mintResult.uri,
+  time: new Date().toISOString()
+});
+
+// Save to DB and send response
+await saveMintRecord(walletAddress, mintResult.tokenId, metadataURL, nftData.collectionId);
+res.json({ success: true, tokenId: mintResult.tokenId });
+
 router.get('/mint-history/:wallet', async (req, res) => {
   res.set('Cache-Control', 'no-store');
+  
+  nftData.name = sanitizeHtml(nftData.name, { allowedTags: [], allowedAttributes: {} });
+nftData.description = sanitizeHtml(nftData.description, { allowedTags: [], allowedAttributes: {} });
+
   
   const { wallet } = req.params;
   db.all(`SELECT * FROM minted_nfts WHERE wallet = ? ORDER BY id DESC`, [wallet], (err, rows) => {

@@ -9,6 +9,7 @@ import { insertMintedNFT } from './dbsetup.js'; // adjust path if needed
 import logger from './logger.js';
 
 
+
 // Create a client and connect
 const client = new xrpl.Client("wss://xrplcluster.com"); // or your preferred endpoint
 

@@ -462,8 +462,9 @@ router.post('/mint', async (req, res) => {
     });
   }
   
-  nftData.name = sanitizeHtml(nftData.name, { allowedTags: [], allowedAttributes: {} });
-  nftData.description = sanitizeHtml(nftData.description, { allowedTags: [], allowedAttributes: {} });
+  nftData.name = sanitizeHtml(nftData.name, { allowedTags: [], allowedAttributes: {} }).trim();
+  nftData.description = sanitizeHtml(nftData.description, { allowedTags: [], allowedAttributes: {} }).trim();
+
 
   // Payment Confirmation Step
   // Step 1: Confirm the payment with the given txId
@@ -476,12 +477,12 @@ router.post('/mint', async (req, res) => {
         });
       }
     } catch (error) {
-      console.error('Error confirming payment:', error.message);
-      return res.status(500).json({
-        success: false,
-        message: 'Error confirming the payment.',
-      });
-    }
+  console.error('Error confirming payment:', error.message, 'TxID:', txId); // <-- Add it here
+  return res.status(500).json({
+    success: false,
+    message: 'Error confirming the payment.',
+  });
+}
 
   // NFT data validation
   try {

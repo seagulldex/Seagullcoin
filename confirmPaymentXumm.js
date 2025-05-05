@@ -6,7 +6,7 @@ import { db } from './dbsetup.js'; // Assumes you created and exported db from d
 
 const payloadUUID = 'your-payload-uuid'; // The UUID from the XUMM payload
 const expectedSigner = 'user-wallet-address'; // The wallet address of the user making the payment
-const usedPayloads = new Set();
+
 
 const SERVICE_WALLET = process.env.SERVICE_WALLET;  // Minting wallet (Service Wallet)
 const SGLCN_ISSUER = process.env.SGLCN_ISSUER;     // SeagullCoin issuer address
@@ -44,89 +44,79 @@ async function validateSeagullCoinPayment(tx) {
  * @returns {Promise<{ success: boolean, reason?: string }>}
  */
 export async function confirmPayment(payloadUUID, expectedSigner) {
-  // Check if payloadUUID is provided
   if (!payloadUUID) {
     console.error('Error: payloadUUID is missing');
     return { success: false, reason: 'Payload UUID not provided' };
   }
 
-  // Check if the payload was already used (prevents double usage)
-  if (usedPayloads.has(payloadUUID)) {
-    console.log('Payload already used:', payloadUUID);
+  // Check if the payload already exists in DB
+  const existing = await new Promise((resolve, reject) => {
+    db.get(
+      `SELECT id FROM payments WHERE payload_uuid = ?`,
+      [payloadUUID],
+      (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      }
+    );
+  });
+
+  if (existing) {
+    console.log('Payload already used (DB):', payloadUUID);
     return { success: false, reason: 'Payload already used' };
   }
 
-  console.log('Checking payment for payload:', payloadUUID);
-
   try {
-    // Fetch the payload from XUMM API
     const { data: payload } = await xummApi.payload.get(payloadUUID);
 
-    // Log the payload details
-    console.log('Payload details:', payload);
-
-    // Check if the payload is valid and has not expired
     if (!payload || payload.meta.expires_in_seconds <= 0) {
-      console.log('Payload expired or invalid');
       return { success: false, reason: 'Payload expired or invalid' };
     }
-
-    // Check if the payload is signed
-    if (payload.meta.signed === false) {
-      console.log('Payload not signed');
+    if (!payload.meta.signed) {
       return { success: false, reason: 'Payload not signed' };
     }
 
     const tx = payload.response.txn;
-    // Log the transaction details
-    console.log('Transaction details:', tx);
+    const txHash = payload.response.txid;
+    console.log('Transaction hash:', txHash);
 
-    // Ensure the transaction is a valid 'Payment' type
     if (!tx || tx.TransactionType !== 'Payment') {
-      console.log('Invalid transaction type');
       return { success: false, reason: 'Invalid transaction type' };
     }
-
-    // Ensure the signer is the expected wallet address
     if (tx.Account !== expectedSigner) {
-      console.log('Signer mismatch');
       return { success: false, reason: 'Signer mismatch' };
     }
-
-    // Ensure the payment is directed to the correct service wallet
     if (tx.Destination !== SERVICE_WALLET) {
-      console.log('Wrong destination');
       return { success: false, reason: 'Wrong destination' };
     }
 
-    // Validate SeagullCoin payment
     const validation = await validateSeagullCoinPayment(tx);
-    if (!validation.success) {
-      return validation;  // Return the error if validation fails
-    }
+    if (!validation.success) return validation;
 
-    // All checks passed, mark payload as used to avoid reuse
-    usedPayloads.add(payloadUUID);
+    // Insert into DB
+    await new Promise((resolve, reject) => {
+      db.run(
+        `INSERT INTO payments (payload_uuid, wallet_address, amount, token_code, status) VALUES (?, ?, ?, ?, ?)`,
+        [payloadUUID, tx.Account, tx.Amount.value, tx.Amount.currency, 'confirmed'],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
 
-    console.log('Payment confirmed successfully');
-    return { success: true }; // Payment is valid
+    console.log('Payment confirmed and recorded.');
+    return { success: true };
 
   } catch (error) {
-    // Enhanced error handling for network/API issues
-    if (error.response) {
-      // API responded with an error
-      console.error('XUMM API error:', error.response.data);
-    } else if (error.request) {
-      // Request was made, but no response received
-      console.error('No response from XUMM API:', error.request);
-    } else {
-      // Something happened while setting up the request
-      console.error('Error during request setup:', error.message);
-    }
+    if (error.response) console.error('XUMM API error:', error.response.data);
+    else if (error.request) console.error('No response from XUMM API:', error.request);
+    else console.error('Error during request setup:', error.message);
 
-    return { success: false, reason: 'Error validating payment' }; // Return an error message if any step fails
+    return { success: false, reason: 'Error validating payment' };
   }
 }
+
 
 // Your existing SeagullCoin and minting logic
 

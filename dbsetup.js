@@ -3,7 +3,7 @@ import sqlite3 from 'sqlite3';
 // Initialize the database
 const db = new sqlite3.Database('./database.db');
 
-// SQL to create tables and indexes
+// --- SQL Table Definitions ---
 const createUsersTable = `
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,17 +52,6 @@ const createPaymentsTable = `
   CREATE INDEX IF NOT EXISTS idx_wallet_address_payments ON payments(wallet_address);
 `;
 
-db.run(`
-  CREATE TABLE IF NOT EXISTS nfts (
-    id INTEGER PRIMARY KEY,
-    wallet_address TEXT,
-    nft_token_id TEXT,
-    ipfs_uri TEXT,
-    collection_name TEXT,
-    minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )
-`);
-
 const createLikesTable = `
   CREATE TABLE IF NOT EXISTS likes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,30 +71,24 @@ const createMintedNFTsTable = `
     uri TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
-    properties TEXT,
+    properties TEXT, -- JSON string
     collection_id TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_token_id_minted_nfts ON minted_nfts(token_id);
+  CREATE INDEX IF NOT EXISTS idx_collection_id_minted_nfts ON minted_nfts(collection_id);
 `;
 
-// Helper function to run a query and return a promise
+// --- Helper to run a query ---
 const runQuery = (query) => {
   return new Promise((resolve, reject) => {
-    db.run(query, (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
+    db.run(query, (err) => (err ? reject(err) : resolve()));
   });
 };
 
-// Function to initialize the database schema
+// --- Initialize tables ---
 const createTables = async () => {
   try {
-    // Create tables and indexes sequentially
     await runQuery(createUsersTable);
     await runQuery(createNFTsTable);
     await runQuery(createMintingTransactionsTable);
@@ -118,9 +101,17 @@ const createTables = async () => {
   }
 };
 
-// Function to insert a minted NFT into the database
+// --- Insert minted NFT ---
 const insertMintedNFT = (nft) => {
-  const { wallet, token_id, uri, name, description, properties, collection_id } = nft;
+  const {
+    wallet,
+    token_id,
+    uri,
+    name,
+    description,
+    properties,
+    collection_id
+  } = nft;
 
   return new Promise((resolve, reject) => {
     const query = `
@@ -129,18 +120,25 @@ const insertMintedNFT = (nft) => {
     `;
     db.run(
       query,
-      [wallet, token_id, uri, name, description, properties || null, collection_id || null],
+      [
+        wallet,
+        token_id,
+        uri,
+        name,
+        description,
+        JSON.stringify(properties || {}), // Serialize JSON
+        collection_id || null
+      ],
       function (err) {
         if (err) {
           reject(err);
         } else {
-          resolve(this.lastID); // return inserted row ID
+          resolve(this.lastID);
         }
       }
     );
   });
 };
 
-// Exporting the `db` instance and `createTables` function
 export { db, createTables, insertMintedNFT };
 export default db;

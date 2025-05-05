@@ -6,6 +6,7 @@ import { db } from './dbsetup.js'; // Assumes you created and exported db from d
 
 const payloadUUID = 'your-payload-uuid'; // The UUID from the XUMM payload
 const expectedSigner = 'user-wallet-address'; // The wallet address of the user making the payment
+const usedPayloads = new Set();
 
 const SERVICE_WALLET = process.env.SERVICE_WALLET;  // Minting wallet (Service Wallet)
 const SGLCN_ISSUER = process.env.SGLCN_ISSUER;     // SeagullCoin issuer address

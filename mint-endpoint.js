@@ -141,6 +141,8 @@ try {
 
 
     // Step 3: Send the response back to the frontend with mint details
+    req.session.mintAllowed = false;
+    
     return res.status(200).json({
       success: true,
       nftStorageUrl: mintResult.uri,        // Corrected this to use the URI from mintNFT

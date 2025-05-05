@@ -71,6 +71,18 @@ const createMintedNFTsTable = `
   );
 `;
 
+CREATE TABLE nfts (
+    id SERIAL PRIMARY KEY,
+    token_id VARCHAR(255) UNIQUE NOT NULL,
+    metadata_uri VARCHAR(255) NOT NULL,
+    owner_wallet_address VARCHAR(255) NOT NULL,
+    collection_name VARCHAR(255),
+    collection_id VARCHAR(255),
+    minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
 
 // Create a helper function to run a query and return a promise
 const runQuery = (query) => {

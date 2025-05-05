@@ -33,11 +33,15 @@ export async function mintNFT(walletAddress, nftData) {
     // Upload metadata to NFT.Storage
     const client = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
     const metadata = await client.store({
-      name: nftData.name,
-      description: nftData.description,
-      image: file,
-      properties: nftData.properties || {},
-    });
+  name: nftData.name,
+  description: nftData.description,
+  image: file,
+  properties: nftData.properties || {},
+  attributes: nftData.attributes || [],  // Add any attributes as required by marketplaces
+  price: nftData.price || '0',  // Default to 0 if not specified
+  creator: nftData.creator || 'unknown',
+});
+
 
     // Convert metadata URL to hex URI
     const hexUri = Buffer.from(metadata.url).toString('hex').toUpperCase();

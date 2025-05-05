@@ -5,6 +5,8 @@ import { mintNFT } from './nftminting.js'; // Import mintNFT from your nftmintin
 import rippleAddressCodec from 'ripple-address-codec';
 import db from './dbsetup.js';
 const { isValidAddress } = rippleAddressCodec;
+import { insertMintedNFT } from './dbsetup.js'; // adjust path if needed
+
 
 
 // Create a client and connect
@@ -55,10 +57,25 @@ if (nftData.name.length > 100 || nftData.description.length > 1000) {
   return res.status(400).json({ success: false, message: 'Name or description too long.' });
 }
 
+// Basic input size checks
+if (nftData.name.length > 100 || nftData.description.length > 1000) {
+  return res.status(400).json({ success: false, message: 'Name or description too long.' });
+}
+
 const base64Size = Buffer.from(nftData.fileBase64, 'base64').length;
 if (base64Size > 5 * 1024 * 1024) { // 5MB limit
   return res.status(400).json({ success: false, message: 'File exceeds 5MB limit.' });
 }
+
+// File extension check
+const allowedExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+const isValidExtension = allowedExtensions.some(ext =>
+  nftData.filename.toLowerCase().endsWith(ext)
+);
+if (!isValidExtension) {
+  return res.status(400).json({ success: false, message: 'Invalid file type.' });
+}
+
 
 
     // Step 2: Proceed to mint the NFT
@@ -72,14 +89,21 @@ console.log('NFT Minted:', {
 });
 
     // Step 2.5: Store the NFT in the database
-db.run(
-  `INSERT INTO minted_nfts (wallet, token_id, uri, name, description) VALUES (?, ?, ?, ?, ?)`,
-  [walletAddress, mintResult.tokenId, mintResult.uri, nftData.name, nftData.description],
-  (err) => {
-    if (err) console.error('Failed to insert NFT into DB:', err.message);
-    else console.log('NFT successfully stored in DB.');
-  }
-);
+try {
+  await insertMintedNFT({
+    wallet: walletAddress,
+    token_id: mintResult.tokenId,
+    uri: mintResult.uri,
+    name: nftData.name,
+    description: nftData.description,
+    properties: JSON.stringify(nftData.properties || {}),
+    collection_id: nftData.collectionId || null
+  });
+  console.log('NFT successfully stored in DB.');
+} catch (err) {
+  console.error('Failed to insert NFT into DB:', err.message);
+}
+
 
     // Step 3: Send the response back to the frontend with mint details
     return res.status(200).json({

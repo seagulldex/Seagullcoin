@@ -71,6 +71,15 @@ console.log('NFT Minted:', {
   uriHex: mintResult.uriHex
 });
 
+    // Step 2.5: Store the NFT in the database
+db.run(
+  `INSERT INTO minted_nfts (wallet, token_id, uri, name, description) VALUES (?, ?, ?, ?, ?)`,
+  [walletAddress, mintResult.tokenId, mintResult.uri, nftData.name, nftData.description],
+  (err) => {
+    if (err) console.error('Failed to insert NFT into DB:', err.message);
+    else console.log('NFT successfully stored in DB.');
+  }
+);
 
     // Step 3: Send the response back to the frontend with mint details
     return res.status(200).json({

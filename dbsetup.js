@@ -57,6 +57,21 @@ const createPaymentsTable = `
   );
 `;
 
+const createMintedNFTsTable = `
+  CREATE TABLE IF NOT EXISTS minted_nfts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet TEXT NOT NULL,
+    token_id TEXT NOT NULL,
+    uri TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    properties TEXT,
+    collection_id TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`;
+
+
 // Create a helper function to run a query and return a promise
 const runQuery = (query) => {
   return new Promise((resolve, reject) => {
@@ -79,6 +94,7 @@ const createTables = async () => {
     await runQuery(createUsersTable);
     await runQuery(createMintingTransactionsTable);
     await runQuery(createPaymentsTable);
+    await runQuery(createMintedNFTsTable);
     console.log("Database tables initialized.");
   } catch (err) {
     console.error("Error initializing tables:", err);

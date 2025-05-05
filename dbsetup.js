@@ -7,10 +7,11 @@ const db = new sqlite3.Database('./database.db');
 const createNFTsTable = `
   CREATE TABLE IF NOT EXISTS nfts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    image TEXT NOT NULL,
-    minted_by TEXT NOT NULL,
+    token_id TEXT UNIQUE NOT NULL,
+    metadata_uri TEXT NOT NULL,
+    owner_wallet_address TEXT NOT NULL,
+    collection_name TEXT,
+    collection_id TEXT,
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 `;
@@ -71,19 +72,6 @@ const createMintedNFTsTable = `
   );
 `;
 
-CREATE TABLE nfts (
-    id SERIAL PRIMARY KEY,
-    token_id VARCHAR(255) UNIQUE NOT NULL,
-    metadata_uri VARCHAR(255) NOT NULL,
-    owner_wallet_address VARCHAR(255) NOT NULL,
-    collection_name VARCHAR(255),
-    collection_id VARCHAR(255),
-    minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-
-
 // Create a helper function to run a query and return a promise
 const runQuery = (query) => {
   return new Promise((resolve, reject) => {
@@ -134,7 +122,6 @@ const insertMintedNFT = (nft) => {
     );
   });
 };
-
 
 // Exporting the `db` instance and `createTables` function
 export { db, createTables, insertMintedNFT };

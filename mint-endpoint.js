@@ -8,6 +8,8 @@ const { isValidAddress } = rippleAddressCodec;
 import { insertMintedNFT } from './dbsetup.js'; // adjust path if needed
 import logger from './logger.js';
 import sanitizeHtml from 'sanitize-html';
+import { requireLogin } from './xummLogin.js';
+
 
 nftData.name = sanitizeHtml(nftData.name, { allowedTags: [], allowedAttributes: {} });
 nftData.description = sanitizeHtml(nftData.description, { allowedTags: [], allowedAttributes: {} });

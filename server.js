@@ -472,17 +472,6 @@ router.post('/mint', async (req, res) => {
   }
 });
 
-// Log the mint
-logger.info('NFT Minted', {
-  wallet: walletAddress,
-  tokenId: mintResult.tokenId,
-  uri: mintResult.uri,
-  time: new Date().toISOString()
-});
-
-// Save to DB and send response
-await saveMintRecord(walletAddress, mintResult.tokenId, metadataURL, nftData.collectionId);
-res.json({ success: true, tokenId: mintResult.tokenId });
 
 router.get('/mint-history/:wallet', async (req, res) => {
   res.set('Cache-Control', 'no-store');

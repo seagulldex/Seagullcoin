@@ -6,6 +6,7 @@ import rippleAddressCodec from 'ripple-address-codec';
 import db from './dbsetup.js';
 const { isValidAddress } = rippleAddressCodec;
 
+
 // Create a client and connect
 const client = new xrpl.Client("wss://xrplcluster.com"); // or your preferred endpoint
 

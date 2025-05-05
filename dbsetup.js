@@ -69,6 +69,18 @@ db.serialize(() => {
   )`);
 });
 
+
+db.run(
+  `INSERT INTO minted_nfts (wallet, token_id, uri, name, description) VALUES (?, ?, ?, ?, ?)`,
+  [walletAddress, mintResult.tokenId, mintResult.uri, nftData.name, nftData.description],
+  (err) => {
+    if (err) console.error('Failed to insert NFT into DB:', err.message);
+    else console.log('NFT successfully stored in DB.');
+  }
+);
+
+
+
 // Helper function to run a query and return a promise
 const runQuery = (query) => {
   return new Promise((resolve, reject) => {

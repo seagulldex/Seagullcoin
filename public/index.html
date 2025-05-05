@@ -1,50 +1,323 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SGLCN-X20 Minting Platform</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGLCN-X20 Minting Platform</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+    <style>
+        /* General Styling for Black Background and White Text */
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
 
-  <!-- Correct XUMM SDK CDN -->
-  <script src="https://xumm.app/assets/cdn/xumm.min.js"></script>
+        /* SeagullCoin Logo - Positioned Above Navigation Bar */
+        .seagull-logo-container {
+            text-align: right;
+            padding: 10px;
+            background-color: #222; /* Optional background for logo area */
+            position: relative;
+            z-index: 10;
+        }
+
+        .seagull-logo {
+            height: 40px; /* Logo size increased */
+            width: auto;
+            display: inline-block;
+        }
+
+        .wallet-text {
+            font-size: 16px;
+            color: white;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        /* Navigation Bar - Horizontal Scroll */
+        header nav {
+            overflow-x: auto; /* Make the navigation bar scrollable */
+            white-space: nowrap; /* Prevent links from wrapping onto the next line */
+            padding: 10px 0;
+            position: relative;
+        }
+
+        header nav ul {
+            list-style: none;
+            padding-left: 0;
+            display: inline-block; /* Ensure the list of links stays in a single row */
+            margin-right: 60px; /* Ensure space for logo */
+        }
+
+        header nav ul li {
+            display: inline-block;
+            margin-right: 30px;
+            background-color: #333;
+            padding: 15px 25px;
+            border-radius: 25px; /* Rounded "bubbly" boxes */
+            transition: background-color 0.3s ease;
+        }
+
+        header nav ul li a {
+            text-decoration: none;
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            display: block;
+        }
+
+        header nav ul li:hover {
+            background-color: #555; /* Slight color change on hover */
+        }
+
+        /* Hero section */
+        .hero {
+            text-align: center;
+            padding: 50px 0;
+        }
+
+        /* Buttons with bubbly effect */
+        button {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 25px; /* Bubbly style for buttons */
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        /* Sections with bubbly boxes */
+        .user-profiles, .collections, .nfts, .hero {
+            margin: 20px;
+            padding: 20px;
+            background-color: #222;
+            border-radius: 15px; /* Rounded sections */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* NFT gallery and profiles */
+        .profile-scroll {
+            display: flex;
+            overflow-x: scroll;
+            gap: 15px;
+        }
+
+        .profile {
+            background-color: #444;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .profile:hover {
+            background-color: #555;
+        }
+
+        .nft-item {
+            background-color: #444;
+            padding: 20px;
+            border-radius: 15px;
+            transition: background-color 0.3s ease;
+        }
+
+        .nft-item:hover {
+            background-color: #555;
+        }
+
+        /* Footer Styling */
+        footer {
+            background-color: #333;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: 30px;
+        }
+
+        footer p {
+            margin: 0;
+            color: white;
+        }
+
+        /* User info section */
+        #user-info p {
+            background-color: #222;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        #user-nfts {
+            background-color: #222;
+            padding: 10px;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 <body>
 
-  <main>
-    <section class="hero">
-      <h1>Welcome to SeagullCoin NFT Marketplace</h1>
-      <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
-      <button id="connect-wallet-btn">Connect Wallet via XUMM</button>
-      <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
-    </section>
-  </main>
+    <!-- SeagullCoin Logo Container (Above Navigation) -->
+    <div class="seagull-logo-container">
+        <a href="profile.html">
+            <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" 
+                 alt="SeagullCoin Logo" class="seagull-logo">
+        </a>
+        <span class="wallet-text">Wallet</span>
+    </div>
 
-  <script>
-    window.onload = function () {
-      if (typeof Xumm !== 'function') {
-        alert("Failed to load XUMM SDK. Please check your connection or CDN path.");
-        return;
-      }
+    <!-- Navigation -->
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="nfts.html">NFTs</a></li>
+                <li><a href="mint.html">Mint NFT</a></li>
+                <li><a href="messages.html">Messages</a></li>
+            </ul>
+        </nav>
+    </header>
 
-      const xumm = new Xumm('ee60e1a3-8c08-4cdd-bfa9-accada591684'); // REPLACE with your actual XUMM API Key
+    <!-- Main Content -->
+    <main>
+        <section class="hero">
+            <h1>Welcome to SeagullCoin NFT Marketplace</h1>
+            <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
+            <button id="connect-wallet-btn">Connect Wallet via XUMM</button>
+            <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
+        </section>
 
-      document.getElementById("connect-wallet-btn").addEventListener("click", async () => {
-        try {
-          const session = await xumm.authorize();
-          console.log("Authorized XUMM session:", session);
+        <!-- User Info Section (to be populated dynamically) -->
+        <div id="user-info">
+            <p id="user-balance">Loading balance...</p>
+            <div id="user-nfts">Loading NFTs...</div>
+        </div>
 
-          const account = session.me.account;
-          localStorage.setItem('xummWallet', account);
-          document.getElementById('wallet-address').innerText = account;
-          document.getElementById('wallet-info').style.display = 'block';
-          document.getElementById('connect-wallet-btn').style.display = 'none';
-        } catch (e) {
-          console.error("XUMM connect error:", e);
-          alert("Failed to connect wallet: " + e.message);
+        <section id="user-profiles" class="user-profiles">
+            <h2>Meet Other Users</h2>
+            <div class="profile-scroll">
+                <!-- Dynamically populated with user profiles -->
+                <div class="profile">
+                    <a href="profile.html">
+                        <img src="https://via.placeholder.com/100" alt="User 1">
+                        <p>User 1</p>
+                    </a>
+                </div>
+                <div class="profile">
+                    <a href="profile.html">
+                        <img src="https://via.placeholder.com/100" alt="User 2">
+                        <p>User 2</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="collections" class="collections">
+            <h2>Featured Collections</h2>
+            <!-- Dynamic Content for Collections -->
+        </section>
+
+        <section id="nfts" class="nfts">
+            <h2>Browse NFTs</h2>
+            <div class="nft-gallery">
+                <h2>Featured NFTs</h2>
+                <!-- Example NFT items, this should be dynamic based on backend -->
+                <div class="nft-item">
+                    <img src="https://cdn.xrp.cafe/d3c8da0fc24d-41f6-a374-9224883133037fb6752f8487-47ec-8ee7-ebe6607d7a2de63bc4c085bc-4ddb-be20-a41783409571.webp" alt="NFT 1">
+                </div>
+                <div class="nft-item">
+                    <img src="https://cdn.xrp.cafe/a693980ec046-465b-bbd5-4f3e54a0a5cdc893372b6d6e-46d8-940a-02bd285be9cff646cfb9a614-4659-b66f-3f9df572cd15.webp" alt="NFT 2">
+                </div>
+            </div>
+        </section>
+
+        <!-- Minting Progress Section -->
+        <div id="minting-progress" style="display:none;">
+            <p>Minting in Progress... Please wait.</p>
+        </div>
+
+        <div id="minting-result" style="display:none;">
+            <p id="minting-message"></p>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+    </footer>
+
+    <!-- Include the necessary scripts -->
+    <script src="main.js"></script>
+
+    <script>
+        // Check login status when page loads
+        async function checkLogin() {
+            const res = await fetch('/api/check-login');
+            const data = await res.json();
+
+            if (data.loggedIn) {
+                const wallet = data.account;
+                localStorage.setItem('xummWallet', wallet);
+                document.getElementById('connect-wallet-btn').style.display = 'none';
+                document.getElementById('wallet-info').style.display = 'block';
+                document.getElementById('wallet-address').innerText = wallet;
+                unlockMinting();
+            } else {
+                document.getElementById('connect-wallet-btn').style.display = 'inline-block';
+                document.getElementById('wallet-info').style.display = 'none';
+                lockMinting();
+            }
         }
-      });
-    };
-  </script>
+
+        function showMintingProgress() {
+            document.getElementById('minting-progress').style.display = 'block';
+            document.getElementById('minting-result').style.display = 'none';
+        }
+
+        function hideMintingProgress() {
+            document.getElementById('minting-progress').style.display = 'none';
+        }
+
+        function showMintingResult(message) {
+            document.getElementById('minting-result').style.display = 'block';
+            document.getElementById('minting-message').innerText = message;
+        }
+
+        // Handle wallet connection
+        document.getElementById('connect-wallet-btn').addEventListener('click', function () {
+            connectXummWallet();
+        });
+
+        async function connectXummWallet() {
+            const xumm = new XUMM();
+            try {
+                const response = await xumm.authorize();
+                if (response) {
+                    checkLogin(); // Re-check login status after authorization
+                }
+            } catch (error) {
+                alert('Error connecting wallet: ' + error.message);
+            }
+        }
+
+        // Function to unlock minting (UI behavior)
+        function unlockMinting() {
+            // Enable mint button or actions
+        }
+
+        // Function to lock minting (UI behavior)
+        function lockMinting() {
+            // Disable mint button or actions
+        }
+
+        // On page load, check login status
+        window.onload = checkLogin;
+    </script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 import { xummApi } from './xrplClient.js';  // Assuming xummApi is already configured
 import dotenv from 'dotenv';
 import { handleError, logError } from './errorHandler.js';  // Assuming a custom error handler
-
+import logger from './logger.js';
 
 dotenv.config();
 
@@ -23,6 +23,7 @@ export function checkOrigin(req, res, next) {
  */
 export async function initiateLogin() {
   try {
+    logger.info('Initiating XUMM login process...');
     // Create a payload requesting user account info
     const response = await xummApi.payload.create({
       transaction: {
@@ -36,11 +37,12 @@ export async function initiateLogin() {
 
     const payloadUUID = response.data.uuid;
     const payloadURL = `https://xumm.app/sign/${payloadUUID}`;
-    
+    logger.info(`Login payload created. UUID: ${response.data.uuid}`);
     return { payloadUUID, payloadURL };
   } catch (error) {
     // Log and handle error
     logError(error);
+    logger.error('Error initiating XUMM login:', error.message);
     return handleError('Failed to initiate login');
   }
 }
@@ -52,6 +54,7 @@ export async function initiateLogin() {
  */
 export async function verifyLogin(payloadUUID) {
   try {
+    logger.info(`Verifying login for payloadUUID: ${payloadUUID}`);
     // Retrieve the payload to check if the user signed it
     const response = await xummApi.payload.get(payloadUUID);
 
@@ -59,8 +62,9 @@ export async function verifyLogin(payloadUUID) {
       console.log('XUMM payload has expired.');
       return null;
     }
-
+    
     if (response.data.signed) {
+      logger.info(`User signed the payload. Account: ${response.data.response.account}`);
       const userAddress = response.data.response.account;
       console.log('User signed in with address:', userAddress);
       return userAddress;
@@ -71,6 +75,7 @@ export async function verifyLogin(payloadUUID) {
   } catch (error) {
     // Log and handle error
     logError(error);
+    logger.error(`Error verifying login for UUID: ${payloadUUID}: ${error.message}`);
     return handleError('Error verifying login');
   }
 }

@@ -62,6 +62,8 @@ const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const NFT_STORAGE_API_KEY = process.env.NFT_STORAGE_API_KEY;
 
 
+
+
 const app = express();
 const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
@@ -1406,6 +1408,30 @@ app.post('/create-collection',
   }
   
 );
+
+// Endpoint to verify signed payload
+app.post('/verify-authentication', async (req, res) => {
+  const { signedPayload } = req.body;
+
+  if (!signedPayload) {
+    return res.status(400).json({ error: 'Missing signed payload' });
+  }
+
+  try {
+    // Decode the signed payload to get user information
+    const response = await xummSDK.payload.decode(signedPayload);
+    const { account } = response;
+
+    // Store account in session for future API calls
+    req.session.walletAddress = account;
+
+    res.json({ success: true, walletAddress: account });
+  } catch (error) {
+    console.error('Error verifying signed payload:', error);
+    res.status(500).json({ error: 'Failed to verify authentication' });
+  }
+});
+
 
 // XUMM OAuth callback route
 app.get('/xumm/callback', async (req, res) => {

@@ -52,15 +52,16 @@ const createPaymentsTable = `
   CREATE INDEX IF NOT EXISTS idx_wallet_address_payments ON payments(wallet_address);
 `;
 
-CREATE TABLE IF NOT EXISTS nfts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  wallet_address TEXT,
-  nft_token_id TEXT,
-  ipfs_uri TEXT,
-  collection_name TEXT,
-  minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
+db.run(`
+  CREATE TABLE IF NOT EXISTS nfts (
+    id INTEGER PRIMARY KEY,
+    wallet_address TEXT,
+    nft_token_id TEXT,
+    ipfs_uri TEXT,
+    collection_name TEXT,
+    minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`);
 
 const createLikesTable = `
   CREATE TABLE IF NOT EXISTS likes (

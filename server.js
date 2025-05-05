@@ -399,6 +399,42 @@ app.post('/payload', async (req, res) => {
   res.status(200).send('Payload marked as used.');
 });
 
+router.post('/mint', async (req, res) => {
+  try {
+    const sessionPayment = req.session?.payment;
+
+    if (!sessionPayment?.paid) {
+      return res.status(403).json({ error: 'Payment not confirmed' });
+    }
+
+    const wallet = sessionPayment.wallet;
+
+    // Continue with mint logic here, e.g.:
+    const txJson = {
+      TransactionType: 'NFTokenMint',
+      Account: wallet,
+      URI: req.body.encodedURI,
+      Flags: 8,
+      NFTokenTaxon: 0,
+      TransferFee: 0
+    };
+
+    const payload = {
+      txjson: txJson,
+      options: { submit: true }
+    };
+
+    const mintPayload = await xummSDK.payload.create(payload);
+
+    res.json({ success: true, uuid: mintPayload.uuid, next: mintPayload.next.always });
+
+  } catch (err) {
+    console.error('Mint error:', err);
+    res.status(500).json({ error: 'Minting failed' });
+  }
+});
+
+
 app.post('/send-message',
   body('recipient').isString().isLength({ min: 25 }).withMessage('Invalid recipient address'),
   body('message').isString().isLength({ min: 1, max: 500 }).withMessage('Message must be between 1 and 500 characters'),

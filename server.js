@@ -40,6 +40,7 @@ import { requireLogin } from './xummLogin.js';  // Adjust the path if needed
 import { createTables } from './dbsetup.js';
 import { insertMintedNFT } from './dbsetup.js';
 
+
 // Initialize the database tables
 createTables();
 

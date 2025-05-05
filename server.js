@@ -51,7 +51,7 @@ import { MongoClient, ServerApiVersion } from 'mongodb';
 // ===== Init App and Env =====
 dotenv.config();
 
-const sdk = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+const xummsdk = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const SEAGULL_COIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"; // Issuer address
 const SEAGULL_COIN_CODE = "SeagullCoin"; // Currency code
 const MINT_COST = 0.5; // Cost for minting in SeagullCoin
@@ -72,6 +72,8 @@ const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 const router = express.Router();
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
+
+
 
 
 
@@ -335,90 +337,46 @@ app.post('/api/posts', (req, res) => {
 app.use('/api', mintRouter);  // Assuming mintRouter handles your mint-related endpoints
 
 
-// Route to initiate the login process by creating the XUMM payload
 app.get('/login', async (req, res) => {
   try {
-    const { payloadUUID, payloadURL } = await initiateLogin();
-    // Send the URL to the user to sign the payload
-    res.status(200).json({ payloadUUID, payloadURL });
+    const payload = await xumm.payload.create({
+      txjson: {
+        TransactionType: "SignIn"
+      }
+    });
+
+    // Optionally store uuid in session if needed
+    req.session.payloadUUID = payload.uuid;
+
+    res.status(200).json({
+      payloadUUID: payload.uuid,
+      payloadURL: payload.next.always
+    });
   } catch (err) {
     console.error('Error initiating login:', err);
     res.status(500).json({ error: 'Error initiating login' });
   }
 });
 
-app.get("/xumm/connect", async (req, res) => {
-  try {
-    const payload = {
-      txjson: {
-        TransactionType: "SignIn"
-      }
-    };
-    const created = await xumm.payload.create(payload);
-    res.json({ redirect: created.next.always });
-  } catch (e) {
-    console.error("XUMM login failed", e);
-    res.status(500).json({ error: "XUMM login error" });
-  }
-});
-
-
-// Endpoint to initiate XUMM authorization
-app.get('/api/authorize', async (req, res) => {
-    try {
-        const response = await xumm.authorize();
-        if (response?.data?.next) {
-            // Store the QR link or request data in session for later use
-            req.session.authRequest = response.data.next;
-            res.json({ url: response.data.next });
-        } else {
-            res.status(500).json({ error: 'Failed to create XUMM authorization request' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-
-// Route to verify if the user signed the payload (could be called after the user signed in XUMM)
-app.get('/verify-login/:payloadUUID', async (req, res) => {
-  const { payloadUUID } = req.params;
-
-  try {
-    const userAddress = await verifyLogin(payloadUUID);
-    if (userAddress) {
-      // Store the wallet address in session
-      req.session.walletAddress = userAddress;
-      res.status(200).json({ success: true, walletAddress: userAddress });
-    } else {
-      res.status(400).json({ error: 'User did not sign the payload' });
-    }
-  } catch (error) {
-    console.error('Error during login verification:', error);
-    res.status(500).json({ error: 'Error verifying login' });
-  }
-});
-
 
 app.get('/confirm-login/:payloadUUID', async (req, res) => {
-  const { payloadUUID } = req.params;
-
   try {
+    const { payloadUUID } = req.params;
     const { data: payload } = await xummApi.payload.get(payloadUUID);
 
-    if (payload.meta.signed === true) {
-      const walletAddress = payload.response.account; // Get the wallet address
-      // Store the wallet address (e.g., session or database)
-      req.session.walletAddress = walletAddress;  // Store the wallet address in session
-      return res.json({ success: true, walletAddress });
+    if (payload.meta.signed) {
+      const walletAddress = payload.response.account;
+      req.session.walletAddress = walletAddress;
+      res.json({ success: true, walletAddress });
     } else {
-      return res.json({ success: false, message: 'Payload not signed' });
+      res.json({ success: false, message: 'Payload not signed' });
     }
   } catch (error) {
-    console.error('Error confirming login:', error);
-    return res.status(500).json({ error: 'Failed to confirm login' });
+    console.error('Login confirmation failed:', error);
+    res.status(500).json({ error: 'Login confirmation error' });
   }
 });
+
 
 // Protected route to check if the user is logged in before proceeding
 app.get('/dashboard', requireLogin, (req, res) => {
@@ -585,9 +543,7 @@ app.get('/auth', async (req, res) => {
         console.error('Error creating XUMM authentication payload:', error);
         res.status(500).json({ error: 'Error initiating XUMM authentication.' });
     }
-});
-
-// ===== Listing NFT Route =====
+});// ===== Listing NFT Route =====
 
 
 app.post('/login', async (req, res) => {
@@ -811,9 +767,7 @@ async function buyNFT(nftId, buyerAddress, paymentAmount) {
 
   // Example: Return success or failure (replace with actual logic)
   return { success: true, message: 'Purchase successful' };
-}
-
-app.post('/buy-nft', async (req, res) => {
+}app.post('/buy-nft', async (req, res) => {
   const { userAddress, nftId, price } = req.body;
 
   try {
@@ -1052,9 +1006,7 @@ async function updateUserProfile(walletAddress, newProfileData) {
 
   // Simulate successful update
   return { success: true, message: 'Profile updated' };
-}
-
-app.post('/update-username', async (req, res) => {
+}app.post('/update-username', async (req, res) => {
   const { walletAddress } = req.session;
   const { username } = req.body;
 
@@ -1514,6 +1466,31 @@ app.get('/confirm-payment', async (req, res) => {
     res.status(500).send('Failed to confirm payment');
   }
 });
+
+// Endpoint to initiate the authentication
+app.get('/authenticate', async (req, res) => {
+  try {
+    const payload = {
+      "TransactionType": "SignIn",
+      "Destination": "your-website-url-or-hash",
+      "Account": req.session.walletAddress // Optional: can pass existing wallet if user is logged in
+    };
+
+    // Create the XUMM payload
+    const createdPayload = await xummSDK.payload.create(payload);
+    const { uuid } = createdPayload;
+
+    // Send UUID back to frontend to open XUMM for signing
+    res.json({
+      uuid,
+      redirectUrl: `https://xumm.app/sign/${uuid}`
+    });
+  } catch (error) {
+    console.error('Error creating XUMM authentication payload:', error);
+    res.status(500).json({ error: 'Failed to create authentication payload' });
+  }
+});
+
 
 // Logout route to clear session data
 app.post('/logout', (req, res) => {

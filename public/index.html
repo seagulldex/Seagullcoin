@@ -166,15 +166,6 @@
 </head>
 <body>
 
-    <!-- SeagullCoin Logo Container (Above Navigation) -->
-    <div class="seagull-logo-container">
-        <a href="profile.html">
-            <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" 
-                 alt="SeagullCoin Logo" class="seagull-logo">
-        </a>
-        <span class="wallet-text">Wallet</span>
-    </div>
-
     <!-- Navigation -->
     <header>
         <nav>
@@ -320,6 +311,45 @@
 
         // On page load, check login status
         window.onload = checkLogin;
-    </script>
+    <div id="wallet-container"></div>
+
+<script>
+  fetch('/header.html')
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById('wallet-container').innerHTML = html;
+      updateWalletStatus(); // Now that header is loaded, run logic
+    });
+
+  async function updateWalletStatus() {
+    const address = localStorage.getItem('xumm_wallet_address');
+    const indicator = document.getElementById('wallet-indicator');
+    const icon = document.getElementById('wallet-icon');
+
+    if (!indicator || !icon) return;
+
+    if (!address) {
+      indicator.textContent = 'Login';
+      icon.onclick = () => window.location.href = '/login';
+      return;
+    }
+
+    try {
+      const res = await fetch(`/user?address=${address}`);
+      const data = await res.json();
+
+      if (data.hasTrustline) {
+        indicator.textContent = '🟢';
+      } else {
+        indicator.textContent = 'No Trustline';
+      }
+
+      icon.onclick = () => window.location.href = '/profile';
+    } catch (err) {
+      indicator.textContent = 'Error';
+    }
+  }
+</script>
 </body>
 </html>
+<div id="wallet-container"></div>

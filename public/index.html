@@ -1,177 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGLCN-X20 Minting Platform</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
-    <link rel="stylesheet" href="header.css"> <!-- If header styling is needed -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SGLCN-X20 Minting Platform</title>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+  <link rel="stylesheet" href="header.css" />
 </head>
 <body>
+
+  <!-- Wallet status container (top-right circle) -->
+  <div id="wallet-container"></div>
+
+  <!-- Navigation -->
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="nfts.html">NFTs</a></li>
+        <li><a href="mint.html">Mint NFT</a></li>
+        <li><a href="messages.html">Messages</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <section class="hero">
+      <h1>Welcome to SeagullCoin NFT Marketplace</h1>
+      <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
+      <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
+    </section>
+
+    <div id="user-info">
+      <p id="user-balance">Loading balance...</p>
+      <div id="user-nfts">Loading NFTs...</div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+  </footer>
+
+  <!-- Your custom JavaScript -->
   <script>
-    // Inject header
+    // Load the top-right wallet header
     fetch('/header.html')
-        .then(res => res.text())
-        .then(html => {
-            document.getElementById('wallet-container').innerHTML = html;
-        });
-
-    // On window load: check login and update status
-    window.onload = async () => {
-        const res = await fetch('/api/check-login');
-        const data = await res.json();
-        const indicator = document.getElementById('wallet-indicator');
-
-        if (data.loggedIn) {
-            localStorage.setItem('xumm_wallet_address', data.account);
-            if (indicator) {
-                indicator.textContent = '🟢';
-                indicator.onclick = () => window.location.href = '/profile';
-            }
-        } else {
-            localStorage.removeItem('xumm_wallet_address');
-            if (indicator) {
-                indicator.textContent = '🔴';
-                indicator.onclick = () => window.location.href = '/login';
-            }
-        }
-    };
-</script>
-
-    <!-- Include Wallet Header -->
-    <div id="wallet-container"></div>
-
-    <!-- Navigation -->
-    <header>
-        <nav>
-            <ul>
-                <li><a href="index.html">Home</a></li>
-                <li><a href="nfts.html">NFTs</a></li>
-                <li><a href="mint.html">Mint NFT</a></li>
-                <li><a href="messages.html">Messages</a></li>
-            </ul>
-        </nav>
-    </header>
-
-    <!-- Main Content -->
-    <main>
-        <section class="hero">
-            <h1>Welcome to SeagullCoin NFT Marketplace</h1>
-            <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
-            <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
-        </section>
-
-        <div id="user-info">
-            <p id="user-balance">Loading balance...</p>
-            <div id="user-nfts">Loading NFTs...</div>
-        </div>
-    </main>
-
-    <footer>
-        <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
-    </footer>
-
-    <!-- Include main.js for JS logic -->
-    <script src="main.js"></script>
-
-    <script>
-        // Dynamically load the wallet header
-        fetch('/header.html')
-    .then(res => res.text())
-    .then(html => {
+      .then(res => res.text())
+      .then(html => {
         document.getElementById('wallet-container').innerHTML = html;
-        // Wait for login check first
-    });
+        updateWalletStatus();
+      });
 
-window.onload = async () => {
-    const res = await fetch('/api/check-login');
-    const data = await res.json();
+    // Called once header is loaded and login status is checked
+    async function updateWalletStatus() {
+      const res = await fetch('/api/check-login');
+      const data = await res.json();
+      const indicator = document.getElementById('wallet-indicator');
 
-    if (data.loggedIn) {
+      if (!indicator) return;
+
+      if (data.loggedIn) {
         const wallet = data.account;
         localStorage.setItem('xumm_wallet_address', wallet);
         document.getElementById('wallet-info').style.display = 'block';
         document.getElementById('wallet-address').innerText = wallet;
+        indicator.textContent = '🟢';
+        indicator.onclick = () => window.location.href = '/profile';
         unlockMinting();
-    } else {
+      } else {
+        localStorage.removeItem('xumm_wallet_address');
         document.getElementById('wallet-info').style.display = 'none';
+        indicator.textContent = '🔴';
+        indicator.onclick = () => window.location.href = '/login';
         lockMinting();
+      }
     }
 
-    // Now call updateWalletStatus *after* login logic is done
-    updateWalletStatus();
-};
+    // UI logic for enabling minting
+    function unlockMinting() {
+      // enable mint-related UI
+    }
 
+    // UI logic for disabling minting
+    function lockMinting() {
+      // disable mint-related UI
+    }
+  </script>
 
-        async function updateWalletStatus() {
-            const address = localStorage.getItem('xumm_wallet_address');
-            const indicator = document.getElementById('wallet-indicator');
-            const icon = document.getElementById('wallet-icon');
-
-            if (!indicator || !icon) return;
-
-            if (!address) {
-                indicator.textContent = 'Login';
-                icon.onclick = () => window.location.href = '/login';
-                return;
-            }
-
-            try {
-                const res = await fetch(`/user?address=${address}`);
-                const data = await res.json();
-
-                if (data.hasTrustline) {
-                    indicator.textContent = '🟢';
-                } else {
-                    indicator.textContent = 'No Trustline';
-                }
-
-                icon.onclick = () => window.location.href = '/profile';
-            } catch (err) {
-                indicator.textContent = 'Error';
-            }
-        }
-
-        // On page load, check login status
-        window.onload = async () => {
-            const res = await fetch('/api/check-login');
-            const data = await res.json();
-
-            if (data.loggedIn) {
-                const wallet = data.account;
-                localStorage.setItem('xumm_wallet_address', wallet);
-                document.getElementById('wallet-info').style.display = 'block';
-                document.getElementById('wallet-address').innerText = wallet;
-                unlockMinting();
-            } else {
-                document.getElementById('wallet-info').style.display = 'none';
-                lockMinting();
-            }
-        };
-
-        // Handle wallet connection
-        async function connectXummWallet() {
-            const xumm = new XUMM();
-            try {
-                const response = await xumm.authorize();
-                if (response) {
-                    checkLogin(); // Re-check login status after authorization
-                }
-            } catch (error) {
-                alert('Error connecting wallet: ' + error.message);
-            }
-        }
-
-        // Function to unlock minting (UI behavior)
-        function unlockMinting() {
-            // Enable mint button or actions
-        }
-
-        // Function to lock minting (UI behavior)
-        function lockMinting() {
-            // Disable mint button or actions
-        }
-    </script>
+  <script src="main.js"></script>
 </body>
 </html>

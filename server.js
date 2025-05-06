@@ -267,7 +267,7 @@ const upload = multer({
 
 // ===== Rate Limiting =====
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 50000,
+  windowMs: 30 * 100 * 50000,
   max: 100000,
   message: { error: 'Too many requests from this IP, please try again later.' },
 });

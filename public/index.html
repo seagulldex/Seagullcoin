@@ -14,7 +14,7 @@
       left: 0;
       right: 0;
       height: 40px;
-      background-color: #2e2e2e; /* Dark grey */
+      background-color: #2e2e2e;
       display: flex;
       align-items: center;
       justify-content: flex-end;
@@ -48,7 +48,7 @@
     }
 
     body {
-      margin-top: 60px; /* extra margin for fixed top bar */
+      margin-top: 60px;
     }
 
     header {
@@ -108,6 +108,7 @@
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
   </footer>
 
+  <!-- Wallet Logic -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
@@ -122,17 +123,21 @@
 
       if (data.loggedIn) {
         const wallet = data.account;
+        const uuid = data.uuid || 'unknown';
         localStorage.setItem('xumm_wallet_address', wallet);
+        localStorage.setItem('xumm_user', JSON.stringify({ uuid: uuid, account: wallet }));
+
         document.getElementById('wallet-info').style.display = 'block';
         document.getElementById('wallet-address').innerText = wallet;
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = '/profile';
+        indicator.onclick = () => window.location.href = `/profile.html?uuid=${uuid}`;
         unlockMinting();
       } else {
         localStorage.removeItem('xumm_wallet_address');
+        localStorage.removeItem('xumm_user');
         document.getElementById('wallet-info').style.display = 'none';
         indicator.textContent = '🔴 Login';
         indicator.classList.remove('green');

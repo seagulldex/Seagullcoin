@@ -100,6 +100,20 @@
     .property-group:last-child .remove-property {
       display: none;
     }
+
+    .minting-button {
+      background-color: #2e2e2e;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .minting-button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -125,49 +139,41 @@
     </nav>
   </header>
 
-  <!-- Main Content - Minting Form -->
+  <!-- Main Content -->
   <main>
-    <h1>Mint a New NFT</h1>
-    <p>Create a new SeagullCoin-backed NFT by filling out the form below.</p>
+    <section class="hero">
+      <h1>Mint Your SeagullCoin NFT</h1>
+      <p>Create a unique NFT backed by SeagullCoin (SGLCN-X20)!</p>
+    </section>
+
+    <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
 
     <!-- Minting Form -->
-    <div class="mint-form">
-      <form id="mintForm" enctype="multipart/form-data">
-        <!-- Name -->
-        <div class="form-group">
-          <label for="name">NFT Name</label>
-          <input type="text" id="name" name="name" required />
-        </div>
+    <form id="mint-form" class="mint-form" style="display:none;">
+      <div class="form-group">
+        <label for="nft-name">NFT Name</label>
+        <input type="text" id="nft-name" name="nft-name" required />
+      </div>
+      <div class="form-group">
+        <label for="nft-description">NFT Description</label>
+        <textarea id="nft-description" name="nft-description" rows="4" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="nft-file">Upload File</label>
+        <input type="file" id="nft-file" name="nft-file" accept="image/*" required />
+      </div>
 
-        <!-- Description -->
-        <div class="form-group">
-          <label for="description">NFT Description</label>
-          <textarea id="description" name="description" required></textarea>
+      <!-- Additional NFT Properties -->
+      <div class="properties-container">
+        <div class="property-group">
+          <input type="text" placeholder="Property Name" />
+          <input type="text" placeholder="Property Value" />
+          <span class="remove-property">❌</span>
         </div>
+      </div>
 
-        <!-- File Upload (Drag and Drop) -->
-        <div class="form-group">
-          <label for="fileUpload">Upload NFT Image</label>
-          <input type="file" id="fileUpload" name="file" required />
-        </div>
-
-        <!-- Properties -->
-        <div class="properties-container">
-          <label>Properties</label>
-          <div id="propertiesWrapper">
-            <div class="property-group">
-              <input type="text" name="propertyKey[]" placeholder="Property Name" />
-              <input type="text" name="propertyValue[]" placeholder="Property Value" />
-              <span class="remove-property">- Remove</span>
-            </div>
-          </div>
-          <button type="button" id="addProperty">+ Add Property</button>
-        </div>
-
-        <!-- Submit Button -->
-        <button type="submit" id="mintButton">Mint NFT</button>
-      </form>
-    </div>
+      <button type="button" class="minting-button" id="mint-button" disabled>Mint NFT</button>
+    </form>
   </main>
 
   <footer>
@@ -181,105 +187,73 @@
     });
 
     async function updateWalletStatus() {
-      const walletAddress = localStorage.getItem('xumm_wallet_address');
+      const res = await fetch('/api/check-login');
+      const data = await res.json();
       const indicator = document.getElementById('wallet-indicator');
 
-      if (walletAddress) {
-        const user = JSON.parse(localStorage.getItem('xumm_user'));
-        const uuid = user?.uuid || 'unknown';
-        const account = user?.account || 'unknown';
-        
+      if (!indicator) return;
+
+      if (data.loggedIn) {
+        const wallet = data.account;
+        const uuid = data.uuid || 'unknown';
+        localStorage.setItem('xumm_wallet_address', wallet);
+        localStorage.setItem('xumm_user', JSON.stringify({ uuid: uuid, account: wallet }));
+
         document.getElementById('wallet-info').style.display = 'block';
+        document.getElementById('wallet-address').innerText = wallet;
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
-        indicator.onclick = async () => {
-          window.location.href = '/profile.html'; // This redirects to profile page if clicked
-        };
-
-        // Update navigation links for logged-in users
-        const navLinks = document.querySelectorAll('nav ul li a');
-        navLinks.forEach(link => {
-          link.classList.remove('disabled');
-          if (link.textContent === 'Mint NFT') {
-            link.href = '/mint.html';
-          }
-        });
-
+        indicator.onclick = () => window.location.href = `/profile.html?uuid=${uuid}`;
+        unlockMinting();
       } else {
         localStorage.removeItem('xumm_wallet_address');
         localStorage.removeItem('xumm_user');
-        
+        document.getElementById('wallet-info').style.display = 'none';
         indicator.textContent = '🔴 Login';
         indicator.classList.remove('green');
         indicator.classList.add('red');
         indicator.title = 'Click to login';
-        indicator.onclick = () => window.location.href = '/login.html';
-
-        // Update navigation links for logged-out users
-        const navLinks = document.querySelectorAll('nav ul li a');
-        navLinks.forEach(link => {
-          link.classList.add('disabled');
-          if (link.textContent === 'Mint NFT') {
-            link.href = '#';
-          }
-        });
+        indicator.onclick = () => window.location.href = '/login';
+        lockMinting();
       }
     }
 
-    document.getElementById('addProperty').addEventListener('click', () => {
-      const propertyGroup = document.createElement('div');
-      propertyGroup.classList.add('property-group');
-      propertyGroup.innerHTML = `
-        <input type="text" name="propertyKey[]" placeholder="Property Name" />
-        <input type="text" name="propertyValue[]" placeholder="Property Value" />
-        <span class="remove-property">- Remove</span>
-      `;
-      document.getElementById('propertiesWrapper').appendChild(propertyGroup);
+    function unlockMinting() {
+      document.getElementById('mint-form').style.display = 'block';
+      document.getElementById('mint-button').disabled = false;
+    }
 
-      propertyGroup.querySelector('.remove-property').addEventListener('click', () => {
-        propertyGroup.remove();
-      });
-    });
+    function lockMinting() {
+      document.getElementById('mint-form').style.display = 'none';
+      document.getElementById('mint-button').disabled = true;
+    }
 
-    document.getElementById('mintForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    // Handle the minting process
+    document.getElementById('mint-button').addEventListener('click', async () => {
+      const nftName = document.getElementById('nft-name').value;
+      const nftDescription = document.getElementById('nft-description').value;
+      const nftFile = document.getElementById('nft-file').files[0];
 
-      const formData = new FormData(document.getElementById('mintForm'));
-      const walletAddress = localStorage.getItem('xumm_wallet_address');
-      
-      if (!walletAddress) {
-        alert("Please login first.");
+      if (!nftName || !nftDescription || !nftFile) {
+        alert('Please fill in all fields and upload a file.');
         return;
       }
 
-      // Add properties to the form data as JSON
-      const properties = [];
-      const propertyKeys = formData.getAll('propertyKey[]');
-      const propertyValues = formData.getAll('propertyValue[]');
-      for (let i = 0; i < propertyKeys.length; i++) {
-        properties.push({ [propertyKeys[i]]: propertyValues[i] });
-      }
-      formData.set('properties', JSON.stringify(properties));
+      // Minting logic with XUMM
+      const xummSDK = new XummSdk('YOUR_XUMM_API_KEY'); // Replace with your API key
+      const payload = await xummSDK.payload.create({
+        TransactionType: 'NFTokenCreateOffer',
+        Account: localStorage.getItem('xumm_wallet_address'),
+        // Include other necessary transaction parameters
+      });
 
-      try {
-        const res = await fetch('/mint', {
-          method: 'POST',
-          body: formData,
-        });
+      const payloadURL = `https://xumm.app/sign/${payload.payloadUUID}`;
 
-        const result = await res.json();
-        if (result.message === 'NFT successfully minted!') {
-          alert("NFT minted successfully!");
-        } else {
-          alert("Minting failed.");
-        }
-      } catch (error) {
-        console.error(error);
-        alert("An error occurred while minting the NFT.");
-      }
+      window.location.href = payloadURL;
     });
   </script>
+
 </body>
 </html>

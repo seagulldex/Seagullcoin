@@ -113,6 +113,62 @@
       cursor: pointer;
     }
 
+    .property-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .property-row input {
+      flex: 1;
+    }
+
+    .property-row button {
+      background-color: red;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #drop-zone {
+      border: 2px dashed #aaa;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 16px;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+
+    #drop-zone.hover {
+      background-color: #2a2a2a;
+    }
+
+    #collection-modal {
+      display: none;
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #555;
+      z-index: 9999;
+      max-width: 400px;
+    }
+
+    #collection-modal input,
+    #collection-modal textarea {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    #collection-modal button {
+      margin-top: 10px;
+    }
+
     footer {
       text-align: center;
       margin-top: 60px;
@@ -152,34 +208,87 @@
         <input type="text" id="nft-name" placeholder="NFT Name" required />
         <textarea id="nft-description" placeholder="Description" rows="4" required></textarea>
         <input type="text" id="nft-domain" placeholder="Domain (optional)" />
-        <input type="file" id="nft-file" accept="image/*,video/*" required />
+        
+        <div id="drop-zone">Drag & drop your file here or click to select</div>
+        <input type="file" id="nft-file" accept="image/*,video/*" style="display: none;" required />
+
         <select id="collection-select">
           <option value="">Choose Collection</option>
+          <option value="create">+ Create New Collection</option>
           <!-- Dynamically loaded -->
         </select>
-        <input type="text" id="new-collection-name" placeholder="New Collection Name (optional)" />
-        <textarea id="new-collection-desc" placeholder="New Collection Description (optional)" rows="2"></textarea>
-        <button type="submit">Mint NFT</button>
+
+        <div id="property-container"></div>
+        <button type="button" id="add-property-btn">+ Add Property</button>
+
+        <button type="submit" id="mint-button">Login to Mint</button>
       </form>
     </div>
   </main>
+
+  <!-- Collection Modal -->
+  <div id="collection-modal">
+    <h3>Create New Collection</h3>
+    <input type="text" placeholder="Collection Name" id="collection-name" />
+    <input type="file" id="collection-logo" accept="image/*" />
+    <textarea id="collection-desc" placeholder="Description"></textarea>
+    <input type="url" placeholder="Twitter link" />
+    <input type="url" placeholder="Instagram link" />
+    <input type="url" placeholder="Website link" />
+    <button onclick="closeModal()">Close</button>
+    <button>Save</button>
+  </div>
 
   <footer>
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
   </footer>
 
-  <!-- Wallet and Mint Logic -->
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('nft-file');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('hover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('hover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('hover');
+      fileInput.files = e.dataTransfer.files;
+    });
+
+    document.getElementById('collection-select').addEventListener('change', e => {
+      if (e.target.value === 'create') {
+        document.getElementById('collection-modal').style.display = 'block';
+        e.target.value = '';
+      }
+    });
+
+    function closeModal() {
+      document.getElementById('collection-modal').style.display = 'none';
+    }
+
+    document.getElementById('add-property-btn').addEventListener('click', () => {
+      const container = document.getElementById('property-container');
+      if (container.children.length >= 8) return alert('Max 8 properties.');
+      const row = document.createElement('div');
+      row.className = 'property-row';
+      row.innerHTML = `
+        <input type="text" placeholder="Property" />
+        <input type="text" placeholder="Value" />
+        <button type="button">&minus;</button>
+      `;
+      row.querySelector('button').onclick = () => row.remove();
+      container.appendChild(row);
     });
 
     async function updateWalletStatus() {
       const res = await fetch('/api/check-login');
       const data = await res.json();
       const indicator = document.getElementById('wallet-indicator');
-
-      if (!indicator) return;
+      const mintBtn = document.getElementById('mint-button');
 
       if (data.loggedIn) {
         const wallet = data.account;
@@ -192,15 +301,16 @@
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
         indicator.onclick = () => window.location.href = `/profile.html?uuid=${uuid}`;
-        document.querySelector('#mint-form button').disabled = false;
+        mintBtn.textContent = 'Mint NFT';
+        mintBtn.disabled = false;
       } else {
         indicator.textContent = '🔴 Login';
         indicator.classList.remove('green');
         indicator.classList.add('red');
         indicator.title = 'Click to login';
         indicator.onclick = () => window.location.href = '/login';
-        document.querySelector('#mint-form button').disabled = true;
-        document.querySelector('#mint-form button').textContent = 'Login to Mint';
+        mintBtn.textContent = 'Login to Mint';
+        mintBtn.disabled = true;
       }
     }
 
@@ -212,6 +322,8 @@
       // TODO: Upload file, prepare metadata, send mint request to backend
       alert('Minting logic goes here.');
     });
+
+    window.addEventListener('DOMContentLoaded', updateWalletStatus);
   </script>
 </body>
 </html>

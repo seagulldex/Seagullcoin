@@ -49,10 +49,7 @@
         // Dynamically load the wallet header
         fetch('/header.html')
             .then(res => res.text())
-            .then(html => {
-                document.getElementById('wallet-container').innerHTML = html;
-                updateWalletStatus(); // Update wallet status after loading header
-            });
+
 
         async function updateWalletStatus() {
             const address = localStorage.getItem('xumm_wallet_address');

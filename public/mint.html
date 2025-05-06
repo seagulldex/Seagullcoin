@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
     #top-bar {
       position: fixed;
       top: 0;
@@ -15,10 +20,21 @@
       height: 40px;
       background-color: #2e2e2e;
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: flex-end;
       padding: 0 20px;
       z-index: 1000;
+    }
+
+    #menu {
+      display: flex;
+      gap: 20px;
+    }
+
+    #menu a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
     }
 
     #wallet-container {
@@ -46,31 +62,11 @@
       color: #44ff44;
     }
 
-    body {
-      margin-top: 60px;
-      font-family: Arial, sans-serif;
-    }
-
-    header {
-      margin-top: 10px;
-    }
-
-    nav ul {
-      display: flex;
-      list-style-type: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    nav ul li {
-      margin: 0 15px;
-    }
-
     main {
-      max-width: 600px;
-      margin: 40px auto;
+      margin: 60px auto;
       padding: 20px;
-      background-color: #f4f4f4;
+      max-width: 600px;
+      background: #f4f4f4;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
@@ -82,10 +78,6 @@
       margin-bottom: 20px;
       border-radius: 6px;
       border: 1px solid #ccc;
-    }
-
-    label {
-      font-weight: bold;
     }
 
     #drop-zone {
@@ -103,10 +95,6 @@
       display: flex;
       gap: 10px;
       margin-bottom: 10px;
-    }
-
-    .property-pair input {
-      flex: 1;
     }
 
     button {
@@ -128,24 +116,18 @@
 
   <!-- Top Bar -->
   <div id="top-bar">
+    <div id="menu">
+      <a href="index.html">Home</a>
+      <a href="nfts.html">NFTs</a>
+      <a href="mint.html">Mint NFT</a>
+      <a href="messages.html">Messages</a>
+    </div>
     <div id="wallet-container">
       <div id="wallet-status">
         <span id="wallet-indicator" class="red">🔴 Login</span>
       </div>
     </div>
   </div>
-
-  <!-- Navigation -->
-  <header>
-    <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="nfts.html">NFTs</a></li>
-        <li><a href="mint.html">Mint NFT</a></li>
-        <li><a href="messages.html">Messages</a></li>
-      </ul>
-    </nav>
-  </header>
 
   <!-- Main Content -->
   <main>
@@ -158,7 +140,7 @@
       <textarea id="nft-description" name="description" required></textarea>
 
       <label for="drop-zone">Upload Media:</label>
-      <div id="drop-zone">Drag & drop your file here or click to select</div>
+      <div id="drop-zone">Drag [&] drop your file here or click to select</div>
       <input type="file" id="file-input" style="display:none;" required>
 
       <label for="domain">Domain (optional):</label>
@@ -190,39 +172,35 @@
         <input type="file" id="new-collection-icon">
       </div>
 
-      <button type="submit">Mint NFT</button>
+      <button type="submit" id="submit-button">Mint NFT</button>
     </form>
   </main>
 
   <script>
-    function unlockMinting() {
-      document.getElementById('mint-form').style.display = 'block';
-    }
-
-    function lockMinting() {
-      document.getElementById('mint-form').style.display = 'none';
-    }
+    let isLoggedIn = false;
 
     async function updateWalletStatus() {
       const res = await fetch('/api/check-login');
       const data = await res.json();
       const indicator = document.getElementById('wallet-indicator');
-
-      if (!indicator) return;
+      const button = document.getElementById('submit-button');
 
       if (data.loggedIn) {
         const wallet = data.account;
         const uuid = data.uuid || 'unknown';
+        isLoggedIn = true;
+
         localStorage.setItem('xumm_wallet_address', wallet);
-        localStorage.setItem('xumm_user', JSON.stringify({ uuid: uuid, account: wallet }));
+        localStorage.setItem('xumm_user', JSON.stringify({ uuid, account: wallet }));
 
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
         indicator.onclick = () => window.location.href = `/profile.html?uuid=${uuid}`;
-        unlockMinting();
       } else {
+        isLoggedIn = false;
+
         localStorage.removeItem('xumm_wallet_address');
         localStorage.removeItem('xumm_user');
         indicator.textContent = '🔴 Login';
@@ -230,7 +208,6 @@
         indicator.classList.add('red');
         indicator.title = 'Click to login';
         indicator.onclick = () => window.location.href = '/login';
-        lockMinting();
       }
     }
 
@@ -245,7 +222,7 @@
       container.appendChild(div);
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
 
       const dropZone = document.getElementById('drop-zone');
@@ -256,11 +233,9 @@
         e.preventDefault();
         dropZone.style.backgroundColor = '#eee';
       });
-
       dropZone.addEventListener('dragleave', () => {
         dropZone.style.backgroundColor = '#fff';
       });
-
       dropZone.addEventListener('drop', e => {
         e.preventDefault();
         fileInput.files = e.dataTransfer.files;
@@ -272,8 +247,15 @@
         const show = this.value === 'create';
         document.getElementById('new-collection-fields').style.display = show ? 'block' : 'none';
       });
+
+      document.getElementById('mint-form').addEventListener('submit', function (e) {
+        if (!isLoggedIn) {
+          e.preventDefault();
+          alert('Please login with XUMM to mint an NFT.');
+          document.getElementById('wallet-status').click();
+        }
+      });
     });
   </script>
-
 </body>
 </html>

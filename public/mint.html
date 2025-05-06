@@ -1,297 +1,144 @@
-<!-- Public Header HTML (header.html) -->
-<div id="wallet-header" style="position: fixed; top: 0; right: 10px; z-index: 9999; display: flex; align-items: center;">
-    <img id="wallet-icon" src="/gravatar/3b2d755282cd6b2bd8a42398d76c8c05.png" 
-         onerror="this.src='/fallback.png'" 
-         style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; cursor: pointer;">
-    <span id="wallet-indicator">Loading...</span>
-</div>
-
-<!-- Updated Main HTML (index.html) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SGLCN-X20 NFT Minter</title>
+  <title>SGLCN-X20 Mint NFT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <style>
-    body {
-      background-color: #000;
-      color: #fff;
-      font-family: sans-serif;
-      margin: 0;
-    }
-    nav {
-      background: #111;
-      display: flex;
-      justify-content: center;
-      gap: 40px;
-      padding: 15px 0;
-      box-shadow: 0 0 10px #222;
-      position: sticky;
+    #top-bar {
+      position: fixed;
       top: 0;
-      z-index: 10;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background-color: #2e2e2e;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 20px;
+      z-index: 1000;
     }
-    nav a {
-      color: #0ff;
-      text-decoration: none;
+
+    #wallet-container {
+      border: 2px solid #000;
+      border-radius: 10px;
+      padding: 6px 12px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 140px;
+    }
+
+    #wallet-status {
+      font-size: 0.9rem;
+      cursor: pointer;
       font-weight: bold;
     }
-    nav a:hover {
-      text-decoration: underline;
+
+    #wallet-indicator.red {
+      color: #ff4444;
     }
-    main {
-      background-color: #111;
-      border-radius: 20px;
-      padding: 20px;
-      max-width: 600px;
-      margin: 30px auto;
-      box-shadow: 0 0 15px #333;
+
+    #wallet-indicator.green {
+      color: #44ff44;
     }
-    input, textarea, select, button {
-      width: 100%;
+
+    body {
+      margin-top: 60px;
+    }
+
+    header {
       margin-top: 10px;
-      padding: 10px;
-      border-radius: 10px;
-      border: none;
-      background: #222;
-      color: white;
     }
-    label {
-      margin-top: 15px;
-      display: block;
-    }
-    .property-pair {
+
+    nav ul {
       display: flex;
-      gap: 10px;
-      margin-top: 10px;
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
     }
-    .property-pair input {
-      flex: 1;
-    }
-    #collectionModal {
-      display:none;
-      position:fixed;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
-      background:#000c;
-      backdrop-filter: blur(3px);
-      justify-content:center;
-      align-items:center;
-    }
-    #collectionModal div {
-      background:#111;
-      padding:20px;
-      border-radius:20px;
-      width:90%;
-      max-width:400px;
-      color:white;
-      box-shadow:0 0 20px #333;
-    }
-    #dropzone {
-      border: 2px dashed #555;
-      border-radius: 10px;
-      padding: 20px;
-      text-align: center;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    #dropzone.hover {
-      background: #222;
-    }
-    #preview {
-      margin-top: 10px;
-      text-align: center;
-    }
-    #preview img, #preview video {
-      max-width: 100%;
-      border-radius: 10px;
-      margin-top: 10px;
+
+    nav ul li {
+      margin: 0 15px;
     }
   </style>
 </head>
 <body>
 
-  <nav>
-    <a href="/">Home</a>
-    <a href="/nfts.html">NFTs</a>
-    <a href="/profile.html">Profile</a>
-  </nav>
-
-  <main>
-    <h1>Mint a New NFT</h1>
-    <form id="mintForm">
-      <label>Name:</label>
-      <input type="text" name="name" required>
-
-      <label>Description:</label>
-      <textarea name="description" rows="4"></textarea>
-
-      <label>Upload File:</label>
-      <div id="dropzone">Drag and Drop or Click to Upload</div>
-      <input type="file" name="file" accept="image/*,video/*" required style="display:none;" id="fileInput">
-      <div id="preview"></div>
-
-      <label>Domain:</label>
-      <input type="text" name="domain">
-
-      <label>Properties (max 8):</label>
-      <div id="propertiesContainer"></div>
-      <button type="button" id="addPropertyButton">+ Add Property</button>
-
-      <label>Collection:</label>
-      <select name="collection" id="collectionSelect">
-        <option value="">No Collection</option>
-        <option value="new">+ Create New Collection</option>
-      </select>
-
-      <button type="submit">Mint NFT</button>
-    </form>
-  </main>
-
-  <!-- Collection Modal -->
-  <div id="collectionModal">
-    <div>
-      <h2>Create New Collection</h2>
-      <label>Collection Name:</label>
-      <input type="text" id="newCollectionName" required>
-
-      <label>Collection Logo:</label>
-      <input type="file" id="newCollectionLogo" accept="image/*">
-
-      <label>Description:</label>
-      <textarea id="newCollectionDesc" rows="3"></textarea>
-
-      <label>Website:</label>
-      <input type="url" id="newCollectionWebsite">
-
-      <label>X.com Link:</label>
-      <input type="url" id="newCollectionX">
-
-      <label>Telegram:</label>
-      <input type="url" id="newCollectionTelegram">
-
-      <button onclick="submitNewCollection()">Submit Collection</button>
-      <button onclick="collectionModal.style.display='none'" style="margin-top:10px;background:#555;">Cancel</button>
+  <!-- Top Bar -->
+  <div id="top-bar">
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
+      </div>
     </div>
   </div>
 
+  <!-- Navigation -->
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="nfts.html">NFTs</a></li>
+        <li><a href="mint.html">Mint NFT</a></li>
+        <li><a href="messages.html">Messages</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <h1>Mint a New NFT</h1>
+    <!-- Your minting form and logic goes here -->
+  </main>
+
   <script>
-    const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('fileInput');
-    const preview = document.getElementById('preview');
-
-    dropzone.addEventListener('click', () => fileInput.click());
-    dropzone.addEventListener('dragover', e => {
-      e.preventDefault();
-      dropzone.classList.add('hover');
-    });
-    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('hover'));
-    dropzone.addEventListener('drop', e => {
-      e.preventDefault();
-      dropzone.classList.remove('hover');
-      if (e.dataTransfer.files.length > 0) {
-        fileInput.files = e.dataTransfer.files;
-        showPreview(fileInput.files[0]);
-      }
-    });
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files.length > 0) {
-        showPreview(fileInput.files[0]);
-      }
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
     });
 
-    function showPreview(file) {
-      preview.innerHTML = '';
-      if (file.type.startsWith('image/')) {
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        preview.appendChild(img);
-      } else if (file.type.startsWith('video/')) {
-        const vid = document.createElement('video');
-        vid.src = URL.createObjectURL(file);
-        vid.controls = true;
-        preview.appendChild(vid);
+    async function updateWalletStatus() {
+      const res = await fetch('/api/check-login');
+      const data = await res.json();
+      const indicator = document.getElementById('wallet-indicator');
+
+      if (!indicator) return;
+
+      if (data.loggedIn) {
+        const wallet = data.account;
+        const uuid = data.uuid || 'unknown';
+        localStorage.setItem('xumm_wallet_address', wallet);
+        localStorage.setItem('xumm_user', JSON.stringify({ uuid: uuid, account: wallet }));
+
+        indicator.textContent = '🟢 Profile';
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
+        indicator.title = 'Go to profile';
+        indicator.onclick = () => window.location.href = `/profile.html?uuid=${uuid}`;
+        unlockMinting?.();
+      } else {
+        localStorage.removeItem('xumm_wallet_address');
+        localStorage.removeItem('xumm_user');
+        indicator.textContent = '🔴 Login';
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
+        indicator.title = 'Click to login';
+        indicator.onclick = () => window.location.href = '/login';
+        lockMinting?.();
       }
     }
 
-    const propertiesContainer = document.getElementById('propertiesContainer');
-    const addButton = document.getElementById('addPropertyButton');
+    function unlockMinting() {
+      // Enable mint form here if needed
+    }
 
-    addButton.addEventListener('click', () => {
-      const count = propertiesContainer.querySelectorAll('.property-pair').length;
-      if (count >= 8) {
-        alert('Maximum of 8 properties allowed.');
-        return;
-      }
-      const div = document.createElement('div');
-      div.className = 'property-pair';
-      div.innerHTML = `
-        <input type="text" name="trait_type" placeholder="Trait Type">
-        <input type="text" name="value" placeholder="Value">
-      `;
-      propertiesContainer.appendChild(div);
-    });
-
-    const collectionSelect = document.getElementById('collectionSelect');
-    const collectionModal = document.getElementById('collectionModal');
-
-    collectionSelect.addEventListener('change', () => {
-      if (collectionSelect.value === 'new') {
-        collectionModal.style.display = 'flex';
-      }
-    });
-
-    async function submitNewCollection() {
-      const name = document.getElementById('newCollectionName').value;
-      const desc = document.getElementById('newCollectionDesc').value;
-      const website = document.getElementById('newCollectionWebsite').value;
-      const x = document.getElementById('newCollectionX').value;
-      const telegram = document.getElementById('newCollectionTelegram').value;
-      const logo = document.getElementById('newCollectionLogo').files[0];
-
-      if (!name || !logo) {
-        alert("Collection name and logo are required.");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("description", desc);
-      formData.append("website", website);
-      formData.append("x", x);
-      formData.append("telegram", telegram);
-      formData.append("logo", logo);
-
-      try {
-        const res = await fetch("/create-collection", {
-          method: "POST",
-          body: formData
-        });
-        const json = await res.json();
-        if (json.success) {
-          const option = document.createElement('option');
-          option.value = json.collectionId;
-          option.textContent = name;
-          option.selected = true;
-          collectionSelect.appendChild(option);
-        } else {
-          alert("Error creating collection: " + json.error);
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Failed to create collection.");
-      }
-
-      collectionModal.style.display = 'none';
-      document.getElementById('newCollectionName').value = '';
-      document.getElementById('newCollectionDesc').value = '';
-      document.getElementById('newCollectionWebsite').value = '';
-      document.getElementById('newCollectionX').value = '';
-      document.getElementById('newCollectionTelegram').value = '';
-      document.getElementById('newCollectionLogo').value = '';
+    function lockMinting() {
+      // Disable mint form here if needed
     }
   </script>
+
 </body>
 </html>

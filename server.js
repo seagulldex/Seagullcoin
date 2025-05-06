@@ -451,11 +451,23 @@ app.get('/user', async (req, res) => {
 
 app.get('/gravatar/:hash', async (req, res) => {
   const { hash } = req.params;
-  const response = await fetch(`https://xpcdn.xpmarket.com/gravatars/${hash}.png`);
-  const buffer = await response.arrayBuffer();
-  res.set('Content-Type', 'image/png');
-  res.send(Buffer.from(buffer));
+
+  try {
+    const response = await fetch(`https://xpcdn.xpmarket.com/gravatars/${hash}.png`);
+
+    if (!response.ok) {
+      throw new Error('Gravatar not found');
+    }
+
+    const buffer = await response.arrayBuffer();
+    res.set('Content-Type', 'image/png');
+    res.send(Buffer.from(buffer));
+  } catch (err) {
+    // fallback image if XPMarket doesn't have one
+    res.redirect('/fallback.png'); // or send a default image from your server
+  }
 });
+
 
 
 app.get('/confirm-login/:payloadUUID', async (req, res) => {

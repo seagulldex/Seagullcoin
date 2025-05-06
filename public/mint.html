@@ -321,6 +321,25 @@
     }
 
     updateWalletStatus();
-  </script>
+  <script>
+  const sdk = new Xumm('ee60e1a3-8c08-4cdd-bfa9-accada591684'); // Replace with your real XUMM API key
+
+  async function handleWalletClick() {
+    try {
+      const res = await sdk.authorize();
+      const walletStatus = document.getElementById('wallet-status');
+      const indicator = document.getElementById('wallet-indicator');
+
+      if (res?.me?.sub) {
+        indicator.textContent = '🟢 Connected';
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
+        localStorage.setItem('xummWallet', res.me.account);
+      }
+    } catch (e) {
+      console.error('Login failed', e);
+    }
+  }
+</script>
 </body>
 </html>

@@ -319,6 +319,70 @@
     }
 
     updateWalletStatus();
-  </script>
+  <script>
+  const walletStatus = document.getElementById('wallet-status');
+  const indicator = document.getElementById('wallet-indicator');
+  const mintBtn = document.getElementById('mint-button');
+
+  // Click event to login
+  walletStatus.addEventListener('click', async () => {
+    const res = await fetch('/api/login');
+    const { loginUrl, uuid } = await res.json();
+    localStorage.setItem('xumm_uuid', uuid);
+    window.open(loginUrl, '_blank');
+    
+    // Poll login status
+    const interval = setInterval(async () => {
+      const loginRes = await fetch('/api/check-login');
+      const loginData = await loginRes.json();
+      if (loginData.loggedIn) {
+        clearInterval(interval);
+        localStorage.setItem('xumm_wallet_address', loginData.account);
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
+        indicator.textContent = '🟢 ' + loginData.account.slice(0, 6) + '...';
+        mintBtn.textContent = 'Mint NFT';
+      }
+    }, 3000);
+  });
+
+  // Auto-refresh wallet status
+  async function checkWallet() {
+    const loginRes = await fetch('/api/check-login');
+    const loginData = await loginRes.json();
+    if (loginData.loggedIn) {
+      indicator.classList.remove('red');
+      indicator.classList.add('green');
+      indicator.textContent = '🟢 ' + loginData.account.slice(0, 6) + '...';
+      mintBtn.textContent = 'Mint NFT';
+    } else {
+      indicator.classList.remove('green');
+      indicator.classList.add('red');
+      indicator.textContent = '🔴 Login';
+      mintBtn.textContent = 'Login to Mint';
+    }
+  }
+
+  checkWallet();
+    
+    <script>
+  const xumm = new Xumm('ee60e1a3-8c08-4cdd-bfa9-accada591684'); // Use your actual API key
+
+  const walletStatus = document.getElementById('wallet-status');
+  const walletIndicator = document.getElementById('wallet-indicator');
+  const mintBtn = document.getElementById('mint-button');
+
+  walletStatus.addEventListener('click', async () => {
+    const { me } = await xumm.authorize();
+    if (me && me.sub) {
+      walletIndicator.classList.remove('red');
+      walletIndicator.classList.add('green');
+      walletIndicator.textContent = `🟢 ${me.sub.slice(0, 6)}...`;
+      mintBtn.disabled = false;
+      mintBtn.textContent = 'Mint NFT';
+      localStorage.setItem('xumm_wallet_address', me.sub);
+    }
+  });
+</script>
 </body>
 </html>

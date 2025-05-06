@@ -1,0 +1,32 @@
+<!-- views/partials/header.ejs -->
+<div id="wallet-widget" style="position: fixed; top: 10px; right: 10px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+  <img id="wallet-icon" src="/gravatar/3b2d755282cd6b2bd8a42398d76c8c05" onerror="this.src='/fallback.png'" style="width: 32px; height: 32px; border-radius: 50%;">
+  <span id="wallet-indicator" style="font-weight: bold; color: green;"></span>
+</div>
+
+<script>
+  async function updateWalletStatus() {
+    const address = localStorage.getItem('xumm_wallet_address');
+    const indicator = document.getElementById('wallet-indicator');
+    const icon = document.getElementById('wallet-icon');
+
+    if (!address) {
+      indicator.textContent = 'Login';
+      icon.onclick = () => window.location.href = '/login';
+      return;
+    }
+
+    const res = await fetch(`/user?address=${address}`);
+    const data = await res.json();
+
+    if (data.hasTrustline) {
+      indicator.textContent = '🟢';
+    } else {
+      indicator.textContent = 'No Trustline';
+    }
+
+    icon.onclick = () => window.location.href = '/profile';
+  }
+
+  document.addEventListener('DOMContentLoaded', updateWalletStatus);
+</script>

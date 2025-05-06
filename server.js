@@ -468,6 +468,8 @@ app.get('/gravatar/:hash', async (req, res) => {
   }
 });
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views')); // Ensure views are stored in /views
 
 
 app.get('/confirm-login/:payloadUUID', async (req, res) => {

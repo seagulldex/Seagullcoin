@@ -23,7 +23,6 @@ import { body, query, validationResult } from 'express-validator';
 import { XummSdk } from 'xumm-sdk';
 import { verifyXummPayload, createNftOfferPayload, getUserInfo } from './xumm-utils.js';
 import { createNftOffer } from './xrpl-utils.js'
-import { Profile } from './profile.js'; // Adjust path to your models directory if needed
 import pkg from 'xumm-sdk';
 import { mintNFT } from './nftminting.js';
 import checkSeagullCoinBalance from './checkSeagullCoinBalance.js'; // Import the checkSeagullCoinBalance function
@@ -400,6 +399,56 @@ app.get('/login', async (req, res) => {
     res.status(500).json({ error: 'Error initiating login' });
   }
 });
+
+app.get('/user', async (req, res) => {
+  const address = req.query.address;
+  if (!address) return res.status(400).json({ error: 'Missing address' });
+
+  try {
+    const accountInfo = await client.request({
+      command: 'account_info',
+      account: address,
+      ledger_index: 'validated'
+    });
+
+    const trustlines = await client.request({
+      command: 'account_lines',
+      account: address
+    });
+
+    const hasTrustline = trustlines.result.lines.some(
+      line => line.currency === 'SeagullCoin' && line.issuer === SGLCN_ISSUER
+    );
+
+    const balanceLine = trustlines.result.lines.find(
+      line => line.currency === 'SeagullCoin' && line.issuer === SGLCN_ISSUER
+    );
+
+    const balance = balanceLine ? balanceLine.balance : '0';
+
+    const nftResponse = await client.request({
+      command: 'account_nfts',
+      account: address
+    });
+
+    const offersResponse = await client.request({
+      command: 'nft_sell_offers',
+      nft_id: nftResponse.result.account_nfts.map(n => n.NFTokenID)
+    }).catch(() => ({ result: { offers: [] } }));
+
+    res.json({
+      wallet: address,
+      hasTrustline,
+      balance,
+      nfts: nftResponse.result.account_nfts,
+      offers: offersResponse.result.offers || []
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to fetch user data' });
+  }
+});
+
 
 
 app.get('/confirm-login/:payloadUUID', async (req, res) => {

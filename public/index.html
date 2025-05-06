@@ -7,11 +7,45 @@
   <link rel="stylesheet" href="style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <link rel="stylesheet" href="header.css" />
+  <style>
+    /* Container for the wallet status with borders and positioning */
+    #wallet-container {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      border: 2px solid #000; /* Border around the container */
+      border-radius: 10px;
+      padding: 8px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 80%; /* Make it 20% smaller */
+      max-width: 150px; /* Limit the width for a neat layout */
+      z-index: 1000;
+    }
+
+    #wallet-status {
+      font-size: 0.9rem; /* Smaller font size */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    #wallet-status span {
+      margin-left: 5px;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Wallet status container (top-right circle) -->
-  <div id="wallet-container"></div>
+  <!-- Wallet status container (top-right corner) -->
+  <div id="wallet-container">
+    <div id="wallet-status">
+      <span id="wallet-indicator">🔴 Login</span> <!-- Default as not logged in -->
+    </div>
+  </div>
 
   <!-- Navigation -->
   <header>
@@ -45,13 +79,11 @@
 
   <!-- Your custom JavaScript -->
   <script>
-    // Load the top-right wallet header
-    fetch('/header.html')
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById('wallet-container').innerHTML = html;
-        updateWalletStatus();
-      });
+    // Ensure the DOM is fully loaded before executing JS
+    window.addEventListener('DOMContentLoaded', (event) => {
+      // Load the top-right wallet header
+      updateWalletStatus();
+    });
 
     // Called once header is loaded and login status is checked
     async function updateWalletStatus() {

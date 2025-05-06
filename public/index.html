@@ -61,19 +61,22 @@
 
       if (!indicator) return;
 
+      // Check if user is logged in
       if (data.loggedIn) {
         const wallet = data.account;
         localStorage.setItem('xumm_wallet_address', wallet);
         document.getElementById('wallet-info').style.display = 'block';
         document.getElementById('wallet-address').innerText = wallet;
-        indicator.textContent = '🟢';
-        indicator.onclick = () => window.location.href = '/profile';
+        indicator.textContent = '🟢 Connected'; // Green circle with text
+        indicator.title = 'Go to profile';
+        indicator.onclick = () => window.location.href = '/profile'; // Redirect to profile page
         unlockMinting();
       } else {
         localStorage.removeItem('xumm_wallet_address');
         document.getElementById('wallet-info').style.display = 'none';
-        indicator.textContent = '🔴';
-        indicator.onclick = () => window.location.href = '/login';
+        indicator.textContent = '🔴 Login'; // Red circle with text
+        indicator.title = 'Click to login';
+        indicator.onclick = () => window.location.href = '/login'; // Redirect to login page
         lockMinting();
       }
     }

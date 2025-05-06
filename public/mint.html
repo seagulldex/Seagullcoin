@@ -114,6 +114,33 @@
       background-color: #ccc;
       cursor: not-allowed;
     }
+
+    /* Modal styles */
+    #collection-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #collection-modal div {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 500px;
+      width: 80%;
+    }
+
+    #collection-modal input,
+    #collection-modal textarea {
+      width: 100%;
+      margin: 10px 0;
+    }
   </style>
 </head>
 <body>
@@ -139,12 +166,7 @@
     </nav>
   </header>
 
-  <!-- Main Content -->
-  <main>
-    <section class="hero">
-      <h1>Mint Your SeagullCoin NFT</h1>
-      <p>Create a unique NFT backed by SeagullCoin (SGLCN-X20)!</p>
-    </section>
+
 
     <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
 
@@ -174,6 +196,22 @@
 
       <button type="button" class="minting-button" id="mint-button" disabled>Mint NFT</button>
     </form>
+
+    <!-- Collection Modal -->
+    <div id="collection-modal">
+      <div>
+        <h3>Create New Collection</h3>
+        <input type="text" placeholder="Collection Name" id="collection-name" />
+        <input type="file" id="collection-logo" accept="image/*" />
+        <textarea id="collection-desc" placeholder="Description"></textarea>
+        <input type="url" placeholder="Twitter link" />
+        <input type="url" placeholder="Instagram link" />
+        <input type="url" placeholder="Website link" />
+        <button onclick="closeModal()">Close</button>
+        <button>Save</button>
+      </div>
+    </div>
+
   </main>
 
   <footer>
@@ -253,6 +291,15 @@
 
       window.location.href = payloadURL;
     });
+
+    // Modal Logic
+    function openModal() {
+      document.getElementById('collection-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('collection-modal').style.display = 'none';
+    }
   </script>
 
 </body>

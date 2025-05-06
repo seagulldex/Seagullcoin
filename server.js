@@ -490,6 +490,33 @@ app.get('/confirm-login/:payloadUUID', async (req, res) => {
   }
 });
 
+// Example Node.js backend logic for payment verification
+app.post('/verify-payment', async (req, res) => {
+  const { walletAddress } = req.body;
+
+  try {
+    // Interact with the XRPL to get the balance of SeagullCoin for the user's wallet
+    const paymentAmount = await getSeagullCoinBalance(walletAddress); // You need to implement this
+
+    if (paymentAmount >= 0.5) {
+      return res.json({ success: true, amountPaid: paymentAmount });
+    } else {
+      return res.json({ success: false, amountPaid: paymentAmount });
+    }
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false, error: 'Failed to verify payment' });
+  }
+});
+
+// Function to fetch the SeagullCoin balance of a wallet (you'll need to implement this with XRPL SDK)
+async function getSeagullCoinBalance(walletAddress) {
+  // Call XRPL API to fetch the account balance
+  // Make sure to use the correct SeagullCoin token issuer address for verification
+  // Here is where you would interact with the XRPL network
+  return 0.5; // Example hardcoded value; you would replace this with actual API call
+}
+
 
 // Protected route to check if the user is logged in before proceeding
 app.get('/dashboard', requireLogin, (req, res) => {

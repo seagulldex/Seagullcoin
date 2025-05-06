@@ -131,6 +131,12 @@
       <div id="propertiesContainer"></div>
       <button type="button" id="addPropertyButton">+ Add Property</button>
 
+<!-- Add a new section for payment verification -->
+<label>Minting Payment Status:</label>
+<div id="paymentStatus">Not yet paid</div>
+<button type="button" id="verifyPaymentButton">Verify Payment</button>
+<button type="submit" id="mintNFTButton" disabled>Mint NFT</button>
+
       <label>Collection:</label>
       <select name="collection" id="collectionSelect">
         <option value="">No Collection</option>
@@ -283,6 +289,72 @@
       document.getElementById('newCollectionTelegram').value = '';
       document.getElementById('newCollectionLogo').value = '';
     }
+const verifyPaymentButton = document.getElementById('verifyPaymentButton');
+const mintNFTButton = document.getElementById('mintNFTButton');
+const paymentStatus = document.getElementById('paymentStatus');
+
+let paymentVerified = false;
+
+// Mockup function to simulate payment verification
+async function verifyPayment() {
+  // Call your backend to verify payment
+  try {
+    const response = await fetch('/verify-payment', {
+      method: 'POST',
+      body: JSON.stringify({ walletAddress: 'USER_WALLET_ADDRESS' }), // Get this dynamically based on the user's wallet
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const result = await response.json();
+    
+    if (result.success && result.amountPaid === 0.5) {
+      paymentVerified = true;
+      paymentStatus.textContent = 'Payment Successful';
+      mintNFTButton.disabled = false; // Enable mint button
+    } else {
+      paymentVerified = false;
+      paymentStatus.textContent = 'Payment Failed: Insufficient Funds';
+    }
+  } catch (err) {
+    console.error(err);
+    paymentStatus.textContent = 'Payment Verification Failed';
+  }
+}
+
+verifyPaymentButton.addEventListener('click', () => {
+  verifyPayment();
+});
+
+// Mint NFT logic (Submit form after payment is verified)
+document.getElementById('mintForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  
+  if (!paymentVerified) {
+    alert('Please complete the payment before minting.');
+    return;
+  }
+
+  // Proceed with NFT minting if payment is verified
+  const formData = new FormData(event.target);
+  
+  try {
+    const res = await fetch('/mint-nft', {
+      method: 'POST',
+      body: formData,
+    });
+    const json = await res.json();
+    
+    if (json.success) {
+      alert('NFT Minted Successfully!');
+    } else {
+      alert('Minting Failed: ' + json.error);
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Minting failed');
+  }
+});
+
   </script>
 </body>
 </html>

@@ -194,7 +194,24 @@
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = `/profile.html?uuid=${uuid}`;
+        indicator.onclick = async () => {
+  const xumm = new Xumm('ee60e1a3-8c08-4cdd-bfa9-accada591684'); // Replace with your actual API key
+
+  try {
+    const payload = await xumm.authorize();
+    if (payload.me) {
+      localStorage.setItem('xumm_wallet_address', payload.me.account);
+      localStorage.setItem('xumm_user', JSON.stringify(payload));
+      updateWalletStatus();
+    } else {
+      alert('Login failed or was cancelled.');
+    }
+  } catch (err) {
+    console.error('XUMM login error:', err);
+    alert('Login failed.');
+  }
+};
+
 
         // Update navigation links for logged-in users
         const navLinks = document.querySelectorAll('nav ul li a');
@@ -278,6 +295,85 @@
         alert("An error occurred while minting the NFT.");
       }
     });
+    
+    // Main function to update wallet status
+async function updateWalletStatus() {
+  const walletAddress = localStorage.getItem('xumm_wallet_address');
+  const indicator = document.getElementById('wallet-indicator');
+
+  if (walletAddress) {
+    // If wallet is logged in, show profile info
+    const user = JSON.parse(localStorage.getItem('xumm_user'));
+    
+    document.getElementById('wallet-info').style.display = 'block';
+    indicator.textContent = '🟢 Profile';
+    indicator.classList.remove('red');
+    indicator.classList.add('green');
+    indicator.title = 'Go to profile';
+    
+    // Redirect to profile page on indicator click
+    indicator.onclick = async () => {
+      window.location.href = '/profile.html'; // Redirect to profile page
+    };
+
+    // Enable navigation links for logged-in users
+    const navLinks = document.querySelectorAll('nav ul li a');
+    navLinks.forEach(link => {
+      link.classList.remove('disabled');
+      if (link.textContent === 'Mint NFT') {
+        link.href = '/mint.html'; // Link to minting page
+      }
+    });
+
+  } else {
+    // If no wallet is logged in, remove any saved data
+    localStorage.removeItem('xumm_wallet_address');
+    localStorage.removeItem('xumm_user');
+    
+    // Update indicator to show "Login"
+    indicator.textContent = '🔴 Login';
+    indicator.classList.remove('green');
+    indicator.classList.add('red');
+    indicator.title = 'Click to login';
+    
+    // Trigger login when clicked
+    indicator.onclick = () => {
+      const xumm = new Xumm('ee60e1a3-8c08-4cdd-bfa9-accada591684'); // Replace with your XUMM API key
+
+      // Open the XUMM authorization window
+      xumm.authorize()
+        .then(payload => {
+          if (payload.me) {
+            // Save wallet info on successful login
+            localStorage.setItem('xumm_wallet_address', payload.me.account);
+            localStorage.setItem('xumm_user', JSON.stringify(payload));
+            updateWalletStatus(); // Update the UI to reflect login
+          } else {
+            alert('Login failed or was cancelled.');
+          }
+        })
+        .catch(err => {
+          console.error('XUMM login error:', err);
+          alert('Login failed.');
+        });
+    };
+
+    // Disable navigation links for logged-out users
+    const navLinks = document.querySelectorAll('nav ul li a');
+    navLinks.forEach(link => {
+      link.classList.add('disabled');
+      if (link.textContent === 'Mint NFT') {
+        link.href = '#'; // Disable the minting link if not logged in
+      }
+    });
+  }
+}
+
+// Call this function when the page loads to set the initial wallet status
+window.addEventListener('DOMContentLoaded', () => {
+  updateWalletStatus(); // Initialize wallet status on page load
+});
+
   </script>
 </body>
 </html>

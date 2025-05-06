@@ -8,42 +8,73 @@
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <link rel="stylesheet" href="header.css" />
   <style>
-    /* Container for the wallet status with borders and positioning */
-    #wallet-container {
+    #top-bar {
       position: fixed;
-      top: 10px;  /* Adjust top margin to place it above the nav bar */
-      right: 10px;  /* Move it closer to the right edge */
-      border: 2px solid #000; /* Border around the container */
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background-color: #2e2e2e; /* Dark grey */
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 20px;
+      z-index: 1000;
+    }
+
+    #wallet-container {
+      border: 2px solid #000;
       border-radius: 10px;
-      padding: 8px;
+      padding: 6px 12px;
       background-color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 65%; /* Reduce the width by 15% from the previous 80% */
-      max-width: 130px; /* Limit the width for a neat layout */
-      z-index: 1000;
+      max-width: 140px;
     }
 
     #wallet-status {
-      font-size: 0.9rem; /* Smaller font size */
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-size: 0.9rem;
       cursor: pointer;
+      font-weight: bold;
     }
 
-    #wallet-status span {
-      margin-left: 5px;
+    #wallet-indicator.red {
+      color: #ff4444;
+    }
+
+    #wallet-indicator.green {
+      color: #44ff44;
+    }
+
+    body {
+      margin-top: 60px; /* extra margin for fixed top bar */
+    }
+
+    header {
+      margin-top: 10px;
+    }
+
+    nav ul {
+      display: flex;
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    nav ul li {
+      margin: 0 15px;
     }
   </style>
 </head>
 <body>
 
-  <!-- Wallet status container (top-right corner) -->
-  <div id="wallet-container">
-    <div id="wallet-status">
-      <span id="wallet-indicator">🔴 Login</span> <!-- Default as not logged in -->
+  <!-- Top Bar -->
+  <div id="top-bar">
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
+      </div>
     </div>
   </div>
 
@@ -77,15 +108,11 @@
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
   </footer>
 
-  <!-- Your custom JavaScript -->
   <script>
-    // Ensure the DOM is fully loaded before executing JS
-    window.addEventListener('DOMContentLoaded', (event) => {
-      // Load the top-right wallet header
+    window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
     });
 
-    // Called once header is loaded and login status is checked
     async function updateWalletStatus() {
       const res = await fetch('/api/check-login');
       const data = await res.json();
@@ -93,34 +120,35 @@
 
       if (!indicator) return;
 
-      // Check if user is logged in
       if (data.loggedIn) {
         const wallet = data.account;
         localStorage.setItem('xumm_wallet_address', wallet);
         document.getElementById('wallet-info').style.display = 'block';
         document.getElementById('wallet-address').innerText = wallet;
-        indicator.textContent = '🟢 Connected'; // Green circle with text
+        indicator.textContent = '🟢 Profile';
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
         indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = '/profile'; // Redirect to profile page
+        indicator.onclick = () => window.location.href = '/profile';
         unlockMinting();
       } else {
         localStorage.removeItem('xumm_wallet_address');
         document.getElementById('wallet-info').style.display = 'none';
-        indicator.textContent = '🔴 Login'; // Red circle with text
+        indicator.textContent = '🔴 Login';
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
         indicator.title = 'Click to login';
-        indicator.onclick = () => window.location.href = '/login'; // Redirect to login page
+        indicator.onclick = () => window.location.href = '/login';
         lockMinting();
       }
     }
 
-    // UI logic for enabling minting
     function unlockMinting() {
-      // enable mint-related UI
+      // Enable minting UI
     }
 
-    // UI logic for disabling minting
     function lockMinting() {
-      // disable mint-related UI
+      // Disable minting UI
     }
   </script>
 

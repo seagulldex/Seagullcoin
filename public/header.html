@@ -1,9 +1,41 @@
 <!-- public/header.html -->
-<div id="wallet-header" style="position: fixed; top: 10px; right: 10px; display: flex; align-items: center; z-index: 1000;">
-  <!-- Optional icon (can be removed if not needed) -->
-  <!-- <img id="wallet-icon" src="/gravatar/3b2d755282cd6b2bd8a42398d76c8c05.png"
-       onerror="this.src='/fallback.png'"
-       style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; cursor: pointer;"> -->
-
-  <span id="wallet-indicator" title="Connect Wallet" style="font-size: 1.5rem; cursor: pointer;">🔴</span>
+<div id="wallet-header-bar">
+  <div id="wallet-header">
+    <span id="wallet-indicator" class="status-text">🔴 Login</span>
+  </div>
 </div>
+
+<style>
+  #wallet-header-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background-color: #2e2e2e; /* Dark grey */
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding-right: 20px;
+    z-index: 9999;
+  }
+
+  #wallet-header {
+    font-size: 0.85rem;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .status-text {
+    font-weight: bold;
+  }
+
+  .status-text.red {
+    color: #ff4444;
+  }
+
+  .status-text.green {
+    color: #44ff44;
+  }
+</style>

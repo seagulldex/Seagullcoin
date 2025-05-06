@@ -267,8 +267,8 @@ const upload = multer({
 
 // ===== Rate Limiting =====
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 5000,
-  max: 10000,
+  windowMs: 15 * 60 * 50000,
+  max: 100000,
   message: { error: 'Too many requests from this IP, please try again later.' },
 });
 
@@ -878,6 +878,9 @@ app.get('/api/check-login', async (req, res) => {
 
   return res.json({ address: userAddress });
 });
+
+app.use('/fallback.png', express.static(path.join(__dirname, 'public/fallback.png')));
+
 
 app.post('/list', async (req, res) => {
   const { nftokenId, price, duration } = req.body;

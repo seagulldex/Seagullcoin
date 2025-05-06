@@ -449,6 +449,13 @@ app.get('/user', async (req, res) => {
   }
 });
 
+app.get('/gravatar/:hash', async (req, res) => {
+  const { hash } = req.params;
+  const response = await fetch(`https://xpcdn.xpmarket.com/gravatars/${hash}.png`);
+  const buffer = await response.arrayBuffer();
+  res.set('Content-Type', 'image/png');
+  res.send(Buffer.from(buffer));
+});
 
 
 app.get('/confirm-login/:payloadUUID', async (req, res) => {

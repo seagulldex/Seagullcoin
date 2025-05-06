@@ -93,12 +93,13 @@
     .form-container textarea,
     .form-container select {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       margin-bottom: 16px;
       border: 1px solid #555;
       border-radius: 8px;
       background-color: #2a2a2a;
       color: #fff;
+      box-sizing: border-box; /* Ensure no overflow */
     }
 
     .form-container button {
@@ -120,16 +121,21 @@
     }
 
     .property-row input {
-      flex: 1;
+      flex-grow: 9;
+      padding: 8px;
+      font-size: 14px;
     }
 
     .property-row button {
       background-color: red;
       color: white;
       border: none;
-      padding: 6px 12px;
+      padding: 2px 4px;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 12px; /* Button 3 times smaller */
+      line-height: 1;
+      flex-grow: 1;
     }
 
     #drop-zone {
@@ -208,7 +214,7 @@
         <input type="text" id="nft-name" placeholder="NFT Name" required />
         <textarea id="nft-description" placeholder="Description" rows="4" required></textarea>
         <input type="text" id="nft-domain" placeholder="Domain (optional)" />
-        
+
         <div id="drop-zone">Drag & drop your file here or click to select</div>
         <input type="file" id="nft-file" accept="image/*,video/*" style="display: none;" required />
 
@@ -307,23 +313,12 @@
         indicator.textContent = '🔴 Login';
         indicator.classList.remove('green');
         indicator.classList.add('red');
-        indicator.title = 'Click to login';
-        indicator.onclick = () => window.location.href = '/login';
         mintBtn.textContent = 'Login to Mint';
         mintBtn.disabled = true;
       }
     }
 
-    document.getElementById('mint-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      const user = localStorage.getItem('xumm_user');
-      if (!user) return alert('You must be logged in with XUMM to mint.');
-
-      // TODO: Upload file, prepare metadata, send mint request to backend
-      alert('Minting logic goes here.');
-    });
-
-    window.addEventListener('DOMContentLoaded', updateWalletStatus);
+    updateWalletStatus();
   </script>
 </body>
 </html>

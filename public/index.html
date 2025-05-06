@@ -9,6 +9,36 @@
     <link rel="stylesheet" href="header.css"> <!-- If header styling is needed -->
 </head>
 <body>
+  <script>
+    // Inject header
+    fetch('/header.html')
+        .then(res => res.text())
+        .then(html => {
+            document.getElementById('wallet-container').innerHTML = html;
+        });
+
+    // On window load: check login and update status
+    window.onload = async () => {
+        const res = await fetch('/api/check-login');
+        const data = await res.json();
+        const indicator = document.getElementById('wallet-indicator');
+
+        if (data.loggedIn) {
+            localStorage.setItem('xumm_wallet_address', data.account);
+            if (indicator) {
+                indicator.textContent = '🟢';
+                indicator.onclick = () => window.location.href = '/profile';
+            }
+        } else {
+            localStorage.removeItem('xumm_wallet_address');
+            if (indicator) {
+                indicator.textContent = '🔴';
+                indicator.onclick = () => window.location.href = '/login';
+            }
+        }
+    };
+</script>
+
     <!-- Include Wallet Header -->
     <div id="wallet-container"></div>
 
@@ -48,7 +78,30 @@
     <script>
         // Dynamically load the wallet header
         fetch('/header.html')
-            .then(res => res.text())
+    .then(res => res.text())
+    .then(html => {
+        document.getElementById('wallet-container').innerHTML = html;
+        // Wait for login check first
+    });
+
+window.onload = async () => {
+    const res = await fetch('/api/check-login');
+    const data = await res.json();
+
+    if (data.loggedIn) {
+        const wallet = data.account;
+        localStorage.setItem('xumm_wallet_address', wallet);
+        document.getElementById('wallet-info').style.display = 'block';
+        document.getElementById('wallet-address').innerText = wallet;
+        unlockMinting();
+    } else {
+        document.getElementById('wallet-info').style.display = 'none';
+        lockMinting();
+    }
+
+    // Now call updateWalletStatus *after* login logic is done
+    updateWalletStatus();
+};
 
 
         async function updateWalletStatus() {

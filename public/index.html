@@ -113,6 +113,13 @@
   window.addEventListener('DOMContentLoaded', () => {
     updateWalletStatus();
   });
+  
+  // 👇 Add this right here
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'xumm_wallet_address') {
+      updateWalletStatus(); // Refresh UI if login happens in another tab
+    }
+  });
 
   async function updateWalletStatus() {
     const wallet = localStorage.getItem('xumm_wallet_address');

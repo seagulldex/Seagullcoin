@@ -71,7 +71,7 @@ const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const NFT_STORAGE_API_KEY = process.env.NFT_STORAGE_API_KEY;
 const nftData = requireLogin.body;
-
+const sessions = {};
 
 
 const app = express();
@@ -1867,6 +1867,27 @@ app.get('/authenticate', async (req, res) => {
   }
 });
 
+app.post('/user', async (req, res) => {
+  const { xummToken } = req.body;
+
+  try {
+    const userData = await xummSDK.getUserTokenData(xummToken); // verify token
+
+    if (userData?.sub) {
+      const account = userData.sub;
+      sessions[account] = { walletAddress: account }; // ✅ store it in memory
+
+      return res.json({ success: true, account });
+    }
+
+    res.status(400).json({ success: false, error: 'Invalid user' });
+  } catch (err) {
+    console.error('Error verifying XUMM token:', err);
+    res.status(500).json({ success: false });
+  }
+});
+
+
 
 // Logout route to clear session data
 app.post('/logout', (req, res) => {
@@ -1890,8 +1911,6 @@ async function xrplPing() {
   }
 }
 
-localStorage.setItem('xumm_wallet_address', 'rTESTADDRESS...');
-localStorage.setItem('xumm_user', JSON.stringify({ uuid: 'xyz', account: 'rTESTADDRESS...' }));
 
 
 // Call the XRPL ping when the server starts
@@ -1906,8 +1925,6 @@ xumm.ping().then(response => {
     console.error("Error connecting to XUMM:", error);
 });
 
-console.log(process.env.XUMM_API_KEY); // Check if the API key is loaded
-console.log(process.env.XUMM_API_SECRET); // Check if the API secret is loaded
 
 
 // Run the cleanup job periodically (every 24 hours for example)

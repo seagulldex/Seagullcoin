@@ -6,6 +6,7 @@
   <title>SGLCN-X20 Minting Platform</title>
   <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="header.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xumm-oauth2-pkce@1.0.1/browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk@2.0.0/browser.min.js"></script>
   <style>
     #top-bar {
@@ -110,55 +111,56 @@
 
   <!-- XUMM Wallet Login -->
   <script>
-  window.addEventListener('DOMContentLoaded', () => {
-    const xumm = new XummPkce('ee60e1a3-8c08-4cdd-bfa9-accada591684', { implicit: true });
+ window.addEventListener('DOMContentLoaded', () => {
+  const xumm = new XummPkce('ee60e1a3-8c08-4cdd-bfa9-accada591684', { implicit: true });
 
-    const indicator = document.getElementById('wallet-indicator');
-    const container = document.getElementById('wallet-container');
-    const walletInfo = document.getElementById('wallet-info');
-    const walletAddr = document.getElementById('wallet-address');
+  const indicator = document.getElementById('wallet-indicator');
+  const container = document.getElementById('wallet-container');
+  const walletInfo = document.getElementById('wallet-info');
+  const walletAddr = document.getElementById('wallet-address');
 
-    xumm.on("ready", async () => {
-      const state = await xumm.state();
+  xumm.on("ready", async () => {
+    const state = await xumm.state();
 
-      if (state?.me?.sub) {
-        const account = state.me.sub;
-        localStorage.setItem('xumm_wallet_address', account);
-        walletAddr.innerText = account;
-        walletInfo.style.display = 'block';
-        indicator.textContent = '🟢 Profile';
-        indicator.classList.remove('red');
-        indicator.classList.add('green');
-        container.title = 'Go to profile';
+    if (state?.me?.sub) {
+      const account = state.me.sub;
+      localStorage.setItem('xumm_wallet_address', account);
+      walletAddr.innerText = account;
+      walletInfo.style.display = 'block';
+      indicator.textContent = '🟢 Profile';
+      indicator.classList.remove('red');
+      indicator.classList.add('green');
+      container.title = 'Go to profile';
 
-        container.onclick = () => {
-          alert(`Wallet connected: ${account}`);
-        };
+      container.onclick = () => {
+        alert(`Wallet connected: ${account}`);
+      };
 
-        unlockMinting();
-      } else {
-        walletInfo.style.display = 'none';
-        indicator.textContent = '🔴 Login';
-        indicator.classList.remove('green');
-        indicator.classList.add('red');
-        container.title = 'Click to login';
+      unlockMinting();
+    } else {
+      walletInfo.style.display = 'none';
+      indicator.textContent = '🔴 Login';
+      indicator.classList.remove('green');
+      indicator.classList.add('red');
+      container.title = 'Click to login';
 
-        container.onclick = () => {
-          xumm.authorize();
-        };
+      container.onclick = () => {
+        xumm.authorize();
+      };
 
-        lockMinting();
-      }
-    });
-
-    function unlockMinting() {
-      console.log("Minting unlocked.");
-    }
-
-    function lockMinting() {
-      console.log("Minting locked.");
+      lockMinting();
     }
   });
+
+  function unlockMinting() {
+    console.log("Minting unlocked.");
+  }
+
+  function lockMinting() {
+    console.log("Minting locked.");
+  }
+});
+
 </script>
   <script src="main.js"></script>
 </body>

@@ -5,9 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SGLCN-X20 Minting Platform</title>
   <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <link rel="stylesheet" href="header.css" />
-  <script src="https://cdn.jsdelivr.net/npm/xumm-oauth2-pkce@1.0.1/browser.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk@2.0.0/browser.min.js"></script>
   <style>
     #top-bar {
       position: fixed;
@@ -32,9 +31,12 @@
       align-items: center;
       justify-content: center;
       max-width: 140px;
-      font-weight: bold;
+    }
+
+    #wallet-status {
       font-size: 0.9rem;
       cursor: pointer;
+      font-weight: bold;
     }
 
     #wallet-indicator.red {
@@ -63,29 +65,17 @@
     nav ul li {
       margin: 0 15px;
     }
-
-    button#wallet-container {
-      border: 2px solid #000;
-      border-radius: 10px;
-      padding: 6px 12px;
-      background-color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      max-width: 140px;
-      font-weight: bold;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
 
   <!-- Top Bar -->
   <div id="top-bar">
-    <button id="wallet-container" title="Click to login">
-      <span id="wallet-indicator" class="red">🔴 Login</span>
-    </button>
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
+      </div>
+    </div>
   </div>
 
   <!-- Navigation -->
@@ -118,57 +108,53 @@
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
   </footer>
 
-  <!-- XUMM Wallet Login -->
+  <!-- Wallet Logic -->
   <script>
-window.addEventListener('DOMContentLoaded', () => {
-  const xumm = new XummPkceBrowser('ee60e1a3-8c08-4cdd-bfa9-accada591684', { implicit: true });
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
+    });
 
-  const indicator = document.getElementById('wallet-indicator');
-  const container = document.getElementById('wallet-container');
-  const walletInfo = document.getElementById('wallet-info');
-  const walletAddr = document.getElementById('wallet-address');
+    async function updateWalletStatus() {
+      const res = await fetch('/api/check-login');
+      const data = await res.json();
+      const indicator = document.getElementById('wallet-indicator');
 
-  xumm.on("ready", async () => {
-    const state = await xumm.state();
+      if (!indicator) return;
 
-    if (state?.me?.sub) {
-      const account = state.me.sub;
-      localStorage.setItem('xumm_wallet_address', account);
-      walletAddr.innerText = account;
-      walletInfo.style.display = 'block';
-      indicator.textContent = '🟢 Profile';
-      indicator.classList.remove('red');
-      indicator.classList.add('green');
-      container.title = 'Go to profile';
+      if (data.loggedIn) {
+        const wallet = data.account;
+        const uuid = data.uuid || 'unknown';
+        localStorage.setItem('xumm_wallet_address', wallet);
+        localStorage.setItem('xumm_user', JSON.stringify({ uuid: uuid, account: wallet }));
 
-      container.onclick = () => {
-        alert(`Wallet connected: ${account}`);
-      };
-
-      unlockMinting();
-    } else {
-      walletInfo.style.display = 'none';
-      indicator.textContent = '🔴 Login';
-      indicator.classList.remove('green');
-      indicator.classList.add('red');
-      container.title = 'Click to login';
-
-      container.onclick = () => {
-        xumm.authorize();
-      };
-
-      lockMinting();
+        document.getElementById('wallet-info').style.display = 'block';
+        document.getElementById('wallet-address').innerText = wallet;
+        indicator.textContent = '🟢 Profile';
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
+        indicator.title = 'Go to profile';
+        indicator.onclick = () => window.location.href = `/login?uuid=${uuid}`;
+        unlockMinting();
+      } else {
+        localStorage.removeItem('xumm_wallet_address');
+        localStorage.removeItem('xumm_user');
+        document.getElementById('wallet-info').style.display = 'none';
+        indicator.textContent = '🔴 Login';
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
+        indicator.title = 'Click to login';
+        indicator.onclick = () => window.location.href = '/login';
+        lockMinting();
+      }
     }
-  });
 
-  function unlockMinting() {
-    console.log("Minting unlocked.");
-  }
+    function unlockMinting() {
+      // Enable minting UI
+    }
 
-  function lockMinting() {
-    console.log("Minting locked.");
-  }
-});
+    function lockMinting() {
+      // Disable minting UI
+    }
   </script>
 
   <script src="main.js"></script>

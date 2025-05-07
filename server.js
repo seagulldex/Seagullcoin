@@ -279,7 +279,11 @@ app.use(session({
     secret: 'your-secret-key',
     resave: false,
     saveUninitialized: true,
-    cookie: { maxAge: 5 * 60 * 1000 } // 5 minutes
+    cookie: {
+  maxAge: 5 * 60 * 1000,  // 5 minutes
+  secure: true,           // Ensure cookie is sent only over HTTPS
+  httpOnly: true          // Helps with security by making the cookie inaccessible to JavaScript
+    }
 }));
 
 // Now, apply other middleware
@@ -934,6 +938,7 @@ app.post('/api/xumm-login', async (req, res) => {
 
 
 app.get('/api/check-login', async (req, res) => {
+  console.log("Session Data:", req.session); // Debugging line to check session
   const payloadUUID = req.session.xummPayload;
 
   if (!payloadUUID) {
@@ -1959,6 +1964,24 @@ app.get('/get-balance/:walletAddress', async (req, res) => {
     res.status(500).json({ success: false, error: 'Error fetching balance' });
   }
 });
+
+// POST route to start the login flow
+app.post('/api/start-login', async (req, res) => {
+  const { payloadUUID } = req.body;
+
+  // Check if payloadUUID is provided
+  if (!payloadUUID) {
+    return res.status(400).json({ error: 'Payload UUID is required.' });
+  }
+
+  // Store payloadUUID in the session
+  req.session.xummPayload = payloadUUID;
+
+  console.log("Session Data after storing UUID:", req.session); // For debugging
+
+  res.json({ success: true, message: 'Login started successfully.' });
+});
+
 
 
 

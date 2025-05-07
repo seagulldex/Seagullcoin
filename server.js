@@ -1867,6 +1867,29 @@ app.get('/authenticate', async (req, res) => {
   }
 });
 
+app.post('/xumm-login-callback', async (req, res) => {
+  const { signedPayload } = req.body;  // Assume the signed payload is returned from XUMM
+
+  try {
+    const userData = await xummSDK.getUserTokenData(signedPayload);  // Use the XUMM SDK to get user info
+
+    if (userData?.sub) {
+      // Wallet address is stored as 'sub' in the user data
+      const walletAddress = userData.sub;
+
+      // Optionally, save wallet address to the database here
+
+      res.json({ success: true, walletAddress });
+    } else {
+      res.status(400).json({ success: false, error: 'Invalid signature' });
+    }
+  } catch (err) {
+    console.error('Error processing XUMM callback:', err);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+});
+
+
 app.post('/user', async (req, res) => {
   const { xummToken } = req.body;
 
@@ -1911,6 +1934,21 @@ app.get('/user/:walletAddress', (req, res) => {
     }
   });
 });
+
+app.get('/get-balance/:walletAddress', async (req, res) => {
+  const { walletAddress } = req.params;
+
+  try {
+    const balance = await getSeagullCoinBalance(walletAddress);  // Query XRPL for the balance
+
+    res.json({ success: true, balance });
+  } catch (err) {
+    console.error('Error fetching balance:', err);
+    res.status(500).json({ success: false, error: 'Error fetching balance' });
+  }
+});
+
+
 
 
 // Logout route to clear session data

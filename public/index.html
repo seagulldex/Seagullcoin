@@ -129,6 +129,9 @@
       indicator.title = 'Go to profile';
       indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
       unlockCollections();
+
+      // Fetch the SeagullCoin balance after login
+      fetchSeagullCoinBalance(wallet);
     } else {
       document.getElementById('wallet-info').style.display = 'none';
       indicator.textContent = '🔴 Login';
@@ -169,6 +172,9 @@
         indicator.title = 'Go to profile';
         indicator.onclick = () => window.location.href = `/profile.html?uuid=${payloadUUID}`;
         unlockCollections();
+
+        // After login, fetch SeagullCoin balance
+        fetchSeagullCoinBalance(loginStatus.account);
       }
     }, 3000);
   }
@@ -180,6 +186,28 @@
   function lockCollections() {
     // Optionally hide features until login
   }
+
+  // Example function to update the UI after login
+  const handleLoginResponse = (response) => {
+    if (response.success) {
+      const walletAddress = response.walletAddress;
+      document.getElementById('wallet-address').textContent = walletAddress;
+      document.getElementById('wallet-info').style.display = 'block';
+      fetchSeagullCoinBalance(walletAddress);
+    } else {
+      console.error('Login failed:', response.error);
+    }
+  };
+
+  const fetchSeagullCoinBalance = async (walletAddress) => {
+    try {
+      const response = await fetch(`/get-balance/${walletAddress}`);
+      const { balance } = await response.json();
+      document.getElementById('user-balance').textContent = `Balance: ${balance} SeagullCoin`;
+    } catch (error) {
+      console.error('Error fetching SeagullCoin balance:', error);
+    }
+  };
 </script>
   <script src="main.js"></script>
 </body>

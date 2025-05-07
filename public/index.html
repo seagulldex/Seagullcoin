@@ -110,6 +110,7 @@
 
   <!-- XUMM Wallet Login -->
   <script>
+  window.addEventListener('DOMContentLoaded', () => {
     const xumm = new XummPkce('ee60e1a3-8c08-4cdd-bfa9-accada591684', { implicit: true });
 
     const indicator = document.getElementById('wallet-indicator');
@@ -131,11 +132,8 @@
         container.title = 'Go to profile';
 
         container.onclick = () => {
-  alert(`Wallet connected: ${account}`);
-  // Or simply display the wallet address without navigating away:
-  // document.getElementById('wallet-info').innerText = `Connected: ${account}`;
-};
-
+          alert(`Wallet connected: ${account}`);
+        };
 
         unlockMinting();
       } else {
@@ -155,15 +153,13 @@
 
     function unlockMinting() {
       console.log("Minting unlocked.");
-      // Add logic to enable mint UI
     }
 
     function lockMinting() {
       console.log("Minting locked.");
-      // Add logic to disable mint UI
     }
-  </script>
-
+  });
+</script>
   <script src="main.js"></script>
 </body>
 </html>

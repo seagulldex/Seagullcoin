@@ -279,16 +279,12 @@ app.use(session({
     secret: 'your-secret-key',
     resave: false,
     saveUninitialized: true,
-    cookie: {
-  maxAge: 5 * 60 * 1000,  // 5 minutes
-  secure: true,           // Ensure cookie is sent only over HTTPS
-  httpOnly: true          // Helps with security by making the cookie inaccessible to JavaScript
-    }
+    cookie: { maxAge: 5 * 60 * 1000 } // 5 minutes
 }));
 
 // Now, apply other middleware
 app.use(limiter);
-app.use(cors({ origin: 'https://sglcn-x20-api.glitch.me', credentials: true }));
+app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -449,9 +445,7 @@ app.get('/user', async (req, res) => {
     console.error(e);
     res.status(500).json({ error: 'Failed to fetch user data' });
   }
-});
-
-app.get('/gravatar/:hash', async (req, res) => {
+});app.get('/gravatar/:hash', async (req, res) => {
   const { hash } = req.params;
 
   try {
@@ -938,7 +932,6 @@ app.post('/api/xumm-login', async (req, res) => {
 
 
 app.get('/api/check-login', async (req, res) => {
-  console.log("Session Data:", req.session); // Debugging line to check session
   const payloadUUID = req.session.xummPayload;
 
   if (!payloadUUID) {
@@ -983,10 +976,7 @@ app.post('/list', async (req, res) => {
  *     responses:
  *       200:
  *         description: NFT data retrieved
- */
-
-
-app.get('/listings', async (req, res) => {
+ */app.get('/listings', async (req, res) => {
   const listings = await getAllNFTListings();
   res.json({ success: true, listings });
 });
@@ -1532,8 +1522,7 @@ app.get('/gettotalusers', async (req, res) => {
  *                 total:
  *                   type: integer
  *                   example: 500
- */
-app.get('/api/stats/users', async (req, res) => {
+ */app.get('/api/stats/users', async (req, res) => {
   // get-total-users logic here
 });
 
@@ -1810,22 +1799,23 @@ app.get('/xumm/callback', async (req, res) => {
       }),
     });
 
-    if (!response.ok) throw new Error('Failed to obtain access token.');
+    if (!response.ok) {
+      throw new Error('Failed to obtain access token.');
+    }
+
     const data = await response.json();
+    req.session.xumm = data; // Store XUMM response in session
+    req.session.walletAddress = data.account; // Store wallet address
 
-    // Store in session
-    req.session.xumm = data;
-    req.session.walletAddress = data.account;
-    req.session.user = { account: data.account }; // ✅ Fix added here
-
+    // Log success and redirect user to a success page (or dashboard)
     console.log('OAuth2 success, user authenticated:', data.account);
-    res.redirect('/');
+
+    res.redirect('/'); // Or any page you want after login
   } catch (err) {
     console.error('XUMM OAuth callback error:', err);
     res.status(500).json({ error: 'OAuth callback processing failed.' });
   }
 });
-
 
 // Endpoint to confirm payment after XUMM wallet transaction
 app.get('/confirm-payment', async (req, res) => {
@@ -1939,18 +1929,6 @@ app.get('/user/:walletAddress', (req, res) => {
   });
 });
 
-// Load all NFTs
-app.get('/all-nfts', (req, res) => {
-  const filePath = path.join(__dirname, 'data/nfts.json');
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) return res.status(500).json({ error: 'Could not load NFTs' });
-    const allNFTs = JSON.parse(data);
-    // Optional: Only return NFTs paid with SeagullCoin
-    const seagullNFTs = allNFTs.filter(nft => nft.paidWith === 'SeagullCoin');
-    res.json(seagullNFTs);
-  });
-});
-
 app.get('/get-balance/:walletAddress', async (req, res) => {
   const { walletAddress } = req.params;
 
@@ -1964,33 +1942,7 @@ app.get('/get-balance/:walletAddress', async (req, res) => {
   }
 });
 
-// POST route to start the login flow
-app.post('/api/start-login', async (req, res) => {
-  const { payloadUUID } = req.body;
 
-  // Check if payloadUUID is provided
-  if (!payloadUUID) {
-    return res.status(400).json({ error: 'Payload UUID is required.' });
-  }
-
-  // Store payloadUUID in the session
-  req.session.xummPayload = payloadUUID;
-
-  console.log("Session Data after storing UUID:", req.session); // For debugging
-
-  res.json({ success: true, message: 'Login started successfully.' });
-});
-
-app.get('/check-login', (req, res) => {
-  if (req.session && req.session.user) {
-    res.json({
-      loggedIn: true,
-      account: req.session.user.account
-    });
-  } else {
-    res.json({ loggedIn: false });
-  }
-});
 
 
 // Logout route to clear session data
@@ -2028,9 +1980,6 @@ xumm.ping().then(response => {
 }).catch(error => {
     console.error("Error connecting to XUMM:", error);
 });
-
-
-
 // Run the cleanup job periodically (every 24 hours for example)
 setInterval(cleanupExpiredPayloads, 24 * 60 * 60 * 1000); // Every 24 hours
 
@@ -2038,4 +1987,4 @@ setInterval(cleanupExpiredPayloads, 24 * 60 * 60 * 1000); // Every 24 hours
 // Start the server
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server running on port ' + (process.env.PORT || 3000));
-});  
+})

@@ -4,48 +4,63 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Messages - SGLCN-X20 NFT Minter</title>
-
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="header.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: #111;
+      color: #eee;
+    }
+
     #top-bar {
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      background-color: #2e2e2e;
-      z-index: 1000;
+      right: 0;
+      height: 40px;
+      background-color: #222;
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 20px;
+      z-index: 1000;
     }
 
     #wallet-container {
-      text-align: right;
-      padding: 5px 20px;
-      font-size: 0.85rem;
-      color: white;
+      border: 2px solid #444;
+      border-radius: 10px;
+      padding: 6px 12px;
+      background-color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 140px;
     }
 
-    .status-text {
+    #wallet-status {
+      font-size: 0.9rem;
+      cursor: pointer;
       font-weight: bold;
     }
 
-    .status-text.red {
+    #wallet-indicator.red {
       color: #ff4444;
     }
 
-    .status-text.green {
+    #wallet-indicator.green {
       color: #44ff44;
     }
 
-    nav {
-      display: flex;
-      justify-content: center;
-      padding: 10px 0;
-      background-color: #2e2e2e;
+    header {
+      margin-top: 60px;
     }
 
     nav ul {
-      list-style: none;
       display: flex;
+      list-style-type: none;
       margin: 0;
       padding: 0;
     }
@@ -55,8 +70,8 @@
     }
 
     nav ul li a {
-      color: white;
       text-decoration: none;
+      color: white;
       font-weight: bold;
     }
 
@@ -64,21 +79,103 @@
       text-decoration: underline;
     }
 
-    body {
-      margin-top: 80px;
-      font-family: sans-serif;
-      background: #f7f7f7;
+    main {
+      margin: 80px 20px 20px 20px;
+    }
+
+    .message-container {
+      display: flex;
+      gap: 20px;
+      margin-top: 30px;
+      height: 500px;
+    }
+
+    .inbox {
+      width: 30%;
+      background: #1c1c1c;
+      border-radius: 10px;
+      overflow-y: auto;
+      padding: 10px;
+      border: 1px solid #333;
+    }
+
+    .inbox-message {
+      padding: 10px;
+      border-bottom: 1px solid #333;
+      cursor: pointer;
+    }
+
+    .inbox-message:hover {
+      background-color: #2a2a2a;
+    }
+
+    .chat-box {
+      flex: 1;
+      background: #1c1c1c;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #333;
+    }
+
+    .chat-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .chat-entry {
+      margin-bottom: 10px;
+    }
+
+    .chat-entry.you {
+      text-align: right;
+    }
+
+    .chat-entry.them {
+      text-align: left;
+    }
+
+    .chat-form {
+      display: flex;
+      border-top: 1px solid #333;
+    }
+
+    .chat-form textarea {
+      flex: 1;
+      height: 60px;
+      background: #000;
+      color: #fff;
+      border: none;
+      padding: 10px;
+    }
+
+    .chat-form button {
+      background: #444;
+      color: #fff;
+      border: none;
+      padding: 0 20px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    footer {
+      text-align: center;
       padding: 20px;
+      color: #888;
     }
   </style>
 </head>
 <body>
-
-  <!-- Top Bar Header -->
-  <header id="top-bar">
+  <div id="top-bar">
     <div id="wallet-container">
-      <span id="wallet-indicator" class="status-text red">🔴 Login</span>
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
+      </div>
     </div>
+  </div>
+
+  <header>
     <nav>
       <ul>
         <li><a href="index.html">Home</a></li>
@@ -89,163 +186,130 @@
     </nav>
   </header>
 
-  <!-- Main Content -->
   <main>
     <h1>Messages</h1>
-    <p>This is where your messages will appear.</p>
-  </main>
+    <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
 
-</body>
-</html>
-
-
-<!-- Updated Main HTML (index.html) -->
-<!-- messages.html or index.html (wherever your messaging component is located) -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <!-- Navigation -->
-    <header>
-        <nav>
-            <ul>
-                <li><a href="index.html">Home</a></li>
-                <li><a href="nfts.html">NFTs</a></li>
-              <li><a href="mint.html">Mint NFT</a></li>
-                        <!-- SeagullCoin Logo in Top Right -->
-            <a href="profile.html">
-                <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" 
-                     alt="SeagullCoin Logo" style="height: 40px; width: auto; position: absolute; top: 10px; right: 10px;">
-            </a>
-      
-
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Messages</title>
-  <style>
-    /* General styles for the page */
-    body {
-      background-color: black;
-      color: white;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-
-    /* Form styles */
-    form {
-      margin-bottom: 20px;
-    }
-
-    input, textarea {
-      background-color: #333;
-      color: white;
-      border: 1px solid #444;
-      padding: 10px;
-      width: 100%;
-      margin-bottom: 10px;
-      border-radius: 12px;
-    }
-
-    button {
-      background-color: #5c6bc0;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 12px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #3f51b5;
-    }
-
-    /* Message container styles */
-    #messages-list {
-      list-style-type: none;
-      padding: 0;
-    }
-
-    .message {
-      background-color: #444;
-      border-radius: 20px;
-      padding: 10px;
-      margin-bottom: 15px;
-      width: fit-content;
-      max-width: 80%;
-      word-wrap: break-word;
-      display: inline-block;
-    }
-
-    /* Bubbly effect for the message */
-    .message.sender {
-      background-color: #6a1b9a;
-      align-self: flex-end;
-    }
-
-    .message.receiver {
-      background-color: #1976d2;
-    }
-
-    /* Styling for message text */
-    .message p {
-      margin: 0;
-      font-size: 14px;
-    }
-
-    /* Message container */
-    #messages-container {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-  </style>
-</head>
-<body>
-
-  <!-- Send Message Form -->
-  <div>
-    <h2>Send Message</h2>
-    <form id="send-message-form">
-      <input type="text" id="recipient-address" placeholder="Recipient Wallet Address" required />
-      <textarea id="message" placeholder="Type your message..." required></textarea>
-      <button type="submit">Send Message</button>
-    </form>
-  </div>
-
-  <!-- Inbox Messages -->
-  <div>
-    <h2>Your Messages</h2>
-    <div id="messages-container">
-      <div class="message sender">
-        <p>Hey! Just wanted to say hello.</p>
-      </div>
-      <div class="message receiver">
-        <p>Hi! How are you?</p>
+    <div class="message-container">
+      <div class="inbox" id="inbox"></div>
+      <div class="chat-box">
+        <div class="chat-log" id="chat-log"></div>
+        <div class="chat-form">
+          <textarea id="message-text" placeholder="Write a message..."></textarea>
+          <button onclick="sendMessage()">Send</button>
+        </div>
       </div>
     </div>
-  </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+  </footer>
 
   <script>
-    // JavaScript to handle sending and displaying messages
-    document.getElementById('send-message-form').addEventListener('submit', function (event) {
-      event.preventDefault();
+    let currentChatWith = null;
 
-      const recipientAddress = document.getElementById('recipient-address').value;
-      const messageContent = document.getElementById('message').value;
-
-      // Example of adding a new message to the inbox
-      const messageElement = document.createElement('div');
-      messageElement.classList.add('message', 'sender');
-      messageElement.innerHTML = `<p>${messageContent}</p>`;
-      
-      // Append the message to the container
-      document.getElementById('messages-container').appendChild(messageElement);
-      
-      // Optionally clear the form after sending the message
-      document.getElementById('recipient-address').value = '';
-      document.getElementById('message').value = '';
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
     });
-  </script>
 
+    async function updateWalletStatus() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      const indicator = document.getElementById('wallet-indicator');
+
+      if (!indicator) return;
+
+      if (wallet) {
+        document.getElementById('wallet-info').style.display = 'block';
+        document.getElementById('wallet-address').innerText = wallet;
+        indicator.textContent = '🟢 Profile';
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
+        indicator.title = 'Go to profile';
+        indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
+        loadInbox(wallet);
+      } else {
+        indicator.textContent = '🔴 Login';
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
+        indicator.title = 'Click to login';
+        indicator.onclick = () => startLoginFlow();
+      }
+    }
+
+    async function startLoginFlow() {
+      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+      const data = await res.json();
+      const payloadUUID = data.payloadUUID;
+
+      window.open(data.payloadURL, "_blank");
+
+      const interval = setInterval(async () => {
+        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+        const loginStatus = await check.json();
+
+        if (loginStatus.loggedIn) {
+          clearInterval(interval);
+          localStorage.setItem('xumm_wallet_address', loginStatus.account);
+          localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+          updateWalletStatus();
+        }
+      }, 3000);
+    }
+
+    async function loadInbox(wallet) {
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/get-message?wallet=${wallet}`);
+      const messages = await res.json();
+      const inbox = document.getElementById('inbox');
+      inbox.innerHTML = '';
+
+      const contacts = [...new Set(messages.map(msg => msg.sender === wallet ? msg.recipient : msg.sender))];
+
+      contacts.forEach(addr => {
+        const div = document.createElement('div');
+        div.className = 'inbox-message';
+        div.innerText = addr;
+        div.onclick = () => loadConversation(wallet, addr);
+        inbox.appendChild(div);
+      });
+    }
+
+    async function loadConversation(user, other) {
+      currentChatWith = other;
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/get-message?wallet=${user}`);
+      const messages = await res.json();
+      const chatLog = document.getElementById('chat-log');
+      chatLog.innerHTML = '';
+
+      const conversation = messages.filter(m => (m.sender === other && m.recipient === user) || (m.sender === user && m.recipient === other));
+      conversation.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `chat-entry ${msg.sender === user ? 'you' : 'them'}`;
+        div.innerText = msg.text;
+        chatLog.appendChild(div);
+      });
+
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      const text = document.getElementById('message-text').value.trim();
+
+      if (!wallet || !currentChatWith || !text) {
+        alert("Missing information to send message.");
+        return;
+      }
+
+      await fetch("https://sglcn-x20-api.glitch.me/send-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sender: wallet, recipient: currentChatWith, text })
+      });
+
+      document.getElementById('message-text').value = '';
+      loadConversation(wallet, currentChatWith);
+    }
+  </script>
 </body>
 </html>

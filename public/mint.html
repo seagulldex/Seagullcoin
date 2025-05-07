@@ -178,6 +178,28 @@
     .collection-item p {
       font-size: 0.9rem;
     }
+        /* Modify button styles to control size and avoid excess horizontal space */
+    .add-property-btn,
+    .subtract-property-btn {
+      background-color: #444;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      width: auto; /* Adjust width to content */
+      max-width: 20px; /* Limit width for both buttons */
+      margin-top: 10px;
+    }
+.add-property-btn:hover,
+    .subtract-property-btn:hover {
+      background-color: #555;
+    }
+
+    /* Add margin between the buttons */
+    button {
+      margin-right: 10px;
+    }
 
   </style>
 </head>

@@ -149,6 +149,8 @@
         fetch('/api/xumm-login') // Your backend should return the payloadUUID + payloadURL
           .then(res => res.json())
           .then(data => {
+          console.log(data);  // Check what data is returned
+      console.log('Payload URL:', data.payloadURL);  // Check the URL
             if (data.payloadURL) {
               window.open(data.payloadURL, '_blank'); // open XUMM sign request
               // Optionally poll for login confirmation:

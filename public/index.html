@@ -109,54 +109,78 @@
   </footer>
 
   <!-- Wallet Logic -->
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
-    });
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    updateWalletStatus();
+  });
 
-    async function updateWalletStatus() {
-      const res = await fetch('/api/check-login');
-      const data = await res.json();
-      const indicator = document.getElementById('wallet-indicator');
+  async function updateWalletStatus() {
+    const wallet = localStorage.getItem('xumm_wallet_address');
+    const indicator = document.getElementById('wallet-indicator');
 
-      if (!indicator) return;
+    if (!indicator) return;
 
-      if (data.loggedIn) {
-        const wallet = data.account;
-        const uuid = data.uuid || 'unknown';
-        localStorage.setItem('xumm_wallet_address', wallet);
-        localStorage.setItem('xumm_user', JSON.stringify({ uuid: uuid, account: wallet }));
+    if (wallet) {
+      document.getElementById('wallet-info').style.display = 'block';
+      document.getElementById('wallet-address').innerText = wallet;
+      indicator.textContent = '🟢 Profile';
+      indicator.classList.remove('red');
+      indicator.classList.add('green');
+      indicator.title = 'Go to profile';
+      indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
+      unlockCollections();
+    } else {
+      document.getElementById('wallet-info').style.display = 'none';
+      indicator.textContent = '🔴 Login';
+      indicator.classList.remove('green');
+      indicator.classList.add('red');
+      indicator.title = 'Click to login';
+      indicator.onclick = () => startLoginFlow();
+      lockCollections();
+    }
+  }
 
+  async function startLoginFlow() {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+    const data = await res.json();
+    const payloadUUID = data.payloadUUID;
+
+    // Open the XUMM signing URL in a new tab
+    window.open(data.payloadURL, "_blank");
+
+    // Poll for login status every 3 seconds
+    const interval = setInterval(async () => {
+      const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+      const loginStatus = await check.json();
+
+      if (loginStatus.loggedIn) {
+        clearInterval(interval);
+
+        localStorage.setItem('xumm_wallet_address', loginStatus.account);
+        localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+
+        const indicator = document.getElementById('wallet-indicator');
         document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wallet-address').innerText = wallet;
+        document.getElementById('wallet-address').innerText = loginStatus.account;
+
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = `/login?uuid=${uuid}`;
-        unlockMinting();
-      } else {
-        localStorage.removeItem('xumm_wallet_address');
-        localStorage.removeItem('xumm_user');
-        document.getElementById('wallet-info').style.display = 'none';
-        indicator.textContent = '🔴 Login';
-        indicator.classList.remove('green');
-        indicator.classList.add('red');
-        indicator.title = 'Click to login';
-        indicator.onclick = () => window.location.href = '/login';
-        lockMinting();
+        indicator.onclick = () => window.location.href = `/profile.html?uuid=${payloadUUID}`;
+        unlockCollections();
       }
-    }
+    }, 3000);
+  }
 
-    function unlockMinting() {
-      // Enable minting UI
-    }
+  function unlockCollections() {
+    // Enable full access to collections if needed
+  }
 
-    function lockMinting() {
-      // Disable minting UI
-    }
-  </script>
-
+  function lockCollections() {
+    // Optionally hide features until login
+  }
+</script>
   <script src="main.js"></script>
 </body>
 </html>

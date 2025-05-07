@@ -1,0 +1,202 @@
+/* General Styles for Profile Page */
+body {
+    background-color: black;
+    color: white;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+h2, h3 {
+    color: white;
+}
+
+button {
+    background-color: #ffcc00;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 25px;
+    margin-top: 20px;
+}
+
+button:hover {
+    background-color: #ff9900;
+}
+
+#profile-container {
+    padding: 40px;
+}
+
+/* Profile Header */
+#profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+#profile-pic {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid white;
+}
+
+#profile-header h2 {
+    margin-top: 10px;
+    font-size: 20px;
+}
+
+#upload-avatar {
+    display: none;
+}
+
+/* Profile Tabs */
+#profile-tabs {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+#profile-tabs button {
+    padding: 10px 20px;
+    background-color: #333;
+    color: white;
+    border-radius: 25px;
+    cursor: pointer;
+}
+
+#profile-tabs button:hover {
+    background-color: #ff9900;
+}
+
+/* Profile Content */
+#profile-content {
+    margin-top: 20px;
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+}
+
+#owned-tab, #offers-tab, #listings-tab {
+    display: block;
+}
+
+/* NFT Controls (Filter + Pagination) */
+#nft-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 1em;
+}
+
+#nft-controls input {
+    padding: 5px;
+    width: 60%;
+    max-width: 300px;
+    margin-bottom: 10px;
+}
+
+#nft-controls button {
+    margin-right: 5px;
+}
+
+/* NFT Filters */
+#nft-filters select {
+    padding: 5px;
+    margin-top: 10px;
+    width: 100%;
+    max-width: 250px;
+}
+
+/* NFT Gallery Styles */
+#owned-nfts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+#owned-nfts div {
+    text-align: center;
+    background-color: #1f1f1f;
+    border-radius: 20px;
+    padding: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+#owned-nfts img {
+    width: 100%;
+    border-radius: 20px;
+}
+
+/* Incoming Offers */
+#incoming-offers {
+    margin-top: 20px;
+}
+
+#incoming-offers div {
+    background-color: #1f1f1f;
+    border-radius: 20px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+/* My Listings */
+#my-listings {
+    margin-top: 20px;
+}
+
+#my-listings div {
+    background-color: #1f1f1f;
+    border-radius: 20px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #555;
+}
+
+/* Responsive Design for Smaller Screens */
+@media (max-width: 768px) {
+    #profile-container {
+        padding: 20px;
+    }
+
+    #profile-header {
+        flex-direction: column;
+    }
+
+    #nft-controls {
+        flex-direction: column;
+    }
+
+    #nft-controls input, #nft-controls button {
+        width: 100%;
+    }
+
+    #owned-nfts {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    #owned-nfts {
+        grid-template-columns: 1fr;
+    }
+}

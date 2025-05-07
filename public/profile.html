@@ -24,16 +24,28 @@
 
     <section id="profile-content">
       <div id="owned-tab" class="tab-content">
-        <h3>Owned NFTs</h3>
-        <div id="nft-filters">
-          <select onchange="filterNFTs(this.value)">
-            <option value="all">All</option>
-            <option value="collection">By Collection</option>
-            <option value="single">Single NFTs</option>
-          </select>
-        </div>
-        <div id="owned-nfts"></div>
-      </div>
+  <h3>Owned NFTs</h3>
+
+  <!-- 🟨 Added: Filter + Pagination Controls -->
+  <div id="nft-controls" style="margin-bottom: 1em;">
+    <input id="filter-input" placeholder="Search NFTs or collections..." style="padding: 5px; width: 60%; max-width: 300px;" />
+    <div style="margin-top: 0.5em;">
+      <button id="prev-page">Previous</button>
+      <button id="next-page">Next</button>
+    </div>
+  </div>
+  <!-- 🟨 End Added Controls -->
+
+  <div id="nft-filters">
+    <select onchange="filterNFTs(this.value)">
+      <option value="all">All</option>
+      <option value="collection">By Collection</option>
+      <option value="single">Single NFTs</option>
+    </select>
+  </div>
+
+  <div id="owned-nfts"></div>
+</div>
 
       <div id="offers-tab" class="tab-content" style="display:none;">
         <h3>Incoming Offers</h3>

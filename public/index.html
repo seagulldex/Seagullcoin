@@ -4,64 +4,166 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SGLCN-X20 Minting Platform</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://xumm.app/assets/cdn/xumm.min.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="header.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xumm-oauth2-pkce@1.0.0/browser.min.js"></script>
+  <style>
+    #top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background-color: #2e2e2e;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 20px;
+      z-index: 1000;
+    }
+
+    #wallet-container {
+      border: 2px solid #000;
+      border-radius: 10px;
+      padding: 6px 12px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 140px;
+    }
+
+    #wallet-status {
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #wallet-indicator.red {
+      color: #ff4444;
+    }
+
+    #wallet-indicator.green {
+      color: #44ff44;
+    }
+
+    body {
+      margin-top: 60px;
+    }
+
+    header {
+      margin-top: 10px;
+    }
+
+    nav ul {
+      display: flex;
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    nav ul li {
+      margin: 0 15px;
+    }
+  </style>
 </head>
 <body>
+
+  <!-- Top Bar -->
   <div id="top-bar">
-    <div id="menu-dropdown">
-      <button id="menu-button">☰</button>
-      <div id="menu-content">
-        <a href="NFT.html">NFTs</a>
-      </div>
-    </div>
-    <img src="seagullcoin-logo.png" alt="SeagullCoin" id="logo">
     <div id="wallet-container">
-      <span id="wallet-status" class="red">🔴 Connect Wallet</span>
-      <div id="wallet-info" style="display:none;">
-        Connected: <span id="wallet-address"></span>
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
       </div>
     </div>
   </div>
 
+  <!-- Navigation -->
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="nfts.html">NFTs</a></li>
+        <li><a href="mint.html">Mint NFT</a></li>
+        <li><a href="messages.html">Messages</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
   <main>
     <section class="hero">
       <h1>Welcome to SeagullCoin NFT Marketplace</h1>
       <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
+      <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
     </section>
+
+    <div id="user-info">
+      <p id="user-balance">Loading balance...</p>
+      <div id="user-nfts">Loading NFTs...</div>
+    </div>
   </main>
 
+  <footer>
+    <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+  </footer>
+
+  <!-- XUMM Wallet Login -->
   <script>
+    const xumm = new XummPkce('ee60e1a3-8c08-4cdd-bfa9-accada591684', { implicit: true });
+
+    const indicator = document.getElementById('wallet-indicator');
     const container = document.getElementById('wallet-container');
-    const indicator = document.getElementById('wallet-status');
+    const walletInfo = document.getElementById('wallet-info');
+    const walletAddr = document.getElementById('wallet-address');
 
-    container.onclick = async () => {
-      try {
-        const xumm = new Xumm('ee60e1a3-8c08-4cdd-bfa9-accada591684'); // Your XUMM API key
-        const session = await xumm.authorize();
+    xumm.on("ready", async () => {
+      const state = await xumm.state();
 
-        console.log("Authorized XUMM session:", session);
-        const account = session.me.account;
-
+      if (state?.me?.sub) {
+        const account = state.me.sub;
         localStorage.setItem('xumm_wallet_address', account);
-        localStorage.setItem('xumm_user', JSON.stringify(session));
-
-        document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wallet-address').innerText = account;
-
+        walletAddr.innerText = account;
+        walletInfo.style.display = 'block';
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         container.title = 'Go to profile';
 
         container.onclick = () => {
-          window.location.href = `/profile.html?uuid=${session.jwt}`;
+  alert(`Wallet connected: ${account}`);
+  // Or simply display the wallet address without navigating away:
+  // document.getElementById('wallet-info').innerText = `Connected: ${account}`;
+};
+
+
+        unlockMinting();
+      } else {
+        walletInfo.style.display = 'none';
+        indicator.textContent = '🔴 Login';
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
+        container.title = 'Click to login';
+
+        container.onclick = () => {
+          xumm.authorize();
         };
-      } catch (e) {
-        console.error("XUMM connect error:", e);
-        alert("Wallet connection failed.");
+
+        lockMinting();
       }
-    };
+    });
+
+    function unlockMinting() {
+      console.log("Minting unlocked.");
+      // Add logic to enable mint UI
+    }
+
+    function lockMinting() {
+      console.log("Minting locked.");
+      // Add logic to disable mint UI
+    }
   </script>
+
+  <script src="main.js"></script>
 </body>
 </html>

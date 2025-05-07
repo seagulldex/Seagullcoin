@@ -112,45 +112,68 @@
     });
 
     async function updateWalletStatus() {
-      const res = await fetch('/api/check-login');
-      const data = await res.json();
+      const wallet = localStorage.getItem('xumm_wallet_address');
       const indicator = document.getElementById('wallet-indicator');
 
-      if (!indicator) return;
-
-      if (data.loggedIn) {
-        const wallet = data.account;
-        const uuid = data.uuid || 'unknown';
-        localStorage.setItem('xumm_wallet_address', wallet);
-        localStorage.setItem('xumm_user', JSON.stringify({ uuid: uuid, account: wallet }));
-
+      if (wallet) {
         document.getElementById('wallet-info').style.display = 'block';
         document.getElementById('wallet-address').innerText = wallet;
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = `/profile.html?uuid=${uuid}`;
-        unlockCollections();
+        indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
+        loadCollections();
       } else {
-        localStorage.removeItem('xumm_wallet_address');
-        localStorage.removeItem('xumm_user');
         document.getElementById('wallet-info').style.display = 'none';
         indicator.textContent = '🔴 Login';
         indicator.classList.remove('green');
         indicator.classList.add('red');
         indicator.title = 'Click to login';
-        indicator.onclick = () => window.location.href = '/login';
-        lockCollections();
+        indicator.onclick = startLoginFlow;
       }
     }
 
-    function unlockCollections() {
-      // Enable full access to collections
+    async function startLoginFlow() {
+      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+      const data = await res.json();
+      const payloadUUID = data.payloadUUID;
+
+      window.open(data.payloadURL, "_blank");
+
+      const interval = setInterval(async () => {
+        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+        const loginStatus = await check.json();
+
+        if (loginStatus.loggedIn) {
+          clearInterval(interval);
+          localStorage.setItem('xumm_wallet_address', loginStatus.account);
+          localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+          updateWalletStatus();
+        }
+      }, 3000);
     }
 
-    function lockCollections() {
-      // Optional: Hide restricted features
+    async function loadCollections() {
+      const res = await fetch('/api/get-collections');
+      const collections = await res.json();
+      const container = document.getElementById('collections-container');
+      container.innerHTML = '';
+
+      if (collections.length === 0) {
+        container.innerHTML = 'No collections found.';
+      } else {
+        collections.forEach(collection => {
+          const div = document.createElement('div');
+          div.className = 'collection-item';
+          div.innerHTML = `
+            <h3>${collection.name}</h3>
+            <p>${collection.description}</p>
+            <img src="${collection.icon}" alt="${collection.name}" />
+          `;
+          container.appendChild(div);
+        });
+      }
     }
   </script>
 

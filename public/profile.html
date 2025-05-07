@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NFT Collections - SGLCN-X20</title>
+  <title>User Profile - SGLCN-X20</title>
   <link rel="stylesheet" href="style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <link rel="stylesheet" href="header.css" />
@@ -52,43 +52,69 @@
       font-family: Arial, sans-serif;
     }
 
-    header {
-      margin-top: 10px;
-    }
-
-    nav ul {
+    header nav ul {
       display: flex;
       list-style-type: none;
       margin: 0;
       padding: 0;
     }
 
-    nav ul li {
+    header nav ul li {
       margin: 0 15px;
     }
 
-    nav ul li a {
+    header nav ul li a {
       text-decoration: none;
-      color: #333;
+      color: #fff; /* updated */
       font-weight: bold;
+    }
+
+    header nav ul li a:hover {
+      color: #ccc;
     }
 
     main {
       padding: 20px;
     }
 
-    .collection-item {
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 10px;
-      background-color: #f9f9f9;
+    .profile-section {
+      max-width: 400px;
+      margin: 0 auto;
+      text-align: center;
     }
 
-    .collection-item img {
-      max-width: 100px;
-      display: block;
+    .profile-section input[type="file"] {
       margin-top: 10px;
+    }
+
+    .profile-picture {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin: 10px auto;
+      display: block;
+      border: 2px solid #333;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100px;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #555;
+      resize: vertical;
+      background-color: #000; /* updated */
+      color: #fff;             /* updated */
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
     }
 
     footer {
@@ -100,8 +126,6 @@
   </style>
 </head>
 <body>
-
-  <!-- Top Bar -->
   <div id="top-bar">
     <div id="wallet-container">
       <div id="wallet-status">
@@ -110,7 +134,6 @@
     </div>
   </div>
 
-  <!-- Navigation -->
   <header>
     <nav>
       <ul>
@@ -122,24 +145,24 @@
     </nav>
   </header>
 
-  <!-- Main Content -->
   <main>
-    <h1>NFT Collections</h1>
-    <p>Browse SeagullCoin-backed NFT collections minted on this platform.</p>
-
-    <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
-
-    <div id="collections-container">Loading collections...</div>
+    <div class="profile-section">
+      <h1>User Profile</h1>
+      <img id="profile-img" class="profile-picture" src="default-avatar.png" alt="Profile Picture" />
+      <input type="file" id="profile-upload" accept="image/*" />
+      <textarea id="bio" placeholder="Write something about yourself..."></textarea>
+      <button onclick="saveProfile()">Save Profile</button>
+    </div>
   </main>
 
   <footer>
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
   </footer>
 
-  <!-- Wallet Logic -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
+      loadProfile();
     });
 
     async function updateWalletStatus() {
@@ -147,16 +170,11 @@
       const indicator = document.getElementById('wallet-indicator');
 
       if (wallet) {
-        document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wallet-address').innerText = wallet;
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
-        indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
-        loadCollections();
+        indicator.title = 'Logged in';
       } else {
-        document.getElementById('wallet-info').style.display = 'none';
         indicator.textContent = '🔴 Login';
         indicator.classList.remove('green');
         indicator.classList.add('red');
@@ -168,12 +186,10 @@
     async function startLoginFlow() {
       const res = await fetch('https://sglcn-x20-api.glitch.me/login');
       const data = await res.json();
-      const payloadUUID = data.payloadUUID;
-
       window.open(data.payloadURL, "_blank");
 
       const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
         const loginStatus = await check.json();
 
         if (loginStatus.loggedIn) {
@@ -185,26 +201,29 @@
       }, 3000);
     }
 
-    async function loadCollections() {
-      const res = await fetch('/api/get-collections');
-      const collections = await res.json();
-      const container = document.getElementById('collections-container');
-      container.innerHTML = '';
-
-      if (collections.length === 0) {
-        container.innerHTML = 'No collections found.';
-      } else {
-        collections.forEach(collection => {
-          const div = document.createElement('div');
-          div.className = 'collection-item';
-          div.innerHTML = `
-            <h3>${collection.name}</h3>
-            <p>${collection.description}</p>
-            <img src="${collection.icon}" alt="${collection.name}" />
-          `;
-          container.appendChild(div);
-        });
+    document.getElementById('profile-upload').addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          document.getElementById('profile-img').src = e.target.result;
+          localStorage.setItem('user_profile_img', e.target.result);
+        };
+        reader.readAsDataURL(file);
       }
+    });
+
+    function saveProfile() {
+      const bio = document.getElementById('bio').value;
+      localStorage.setItem('user_bio', bio);
+      alert('Profile updated!');
+    }
+
+    function loadProfile() {
+      const img = localStorage.getItem('user_profile_img');
+      const bio = localStorage.getItem('user_bio');
+      if (img) document.getElementById('profile-img').src = img;
+      if (bio) document.getElementById('bio').value = bio;
     }
   </script>
 </body>

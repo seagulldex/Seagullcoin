@@ -178,28 +178,6 @@
     .collection-item p {
       font-size: 0.9rem;
     }
-        /* Modify button styles to control size and avoid excess horizontal space */
-    .add-property-btn,
-    .subtract-property-btn {
-      background-color: #444;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      width: auto; /* Adjust width to content */
-      max-width: 20px; /* Limit width for both buttons */
-      margin-top: 10px;
-    }
-.add-property-btn:hover,
-    .subtract-property-btn:hover {
-      background-color: #555;
-    }
-
-    /* Add margin between the buttons */
-    button {
-      margin-right: 10px;
-    }
 
   </style>
 </head>
@@ -246,11 +224,16 @@
         <label for="nft-file">NFT File</label>
         <input type="file" id="nft-file" required accept="image/*,video/*,gif/*" onchange="previewFile()" />
 
+        <!-- New Domain Metadata Field -->
+        <label for="nft-domain">Domain (optional)</label>
+        <input type="text" id="nft-domain" placeholder="Enter domain for your NFT" />
+
         <label for="nft-collection">Collection</label>
         <input type="text" id="nft-collection" placeholder="Enter collection name (optional)" />
-        <label>Properties</label>
-<div id="properties-container"></div>
-<button type="button" onclick="addProperty()" style="background-color:green; color:white;">+ Add Property</button>
+        
+        <label>NFT Properties</label>
+        <div id="traits-container"></div>
+        <button type="button" id="add-trait-btn" style="margin-top:10px;">➕ Add Trait</button>
 
         <button type="submit">Mint NFT</button>
       </form>
@@ -363,48 +346,6 @@
         previewContainer.innerHTML = '<span>No file selected</span>';
       }
     }
-    let propertyCount = 0;
-const maxProperties = 8;
-
-function addProperty() {
-  if (propertyCount >= maxProperties) return;
-
-  const container = document.getElementById('properties-container');
-  const wrapper = document.createElement('div');
-  wrapper.style.display = 'flex';
-  wrapper.style.alignItems = 'center';
-  wrapper.style.marginBottom = '8px';
-
-  const keyInput = document.createElement('input');
-  keyInput.type = 'text';
-  keyInput.placeholder = 'Trait Type';
-  keyInput.style.flex = '1';
-  keyInput.style.marginRight = '5px';
-
-  const valueInput = document.createElement('input');
-  valueInput.type = 'text';
-  valueInput.placeholder = 'Value';
-  valueInput.style.flex = '1';
-  valueInput.style.marginRight = '5px';
-
-  const removeBtn = document.createElement('button');
-  removeBtn.type = 'button';
-  removeBtn.innerText = '–';
-  removeBtn.style.padding = '2px 5px';
-  removeBtn.style.backgroundColor = 'red';
-  removeBtn.style.color = 'white';
-  removeBtn.onclick = () => {
-    container.removeChild(wrapper);
-    propertyCount--;
-  };
-
-  wrapper.appendChild(keyInput);
-  wrapper.appendChild(valueInput);
-  wrapper.appendChild(removeBtn);
-
-  container.appendChild(wrapper);
-  propertyCount++;
-}
   </script>
 </body>
 </html>

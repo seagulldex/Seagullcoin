@@ -42,11 +42,7 @@ import sanitizeHtml from 'sanitize-html';
 import rippleAddressCodec from 'ripple-address-codec';
 const { isValidAddress } = rippleAddressCodec;
 // Initialize XUMM SDK using environment variables
-const sdk = new XummSdk({
-    apiKey: process.env.XUMM_API_KEY,       // Use the XUMM API key from .env
-    apiSecret: process.env.XUMM_API_SECRET  // Use the XUMM API secret from .env
-});
-
+    
 
 
 // Initialize the database tables
@@ -899,7 +895,7 @@ app.post('/api/xumm-login', async (req, res) => {
     };
 
     try {
-        const createdPayload = await sdk.payload.create(payload);
+        const createdPayload = await xummSDK.payload.create(payload);
         res.json({
             payloadUUID: createdPayload.uuid,
             payloadURL: `https://xumm.app/sign/${createdPayload.uuid}`
@@ -1880,6 +1876,10 @@ xumm.ping().then(response => {
 }).catch(error => {
     console.error("Error connecting to XUMM:", error);
 });
+
+console.log(process.env.XUMM_API_KEY); // Check if the API key is loaded
+console.log(process.env.XUMM_API_SECRET); // Check if the API secret is loaded
+
 
 // Run the cleanup job periodically (every 24 hours for example)
 setInterval(cleanupExpiredPayloads, 24 * 60 * 60 * 1000); // Every 24 hours

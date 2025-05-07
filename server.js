@@ -1982,8 +1982,16 @@ app.post('/api/start-login', async (req, res) => {
   res.json({ success: true, message: 'Login started successfully.' });
 });
 
-
-
+app.get('/check-login', (req, res) => {
+  if (req.session && req.session.user) {
+    res.json({
+      loggedIn: true,
+      account: req.session.user.account
+    });
+  } else {
+    res.json({ loggedIn: false });
+  }
+});
 
 
 // Logout route to clear session data

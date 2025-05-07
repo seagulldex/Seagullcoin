@@ -1890,6 +1890,10 @@ async function xrplPing() {
   }
 }
 
+localStorage.setItem('xumm_wallet_address', 'rTESTADDRESS...');
+localStorage.setItem('xumm_user', JSON.stringify({ uuid: 'xyz', account: 'rTESTADDRESS...' }));
+
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

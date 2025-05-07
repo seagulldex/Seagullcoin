@@ -7,309 +7,244 @@
   <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="header.css"/>
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background-color: #111;
-      color: #eee;
+<style>
+  /* Additional scroll fix */
+  .inbox {
+    width: 250px;
+    background: #fff;
+    color: #000;
+    border-radius: 10px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #ccc;
+    max-height: 500px;
+  }
+
+  .inbox-message {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .inbox-message:hover {
+    background-color: #eee;
+  }
+
+  .unread-badge {
+    background: red;
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 0.8rem;
+    margin-left: 5px;
+  }
+
+  .chat-box {
+    flex: 1;
+    background: #fff;
+    color: #000;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+  }
+
+  .chat-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  .chat-entry.you {
+    text-align: right;
+    color: blue;
+  }
+
+  .chat-entry.them {
+    text-align: left;
+    color: black;
+  }
+
+  .chat-form textarea {
+    flex: 1;
+    height: 60px;
+    background: #f9f9f9;
+    color: #000;
+    border: none;
+    padding: 10px;
+    resize: none;
+  }
+
+  .chat-form button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 0 20px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .chat-form button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+</style>
+
+<script>
+  let currentChatWith = null;
+  const walletStatus = document.getElementById('wallet-container');
+  const walletIndicator = document.getElementById('wallet-indicator');
+  const sendButton = document.getElementById('send-button');
+  const messageInput = document.getElementById('message-text');
+  let socket = null;
+  let myWallet = null;
+  let unreadCounts = {};
+
+  window.addEventListener('DOMContentLoaded', () => {
+    updateWalletStatus();
+    messageInput.addEventListener('input', () => {
+      sendButton.disabled = !messageInput.value.trim() || !myWallet;
+    });
+  });
+
+  walletStatus.addEventListener('click', () => {
+    const wallet = localStorage.getItem('xumm_wallet_address');
+    if (!wallet) {
+      startLoginFlow();
+    } else {
+      window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
     }
+  });
 
-    #top-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 40px;
-      background-color: #222;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding: 0 20px;
-      z-index: 1000;
+  async function updateWalletStatus() {
+    const wallet = localStorage.getItem('xumm_wallet_address');
+    myWallet = wallet;
+
+    if (wallet) {
+      document.getElementById('wallet-info').style.display = 'block';
+      document.getElementById('wallet-address').innerText = wallet;
+      walletIndicator.textContent = '🟢 Profile';
+      walletIndicator.classList.remove('red');
+      walletIndicator.classList.add('green');
+      sendButton.disabled = !messageInput.value.trim();
+
+      loadInbox(wallet);
+      setupWebSocket(wallet);
+    } else {
+      walletIndicator.textContent = '🔴 Login';
+      walletIndicator.classList.remove('green');
+      walletIndicator.classList.add('red');
+      sendButton.disabled = true;
     }
+  }
 
-    #wallet-container {
-      border: 2px solid #444;
-      border-radius: 10px;
-      padding: 6px 12px;
-      background-color: #000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      max-width: 140px;
-    }
+  async function startLoginFlow() {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+    const data = await res.json();
+    const payloadUUID = data.payloadUUID;
 
-    #wallet-status {
-      font-size: 0.9rem;
-      cursor: pointer;
-      font-weight: bold;
-    }
+    window.open(data.payloadURL, "_blank");
 
-    #wallet-indicator.red {
-      color: #ff4444;
-    }
+    const interval = setInterval(async () => {
+      const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+      const loginStatus = await check.json();
 
-    #wallet-indicator.green {
-      color: #44ff44;
-    }
+      if (loginStatus.loggedIn) {
+        clearInterval(interval);
+        localStorage.setItem('xumm_wallet_address', loginStatus.account);
+        localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+        updateWalletStatus();
+      }
+    }, 3000);
+  }
 
-    header {
-      margin-top: 60px;
-    }
+  async function loadInbox(wallet) {
+    const res = await fetch(`https://sglcn-x20-api.glitch.me/get-message?wallet=${wallet}`);
+    const messages = await res.json();
+    const inbox = document.getElementById('inbox');
+    inbox.innerHTML = '';
+    unreadCounts = {};
 
-    nav ul {
-      display: flex;
-      list-style-type: none;
-      margin: 0;
-      padding: 0;
-    }
+    const contacts = [...new Set(messages.map(msg => msg.sender === wallet ? msg.recipient : msg.sender))];
 
-    nav ul li {
-      margin: 0 15px;
-    }
-
-    nav ul li a {
-      text-decoration: none;
-      color: white;
-      font-weight: bold;
-    }
-
-    nav ul li a:hover {
-      text-decoration: underline;
-    }
-
-    main {
-      margin: 80px 20px 20px 20px;
-    }
-
-    .message-container {
-      display: flex;
-      gap: 20px;
-      margin-top: 30px;
-      height: 500px;
-    }
-
-    .inbox {
-      width: 30%;
-      background: #1c1c1c;
-      border-radius: 10px;
-      overflow-y: auto;
-      padding: 10px;
-      border: 1px solid #333;
-    }
-
-    .inbox-message {
-      padding: 10px;
-      border-bottom: 1px solid #333;
-      cursor: pointer;
-    }
-
-    .inbox-message:hover {
-      background-color: #2a2a2a;
-    }
-
-    .chat-box {
-      flex: 1;
-      background: #1c1c1c;
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #333;
-    }
-
-    .chat-log {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-    }
-
-    .chat-entry {
-      margin-bottom: 10px;
-    }
-
-    .chat-entry.you {
-      text-align: right;
-    }
-
-    .chat-entry.them {
-      text-align: left;
-    }
-
-    .chat-form {
-      display: flex;
-      border-top: 1px solid #333;
-    }
-
-    .chat-form textarea {
-      flex: 1;
-      height: 60px;
-      background: #000;
-      color: #fff;
-      border: none;
-      padding: 10px;
-    }
-
-    .chat-form button {
-      background: #444;
-      color: #fff;
-      border: none;
-      padding: 0 20px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    footer {
-      text-align: center;
-      padding: 20px;
-      color: #888;
-    }
-  </style>
-</head>
-<body>
-  <div id="top-bar">
-    <div id="wallet-container">
-      <div id="wallet-status">
-        <span id="wallet-indicator" class="red">🔴 Login</span>
-      </div>
-    </div>
-  </div>
-
-  <header>
-    <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="nfts.html">NFTs</a></li>
-        <li><a href="mint.html">Mint NFT</a></li>
-        <li><a href="messages.html">Messages</a></li>
-      </ul>
-    </nav>
-  </header>
-
-  <main>
-    <h1>Messages</h1>
-    <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
-
-    <div class="message-container">
-      <div class="inbox" id="inbox"></div>
-      <div class="chat-box">
-        <div class="chat-log" id="chat-log"></div>
-        <div class="chat-form">
-          <textarea id="message-text" placeholder="Write a message..."></textarea>
-          <button onclick="sendMessage()">Send</button>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <footer>
-    <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
-  </footer>
-
-  <script>
-    let currentChatWith = null;
-
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
+    contacts.forEach(addr => {
+      unreadCounts[addr] = messages.filter(m => m.sender === addr && !m.read).length;
     });
 
-    async function updateWalletStatus() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      const indicator = document.getElementById('wallet-indicator');
+    contacts.forEach(addr => {
+      const div = document.createElement('div');
+      div.className = 'inbox-message';
+      div.onclick = () => {
+        unreadCounts[addr] = 0;
+        loadConversation(wallet, addr);
+      };
 
-      if (!indicator) return;
+      const nameSpan = document.createElement('span');
+      nameSpan.innerText = addr;
 
-      if (wallet) {
-        document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wallet-address').innerText = wallet;
-        indicator.textContent = '🟢 Profile';
-        indicator.classList.remove('red');
-        indicator.classList.add('green');
-        indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
-        loadInbox(wallet);
-      } else {
-        indicator.textContent = '🔴 Login';
-        indicator.classList.remove('green');
-        indicator.classList.add('red');
-        indicator.title = 'Click to login';
-        indicator.onclick = () => startLoginFlow();
+      const badge = document.createElement('span');
+      if (unreadCounts[addr] > 0) {
+        badge.className = 'unread-badge';
+        badge.innerText = unreadCounts[addr];
       }
-    }
 
-    async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-      const data = await res.json();
-      const payloadUUID = data.payloadUUID;
+      div.appendChild(nameSpan);
+      if (unreadCounts[addr] > 0) div.appendChild(badge);
+      inbox.appendChild(div);
+    });
+  }
 
-      window.open(data.payloadURL, "_blank");
+  async function loadConversation(user, other) {
+    currentChatWith = other;
+    const res = await fetch(`https://sglcn-x20-api.glitch.me/get-message?wallet=${user}`);
+    const messages = await res.json();
+    const chatLog = document.getElementById('chat-log');
+    chatLog.innerHTML = '';
 
-      const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
-        const loginStatus = await check.json();
+    const conversation = messages.filter(m => (m.sender === other && m.recipient === user) || (m.sender === user && m.recipient === other));
+    conversation.forEach(msg => {
+      const div = document.createElement('div');
+      div.className = `chat-entry ${msg.sender === user ? 'you' : 'them'}`;
+      div.innerText = msg.text;
+      chatLog.appendChild(div);
+    });
 
-        if (loginStatus.loggedIn) {
-          clearInterval(interval);
-          localStorage.setItem('xumm_wallet_address', loginStatus.account);
-          localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
-          updateWalletStatus();
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const wallet = myWallet;
+    const text = messageInput.value.trim();
+    if (!wallet || !currentChatWith || !text) return;
+
+    await fetch("https://sglcn-x20-api.glitch.me/send-message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sender: wallet, recipient: currentChatWith, text })
+    });
+
+    messageInput.value = '';
+    sendButton.disabled = true;
+    loadConversation(wallet, currentChatWith);
+  }
+
+  function setupWebSocket(wallet) {
+    if (socket) socket.close();
+    socket = new WebSocket(`wss://sglcn-x20-api.glitch.me/ws?wallet=${wallet}`);
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'message' && data.sender !== wallet) {
+        if (data.sender === currentChatWith) {
+          loadConversation(wallet, currentChatWith);
+        } else {
+          unreadCounts[data.sender] = (unreadCounts[data.sender] || 0) + 1;
+          loadInbox(wallet);
         }
-      }, 3000);
-    }
-
-    async function loadInbox(wallet) {
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/get-message?wallet=${wallet}`);
-      const messages = await res.json();
-      const inbox = document.getElementById('inbox');
-      inbox.innerHTML = '';
-
-      const contacts = [...new Set(messages.map(msg => msg.sender === wallet ? msg.recipient : msg.sender))];
-
-      contacts.forEach(addr => {
-        const div = document.createElement('div');
-        div.className = 'inbox-message';
-        div.innerText = addr;
-        div.onclick = () => loadConversation(wallet, addr);
-        inbox.appendChild(div);
-      });
-    }
-
-    async function loadConversation(user, other) {
-      currentChatWith = other;
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/get-message?wallet=${user}`);
-      const messages = await res.json();
-      const chatLog = document.getElementById('chat-log');
-      chatLog.innerHTML = '';
-
-      const conversation = messages.filter(m => (m.sender === other && m.recipient === user) || (m.sender === user && m.recipient === other));
-      conversation.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = `chat-entry ${msg.sender === user ? 'you' : 'them'}`;
-        div.innerText = msg.text;
-        chatLog.appendChild(div);
-      });
-
-      chatLog.scrollTop = chatLog.scrollHeight;
-    }
-
-    async function sendMessage() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      const text = document.getElementById('message-text').value.trim();
-
-      if (!wallet || !currentChatWith || !text) {
-        alert("Missing information to send message.");
-        return;
       }
-
-      await fetch("https://sglcn-x20-api.glitch.me/send-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sender: wallet, recipient: currentChatWith, text })
-      });
-
-      document.getElementById('message-text').value = '';
-      loadConversation(wallet, currentChatWith);
-    }
+    };
+  }
   </script>
-</body>
-</html>

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NFT Collections - SGLCN-X20</title>
   <link rel="stylesheet" href="style.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/xumm-oauth2-pkce@1.0.1/browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <link rel="stylesheet" href="header.css" />
   <style>
     #top-bar {
@@ -107,65 +107,53 @@
 
   <!-- Wallet Logic -->
   <script>
-  const xumm = new XummPkceBrowser('ee60e1a3-8c08-4cdd-bfa9-accada591684');
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
+    });
 
-  window.addEventListener('DOMContentLoaded', () => {
-    const indicator = document.getElementById('wallet-indicator');
-    const walletInfo = document.getElementById('wallet-info');
-    const walletAddr = document.getElementById('wallet-address');
+    async function updateWalletStatus() {
+      const res = await fetch('/api/check-login');
+      const data = await res.json();
+      const indicator = document.getElementById('wallet-indicator');
 
-    xumm.state().then(state => {
-      if (state?.me?.sub) {
-        const wallet = state.me.sub;
+      if (!indicator) return;
+
+      if (data.loggedIn) {
+        const wallet = data.account;
+        const uuid = data.uuid || 'unknown';
         localStorage.setItem('xumm_wallet_address', wallet);
-        walletInfo.style.display = 'block';
-        walletAddr.textContent = wallet;
+        localStorage.setItem('xumm_user', JSON.stringify({ uuid: uuid, account: wallet }));
+
+        document.getElementById('wallet-info').style.display = 'block';
+        document.getElementById('wallet-address').innerText = wallet;
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = `/profile.html?account=${wallet}`;
+        indicator.onclick = () => window.location.href = `/profile.html?uuid=${uuid}`;
         unlockCollections();
       } else {
         localStorage.removeItem('xumm_wallet_address');
-        walletInfo.style.display = 'none';
+        localStorage.removeItem('xumm_user');
+        document.getElementById('wallet-info').style.display = 'none';
         indicator.textContent = '🔴 Login';
         indicator.classList.remove('green');
         indicator.classList.add('red');
         indicator.title = 'Click to login';
-        indicator.onclick = () => {
-          xumm.authorize().then(() => {
-            xumm.state().then(state => {
-              const wallet = state?.me?.sub;
-              if (wallet) {
-                localStorage.setItem('xumm_wallet_address', wallet);
-                walletInfo.style.display = 'block';
-                walletAddr.textContent = wallet;
-                indicator.textContent = '🟢 Profile';
-                indicator.classList.remove('red');
-                indicator.classList.add('green');
-                indicator.title = 'Go to profile';
-                indicator.onclick = () => window.location.href = `/profile.html?account=${wallet}`;
-                unlockCollections();
-              }
-            });
-          });
-        };
+        indicator.onclick = () => window.location.href = '/login';
         lockCollections();
       }
-    });
-  });
+    }
 
-  function unlockCollections() {
-    // Enable full access to collections
-  }
+    function unlockCollections() {
+      // Enable full access to collections
+    }
 
-  function lockCollections() {
-    // Optional: Hide restricted features
-  }
-</script>
+    function lockCollections() {
+      // Optional: Hide restricted features
+    }
+  </script>
+
   <script src="nfts.js"></script>
 </body>
 </html>
-
-

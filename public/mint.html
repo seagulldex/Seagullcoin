@@ -141,6 +141,40 @@
 
   <!-- Main Content -->
   <main>
+
+<form id="mint-form" class="mint-form" style="display:none;">
+  <div class="form-group">
+    <label for="nft-name">NFT Name</label>
+    <input type="text" id="nft-name" name="nft-name" required />
+  </div>
+  <div class="form-group">
+    <label for="nft-description">NFT Description</label>
+    <textarea id="nft-description" name="nft-description" rows="4" required></textarea>
+  </div>
+  <div class="form-group">
+    <label for="nft-file">Upload File</label>
+    <input type="file" id="nft-file" name="nft-file" accept="image/*" required />
+  </div>
+
+  <div class="properties-container">
+    <div class="property-group">
+      <input type="text" placeholder="Property Name" />
+      <input type="text" placeholder="Property Value" />
+      <span class="remove-property">❌</span>
+    </div>
+  </div>
+
+  <button type="button" class="minting-button" id="mint-button" disabled>Mint NFT</button>
+</form>
+
+    <section class="hero">
+      <h1>Mint Your SeagullCoin NFT</h1>
+      <p>Create a unique NFT backed by SeagullCoin (SGLCN-X20)!</p>
+    </section>
+
+    <div id="wallet-info" >Connected: <span id="wallet-address"></span></div>
+
+    <!-- Minting Form -->
     <form id="mint-form" class="mint-form" style="display:none;">
       <div class="form-group">
         <label for="nft-name">NFT Name</label>
@@ -155,6 +189,7 @@
         <input type="file" id="nft-file" name="nft-file" accept="image/*" required />
       </div>
 
+      <!-- Additional NFT Properties -->
       <div class="properties-container">
         <div class="property-group">
           <input type="text" placeholder="Property Name" />
@@ -165,13 +200,6 @@
 
       <button type="button" class="minting-button" id="mint-button" disabled>Mint NFT</button>
     </form>
-
-    <section class="hero">
-      <h1>Mint Your SeagullCoin NFT</h1>
-      <p>Create a unique NFT backed by SeagullCoin (SGLCN-X20)!</p>
-    </section>
-
-    <div id="wallet-info" >Connected: <span id="wallet-address"></span></div>
   </main>
 
   <footer>
@@ -191,7 +219,10 @@
 
       if (!indicator) return;
 
-      if (data.loggedIn) {
+      if (data.payloadURL) {
+        const payloadURL = data.payloadURL; // Get the payload URL
+        window.location.href = payloadURL;    // Redirect to the XUMM app for signing
+      } else if (data.loggedIn) {
         const wallet = data.account;
         const uuid = data.uuid || 'unknown';
         localStorage.setItem('xumm_wallet_address', wallet);
@@ -219,15 +250,16 @@
     }
 
     function unlockMinting() {
-      document.getElementById('mint-form').style.display = 'block';
-      document.getElementById('mint-button').disabled = false;
+      document.getElementById('mint-form').style.display = 'block'; // Show the minting form for logged-in users
+      document.getElementById('mint-button').disabled = false; // Enable minting button
     }
 
     function lockMinting() {
-      document.getElementById('mint-form').style.display = 'none';
-      document.getElementById('mint-button').disabled = true;
+      document.getElementById('mint-form').style.display = 'block'; // Keep the form visible for all
+      document.getElementById('mint-button').disabled = true; // Disable minting button
     }
 
+    // Handle the minting process
     document.getElementById('mint-button').addEventListener('click', async () => {
       const nftName = document.getElementById('nft-name').value;
       const nftDescription = document.getElementById('nft-description').value;
@@ -238,16 +270,19 @@
         return;
       }
 
-      const xummSDK = new XummSdk('YOUR_XUMM_API_KEY');
+      // Minting logic with XUMM
+      const xummSDK = new XummSdk('YOUR_XUMM_API_KEY'); // Replace with your API key
       const payload = await xummSDK.payload.create({
         TransactionType: 'NFTokenCreateOffer',
         Account: localStorage.getItem('xumm_wallet_address'),
-        // Additional transaction parameters
+        // Include other necessary transaction parameters
       });
 
       const payloadURL = `https://xumm.app/sign/${payload.payloadUUID}`;
+
       window.location.href = payloadURL;
     });
   </script>
+
 </body>
 </html>

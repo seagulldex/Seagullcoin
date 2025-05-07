@@ -895,16 +895,41 @@ app.post('/api/xumm-login', async (req, res) => {
     };
 
     try {
+        // Create the payload
         const createdPayload = await xummSDK.payload.create(payload);
+
+        // Return the payload UUID and URL to the frontend so the user can sign the payload in the XUMM app
         res.json({
             payloadUUID: createdPayload.uuid,
             payloadURL: `https://xumm.app/sign/${createdPayload.uuid}`
         });
+
+        // Polling to check if the user has signed the payload
+        const checkPayloadStatus = async () => {
+            const response = await xummSDK.payload.get(createdPayload.uuid);
+            if (response.meta.signed) {
+                // The user has signed the payload, handle the login
+                const walletAddress = response.txjson.Account; // This should be the wallet address
+                // Log the user in by storing the wallet address in session or local storage
+                res.status(200).json({
+                    message: 'User logged in',
+                    walletAddress: walletAddress
+                });
+            } else {
+                // User did not sign the transaction
+                res.status(400).json({ message: 'User did not sign the transaction' });
+            }
+        };
+
+        // Wait for the user to sign the payload (you can use a timeout or polling)
+        setTimeout(checkPayloadStatus, 5000); // You may want to adjust the timeout or use another method like polling
+
     } catch (error) {
         console.error('Error creating XUMM payload:', error);
         res.status(500).json({ error: 'Failed to create XUMM payload' });
     }
 });
+
 
 
 

@@ -1,215 +1,43 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SGLCN-X20 Minting Platform</title>
-  <link rel="stylesheet" href="style.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
-  <link rel="stylesheet" href="header.css" />
+  <meta charset="UTF-8">
+  <title>SGLCN-X20 Login Test</title>
   <style>
-    #top-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 40px;
-      background-color: #2e2e2e;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding: 0 20px;
-      z-index: 1000;
-    }
-
-    #wallet-container {
-      border: 2px solid #000;
-      border-radius: 10px;
-      padding: 6px 12px;
-      background-color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      max-width: 140px;
-    }
-
-    #wallet-status {
-      font-size: 0.9rem;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    #wallet-indicator.red {
-      color: #ff4444;
-    }
-
-    #wallet-indicator.green {
-      color: #44ff44;
-    }
-
     body {
-      margin-top: 60px;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 100px;
+      background-color: #f0f4f8;
     }
-
-    header {
-      margin-top: 10px;
+    button {
+      font-size: 18px;
+      padding: 12px 24px;
+      background-color: #346beb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
-
-    nav ul {
-      display: flex;
-      list-style-type: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    nav ul li {
-      margin: 0 15px;
+    button:hover {
+      background-color: #264cb8;
     }
   </style>
 </head>
 <body>
+  <h1>Welcome to SGLCN-X20</h1>
+  <p>Please log in with your XUMM Wallet:</p>
+  <button id="xummLoginBtn">Login with XUMM</button>
 
-  <!-- Top Bar -->
-  <div id="top-bar">
-    <div id="wallet-container">
-      <div id="wallet-status">
-        <span id="wallet-indicator" class="red">🔴 Login</span>
-      </div>
-    </div>
-  </div>
+  <script>
+    const XUMM_CLIENT_ID = 'ee60e1a3-8c08-4cdd-bfa9-accada591684'; // your XUMM App ID
+    const REDIRECT_URI = 'https://sglcn-x20-api.glitch.me/xumm/callback';
 
-  <!-- Navigation -->
-  <header>
-    <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="nfts.html">NFTs</a></li>
-        <li><a href="mint.html">Mint NFT</a></li>
-        <li><a href="messages.html">Messages</a></li>
-      </ul>
-    </nav>
-  </header>
-
-  <!-- Main Content -->
-  <main>
-    <section class="hero">
-      <h1>Welcome to SeagullCoin NFT Marketplace</h1>
-      <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
-      <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
-    </section>
-
-    <div id="user-info">
-      <p id="user-balance">Loading balance...</p>
-      <div id="user-nfts">Loading NFTs...</div>
-    </div>
-  </main>
-
-  <footer>
-    <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
-  </footer>
-
-  <!-- Wallet Logic -->
-<script>
-  window.addEventListener('DOMContentLoaded', () => {
-    updateWalletStatus();
-  });
-
-  async function updateWalletStatus() {
-    const wallet = localStorage.getItem('xumm_wallet_address');
-    const indicator = document.getElementById('wallet-indicator');
-
-    if (!indicator) return;
-
-    if (wallet) {
-      document.getElementById('wallet-info').style.display = 'block';
-      document.getElementById('wallet-address').innerText = wallet;
-      indicator.textContent = '🟢 Profile';
-      indicator.classList.remove('red');
-      indicator.classList.add('green');
-      indicator.title = 'Go to profile';
-      indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
-      unlockCollections();
-
-      // Fetch the SeagullCoin balance after login
-      fetchSeagullCoinBalance(wallet);
-    } else {
-      document.getElementById('wallet-info').style.display = 'none';
-      indicator.textContent = '🔴 Login';
-      indicator.classList.remove('green');
-      indicator.classList.add('red');
-      indicator.title = 'Click to login';
-      indicator.onclick = () => startLoginFlow();
-      lockCollections();
-    }
-  }
-
-  async function startLoginFlow() {
-    const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-    const data = await res.json();
-    const payloadUUID = data.payloadUUID;
-
-    // Open the XUMM signing URL in a new tab
-    window.open(data.payloadURL, "_blank");
-
-    // Poll for login status every 3 seconds
-    const interval = setInterval(async () => {
-      const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
-      const loginStatus = await check.json();
-
-      if (loginStatus.loggedIn) {
-        clearInterval(interval);
-
-        localStorage.setItem('xumm_wallet_address', loginStatus.account);
-        localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
-
-        const indicator = document.getElementById('wallet-indicator');
-        document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wallet-address').innerText = loginStatus.account;
-
-        indicator.textContent = '🟢 Profile';
-        indicator.classList.remove('red');
-        indicator.classList.add('green');
-        indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = `/profile.html?uuid=${payloadUUID}`;
-        unlockCollections();
-
-        // After login, fetch SeagullCoin balance
-        fetchSeagullCoinBalance(loginStatus.account);
-      }
-    }, 3000);
-  }
-
-  function unlockCollections() {
-    // Enable full access to collections if needed
-  }
-
-  function lockCollections() {
-    // Optionally hide features until login
-  }
-
-  // Example function to update the UI after login
-  const handleLoginResponse = (response) => {
-    if (response.success) {
-      const walletAddress = response.walletAddress;
-      document.getElementById('wallet-address').textContent = walletAddress;
-      document.getElementById('wallet-info').style.display = 'block';
-      fetchSeagullCoinBalance(walletAddress);
-    } else {
-      console.error('Login failed:', response.error);
-    }
-  };
-
-  const fetchSeagullCoinBalance = async (walletAddress) => {
-    try {
-      const response = await fetch(`/get-balance/${walletAddress}`);
-      const { balance } = await response.json();
-      document.getElementById('user-balance').textContent = `Balance: ${balance} SeagullCoin`;
-    } catch (error) {
-      console.error('Error fetching SeagullCoin balance:', error);
-    }
-  };
-</script>
-  <script src="main.js"></script>
+    document.getElementById('xummLoginBtn').addEventListener('click', () => {
+      const loginURL = `https://xumm.app/oauth2/authorize?client_id=${XUMM_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=ALL`;
+      window.location.href = loginURL;
+    });
+  </script>
 </body>
 </html>
- 

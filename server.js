@@ -1810,23 +1810,22 @@ app.get('/xumm/callback', async (req, res) => {
       }),
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to obtain access token.');
-    }
-
+    if (!response.ok) throw new Error('Failed to obtain access token.');
     const data = await response.json();
-    req.session.xumm = data; // Store XUMM response in session
-    req.session.walletAddress = data.account; // Store wallet address
 
-    // Log success and redirect user to a success page (or dashboard)
+    // Store in session
+    req.session.xumm = data;
+    req.session.walletAddress = data.account;
+    req.session.user = { account: data.account }; // ✅ Fix added here
+
     console.log('OAuth2 success, user authenticated:', data.account);
-
-    res.redirect('/'); // Or any page you want after login
+    res.redirect('/');
   } catch (err) {
     console.error('XUMM OAuth callback error:', err);
     res.status(500).json({ error: 'OAuth callback processing failed.' });
   }
 });
+
 
 // Endpoint to confirm payment after XUMM wallet transaction
 app.get('/confirm-payment', async (req, res) => {

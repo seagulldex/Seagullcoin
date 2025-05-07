@@ -3,18 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NFT Minting - SGLCN-X20</title>
+  <title>NFT Collections - SGLCN-X20</title>
   <link rel="stylesheet" href="style.css"/>
-  <link rel="stylesheet" href="header.css" />
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+  <link rel="stylesheet" href="header.css" />
   <style>
+    /* General Body and Background */
+    body {
+      background-color: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      margin-top: 60px;
+    }
+
+    header {
+      margin-top: 10px;
+    }
+
+    nav ul {
+      display: flex;
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    nav ul li {
+      margin: 0 15px;
+    }
+
+    /* Top Bar */
     #top-bar {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       height: 40px;
-      background-color: #2e2e2e;
+      background-color: #333;
       display: flex;
       align-items: center;
       justify-content: flex-end;
@@ -23,10 +47,10 @@
     }
 
     #wallet-container {
-      border: 2px solid #000;
+      border: 2px solid #fff;
       border-radius: 10px;
       padding: 6px 12px;
-      background-color: #fff;
+      background-color: #444;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -39,197 +63,275 @@
       font-weight: bold;
     }
 
-    #wallet-indicator.red { color: #ff4444; }
-    #wallet-indicator.green { color: #44ff44; }
-
-    body { margin-top: 60px; }
-
-    nav ul {
-      display: flex;
-      list-style: none;
-      padding: 0;
+    #wallet-indicator.red {
+      color: #ff4444;
     }
 
-    nav ul li { margin: 0 15px; }
+    #wallet-indicator.green {
+      color: #44ff44;
+    }
 
+    /* Minting Form */
     .mint-form {
-      width: 60%;
-      margin: 50px auto;
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-    }
-
-    .form-group { margin-bottom: 15px; }
-
-    .properties-container {
       margin-top: 20px;
+      padding: 20px;
+      background-color: #222;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
-    .property-group {
-      display: flex;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .property-group input {
-      margin-right: 10px;
-    }
-
-    .remove-property {
-      color: red;
-      cursor: pointer;
-    }
-
-    .minting-button {
-      background-color: #2e2e2e;
-      color: white;
-      padding: 10px 20px;
+    .mint-form input,
+    .mint-form textarea,
+    .mint-form button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
       border: none;
-      border-radius: 5px;
+    }
+
+    .mint-form input,
+    .mint-form textarea {
+      background-color: #333;
+      color: white;
+    }
+
+    .mint-form button {
+      background-color: #444;
+      color: white;
       cursor: pointer;
     }
 
-    .minting-button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
+    .mint-form button:hover {
+      background-color: #555;
     }
+
+    .mint-form input::placeholder,
+    .mint-form textarea::placeholder {
+      color: #888;
+    }
+
+    /* Align the form fields nicely */
+    .mint-form input, .mint-form textarea {
+      display: block;
+      width: calc(100% - 20px);
+      margin-bottom: 15px;
+    }
+
+    .mint-form label {
+      font-weight: bold;
+    }
+
+    /* Collections Section */
+    #collections-container {
+      margin-top: 30px;
+      padding: 20px;
+    }
+
+    .collection-item {
+      background-color: #333;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 10px;
+      color: white;
+    }
+
+    .collection-item img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+    }
+
+    .collection-item h3 {
+      margin: 5px 0;
+    }
+
+    .collection-item p {
+      font-size: 0.9rem;
+    }
+
   </style>
 </head>
 <body>
 
-<div id="top-bar">
-  <div id="wallet-container">
-    <div id="wallet-status">
-      <span id="wallet-indicator" class="red">🔴 Login</span>
-    </div>
-  </div>
-</div>
-
-<header>
-  <nav>
-    <ul>
-      <li><a href="index.html">Home</a></li>
-      <li><a href="nfts.html">NFTs</a></li>
-      <li><a href="mint.html">Mint NFT</a></li>
-      <li><a href="messages.html">Messages</a></li>
-    </ul>
-  </nav>
-</header>
-
-<main>
-  <section class="hero">
-    <h1>Mint Your SeagullCoin NFT</h1>
-    <p>Create a unique NFT backed by SeagullCoin (SGLCN-X20)!</p>
-  </section>
-
-  <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
-
-  <form id="mint-form" class="mint-form" style="display:none;">
-    <div class="form-group">
-      <label for="nft-name">NFT Name</label>
-      <input type="text" id="nft-name" required />
-    </div>
-    <div class="form-group">
-      <label for="nft-description">NFT Description</label>
-      <textarea id="nft-description" rows="4" required></textarea>
-    </div>
-    <div class="form-group">
-      <label for="nft-file">Upload File</label>
-      <input type="file" id="nft-file" accept="image/*" required />
-    </div>
-
-    <div class="properties-container" id="properties-container">
-      <div class="property-group">
-        <input type="text" placeholder="Property Name" />
-        <input type="text" placeholder="Property Value" />
-        <span class="remove-property">❌</span>
+  <!-- Top Bar -->
+  <div id="top-bar">
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
       </div>
     </div>
+  </div>
 
-    <button type="button" class="minting-button" id="mint-button" disabled>Mint NFT</button>
-  </form>
-</main>
+  <!-- Navigation -->
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="nfts.html">NFTs</a></li>
+        <li><a href="mint.html">Mint NFT</a></li>
+        <li><a href="messages.html">Messages</a></li>
+      </ul>
+    </nav>
+  </header>
 
-<footer>
-  <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
-</footer>
+  <!-- Main Content -->
+  <main>
+    <h1>NFT Collections</h1>
+    <p>Browse SeagullCoin-backed NFT collections minted on this platform.</p>
 
-<script>
-  window.addEventListener('DOMContentLoaded', async () => {
-    const res = await fetch('/api/check-login');
-    const data = await res.json();
-    const indicator = document.getElementById('wallet-indicator');
+    <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
 
-    if (data.loggedIn) {
-      const wallet = data.account;
-      localStorage.setItem('xumm_wallet_address', wallet);
-      document.getElementById('wallet-info').style.display = 'block';
-      document.getElementById('wallet-address').textContent = wallet;
-      indicator.textContent = '🟢 Profile';
-      indicator.classList.replace('red', 'green');
-      indicator.onclick = () => window.location.href = `/profile.html?uuid=${data.uuid}`;
-      unlockMinting();
-    } else {
-      indicator.textContent = '🔴 Login';
-      indicator.classList.replace('green', 'red');
-      indicator.onclick = () => window.location.href = '/login';
-      lockMinting();
+    <!-- Minting Form -->
+    <div class="mint-form">
+      <h2>Mint Your NFT</h2>
+      <form id="mint-form">
+        <label for="nft-name">NFT Name</label>
+        <input type="text" id="nft-name" required placeholder="Enter NFT name" />
+
+        <label for="nft-description">NFT Description</label>
+        <textarea id="nft-description" required placeholder="Enter a description for your NFT"></textarea>
+
+        <label for="nft-file">NFT File</label>
+        <input type="file" id="nft-file" required />
+
+        <label for="nft-collection">Collection</label>
+        <input type="text" id="nft-collection" placeholder="Enter collection name (optional)" />
+
+        <button type="submit">Mint NFT</button>
+      </form>
+      <p id="minting-status" style="color: #2e2e2e;"></p>
+    </div>
+
+    <!-- Your NFT collection display logic here -->
+    <div id="collections-container">Loading collections...</div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+  </footer>
+
+  <!-- Wallet Logic -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
+    });
+
+    async function updateWalletStatus() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      const indicator = document.getElementById('wallet-indicator');
+
+      if (wallet) {
+        document.getElementById('wallet-info').style.display = 'block';
+        document.getElementById('wallet-address').innerText = wallet;
+        indicator.textContent = '🟢 Profile';
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
+        indicator.title = 'Go to profile';
+        indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
+        loadCollections();
+      } else {
+        document.getElementById('wallet-info').style.display = 'none';
+        indicator.textContent = '🔴 Login';
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
+        indicator.title = 'Click to login';
+        indicator.onclick = startLoginFlow;
+      }
     }
-  });
 
-  function unlockMinting() {
-    document.getElementById('mint-form').style.display = 'block';
-    document.getElementById('mint-button').disabled = false;
-  }
+    async function startLoginFlow() {
+      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+      const data = await res.json();
+      const payloadUUID = data.payloadUUID;
 
-  function lockMinting() {
-    document.getElementById('mint-form').style.display = 'block';
-    document.getElementById('mint-button').disabled = true;
-  }
+      window.open(data.payloadURL, "_blank");
 
-  document.getElementById('mint-button').addEventListener('click', async () => {
-    const name = document.getElementById('nft-name').value;
-    const description = document.getElementById('nft-description').value;
-    const file = document.getElementById('nft-file').files[0];
+      const interval = setInterval(async () => {
+        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+        const loginStatus = await check.json();
 
-    if (!name || !description || !file) {
-      return alert('All fields are required.');
+        if (loginStatus.loggedIn) {
+          clearInterval(interval);
+          localStorage.setItem('xumm_wallet_address', loginStatus.account);
+          localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+          updateWalletStatus();
+        }
+      }, 3000);
     }
 
-    const properties = [];
-    document.querySelectorAll('.property-group').forEach(group => {
-      const [keyInput, valueInput] = group.querySelectorAll('input');
-      if (keyInput.value && valueInput.value) {
-        properties.push({ key: keyInput.value, value: valueInput.value });
+    async function loadCollections() {
+      const res = await fetch('/api/get-collections');
+      const collections = await res.json();
+      const container = document.getElementById('collections-container');
+      container.innerHTML = '';
+
+      if (collections.length === 0) {
+        container.innerHTML = 'No collections found.';
+      } else {
+        collections.forEach(collection => {
+          const div = document.createElement('div');
+          div.className = 'collection-item';
+          div.innerHTML = `
+            <h3>${collection.name}</h3>
+            <p>${collection.description}</p>
+            <img src="${collection.icon}" alt="${collection.name}" />
+          `;
+          container.appendChild(div);
+        });
+      }
+    }
+
+    document.getElementById('mint-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const nftName = document.getElementById('nft-name').value;
+      const nftDescription = document.getElementById('nft-description').value;
+      const nftFile = document.getElementById('nft-file').files[0];
+      const nftCollection = document.getElementById('nft-collection').value;
+
+      if (!nftFile) {
+        document.getElementById('minting-status').textContent = 'Please upload a valid file.';
+        return;
+      }
+
+      // Upload the file to NFT.Storage (example)
+      const formData = new FormData();
+      formData.append('file', nftFile);
+
+      try {
+        const fileRes = await fetch('https://api.nft.storage/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer YOUR_NFT_STORAGE_API_KEY`
+          },
+          body: formData
+        });
+        const fileData = await fileRes.json();
+        
+        // Now you can send minting details to the backend
+        const mintRes = await fetch('/api/mint', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: nftName,
+            description: nftDescription,
+            fileUrl: fileData.url, // File URL from NFT.Storage
+            collection: nftCollection
+          }),
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const mintData = await mintRes.json();
+        document.getElementById('minting-status').textContent = 'NFT minted successfully!';
+      } catch (error) {
+        document.getElementById('minting-status').textContent = 'An error occurred. Please try again.';
       }
     });
+  </script>
 
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('description', description);
-    formData.append('file', file);
-    formData.append('properties', JSON.stringify(properties));
-
-    const res = await fetch('/mint', {
-      method: 'POST',
-      body: formData
-    });
-
-    const result = await res.json();
-    if (result.payloadUrl) {
-      window.location.href = result.payloadUrl;
-    } else {
-      alert('Error creating mint transaction.');
-    }
-  });
-
-  document.addEventListener('click', e => {
-    if (e.target.classList.contains('remove-property')) {
-      e.target.parentElement.remove();
-    }
-  });
-</script>
-
+  <script src="nfts.js"></script>
 </body>
 </html>

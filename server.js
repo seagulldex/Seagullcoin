@@ -1761,7 +1761,7 @@ app.post('/create-collection',
 });
 
 // Endpoint to verify signed payload
-app.post('/verify-authentication', async (req, res) => {
+ app.post('/verify-authentication', async (req, res) => {
   const { signedPayload } = req.body;
 
   if (!signedPayload) {
@@ -1871,22 +1871,46 @@ app.post('/user', async (req, res) => {
   const { xummToken } = req.body;
 
   try {
-    const userData = await xummSDK.getUserTokenData(xummToken); // verify token
+    const userData = await xummSDK.getUserTokenData(xummToken); // Verify the XUMM token
 
     if (userData?.sub) {
       const account = userData.sub;
-      sessions[account] = { walletAddress: account }; // ✅ store it in memory
 
-      return res.json({ success: true, account });
+      // Store the wallet address and sessionToken in the database
+      db.run(`INSERT OR REPLACE INTO users (walletAddress, sessionToken) VALUES (?, ?)`, [account, 'your-session-token'], function(err) {
+        if (err) {
+          console.error("Error storing user data:", err);
+          return res.status(500).json({ success: false, error: 'Database error' });
+        }
+
+        console.log('User stored successfully:', account);
+        res.json({ success: true, account });
+      });
+    } else {
+      res.status(400).json({ success: false, error: 'Invalid user' });
     }
-
-    res.status(400).json({ success: false, error: 'Invalid user' });
   } catch (err) {
     console.error('Error verifying XUMM token:', err);
     res.status(500).json({ success: false });
   }
 });
 
+app.get('/user/:walletAddress', (req, res) => {
+  const { walletAddress } = req.params;
+
+  db.get(`SELECT * FROM users WHERE walletAddress = ?`, [walletAddress], (err, row) => {
+    if (err) {
+      console.error("Error fetching user data:", err);
+      return res.status(500).json({ success: false, error: 'Database error' });
+    }
+
+    if (row) {
+      return res.json({ success: true, user: row });
+    } else {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+  });
+});
 
 
 // Logout route to clear session data

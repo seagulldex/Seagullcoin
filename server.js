@@ -288,7 +288,7 @@ app.use(session({
 
 // Now, apply other middleware
 app.use(limiter);
-app.use(cors({ origin: "*", credentials: true }));
+app.use(cors({ origin: 'https://sglcn-x20-api.glitch.me', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));

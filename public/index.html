@@ -32,12 +32,9 @@
       align-items: center;
       justify-content: center;
       max-width: 140px;
-    }
-
-    #wallet-status {
+      font-weight: bold;
       font-size: 0.9rem;
       cursor: pointer;
-      font-weight: bold;
     }
 
     #wallet-indicator.red {
@@ -66,17 +63,29 @@
     nav ul li {
       margin: 0 15px;
     }
+
+    button#wallet-container {
+      border: 2px solid #000;
+      border-radius: 10px;
+      padding: 6px 12px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 140px;
+      font-weight: bold;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
   <!-- Top Bar -->
   <div id="top-bar">
-    <div id="wallet-container">
-      <div id="wallet-status">
-        <span id="wallet-indicator" class="red">🔴 Login</span>
-      </div>
-    </div>
+    <button id="wallet-container" title="Click to login">
+      <span id="wallet-indicator" class="red">🔴 Login</span>
+    </button>
   </div>
 
   <!-- Navigation -->

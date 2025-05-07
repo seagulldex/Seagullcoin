@@ -75,7 +75,7 @@
     .mint-form {
       margin-top: 20px;
       padding: 20px;
-      background-color: #000; /* Changed to black */
+      background-color: #000;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
       max-width: 500px;
@@ -88,7 +88,8 @@
 
     .mint-form input,
     .mint-form textarea,
-    .mint-form button {
+    .mint-form button,
+    .mint-form select {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
@@ -119,7 +120,8 @@
 
     /* Align the form fields nicely */
     .mint-form input,
-    .mint-form textarea {
+    .mint-form textarea,
+    .mint-form select {
       display: block;
       width: calc(100% - 20px);
       margin-bottom: 15px;
@@ -151,32 +153,51 @@
       color: white;
     }
 
-    /* Collections Section */
-    #collections-container {
-      margin-top: 30px;
-      padding: 20px;
+    /* Modal for Create Collection */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding-top: 60px;
     }
 
-    .collection-item {
-      background-color: #333;
+    .modal-content {
+      background-color: #222;
+      margin: auto;
+      padding: 20px;
+      border-radius: 10px;
+      width: 80%;
+      max-width: 400px;
+    }
+
+    .modal-content input,
+    .modal-content textarea {
+      width: 100%;
       margin: 10px 0;
       padding: 10px;
-      border-radius: 10px;
+      border-radius: 8px;
+      background-color: #333;
       color: white;
     }
 
-    .collection-item img {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
+    /* Collections Dropdown Scroll */
+    .collections-dropdown {
+      max-height: 200px;
+      overflow-y: auto;
+      background-color: #333;
+      border-radius: 8px;
+      border: 1px solid #444;
     }
 
-    .collection-item h3 {
-      margin: 5px 0;
-    }
-
-    .collection-item p {
-      font-size: 0.9rem;
+    .collections-dropdown option {
+      background-color: #333;
+      color: white;
+      padding: 5px;
     }
 
   </style>
@@ -225,7 +246,14 @@
         <input type="file" id="nft-file" required accept="image/*,video/*,gif/*" onchange="previewFile()" />
 
         <label for="nft-collection">Collection</label>
-        <input type="text" id="nft-collection" placeholder="Enter collection name (optional)" />
+        <select id="nft-collection">
+          <option value="">Select or Create a Collection</option>
+          <option value="create-new">Create New Collection</option>
+          <option value="create-nft">Create New NFT</option>
+          <div class="collections-dropdown">
+            <!-- Pre-existing collections will be dynamically added here -->
+          </div>
+        </select>
 
         <button type="submit">Mint NFT</button>
       </form>
@@ -238,8 +266,29 @@
       <p id="minting-status" style="color: #2e2e2e;"></p>
     </div>
 
-    <!-- Your NFT collection display logic here -->
-    <div id="collections-container">Loading collections...</div>
+    <!-- Create New Collection Modal -->
+    <div id="create-collection-modal" class="modal">
+      <div class="modal-content">
+        <h2>Create a New Collection</h2>
+        <label for="collection-name">Collection Name</label>
+        <input type="text" id="collection-name" placeholder="Enter collection name" />
+        
+        <label for="collection-logo">Logo (Upload)</label>
+        <input type="file" id="collection-logo" accept="image/*" />
+        
+        <label for="collection-description">Collection Description</label>
+        <textarea id="collection-description" placeholder="Enter a description"></textarea>
+
+        <label for="collection-website">Website URL</label>
+        <input type="url" id="collection-website" placeholder="Enter website URL" />
+        
+        <label for="collection-xcom-link">X.com Link</label>
+        <input type="url" id="collection-xcom-link" placeholder="Enter X.com link" />
+        
+        <button id="save-collection-btn">Save Collection</button>
+        <button id="cancel-collection-btn">Cancel</button>
+      </div>
+    </div>
   </main>
 
   <footer>
@@ -270,74 +319,31 @@
         indicator.textContent = '🔴 Login';
         indicator.classList.remove('green');
         indicator.classList.add('red');
-        indicator.title = 'Click to login';
-        indicator.onclick = startLoginFlow;
+        indicator.title = 'Log in';
+        indicator.onclick = () => window.location.href = '/login.html';
       }
     }
 
-    async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-      const data = await res.json();
-      const payloadUUID = data.payloadUUID;
+    function loadCollections() {
+      // Fetch user's collections and populate dropdown
+      // For demo, hardcoding some dummy collections
+      const collections = [
+        { name: 'Seagull Gallery', id: '1' },
+        { name: 'Crypto Art', id: '2' },
+        { name: 'Digital Treasures', id: '3' }
+      ];
 
-      window.open(data.payloadURL, "_blank");
-
-      const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
-        const loginStatus = await check.json();
-
-        if (loginStatus.loggedIn) {
-          clearInterval(interval);
-          localStorage.setItem('xumm_wallet_address', loginStatus.account);
-          localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
-          updateWalletStatus();
-        }
-      }, 3000);
-    }
-
-    async function loadCollections() {
-      const res = await fetch('/api/get-collections');
-      const collections = await res.json();
-      const container = document.getElementById('collections-container');
-      container.innerHTML = '';
-
-      if (collections.length === 0) {
-        container.innerHTML = 'No collections found.';
-      } else {
-        collections.forEach(collection => {
-          const div = document.createElement('div');
-          div.className = 'collection-item';
-          div.innerHTML = `
-            <h3>${collection.name}</h3>
-            <p>${collection.description}</p>
-            <img src="${collection.icon}" alt="${collection.name}" />
-          `;
-          container.appendChild(div);
-        });
-      }
-    }
-
-    function previewFile() {
-      const file = document.getElementById('nft-file').files[0];
-      const previewContainer = document.getElementById('preview-container');
-
-      if (file) {
-        const fileType = file.type;
-        const fileURL = URL.createObjectURL(file);
-
-        if (fileType.startsWith('image')) {
-          previewContainer.innerHTML = `<img src="${fileURL}" alt="NFT Preview" />`;
-        } else if (fileType.startsWith('video')) {
-          previewContainer.innerHTML = `<video controls src="${fileURL}"></video>`;
-        } else if (fileType === 'image/gif') {
-          previewContainer.innerHTML = `<img src="${fileURL}" alt="NFT Preview" />`;
-        } else {
-          previewContainer.innerHTML = `<span>Unsupported file type</span>`;
-        }
-      } else {
-        previewContainer.innerHTML = '<span>No file selected</span>';
-      }
+      const select = document.getElementById('nft-collection');
+      const dropdown = document.querySelector('.collections-dropdown');
+      
+      collections.forEach(collection => {
+        const option = document.createElement('option');
+        option.value = collection.id;
+        option.innerText = collection.name;
+        dropdown.appendChild(option);
+      });
     }
   </script>
+
 </body>
 </html>

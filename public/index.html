@@ -110,51 +110,75 @@
 
   <!-- Wallet Logic -->
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
-    });
+  window.addEventListener('DOMContentLoaded', () => {
+    updateWalletStatus();
+  });
 
-    async function updateWalletStatus() {
-      const res = await fetch('/api/check-login');
+  async function updateWalletStatus() {
+    const res = await fetch('/api/check-login');
+    const data = await res.json();
+    const indicator = document.getElementById('wallet-indicator');
+
+    if (!indicator) return;
+
+    if (data.loggedIn) {
+      const wallet = data.account;
+      const uuid = data.uuid || 'unknown';
+      localStorage.setItem('xumm_wallet_address', wallet);
+      localStorage.setItem('xumm_user', JSON.stringify({ uuid: uuid, account: wallet }));
+
+      document.getElementById('wallet-info').style.display = 'block';
+      document.getElementById('wallet-address').innerText = wallet;
+      indicator.textContent = '🟢 Profile';
+      indicator.classList.remove('red');
+      indicator.classList.add('green');
+      indicator.title = 'Go to profile';
+      indicator.onclick = () => window.location.href = `/profile.html?uuid=${uuid}`;
+      unlockMinting();
+    } else {
+      localStorage.removeItem('xumm_wallet_address');
+      localStorage.removeItem('xumm_user');
+      document.getElementById('wallet-info').style.display = 'none';
+      indicator.textContent = '🔴 Login';
+      indicator.classList.remove('green');
+      indicator.classList.add('red');
+      indicator.title = 'Click to login';
+      
+      // Replace the login redirection with XUMM login flow
+      indicator.onclick = () => {
+        fetch('/api/xumm-login') // Your backend should return the payloadUUID + payloadURL
+          .then(res => res.json())
+          .then(data => {
+            if (data.payloadURL) {
+              window.open(data.payloadURL, '_blank'); // open XUMM sign request
+              // Optionally poll for login confirmation:
+              pollForLogin(data.payloadUUID);
+            }
+          });
+      };
+      lockMinting();
+    }
+  }
+
+  function unlockMinting() {
+    // Enable minting UI
+  }
+
+  function lockMinting() {
+    // Disable minting UI
+  }
+
+  function pollForLogin(uuid) {
+    const interval = setInterval(async () => {
+      const res = await fetch(`/api/check-login-status?uuid=${uuid}`);
       const data = await res.json();
-      const indicator = document.getElementById('wallet-indicator');
-
-      if (!indicator) return;
 
       if (data.loggedIn) {
-        const wallet = data.account;
-        const uuid = data.uuid || 'unknown';
-        localStorage.setItem('xumm_wallet_address', wallet);
-        localStorage.setItem('xumm_user', JSON.stringify({ uuid: uuid, account: wallet }));
-
-        document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wallet-address').innerText = wallet;
-        indicator.textContent = '🟢 Profile';
-        indicator.classList.remove('red');
-        indicator.classList.add('green');
-        indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = `/profile.html?uuid=${uuid}`;
-        unlockMinting();
-      } else {
-        localStorage.removeItem('xumm_wallet_address');
-        localStorage.removeItem('xumm_user');
-        document.getElementById('wallet-info').style.display = 'none';
-        indicator.textContent = '🔴 Login';
-        indicator.classList.remove('green');
-        indicator.classList.add('red');
-        indicator.title = 'Click to login';
-        indicator.onclick = () => window.location.href = '/login';
-        lockMinting();
+        clearInterval(interval);
+        updateWalletStatus();
       }
-    }
-
-    function unlockMinting() {
-      // Enable minting UI
-    }
-
-    function lockMinting() {
-      // Disable minting UI
-    }
+    }, 3000); // every 3 seconds
+  }
   </script>
 
   <script src="main.js"></script>

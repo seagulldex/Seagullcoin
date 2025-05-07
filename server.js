@@ -41,6 +41,11 @@ import { insertMintedNFT } from './dbsetup.js';
 import sanitizeHtml from 'sanitize-html';
 import rippleAddressCodec from 'ripple-address-codec';
 const { isValidAddress } = rippleAddressCodec;
+// Initialize XUMM SDK using environment variables
+const sdk = new XummSdk({
+    apiKey: process.env.XUMM_API_KEY,       // Use the XUMM API key from .env
+    apiSecret: process.env.XUMM_API_SECRET  // Use the XUMM API secret from .env
+});
 
 
 
@@ -332,10 +337,7 @@ db.serialize(() => {
       console.log(`NFT saved with ID: ${this.lastID}`);
     }
   });
-};
-
-
-  // Insert a test user
+};// Insert a test user
   const stmt = db.prepare("INSERT INTO users (name) VALUES (?)");
   stmt.run('SeagullCoin User');
   stmt.finalize();
@@ -753,9 +755,7 @@ app.get('/get-messages', async (req, res) => {
     console.error('Error fetching messages:', err);
     res.status(500).json({ error: 'Failed to fetch messages.' });
   }
-});
-
-/**
+});/**
  * @swagger
  * /get-messages:
  *   get:
@@ -887,6 +887,27 @@ app.get('/create-login-payload', async (req, res) => {
     console.error('Error creating login payload:', err);
     res.status(500).json({ error: 'Failed to create login payload' });
   }
+});
+
+app.post('/api/xumm-login', async (req, res) => {
+    const payload = {
+        "txjson": {
+            "TransactionType": "AccountSet",
+            "Account": "your-xrp-address",
+            // other transaction details if necessary
+        }
+    };
+
+    try {
+        const createdPayload = await sdk.payload.create(payload);
+        res.json({
+            payloadUUID: createdPayload.uuid,
+            payloadURL: `https://xumm.app/sign/${createdPayload.uuid}`
+        });
+    } catch (error) {
+        console.error('Error creating XUMM payload:', error);
+        res.status(500).json({ error: 'Failed to create XUMM payload' });
+    }
 });
 
 
@@ -1116,9 +1137,7 @@ async function buyNFT(nftId, buyerAddress, paymentAmount) {
     logTransaction(userAddress, nftId, 'buy', price, 'failed');
     res.status(500).json({ error: 'Failed to buy NFT.' });
   }
-});
-
-/**
+});/**
  * @swagger
  * /buy-nft:
  *   post:
@@ -1372,9 +1391,7 @@ async function likeNFT(walletAddress, nftId) {
       // Insert new like
     });
   });
-}// Insert new
-
-// Like NFT endpoint
+}// Insert new// Like NFT endpoint
 app.post('/like-nft',
   body('nftokenId').isString().isLength({ min: 10 }).withMessage('Invalid NFT ID'),
   async (req, res) => {
@@ -1720,9 +1737,7 @@ app.post('/create-collection',
       console.error('Error creating collection:', err);
       res.status(500).json({ error: 'Failed to create collection.' });
     }
-  }
-  
-);
+});
 
 // Endpoint to verify signed payload
 app.post('/verify-authentication', async (req, res) => {

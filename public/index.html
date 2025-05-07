@@ -144,48 +144,34 @@
   }
 
   async function startLoginFlow() {
-  console.log("Starting login flow..."); // Debugging line
-  const res = await fetch('https://sglcn-x20-api.glitch.me/login', {
-    credentials: 'include'  // Ensure session cookie is sent
-  });
-  const data = await res.json();
-  const payloadUUID = data.payloadUUID;
-  console.log("Received payloadUUID:", payloadUUID); // Debugging line
-  
-  // Open the XUMM signing URL in a new tab
-  window.open(data.payloadURL, "_blank");
+    const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+    const data = await res.json();
+    const payloadUUID = data.payloadUUID;
 
-  // Poll for login status every 3 seconds
-  const interval = setInterval(async () => {
-    const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`, {
-      credentials: 'include'  // Ensure session cookie is sent
-    });
-    const loginStatus = await check.json();
-    console.log("Checking login status..."); // Debugging line
-    console.log("Login status:", loginStatus); // Debugging line
+    // Open the XUMM signing URL in a new tab
+    window.open(data.payloadURL, "_blank");
 
-    if (loginStatus.loggedIn) {
-      clearInterval(interval);
+    // Poll for login status every 3 seconds
+    const interval = setInterval(async () => {
+      const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+      const loginStatus = await check.json();
 
-      localStorage.setItem('xumm_wallet_address', loginStatus.account);
-      localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+      if (loginStatus.loggedIn) {
+        clearInterval(interval);
 
-      const indicator = document.getElementById('wallet-indicator');
-      document.getElementById('wallet-info').style.display = 'block';
-      document.getElementById('wallet-address').innerText = loginStatus.account;
+        localStorage.setItem('xumm_wallet_address', loginStatus.account);
+        localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
 
-      indicator.textContent = '🟢 Profile';
-      indicator.classList.remove('red');
-      indicator.classList.add('green');
-      indicator.title = 'Go to profile';
-      indicator.onclick = () => window.location.href = `/profile.html?uuid=${payloadUUID}`;
-      unlockCollections();
+        const indicator = document.getElementById('wallet-indicator');
+        document.getElementById('wallet-info').style.display = 'block';
+        document.getElementById('wallet-address').innerText = loginStatus.account;
 
-      // After login, fetch SeagullCoin balance
-      fetchSeagullCoinBalance(loginStatus.account);
-    }
-  }, 3000);
-}
+        indicator.textContent = '🟢 Profile';
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
+        indicator.title = 'Go to profile';
+        indicator.onclick = () => window.location.href = `/profile.html?uuid=${payloadUUID}`;
+        unlockCollections();
 
         // After login, fetch SeagullCoin balance
         fetchSeagullCoinBalance(loginStatus.account);

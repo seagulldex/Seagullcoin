@@ -279,12 +279,16 @@ app.use(session({
     secret: 'your-secret-key',
     resave: false,
     saveUninitialized: true,
-    cookie: { maxAge: 5 * 60 * 1000 } // 5 minutes
+    cookie: {
+  maxAge: 5 * 60 * 1000,  // 5 minutes
+  secure: true,           // Ensure cookie is sent only over HTTPS
+  httpOnly: true          // Helps with security by making the cookie inaccessible to JavaScript
+    }
 }));
 
 // Now, apply other middleware
 app.use(limiter);
-app.use(cors({ origin: "*", credentials: true }));
+app.use(cors({ origin: 'https://sglcn-x20-api.glitch.me', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -445,7 +449,9 @@ app.get('/user', async (req, res) => {
     console.error(e);
     res.status(500).json({ error: 'Failed to fetch user data' });
   }
-});app.get('/gravatar/:hash', async (req, res) => {
+});
+
+app.get('/gravatar/:hash', async (req, res) => {
   const { hash } = req.params;
 
   try {
@@ -532,9 +538,7 @@ app.post('/payload', async (req, res) => {
   await markPayloadUsed(uuid);
 
   res.status(200).send('Payload marked as used.');
-});
-
-function isValidXRPAddress(address) {
+});function isValidXRPAddress(address) {
   return isValidAddress(address);
 }
 router.post('/mint', async (req, res) => {
@@ -926,12 +930,8 @@ app.post('/api/xumm-login', async (req, res) => {
         console.error('Error creating XUMM payload:', error);
         res.status(500).json({ error: 'Failed to create XUMM payload' });
     }
-});
-
-
-
-
-app.get('/api/check-login', async (req, res) => {
+});app.get('/api/check-login', async (req, res) => {
+  console.log("Session Data:", req.session); // Debugging line to check session
   const payloadUUID = req.session.xummPayload;
 
   if (!payloadUUID) {
@@ -976,7 +976,10 @@ app.post('/list', async (req, res) => {
  *     responses:
  *       200:
  *         description: NFT data retrieved
- */app.get('/listings', async (req, res) => {
+ */
+
+
+app.get('/listings', async (req, res) => {
   const listings = await getAllNFTListings();
   res.json({ success: true, listings });
 });
@@ -1429,9 +1432,7 @@ app.post('/like-nft',
           if (err) return reject(err);  // Reject if there's an error
           resolve({ success: true });   // Resolve on success
         });
-      });
-
-      // Return the success result to the client
+      });// Return the success result to the client
       res.status(200).json(result);
 
     } catch (error) {
@@ -1522,7 +1523,8 @@ app.get('/gettotalusers', async (req, res) => {
  *                 total:
  *                   type: integer
  *                   example: 500
- */app.get('/api/stats/users', async (req, res) => {
+ */
+app.get('/api/stats/users', async (req, res) => {
   // get-total-users logic here
 });
 
@@ -1929,6 +1931,18 @@ app.get('/user/:walletAddress', (req, res) => {
   });
 });
 
+// Load all NFTs
+app.get('/all-nfts', (req, res) => {
+  const filePath = path.join(__dirname, 'data/nfts.json');
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) return res.status(500).json({ error: 'Could not load NFTs' });
+    const allNFTs = JSON.parse(data);
+    // Optional: Only return NFTs paid with SeagullCoin
+    const seagullNFTs = allNFTs.filter(nft => nft.paidWith === 'SeagullCoin');
+    res.json(seagullNFTs);
+  });
+});
+
 app.get('/get-balance/:walletAddress', async (req, res) => {
   const { walletAddress } = req.params;
 
@@ -1941,6 +1955,24 @@ app.get('/get-balance/:walletAddress', async (req, res) => {
     res.status(500).json({ success: false, error: 'Error fetching balance' });
   }
 });
+
+// POST route to start the login flow
+app.post('/api/start-login', async (req, res) => {
+  const { payloadUUID } = req.body;
+
+  // Check if payloadUUID is provided
+  if (!payloadUUID) {
+    return res.status(400).json({ error: 'Payload UUID is required.' });
+  }
+
+  // Store payloadUUID in the session
+  req.session.xummPayload = payloadUUID;
+
+  console.log("Session Data after storing UUID:", req.session); // For debugging
+
+  res.json({ success: true, message: 'Login started successfully.' });
+});
+
 
 
 
@@ -1980,6 +2012,9 @@ xumm.ping().then(response => {
 }).catch(error => {
     console.error("Error connecting to XUMM:", error);
 });
+
+
+
 // Run the cleanup job periodically (every 24 hours for example)
 setInterval(cleanupExpiredPayloads, 24 * 60 * 60 * 1000); // Every 24 hours
 
@@ -1987,4 +2022,4 @@ setInterval(cleanupExpiredPayloads, 24 * 60 * 60 * 1000); // Every 24 hours
 // Start the server
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server running on port ' + (process.env.PORT || 3000));
-})
+}); 

@@ -75,12 +75,15 @@
     .mint-form {
       margin-top: 20px;
       padding: 20px;
-      background-color: #222;
+      background-color: #000; /* Changed to black */
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
       max-width: 500px;
       margin-left: auto;
       margin-right: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .mint-form input,
@@ -91,12 +94,8 @@
       margin: 10px 0;
       border-radius: 8px;
       border: none;
-    }
-
-    .mint-form input,
-    .mint-form textarea {
-      background-color: #333;
       color: white;
+      background-color: #333;
     }
 
     .mint-form button {
@@ -114,15 +113,42 @@
       color: #888;
     }
 
+    .mint-form label {
+      font-weight: bold;
+    }
+
     /* Align the form fields nicely */
-    .mint-form input, .mint-form textarea {
+    .mint-form input,
+    .mint-form textarea {
       display: block;
       width: calc(100% - 20px);
       margin-bottom: 15px;
     }
 
-    .mint-form label {
-      font-weight: bold;
+    /* Preview Window */
+    .preview-container {
+      margin-top: 15px;
+      padding: 10px;
+      border: 2px dashed #fff;
+      border-radius: 10px;
+      background-color: #333;
+      width: 100%;
+      height: 200px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .preview-container img,
+    .preview-container video {
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .mint-form input[type="file"] {
+      padding: 8px;
+      background-color: #444;
+      color: white;
     }
 
     /* Collections Section */
@@ -196,13 +222,19 @@
         <textarea id="nft-description" required placeholder="Enter a description for your NFT"></textarea>
 
         <label for="nft-file">NFT File</label>
-        <input type="file" id="nft-file" required />
+        <input type="file" id="nft-file" required accept="image/*,video/*,gif/*" onchange="previewFile()" />
 
         <label for="nft-collection">Collection</label>
         <input type="text" id="nft-collection" placeholder="Enter collection name (optional)" />
 
         <button type="submit">Mint NFT</button>
       </form>
+
+      <!-- Preview Container -->
+      <div class="preview-container" id="preview-container">
+        <span>No file selected</span>
+      </div>
+
       <p id="minting-status" style="color: #2e2e2e;"></p>
     </div>
 
@@ -285,53 +317,27 @@
       }
     }
 
-    document.getElementById('mint-form').addEventListener('submit', async function(event) {
-      event.preventDefault();
+    function previewFile() {
+      const file = document.getElementById('nft-file').files[0];
+      const previewContainer = document.getElementById('preview-container');
 
-      const nftName = document.getElementById('nft-name').value;
-      const nftDescription = document.getElementById('nft-description').value;
-      const nftFile = document.getElementById('nft-file').files[0];
-      const nftCollection = document.getElementById('nft-collection').value;
+      if (file) {
+        const fileType = file.type;
+        const fileURL = URL.createObjectURL(file);
 
-      if (!nftFile) {
-        document.getElementById('minting-status').textContent = 'Please upload a valid file.';
-        return;
+        if (fileType.startsWith('image')) {
+          previewContainer.innerHTML = `<img src="${fileURL}" alt="NFT Preview" />`;
+        } else if (fileType.startsWith('video')) {
+          previewContainer.innerHTML = `<video controls src="${fileURL}"></video>`;
+        } else if (fileType === 'image/gif') {
+          previewContainer.innerHTML = `<img src="${fileURL}" alt="NFT Preview" />`;
+        } else {
+          previewContainer.innerHTML = `<span>Unsupported file type</span>`;
+        }
+      } else {
+        previewContainer.innerHTML = '<span>No file selected</span>';
       }
-
-      // Upload the file to NFT.Storage (example)
-      const formData = new FormData();
-      formData.append('file', nftFile);
-
-      try {
-        const fileRes = await fetch('https://api.nft.storage/upload', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer YOUR_NFT_STORAGE_API_KEY`
-          },
-          body: formData
-        });
-        const fileData = await fileRes.json();
-        
-        // Now you can send minting details to the backend
-        const mintRes = await fetch('/api/mint', {
-          method: 'POST',
-          body: JSON.stringify({
-            name: nftName,
-            description: nftDescription,
-            fileUrl: fileData.url, // File URL from NFT.Storage
-            collection: nftCollection
-          }),
-          headers: { 'Content-Type': 'application/json' }
-        });
-        
-        const mintData = await mintRes.json();
-        document.getElementById('minting-status').textContent = 'NFT minted successfully!';
-      } catch (error) {
-        document.getElementById('minting-status').textContent = 'An error occurred. Please try again.';
-      }
-    });
+    }
   </script>
-
-  <script src="nfts.js"></script>
 </body>
 </html>

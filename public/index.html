@@ -1,4 +1,116 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SGLCN-X20 Minting Platform</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="header.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xumm-oauth2-pkce@1.0.1/browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk@2.0.0/browser.min.js"></script>
+  <style>
+    #top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background-color: #2e2e2e;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 20px;
+      z-index: 1000;
+    }
+
+    #wallet-container {
+      border: 2px solid #000;
+      border-radius: 10px;
+      padding: 6px 12px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 140px;
+    }
+
+    #wallet-status {
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #wallet-indicator.red {
+      color: #ff4444;
+    }
+
+    #wallet-indicator.green {
+      color: #44ff44;
+    }
+
+    body {
+      margin-top: 60px;
+    }
+
+    header {
+      margin-top: 10px;
+    }
+
+    nav ul {
+      display: flex;
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    nav ul li {
+      margin: 0 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div id="top-bar">
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="nfts.html">NFTs</a></li>
+        <li><a href="mint.html">Mint NFT</a></li>
+        <li><a href="messages.html">Messages</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <section class="hero">
+      <h1>Welcome to SeagullCoin NFT Marketplace</h1>
+      <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
+      <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
+    </section>
+
+    <div id="user-info">
+      <p id="user-balance">Loading balance...</p>
+      <div id="user-nfts">Loading NFTs...</div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+  </footer>
+
+  <!-- XUMM Wallet Login -->
+  <script>
 window.addEventListener('DOMContentLoaded', () => {
   const xumm = new XummPkceBrowser('ee60e1a3-8c08-4cdd-bfa9-accada591684', { implicit: true });
 
@@ -48,4 +160,8 @@ window.addEventListener('DOMContentLoaded', () => {
     console.log("Minting locked.");
   }
 });
-</script>
+  </script>
+
+  <script src="main.js"></script>
+</body>
+</html>

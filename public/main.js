@@ -1,5 +1,6 @@
-// Add your XUMM API Key here
-const xummApiKey = 'YOUR_XUMM_API_KEY'; // Replace with your XUMM API key
+// Assuming these are injected via build tools or environment variables
+const xummApiKey = process.env.XUMM_API_KEY || 'YOUR_XUMM_API_KEY'; // Replace with your XUMM API key
+const nftStorageApiKey = process.env.NFT_STORAGE_API_KEY || 'YOUR_NFT_STORAGE_API_KEY'; // Replace with your NFT.Storage API key
 
 // XUMM SDK initialization
 const xummSDK = new XummSdk(xummApiKey);
@@ -85,7 +86,7 @@ async function uploadMetadata(metadata) {
   const response = await fetch('https://api.nft.storage/upload', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer YOUR_NFT_STORAGE_API_KEY` // Replace with your NFT.Storage API key
+      'Authorization': `Bearer ${nftStorageApiKey}` // Use the environment variable for NFT.Storage API key
     },
     body: formData
   });

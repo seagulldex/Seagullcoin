@@ -1935,6 +1935,18 @@ app.get('/user/:walletAddress', (req, res) => {
   });
 });
 
+// Load all NFTs
+app.get('/all-nfts', (req, res) => {
+  const filePath = path.join(__dirname, 'data/nfts.json');
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) return res.status(500).json({ error: 'Could not load NFTs' });
+    const allNFTs = JSON.parse(data);
+    // Optional: Only return NFTs paid with SeagullCoin
+    const seagullNFTs = allNFTs.filter(nft => nft.paidWith === 'SeagullCoin');
+    res.json(seagullNFTs);
+  });
+});
+
 app.get('/get-balance/:walletAddress', async (req, res) => {
   const { walletAddress } = req.params;
 

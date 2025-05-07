@@ -111,44 +111,45 @@
   <!-- Wallet Logic -->
 <script>
   window.addEventListener('DOMContentLoaded', () => {
-    updateWalletStatus();
-  });
-  
-  // 👇 Add this right here
+  updateWalletStatus();
+
+  // ✅ Register storage event listener inside DOMContentLoaded
   window.addEventListener('storage', (event) => {
-    if (event.key === 'xumm_wallet_address') {
-      updateWalletStatus(); // Refresh UI if login happens in another tab
+    if (event.key === 'xumm_wallet_address' || event.key === 'xumm_user') {
+      updateWalletStatus(); // Update UI when login occurs in another tab
     }
   });
+});
 
-  async function updateWalletStatus() {
-    const wallet = localStorage.getItem('xumm_wallet_address');
-    const indicator = document.getElementById('wallet-indicator');
+async function updateWalletStatus() {
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  const userJson = localStorage.getItem('xumm_user');
+  const indicator = document.getElementById('wallet-indicator');
 
-    if (!indicator) return;
+  if (!indicator) return;
 
-    if (wallet) {
-      document.getElementById('wallet-info').style.display = 'block';
-      document.getElementById('wallet-address').innerText = wallet;
-      indicator.textContent = '🟢 Profile';
-      indicator.classList.remove('red');
-      indicator.classList.add('green');
-      indicator.title = 'Go to profile';
-      indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
-      unlockCollections();
+  if (wallet && userJson) {
+    const user = JSON.parse(userJson);
+    document.getElementById('wallet-info').style.display = 'block';
+    document.getElementById('wallet-address').innerText = wallet;
+    indicator.textContent = '🟢 Profile';
+    indicator.classList.remove('red');
+    indicator.classList.add('green');
+    indicator.title = 'Go to profile';
+    indicator.onclick = () => window.location.href = `/profile.html?uuid=${user.uuid}`;
+    unlockCollections();
 
-      // Fetch the SeagullCoin balance after login
-      fetchSeagullCoinBalance(wallet);
-    } else {
-      document.getElementById('wallet-info').style.display = 'none';
-      indicator.textContent = '🔴 Login';
-      indicator.classList.remove('green');
-      indicator.classList.add('red');
-      indicator.title = 'Click to login';
-      indicator.onclick = () => startLoginFlow();
-      lockCollections();
-    }
+    fetchSeagullCoinBalance(wallet);
+  } else {
+    document.getElementById('wallet-info').style.display = 'none';
+    indicator.textContent = '🔴 Login';
+    indicator.classList.remove('green');
+    indicator.classList.add('red');
+    indicator.title = 'Click to login';
+    indicator.onclick = () => startLoginFlow();
+    lockCollections();
   }
+}
 
   async function startLoginFlow() {
     const res = await fetch('https://sglcn-x20-api.glitch.me/login');

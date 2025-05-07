@@ -10,8 +10,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('wallet-id').innerText = `Wallet: ${user.account}`;
 
+  // Retrieve and display the avatar from localStorage if available
   const avatar = localStorage.getItem(`avatar_${user.account}`);
-  if (avatar) document.getElementById('profile-pic').src = avatar;
+  if (avatar) {
+    document.getElementById('profile-pic').src = avatar;
+  }
 
   await Promise.all([
     loadNFTs(user.account),
@@ -39,13 +42,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
+// Listen for file input change and handle avatar upload
 document.getElementById('upload-avatar')?.addEventListener('change', e => {
   const reader = new FileReader();
   reader.onload = function (event) {
-    const imgSrc = event.target.result;
+    const imgSrc = event.target.result; // Base64 encoded image
     const user = JSON.parse(localStorage.getItem('xumm_user'));
     if (user && imgSrc) {
+      // Store the image in localStorage
       localStorage.setItem(`avatar_${user.account}`, imgSrc);
+      // Update the profile picture immediately
       document.getElementById('profile-pic').src = imgSrc;
     }
   };

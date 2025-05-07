@@ -6,6 +6,7 @@
   <title>Your Profile - SeagullCoin NFTs</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="profile.css" />
+  <script src="https://xumm.app/assets/cdn/xumm.min.js"></script> <!-- XUMM SDK -->
 </head>
 <body>
   <div id="profile-container">
@@ -13,6 +14,7 @@
       <img id="profile-pic" src="default-avatar.png" alt="Profile Picture"/>
       <input type="file" id="upload-avatar" accept="image/*" style="display: none;"/>
       <button onclick="document.getElementById('upload-avatar').click()">Change Picture</button>
+      <button id="connect-xumm">Connect XUMM Wallet</button>
       <h2 id="wallet-id">Wallet: ...</h2>
     </section>
 
@@ -24,28 +26,26 @@
 
     <section id="profile-content">
       <div id="owned-tab" class="tab-content">
-  <h3>Owned NFTs</h3>
+        <h3>Owned NFTs</h3>
 
-  <!-- 🟨 Added: Filter + Pagination Controls -->
-  <div id="nft-controls" style="margin-bottom: 1em;">
-    <input id="filter-input" placeholder="Search NFTs or collections..." style="padding: 5px; width: 60%; max-width: 300px;" />
-    <div style="margin-top: 0.5em;">
-      <button id="prev-page">Previous</button>
-      <button id="next-page">Next</button>
-    </div>
-  </div>
-  <!-- 🟨 End Added Controls -->
+        <div id="nft-controls" style="margin-bottom: 1em;">
+          <input id="filter-input" placeholder="Search NFTs or collections..." style="padding: 5px; width: 60%; max-width: 300px;" />
+          <div style="margin-top: 0.5em;">
+            <button id="prev-page">Previous</button>
+            <button id="next-page">Next</button>
+          </div>
+        </div>
 
-  <div id="nft-filters">
-    <select onchange="filterNFTs(this.value)">
-      <option value="all">All</option>
-      <option value="collection">By Collection</option>
-      <option value="single">Single NFTs</option>
-    </select>
-  </div>
+        <div id="nft-filters">
+          <select onchange="filterNFTs(this.value)">
+            <option value="all">All</option>
+            <option value="collection">By Collection</option>
+            <option value="single">Single NFTs</option>
+          </select>
+        </div>
 
-  <div id="owned-nfts"></div>
-</div>
+        <div id="owned-nfts"></div>
+      </div>
 
       <div id="offers-tab" class="tab-content" style="display:none;">
         <h3>Incoming Offers</h3>
@@ -60,5 +60,28 @@
   </div>
 
   <script src="profile.js"></script>
+
+  <script>
+    const xumm = new Xumm("ee60e1a3-8c08-4cdd-bfa9-accada591684"); // Replace if needed
+
+    document.getElementById("connect-xumm").addEventListener("click", async () => {
+      try {
+        const { me } = await xumm.authorize();
+        document.getElementById("wallet-id").textContent = `Wallet: ${me.sub}`;
+        localStorage.setItem("xumm_wallet", me.sub);
+        document.getElementById("connect-xumm").textContent = "Connected";
+      } catch (e) {
+        console.error("XUMM connection failed:", e);
+        alert("Failed to connect to XUMM Wallet.");
+      }
+    });
+
+    // Auto-load wallet from localStorage
+    const savedWallet = localStorage.getItem("xumm_wallet");
+    if (savedWallet) {
+      document.getElementById("wallet-id").textContent = `Wallet: ${savedWallet}`;
+      document.getElementById("connect-xumm").textContent = "Connected";
+    }
+  </script>
 </body>
 </html>

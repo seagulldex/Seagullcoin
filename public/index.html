@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SGLCN-X20 Minting Platform</title>
   <link rel="stylesheet" href="style.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <link rel="stylesheet" href="header.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <style>
     #top-bar {
       position: fixed;
@@ -65,6 +65,11 @@
     nav ul li {
       margin: 0 15px;
     }
+
+    #data-display {
+      margin-top: 20px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -102,158 +107,123 @@
       <p id="user-balance">Loading balance...</p>
       <div id="user-nfts">Loading NFTs...</div>
     </div>
+
+    <div id="data-display">Loading token data...</div>
   </main>
 
   <footer>
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
   </footer>
 
-  <!-- Wallet Logic -->
-<script>
-  window.addEventListener('DOMContentLoaded', () => {
-    updateWalletStatus();
-  });
+  <!-- Wallet & WebSocket Logic -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
+    });
 
-  async function updateWalletStatus() {
-    const wallet = localStorage.getItem('xumm_wallet_address');
-    const indicator = document.getElementById('wallet-indicator');
+    async function updateWalletStatus() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      const indicator = document.getElementById('wallet-indicator');
 
-    if (!indicator) return;
+      if (!indicator) return;
 
-    if (wallet) {
-      document.getElementById('wallet-info').style.display = 'block';
-      document.getElementById('wallet-address').innerText = wallet;
-      indicator.textContent = '🟢 Profile';
-      indicator.classList.remove('red');
-      indicator.classList.add('green');
-      indicator.title = 'Go to profile';
-      indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
-      unlockCollections();
-
-      // Fetch the SeagullCoin balance after login
-      fetchSeagullCoinBalance(wallet);
-    } else {
-      document.getElementById('wallet-info').style.display = 'none';
-      indicator.textContent = '🔴 Login';
-      indicator.classList.remove('green');
-      indicator.classList.add('red');
-      indicator.title = 'Click to login';
-      indicator.onclick = () => startLoginFlow();
-      lockCollections();
-    }
-  }
-
-  async function startLoginFlow() {
-    const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-    const data = await res.json();
-    const payloadUUID = data.payloadUUID;
-
-    // Open the XUMM signing URL in a new tab
-    window.open(data.payloadURL, "_blank");
-
-    // Poll for login status every 3 seconds
-    const interval = setInterval(async () => {
-      const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
-      const loginStatus = await check.json();
-
-      if (loginStatus.loggedIn) {
-        clearInterval(interval);
-
-        localStorage.setItem('xumm_wallet_address', loginStatus.account);
-        localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
-
-        const indicator = document.getElementById('wallet-indicator');
+      if (wallet) {
         document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wallet-address').innerText = loginStatus.account;
-
+        document.getElementById('wallet-address').innerText = wallet;
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = `/profile.html?uuid=${payloadUUID}`;
+        indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
         unlockCollections();
-
-        // After login, fetch SeagullCoin balance
-        fetchSeagullCoinBalance(loginStatus.account);
+        fetchSeagullCoinBalance(wallet);
+      } else {
+        document.getElementById('wallet-info').style.display = 'none';
+        indicator.textContent = '🔴 Login';
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
+        indicator.title = 'Click to login';
+        indicator.onclick = () => startLoginFlow();
+        lockCollections();
       }
-    }, 3000);
-  }
-
-  function unlockCollections() {
-    // Enable full access to collections if needed
-  }
-
-  function lockCollections() {
-    // Optionally hide features until login
-  }
-
-  // Example function to update the UI after login
-  const handleLoginResponse = (response) => {
-    if (response.success) {
-      const walletAddress = response.walletAddress;
-      document.getElementById('wallet-address').textContent = walletAddress;
-      document.getElementById('wallet-info').style.display = 'block';
-      fetchSeagullCoinBalance(walletAddress);
-    } else {
-      console.error('Login failed:', response.error);
     }
-  };
 
-  const fetchSeagullCoinBalance = async (walletAddress) => {
-    try {
-      const response = await fetch(`/get-balance/${walletAddress}`);
-      const { balance } = await response.json();
-      document.getElementById('user-balance').textContent = `Balance: ${balance} SeagullCoin`;
-    } catch (error) {
-      console.error('Error fetching SeagullCoin balance:', error);
+    async function startLoginFlow() {
+      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+      const data = await res.json();
+      const payloadUUID = data.payloadUUID;
+
+      window.open(data.payloadURL, "_blank");
+
+      const interval = setInterval(async () => {
+        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+        const loginStatus = await check.json();
+
+        if (loginStatus.loggedIn) {
+          clearInterval(interval);
+
+          localStorage.setItem('xumm_wallet_address', loginStatus.account);
+          localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+
+          const indicator = document.getElementById('wallet-indicator');
+          document.getElementById('wallet-info').style.display = 'block';
+          document.getElementById('wallet-address').innerText = loginStatus.account;
+
+          indicator.textContent = '🟢 Profile';
+          indicator.classList.remove('red');
+          indicator.classList.add('green');
+          indicator.title = 'Go to profile';
+          indicator.onclick = () => window.location.href = `/profile.html?uuid=${payloadUUID}`;
+          unlockCollections();
+
+          fetchSeagullCoinBalance(loginStatus.account);
+        }
+      }, 3000);
     }
-  };
-</script>
 
-  // Create WebSocket connection
-var mySocket = new WebSocket("wss://api.onthedex.live/public/v1/ticker/SeagullCoin.rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno:XRP");
+    function unlockCollections() {
+      // Enable any gated features after login
+    }
 
-// Element to display received data on the page
-const dataDisplayElement = document.getElementById('data-display');
+    function lockCollections() {
+      // Hide restricted features before login
+    }
 
-// Add event listener for WebSocket message event
-mySocket.onmessage = function(event) {
-    const tokenData = JSON.parse(event.data);
-    
-    // Check if there is data and handle accordingly
-    if (tokenData.pairs && tokenData.pairs.length > 0) {
-        // Process and display data when pairs are found
+    const fetchSeagullCoinBalance = async (walletAddress) => {
+      try {
+        const response = await fetch(`/get-balance/${walletAddress}`);
+        const { balance } = await response.json();
+        document.getElementById('user-balance').textContent = `Balance: ${balance} SeagullCoin`;
+      } catch (error) {
+        console.error('Error fetching SeagullCoin balance:', error);
+      }
+    };
+
+    // WebSocket to fetch live token price
+    const socket = new WebSocket("wss://api.onthedex.live/public/v1/ticker/SeagullCoin.rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno");
+
+    const dataDisplayElement = document.getElementById('data-display');
+
+    socket.onmessage = function(event) {
+      const tokenData = JSON.parse(event.data);
+
+      if (tokenData.pairs && tokenData.pairs.length > 0) {
         tokenData.pairs.forEach(pair => {
-            const theBaseCurrency = pair.b.c || pair.b;
-            const theQuoteCurrency = pair.q.c || pair.q;
-            const lastPrice = pair.l;
-
-            // Display data on your webpage
-            const displayText = `Token pair ${theBaseCurrency}/${theQuoteCurrency} was last traded at a price of ${lastPrice} ${theQuoteCurrency}`;
-            dataDisplayElement.innerHTML = displayText;
+          const base = pair.b.c || pair.b;
+          const quote = pair.q.c || pair.q;
+          const price = pair.l;
+          dataDisplayElement.innerHTML = `Token pair ${base}/${quote} was last traded at ${price} ${quote}`;
         });
-    } else {
-        // If no pairs, show a message saying no data has changed or no pairs exist
+      } else {
         dataDisplayElement.innerHTML = 'No trading data available for SeagullCoin at the moment.';
-    }
-};
+      }
+    };
 
-// Handle WebSocket connection open event
-mySocket.onopen = function() {
-    console.log('WebSocket connection established');
-};
+    socket.onopen = () => console.log('WebSocket connection established');
+    socket.onerror = (error) => console.log('WebSocket error:', error);
+    socket.onclose = () => console.log('WebSocket connection closed');
+  </script>
 
-// Handle WebSocket error event
-mySocket.onerror = function(error) {
-    console.log('WebSocket Error:', error);
-};
-
-// Handle WebSocket close event
-mySocket.onclose = function() {
-    console.log('WebSocket connection closed');
-};
-  <script>
   <script src="main.js"></script>
 </body>
 </html>
- 

@@ -2123,16 +2123,17 @@ app.post('/add-nft', (req, res) => {
   }); // <-- this closes the readFile function
 }); // <-- this closes the /add-nft endpoint
 
-
-// Logout route to clear session data
-app.post('/logout', (req, res) => {
-  req.session.destroy((err) => {
+app.get('/logout', (req, res) => {
+  req.session.destroy(err => {
     if (err) {
-      return res.status(500).json({ error: 'Failed to log out' });
+      console.error('Session destroy error:', err);
+      return res.status(500).send('Logout failed.');
     }
-    res.status(200).json({ message: 'Logged out successfully' });
+    res.clearCookie('connect.sid'); // Clear session cookie
+    res.redirect('/index.html');
   });
 });
+
 
 // XRPL ping function
 async function xrplPing() {

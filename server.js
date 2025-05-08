@@ -40,7 +40,6 @@ import { createTables } from './dbsetup.js';
 import { insertMintedNFT } from './dbsetup.js';
 import sanitizeHtml from 'sanitize-html';
 import rippleAddressCodec from 'ripple-address-codec';
-import { getSeagullCoinBalance } from "./checkTrustline.js";
 const { isValidAddress } = rippleAddressCodec;
 // Initialize XUMM SDK using environment variables
     
@@ -60,7 +59,6 @@ import { NFTModel } from './models/nftModel.js';  // Added a new model for NFT m
 import { MongoClient, ServerApiVersion } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { fetchSeagullCoinBalance } from './xrplClient.js';
-import { hasSeagullCoinTrustline } from "./checkTrustline.js";
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -430,13 +428,6 @@ app.get('/login-status', async (req, res) => {
 });
 
 
-// Check balance before minting
-app.get('/api/get-seagullcoin-balance/:walletAddress', async (req, res) => {
-    const { walletAddress } = req.params;
-    const balance = await getSeagullCoinBalance(walletAddress);
-
-    res.json({ balance });
-});
 
 
 
@@ -530,24 +521,7 @@ app.get('/confirm-login/:payloadUUID', async (req, res) => {
   }
 });
 
-// Example Node.js backend logic for payment verification
-app.post('/verify-payment', async (req, res) => {
-  const { walletAddress } = req.body;
 
-  try {
-    // Interact with the XRPL to get the balance of SeagullCoin for the user's wallet
-    const paymentAmount = await getSeagullCoinBalance(walletAddress); // You need to implement this
-
-    if (paymentAmount >= 0.5) {
-      return res.json({ success: true, amountPaid: paymentAmount });
-    } else {
-      return res.json({ success: false, amountPaid: paymentAmount });
-    }
-  } catch (err) {
-    console.error(err);
-    return res.json({ success: false, error: 'Failed to verify payment' });
-  }
-});
 
 
 

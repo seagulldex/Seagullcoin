@@ -65,12 +65,8 @@
 
     header nav ul li a {
       text-decoration: none;
-      color: #fff; /* updated */
+      color: #333;
       font-weight: bold;
-    }
-
-    header nav ul li a:hover {
-      color: #ccc;
     }
 
     main {
@@ -103,10 +99,8 @@
       margin-top: 10px;
       padding: 10px;
       border-radius: 6px;
-      border: 1px solid #555;
+      border: 1px solid #ccc;
       resize: vertical;
-      background-color: #000; /* updated */
-      color: #fff;             /* updated */
     }
 
     button {
@@ -115,6 +109,43 @@
       font-weight: bold;
       border-radius: 6px;
       cursor: pointer;
+    }
+
+    .website-link {
+      margin-top: 10px;
+      font-size: 1rem;
+      display: inline-block;
+      text-decoration: none;
+      color: #007bff;
+    }
+
+    .nft-section {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .nft-card {
+      display: inline-block;
+      width: 150px;
+      margin: 10px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .nft-card img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .nft-actions button {
+      margin-top: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 5px;
     }
 
     footer {
@@ -126,6 +157,7 @@
   </style>
 </head>
 <body>
+
   <div id="top-bar">
     <div id="wallet-container">
       <div id="wallet-status">
@@ -152,6 +184,19 @@
       <input type="file" id="profile-upload" accept="image/*" />
       <textarea id="bio" placeholder="Write something about yourself..."></textarea>
       <button onclick="saveProfile()">Save Profile</button>
+
+      <div class="website-link-section">
+        <input type="text" id="website-link" placeholder="Enter your website URL" />
+        <button onclick="saveWebsiteLink()">Save Website</button>
+        <a id="user-website" href="#" class="website-link" target="_blank">Your Website</a>
+      </div>
+    </div>
+
+    <div class="nft-section" id="nft-section">
+      <h2>Your NFTs</h2>
+      <div id="nft-list">
+        <!-- NFTs will be listed here -->
+      </div>
     </div>
   </main>
 
@@ -163,6 +208,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
       loadProfile();
+      loadNFTs();
     });
 
     async function updateWalletStatus() {
@@ -224,6 +270,74 @@
       const bio = localStorage.getItem('user_bio');
       if (img) document.getElementById('profile-img').src = img;
       if (bio) document.getElementById('bio').value = bio;
+
+      const websiteLink = localStorage.getItem('user_website');
+      if (websiteLink) {
+        document.getElementById('website-link').value = websiteLink;
+        document.getElementById('user-website').href = websiteLink;
+      }
+    }
+
+    function saveWebsiteLink() {
+      const websiteLink = document.getElementById('website-link').value;
+      if (websiteLink) {
+        localStorage.setItem('user_website', websiteLink);
+        document.getElementById('user-website').href = websiteLink;
+      }
+    }
+
+    async function loadNFTs() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      if (!wallet) return;
+
+      // Replace with your API to get NFTs
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts?wallet=${wallet}`);
+      const nfts = await res.json();
+
+      const nftList = document.getElementById('nft-list');
+      nftList.innerHTML = '';
+      nfts.forEach(nft => {
+        const nftCard = document.createElement('div');
+        nftCard.classList.add('nft-card');
+        nftCard.innerHTML = `
+          <img src="${nft.image}" alt="${nft.name}" />
+          <h4>${nft.name}</h4>
+          <p>${nft.description}</p>
+          <div class="nft-actions">
+            <button onclick="listNFT(${nft.id})">List for Sale</button>
+            <button onclick="transferNFT(${nft.id})">Transfer</button>
+            <button onclick="acceptOffer(${nft.id})">Accept Offer</button>
+            <button onclick="rejectOffer(${nft.id})">Reject Offer</button>
+            <button onclick="cancelListing(${nft.id})">Cancel Listing</button>
+          </div>
+        `;
+        nftList.appendChild(nftCard);
+      });
+    }
+
+    function listNFT(nftId) {
+      // Implement listing functionality
+      alert(`Listing NFT with ID ${nftId} for sale.`);
+    }
+
+    function transferNFT(nftId) {
+      // Implement transfer functionality
+      alert(`Transferring NFT with ID ${nftId}.`);
+    }
+
+    function acceptOffer(nftId) {
+      // Implement accept offer functionality
+      alert(`Accepting offer for NFT with ID ${nftId}.`);
+    }
+
+    function rejectOffer(nftId) {
+      // Implement reject offer functionality
+      alert(`Rejecting offer for NFT with ID ${nftId}.`);
+    }
+
+    function cancelListing(nftId) {
+      // Implement cancel listing functionality
+      alert(`Cancelling listing for NFT with ID ${nftId}.`);
     }
   </script>
 </body>

@@ -83,13 +83,35 @@ const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SER
 const db = new sqlite3.Database('./database.db');
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 const router = express.Router();
+const XRPL_API_URL = 'https://s2.ripple.com:51234/';
+
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 
+const getBalance = async (address) => {
+  const url = `https://s2.ripple.com:51234/`;  // This is the public XRP ledger API URL (Ripple)
+  
+  const requestData = {
+    "method": "account_lines",
+    "params": [{
+      "account": address
+    }]
+  };
 
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(requestData)
+  });
 
+  const data = await response.json();
+  console.log(data);
+  return data;
+};
 
-
+getBalance('r...');  // Replace 'r...' with the wallet address you want to check
 
 /**
  * Confirm a XUMM payment was signed and meets all SGLCN minting criteria.

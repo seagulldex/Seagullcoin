@@ -386,25 +386,43 @@ app.use('/api', mintRouter);  // Assuming mintRouter handles your mint-related e
 app.get('/login', async (req, res) => {
   try {
     const payload = await xumm.payload.create({
-      txjson: {
-        TransactionType: "SignIn"
-      }
+      txjson: { TransactionType: "SignIn" }
     });
 
-    // Optionally store uuid in session if needed
     req.session.payloadUUID = payload.uuid;
 
     res.status(200).json({
       payloadUUID: payload.uuid,
       payloadURL: payload.next.always
     });
+
+    // OPTIONAL: wait in background for sign-in to complete
+    // or do this on a separate /callback or /verify endpoint
   } catch (err) {
     console.error('Error initiating login:', err);
     res.status(500).json({ error: 'Error initiating login' });
   }
 });
 
+
 console.log(requireLogin.session); // Log session data to verify its content
+
+app.get('/login-status', async (req, res) => {
+  const uuid = req.session.payloadUUID;
+  if (!uuid) return res.status(400).json({ error: "No login session found" });
+
+  const payload = await xumm.payload.get(uuid);
+
+  if (payload.meta.signed) {
+    const wallet = payload.response.account;
+    req.session.user = { wallet }; // Save wallet to session
+    return res.json({ loggedIn: true, wallet });
+  } else if (payload.meta.cancelled) {
+    return res.json({ loggedIn: false, cancelled: true });
+  } else {
+    return res.json({ loggedIn: false, waiting: true });
+  }
+});
 
 
 app.get('/user', async (req, res) => {

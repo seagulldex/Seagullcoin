@@ -9,6 +9,7 @@ const createUsersTable = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     wallet_address TEXT NOT NULL UNIQUE,
     total_mints INTEGER DEFAULT 0,
+    seagullcoin_balance DECIMAL(20, 8) DEFAULT 0,  -- Added column to store SeagullCoin balance
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_wallet_address_users ON users(wallet_address);
@@ -139,6 +140,55 @@ const insertMintedNFT = (nft) => {
     );
   });
 };
+
+const updateUserBalance = (walletAddress, amount) => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      UPDATE users
+      SET seagullcoin_balance = seagullcoin_balance + ?
+      WHERE wallet_address = ?
+    `;
+    db.run(query, [amount, walletAddress], function (err) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(this.changes); // Returns the number of rows affected
+      }
+    });
+  });
+};
+const mintNFT = async (walletAddress, nftDetails) => {
+  const balance = await checkUserBalance(walletAddress);
+
+  if (balance < 0.5) {
+    throw new Error("Insufficient SeagullCoin balance to mint NFT.");
+  }
+
+  // Proceed with minting logic
+  const mintedNFTId = await insertMintedNFT(nftDetails);
+
+  // After minting, deduct the 0.5 SeagullCoin for the minting cost
+  await updateUserBalance(walletAddress, -0.5);  // Deduct 0.5 SGLCN
+};
+
+const checkUserBalance = (walletAddress) => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT seagullcoin_balance
+      FROM users
+      WHERE wallet_address = ?
+    `;
+    db.get(query, [walletAddress], (err, row) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(row ? row.seagullcoin_balance : 0); // Return balance or 0 if not found
+      }
+    });
+  });
+};
+
+
 
 export { db, createTables, insertMintedNFT };
 export default db;

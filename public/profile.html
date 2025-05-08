@@ -93,13 +93,16 @@
       border: 2px solid #333;
     }
 
+    /* Updated description box */
     textarea {
       width: 100%;
-      height: 100px;
+      height: 50px;
       margin-top: 10px;
       padding: 10px;
       border-radius: 6px;
       border: 1px solid #ccc;
+      background-color: #333;
+      color: #fff;
       resize: vertical;
     }
 
@@ -119,9 +122,15 @@
       color: #007bff;
     }
 
+    /* NFT Section - Bottom section for NFTs */
     .nft-section {
       margin-top: 20px;
       text-align: center;
+      padding: 20px;
+      background-color: #f4f4f4;
+      border-radius: 8px;
+      height: 33vh;
+      overflow-y: scroll;
     }
 
     .nft-card {
@@ -146,6 +155,20 @@
       padding: 6px 12px;
       cursor: pointer;
       border-radius: 5px;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .pagination button {
+      padding: 8px 16px;
+      margin: 0 5px;
+      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid #ddd;
     }
 
     footer {
@@ -192,10 +215,23 @@
       </div>
     </div>
 
+    <!-- NFT Section with pagination and filtering -->
     <div class="nft-section" id="nft-section">
       <h2>Your NFTs</h2>
       <div id="nft-list">
         <!-- NFTs will be listed here -->
+      </div>
+      <div class="pagination">
+        <button onclick="prevPage()">Previous</button>
+        <button onclick="nextPage()">Next</button>
+      </div>
+      <div>
+        <label for="filter">Filter by Trait:</label>
+        <select id="filter" onchange="filterNFTs()">
+          <option value="">All Traits</option>
+          <option value="rare">Rare</option>
+          <option value="legendary">Legendary</option>
+        </select>
       </div>
     </div>
   </main>
@@ -247,24 +283,6 @@
       }, 3000);
     }
 
-    document.getElementById('profile-upload').addEventListener('change', function () {
-      const file = this.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          document.getElementById('profile-img').src = e.target.result;
-          localStorage.setItem('user_profile_img', e.target.result);
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    function saveProfile() {
-      const bio = document.getElementById('bio').value;
-      localStorage.setItem('user_bio', bio);
-      alert('Profile updated!');
-    }
-
     function loadProfile() {
       const img = localStorage.getItem('user_profile_img');
       const bio = localStorage.getItem('user_bio');
@@ -276,6 +294,12 @@
         document.getElementById('website-link').value = websiteLink;
         document.getElementById('user-website').href = websiteLink;
       }
+    }
+
+    function saveProfile() {
+      const bio = document.getElementById('bio').value;
+      localStorage.setItem('user_bio', bio);
+      alert('Profile updated!');
     }
 
     function saveWebsiteLink() {
@@ -326,19 +350,33 @@
     }
 
     function acceptOffer(nftId) {
-      // Implement accept offer functionality
+      // Implement accepting offer functionality
       alert(`Accepting offer for NFT with ID ${nftId}.`);
     }
 
     function rejectOffer(nftId) {
-      // Implement reject offer functionality
+      // Implement rejecting offer functionality
       alert(`Rejecting offer for NFT with ID ${nftId}.`);
     }
 
     function cancelListing(nftId) {
-      // Implement cancel listing functionality
-      alert(`Cancelling listing for NFT with ID ${nftId}.`);
+      // Implement canceling listing functionality
+      alert(`Canceling listing for NFT with ID ${nftId}.`);
+    }
+
+    function prevPage() {
+      alert('Previous page functionality not implemented.');
+    }
+
+    function nextPage() {
+      alert('Next page functionality not implemented.');
+    }
+
+    function filterNFTs() {
+      const filterValue = document.getElementById('filter').value;
+      alert(`Filtering NFTs by trait: ${filterValue}`);
     }
   </script>
+
 </body>
 </html>

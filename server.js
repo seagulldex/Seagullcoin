@@ -977,6 +977,29 @@ app.get('/api/check-login', async (req, res) => {
   });
 });
 
+// server.js
+app.get('/check-login', async (req, res) => {
+  const uuid = req.query.uuid;
+  if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
+
+  try {
+    const payload = await xumm.payload.get(uuid);
+    if (payload.meta.signed && payload.response.account) {
+      res.json({
+        loggedIn: true,
+        account: payload.response.account,
+        uuid
+      });
+    } else {
+      res.json({ loggedIn: false });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error checking login' });
+  }
+});
+
+
 
 app.use('/fallback.png', express.static(path.join(__dirname, 'public/fallback.png')));
 
@@ -1962,6 +1985,33 @@ app.get('/user/:walletAddress', (req, res) => {
     }
   });
 });
+
+// server.js
+app.get('/get-balance/:address', async (req, res) => {
+  const address = req.params.address;
+  try {
+    const client = new xrpl.Client('wss://xrplcluster.com');
+    await client.connect();
+
+    const accountInfo = await client.request({
+      command: "account_lines",
+      account: address
+    });
+
+    const seagullCoin = accountInfo.result.lines.find(
+      line => line.currency === "53656167756C6C436F696E000000000000000000" && line.issuer === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+    );
+
+    const balance = seagullCoin ? seagullCoin.balance : "0";
+
+    res.json({ balance });
+    await client.disconnect();
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching balance' });
+  }
+});
+
 
 // Load all NFTs
 app.get('/all-nfts', (req, res) => {

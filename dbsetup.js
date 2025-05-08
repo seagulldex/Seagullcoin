@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
+const { Database } = sqlite3;
+const db = new Database('./database.db');
 
-// Initialize the database
-const db = new sqlite3.Database('./database.db');
 
 // Enable foreign key support in SQLite
 db.exec('PRAGMA foreign_keys = ON');
@@ -17,6 +17,18 @@ const createUsersTable = `
   );
   CREATE INDEX IF NOT EXISTS idx_wallet_address_users ON users(wallet_address);
 `;
+
+const createUserProfilesTable = `
+  CREATE TABLE IF NOT EXISTS user_profiles (
+    user_wallet_address TEXT PRIMARY KEY,
+    display_name TEXT,
+    bio TEXT,
+    avatar_uri TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_wallet_address) REFERENCES users(wallet_address) ON DELETE CASCADE
+  );
+`;
+
 
 const createNFTsTable = `
   CREATE TABLE IF NOT EXISTS nfts (
@@ -97,6 +109,72 @@ const createMintedNFTsTable = `
   CREATE INDEX IF NOT EXISTS idx_collection_id_minted_nfts ON minted_nfts(collection_id);
 `;
 
+const createCollectionsTable = `
+  CREATE TABLE IF NOT EXISTS collections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    logo_uri TEXT,
+    created_by TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_collection_name ON collections(name);
+`;
+
+const createBidsTable = `
+  CREATE TABLE IF NOT EXISTS bids (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nft_id INTEGER NOT NULL,
+    user_wallet TEXT NOT NULL,
+    bid_amount DECIMAL(20, 8) NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (nft_id) REFERENCES nfts(id),
+    FOREIGN KEY (user_wallet) REFERENCES users(wallet_address)
+  );
+  CREATE INDEX IF NOT EXISTS idx_nft_id_bids ON bids(nft_id);
+  CREATE INDEX IF NOT EXISTS idx_user_wallet_bids ON bids(user_wallet);
+`;
+
+const createTransactionHistoryTable = `
+  CREATE TABLE IF NOT EXISTS transaction_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nft_id INTEGER NOT NULL,
+    from_wallet TEXT NOT NULL,
+    to_wallet TEXT NOT NULL,
+    transaction_type TEXT NOT NULL, -- 'mint', 'purchase', 'transfer', etc.
+    amount DECIMAL(20, 8),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (nft_id) REFERENCES nfts(id),
+    FOREIGN KEY (from_wallet) REFERENCES users(wallet_address),
+    FOREIGN KEY (to_wallet) REFERENCES users(wallet_address)
+  );
+  CREATE INDEX IF NOT EXISTS idx_nft_id_transactions ON transaction_history(nft_id);
+  CREATE INDEX IF NOT EXISTS idx_from_wallet_transactions ON transaction_history(from_wallet);
+  CREATE INDEX IF NOT EXISTS idx_to_wallet_transactions ON transaction_history(to_wallet);
+`;
+
+const createTransactionLogsTable = `
+  CREATE TABLE IF NOT EXISTS transaction_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action_type TEXT NOT NULL, -- 'mint', 'purchase', 'transfer', etc.
+    action_details TEXT NOT NULL, -- JSON string with action details
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_action_type_logs ON transaction_logs(action_type);
+`;
+
+const createNFTMetadataTable = `
+  CREATE TABLE IF NOT EXISTS nft_metadata (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nft_id INTEGER NOT NULL,
+    metadata_key TEXT NOT NULL,
+    metadata_value TEXT NOT NULL,
+    FOREIGN KEY (nft_id) REFERENCES nfts(id)
+  );
+`;
+
+
+
 // --- Helper to run a query ---
 const runQuery = (query) => {
   return new Promise((resolve, reject) => {
@@ -114,11 +192,18 @@ const createTables = async () => {
     await runQuery(createPaymentsTable);
     await runQuery(createLikesTable);
     await runQuery(createMintedNFTsTable);
+    await runQuery(createCollectionsTable);
+    await runQuery(createUserProfilesTable);
+    await runQuery(createBidsTable);
+    await runQuery(createTransactionHistoryTable);
+    await runQuery(createTransactionLogsTable);
+    await runQuery(createNFTMetadataTable);
     console.log("Database tables and indexes initialized.");
   } catch (err) {
     console.error("Error initializing tables:", err);
   }
 };
+
 
 // Run the function to create the tables
 createTables();
@@ -198,20 +283,35 @@ const checkUserBalance = (walletAddress) => {
   });
 };
 
-// Mint NFT logic
 const mintNFT = async (walletAddress, nftDetails) => {
-  const balance = await checkUserBalance(walletAddress);
+  // Start a transaction
+  db.run("BEGIN TRANSACTION");
 
-  if (balance < 0.5) {
-    throw new Error("Insufficient SeagullCoin balance to mint NFT.");
+  try {
+    // Check if the user has sufficient balance
+    const balance = await checkUserBalance(walletAddress);
+    if (balance < 0.5) {
+      throw new Error("Insufficient SeagullCoin balance to mint NFT.");
+    }
+
+    // Proceed with minting
+    const mintedNFTId = await insertMintedNFT(nftDetails);
+
+    // Deduct 0.5 SeagullCoin for the minting cost
+    await updateUserBalance(walletAddress, -0.5);  // Deduct 0.5 SGLCN
+
+    // Commit the transaction
+    db.run("COMMIT");
+
+    // Return minted NFT ID
+    return mintedNFTId;
+  } catch (err) {
+    // If any error occurs, roll back the transaction
+    db.run("ROLLBACK");
+    throw err;  // Rethrow the error
   }
-
-  // Proceed with minting logic
-  const mintedNFTId = await insertMintedNFT(nftDetails);
-
-  // After minting, deduct the 0.5 SeagullCoin for the minting cost
-  await updateUserBalance(walletAddress, -0.5);  // Deduct 0.5 SGLCN
 };
+
 
 export { db, createTables, insertMintedNFT };
 export default db;

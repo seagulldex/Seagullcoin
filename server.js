@@ -40,6 +40,7 @@ import { createTables } from './dbsetup.js';
 import { insertMintedNFT } from './dbsetup.js';
 import sanitizeHtml from 'sanitize-html';
 import rippleAddressCodec from 'ripple-address-codec';
+import { getSeagullCoinBalance } from "./checkTrustline.js";
 const { isValidAddress } = rippleAddressCodec;
 // Initialize XUMM SDK using environment variables
     

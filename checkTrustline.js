@@ -44,3 +44,25 @@ export async function hasSeagullCoinTrustline(address) {
     await client.disconnect();
   }
 }
+export async function getSeagullCoinBalance(address) {
+  const client = new xrpl.Client("wss://xrplcluster.com");
+  await client.connect();
+
+  try {
+    const { result } = await client.request({
+      command: "account_lines",
+      account: address,
+    });
+
+    const line = result.lines.find(
+      (l) => l.currency === SGLCN_HEX && l.issuer === SGLCN_ISSUER
+    );
+
+    return line ? parseFloat(line.balance) : 0;
+  } catch (err) {
+    console.error("Error fetching SeagullCoin balance:", err);
+    throw new Error("Failed to retrieve SeagullCoin balance");
+  } finally {
+    await client.disconnect();
+  }
+}

@@ -1,4 +1,3 @@
-<!-- Final profile.html (integrated with logout on top-left and smaller size) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,6 +55,8 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      position: relative;
+      top: -5px; /* Adjust this value to move the button higher */
     }
 
     #logout-button:hover {
@@ -223,9 +224,7 @@
 
     <div class="nft-section" id="nft-section">
       <h2>Your NFTs</h2>
-      <div id="nft-list">
-        <!-- NFTs will be listed here -->
-      </div>
+      <div id="nft-list"></div>
       <div class="pagination">
         <button onclick="prevPage()">Previous</button>
         <button onclick="nextPage()">Next</button>
@@ -297,8 +296,14 @@
     function loadProfile() {
       const img = localStorage.getItem('user_profile_img');
       const bio = localStorage.getItem('user_bio');
+      const website = localStorage.getItem('user_website');
       if (img) document.getElementById('profile-img').src = img;
       if (bio) document.getElementById('bio').value = bio;
+      if (website) {
+        document.getElementById('website-link').value = website;
+        document.getElementById('user-website').href = website;
+        document.getElementById('user-website').textContent = website;
+      }
     }
 
     function saveProfile() {
@@ -316,26 +321,45 @@
     }
 
     function saveWebsiteLink() {
-      const link = document.getElementById('website-link').value;
-      localStorage.setItem('user_website', link);
-      document.getElementById('user-website').href = link;
+      const url = document.getElementById('website-link').value;
+      localStorage.setItem('user_website', url);
+      document.getElementById('user-website').href = url;
+      document.getElementById('user-website').textContent = url;
     }
 
     function loadNFTs() {
-      // Dummy function: replace with real fetch logic
-      document.getElementById('nft-list').innerHTML = '<p>Loading NFTs...</p>';
+      const dummyNFTs = [
+        { id: 1, name: "Rare Seagull", img: "nft1.png", trait: "rare" },
+        { id: 2, name: "Legendary Seagull", img: "nft2.png", trait: "legendary" },
+        { id: 3, name: "Common Seagull", img: "nft3.png", trait: "common" },
+      ];
+
+      const nftList = document.getElementById('nft-list');
+      nftList.innerHTML = "";
+      dummyNFTs.forEach(nft => {
+        const nftCard = document.createElement('div');
+        nftCard.classList.add('nft-card');
+        nftCard.innerHTML = `
+          <img src="${nft.img}" alt="${nft.name}">
+          <h3>${nft.name}</h3>
+        `;
+        nftList.appendChild(nftCard);
+      });
     }
 
     function filterNFTs() {
-      // Filtering logic based on selected trait
-    }
-
-    function prevPage() {
-      // Pagination logic
+      const trait = document.getElementById('filter').value;
+      loadNFTs();  // Call the function to reload NFTs based on the filter.
     }
 
     function nextPage() {
-      // Pagination logic
+      console.log('Next page clicked');
+      // Implement pagination logic.
+    }
+
+    function prevPage() {
+      console.log('Previous page clicked');
+      // Implement pagination logic.
     }
   </script>
 </body>

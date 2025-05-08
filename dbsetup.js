@@ -1,7 +1,8 @@
 import sqlite3 from 'sqlite3';
+import { promisify } from 'util';
 const { Database } = sqlite3;
 const db = new Database('./database.db');
-
+const runAsync = promisify(db.run.bind(db))
 
 // Enable foreign key support in SQLite
 db.exec('PRAGMA foreign_keys = ON');
@@ -283,11 +284,15 @@ const checkUserBalance = (walletAddress) => {
   });
 };
 
-const mintNFT = async (walletAddress, nftDetails) => {
-  // Start a transaction
-  db.run("BEGIN TRANSACTION");
 
+
+
+// --- Mint NFT with transaction ---
+const mintNFT = async (walletAddress, nftDetails) => {
   try {
+    // Start the transaction
+    await runAsync("BEGIN TRANSACTION");
+
     // Check if the user has sufficient balance
     const balance = await checkUserBalance(walletAddress);
     if (balance < 0.5) {
@@ -301,16 +306,30 @@ const mintNFT = async (walletAddress, nftDetails) => {
     await updateUserBalance(walletAddress, -0.5);  // Deduct 0.5 SGLCN
 
     // Commit the transaction
-    db.run("COMMIT");
+    await runAsync("COMMIT");
 
     // Return minted NFT ID
     return mintedNFTId;
   } catch (err) {
     // If any error occurs, roll back the transaction
-    db.run("ROLLBACK");
+    await runAsync("ROLLBACK");
     throw err;  // Rethrow the error
   }
 };
+
+const logError = (err) => {
+  console.error(`Error occurred: ${err.message}`);
+  // You can use a logging service here (e.g., winston, loggly, etc.)
+};
+
+// Example with the transaction flow:
+try {
+  // Some database logic
+} catch (err) {
+  logError(err); // Log the error
+  throw new Error("Failed to mint NFT. Please try again later."); // Provide user-friendly message
+}
+
 
 
 export { db, createTables, insertMintedNFT };

@@ -209,6 +209,50 @@
     }
   };
 </script>
+
+  // Create WebSocket connection
+var mySocket = new WebSocket("wss://api.onthedex.live/public/v1/ticker/SeagullCoin.rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno:XRP");
+
+// Element to display received data on the page
+const dataDisplayElement = document.getElementById('data-display');
+
+// Add event listener for WebSocket message event
+mySocket.onmessage = function(event) {
+    const tokenData = JSON.parse(event.data);
+    
+    // Check if there is data and handle accordingly
+    if (tokenData.pairs && tokenData.pairs.length > 0) {
+        // Process and display data when pairs are found
+        tokenData.pairs.forEach(pair => {
+            const theBaseCurrency = pair.b.c || pair.b;
+            const theQuoteCurrency = pair.q.c || pair.q;
+            const lastPrice = pair.l;
+
+            // Display data on your webpage
+            const displayText = `Token pair ${theBaseCurrency}/${theQuoteCurrency} was last traded at a price of ${lastPrice} ${theQuoteCurrency}`;
+            dataDisplayElement.innerHTML = displayText;
+        });
+    } else {
+        // If no pairs, show a message saying no data has changed or no pairs exist
+        dataDisplayElement.innerHTML = 'No trading data available for SeagullCoin at the moment.';
+    }
+};
+
+// Handle WebSocket connection open event
+mySocket.onopen = function() {
+    console.log('WebSocket connection established');
+};
+
+// Handle WebSocket error event
+mySocket.onerror = function(error) {
+    console.log('WebSocket Error:', error);
+};
+
+// Handle WebSocket close event
+mySocket.onclose = function() {
+    console.log('WebSocket connection closed');
+};
+  <script>
   <script src="main.js"></script>
 </body>
 </html>

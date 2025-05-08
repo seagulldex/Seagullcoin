@@ -1998,24 +1998,23 @@ app.get('/get-balance/:address', async (req, res) => {
 
     const lines = response.result.lines;
 
-    // Log all trustlines for debugging
     console.log(`Trustlines for ${address}:`);
     lines.forEach(line => {
       console.log(`- Currency: ${line.currency}, Account: ${line.account}, Balance: ${line.balance}`);
     });
 
-    // Match SeagullCoin by hex or literal and known issuer
     const seagullCoin = lines.find(line =>
-      (line.currency === 'SeagullCoin' || 
+      (line.currency === 'SeagullCoin' ||
        line.currency === '53656167756C6C436F696E000000000000000000') &&
       line.account === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
     );
 
     const balance = seagullCoin ? parseFloat(seagullCoin.balance).toFixed(2) : '0.00';
     res.json({ balance });
+
   } catch (error) {
-    console.error('Error fetching SeagullCoin balance:', error);
-    res.status(500).json({ error: 'Failed to fetch balance' });
+    console.error('Error fetching SeagullCoin balance:', error?.data || error.message || error);
+    res.status(500).json({ error: 'Failed to fetch balance', details: error.message });
   }
 });
 

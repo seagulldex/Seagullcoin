@@ -22,6 +22,17 @@ client.on('disconnected', () => {
 });
 
 /**
+ * Convert a currency name to XRPL hex format (40-character padded).
+ * @param {string} str
+ * @returns {string}
+ */
+function toHexCurrency(str) {
+  return Buffer.from(str, 'utf8').toString('hex').padEnd(40, '0').toUpperCase();
+}
+
+const SGLCN_HEX = toHexCurrency('SeagullCoin');
+
+/**
  * Connect to XRPL with retry logic.
  * @param {number} retryAttempts
  * @param {number} delayMs
@@ -125,26 +136,21 @@ export async function fetchSeagullCoinBalance(walletAddress) {
       account: walletAddress,
     });
 
-    // Log the full response for debugging purposes
-    console.log('Account Lines Response:', accountInfo);
-
     // Find the SeagullCoin balance in the account lines
     const line = accountInfo.result.lines.find(
       (l) =>
-        l.currency === 'SeagullCoin' && l.issuer === process.env.SGLCN_ISSUER
+        l.currency === SGLCN_HEX && l.issuer === process.env.SGLCN_ISSUER
     );
 
-    // If no SeagullCoin trustline is found, log an error and return balance 0
     if (!line) {
       console.error("No trustline for SeagullCoin found.");
       return { balance: '0' };
     }
 
-    // Return the SeagullCoin balance
     return { balance: line.balance || '0' };
   } catch (error) {
     console.error('Error fetching SeagullCoin balance:', error.message);
-    throw error; // Propagate the error for handling in calling functions
+    throw error;
   }
 }
 

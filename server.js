@@ -1986,6 +1986,7 @@ app.get('/user/:walletAddress', (req, res) => {
   });
 });
 
+
 app.get('/get-balance/:address', async (req, res) => {
   const { address } = req.params;
 
@@ -2000,7 +2001,7 @@ app.get('/get-balance/:address', async (req, res) => {
     // Log all trustlines for debugging
     console.log(`Trustlines for ${address}:`);
     lines.forEach(line => {
-      console.log(`- Currency: ${line.currency}, Issuer: ${line.issuer}, Balance: ${line.balance}`);
+      console.log(`- Currency: ${line.currency}, Account: ${line.account}, Balance: ${line.balance}`);
     });
 
     // Match SeagullCoin by hex or literal and known issuer

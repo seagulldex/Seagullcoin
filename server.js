@@ -59,7 +59,7 @@ import { NFTModel } from './models/nftModel.js';  // Added a new model for NFT m
 import { MongoClient, ServerApiVersion } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { fetchSeagullCoinBalance } from './xrplClient.js';
-
+import { hasSeagullCoinTrustline } from "./checkTrustline.js";
 
 // ===== Init App and Env =====
 dotenv.config();

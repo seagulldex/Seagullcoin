@@ -131,26 +131,23 @@ export async function fetchSeagullCoinBalance(walletAddress) {
   try {
     await ensureConnected();
 
-    const accountInfo = await client.request({
+    const request = {
       command: 'account_lines',
       account: walletAddress,
-    });
+      api_version: 2
+    };
 
-    // Find the SeagullCoin balance in the account lines
-    const line = accountInfo.result.lines.find(
-      (l) =>
-        l.currency === SGLCN_HEX && l.issuer === process.env.SGLCN_ISSUER
+    console.log('fetching SeagullCoin balance:', request);
+
+    const accountInfo = await client.request(request);
+    const line = accountInfo.result.lines.find(l =>
+      l.currency === 'SeagullCoin' && l.issuer === process.env.SGLCN_ISSUER
     );
 
-    if (!line) {
-      console.error("No trustline for SeagullCoin found.");
-      return { balance: '0' };
-    }
-
-    return { balance: line.balance || '0' };
+    return { balance: line?.balance || '0' };
   } catch (error) {
-    console.error('Error fetching SeagullCoin balance:', error.message);
-    throw error;
+    console.error('Error fetching SeagullCoin balance:', error?.data ?? error);
+    return { error: true, message: error.message || 'Unknown error' };
   }
 }
 

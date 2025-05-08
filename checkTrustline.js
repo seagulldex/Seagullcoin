@@ -4,6 +4,12 @@ import xrpl from "xrpl";
 const SGLCN_HEX = process.env.SGLCN_HEX || "53656167756C6C436F696E000000000000000000";
 const SGLCN_ISSUER = process.env.SGLCN_ISSUER;
 
+/**
+ * Checks whether a wallet has a valid trustline to SeagullCoin
+ * with at least 0.5 balance.
+ * @param {string} address - The XRPL wallet address.
+ * @returns {Promise<boolean>}
+ */
 export async function hasSeagullCoinTrustline(address) {
   const client = new xrpl.Client("wss://xrplcluster.com");
   await client.connect();
@@ -11,20 +17,11 @@ export async function hasSeagullCoinTrustline(address) {
   try {
     const { result } = await client.request({
       command: "account_lines",
-      account: address,
+      account: address
     });
 
-    console.log("Response from XRPL account_lines command:", result); // Log the entire response
+    const lines = result.lines || [];
 
-    const lines = result.lines;
-
-    // If lines is not present or empty, it means no trustlines
-    if (!lines || lines.length === 0) {
-      console.log("No trustlines found for this account.");
-      return false;
-    }
-
-    // Check if SeagullCoin trustline exists and has sufficient balance
     const hasLine = lines.some(
       (l) =>
         l.currency === SGLCN_HEX &&
@@ -32,26 +29,28 @@ export async function hasSeagullCoinTrustline(address) {
         parseFloat(l.balance) >= 0.5
     );
 
-    if (!hasLine) {
-      console.log("No valid SeagullCoin trustline found:", lines);
-    }
-
     return hasLine;
   } catch (err) {
-    console.error("Error checking trustline:", err);
+    console.error("Error checking trustline:", err.message || err);
     return false;
   } finally {
     await client.disconnect();
   }
 }
-export async function getSeagullCoinBalance(address) {
+
+/**
+ * Retrieves the SeagullCoin balance for a specific wallet address.
+ * @param {string} walletAddress - The XRPL wallet address.
+ * @returns {Promise<number>} - Returns the SeagullCoin balance.
+ */
+export async function getSeagullCoinBalance(walletAddress) {
   const client = new xrpl.Client("wss://xrplcluster.com");
   await client.connect();
 
   try {
     const { result } = await client.request({
       command: "account_lines",
-      account: address,
+      account: walletAddress
     });
 
     const line = result.lines.find(
@@ -59,9 +58,9 @@ export async function getSeagullCoinBalance(address) {
     );
 
     return line ? parseFloat(line.balance) : 0;
-  } catch (err) {
-    console.error("Error fetching SeagullCoin balance:", err);
-    throw new Error("Failed to retrieve SeagullCoin balance");
+  } catch (error) {
+    console.error("Error fetching SeagullCoin balance:", error.message || error);
+    throw new Error("Failed to fetch SeagullCoin balance.");
   } finally {
     await client.disconnect();
   }

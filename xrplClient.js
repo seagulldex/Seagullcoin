@@ -131,19 +131,20 @@ export async function fetchSeagullCoinBalance(walletAddress) {
   try {
     await ensureConnected();
 
+    // No need for 'api_version: 2', we are using ripple-lib's WebSocket
     const request = {
       command: 'account_lines',
-      account: walletAddress,
-      api_version: 2
+      account: walletAddress
     };
 
-    console.log('fetching SeagullCoin balance:', request);
+    console.log('Fetching SeagullCoin balance:', request);
 
     const accountInfo = await client.request(request);
     const line = accountInfo.result.lines.find(l =>
       l.currency === 'SeagullCoin' && l.issuer === process.env.SGLCN_ISSUER
     );
 
+    // Return the balance or '0' if no balance found
     return { balance: line?.balance || '0' };
   } catch (error) {
     console.error('Error fetching SeagullCoin balance:', error?.data ?? error);

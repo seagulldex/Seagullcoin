@@ -2,6 +2,7 @@ import xrpl from 'xrpl';
 import { XummSdk } from 'xumm-sdk';
 import dotenv from 'dotenv';
 import axios from 'axios';
+
 dotenv.config();
 
 // Single XRPL client instance
@@ -121,17 +122,20 @@ export async function fetchSeagullCoinBalance(walletAddress) {
 
     const accountInfo = await client.request({
       command: 'account_lines',
-      account: walletAddress
+      account: walletAddress,
     });
 
-    const line = accountInfo.result.lines.find(l =>
-      l.currency === 'SeagullCoin' && l.issuer === process.env.SGLCN_ISSUER
+    // Find the SeagullCoin balance in the account lines
+    const line = accountInfo.result.lines.find(
+      (l) =>
+        l.currency === 'SeagullCoin' && l.issuer === process.env.SGLCN_ISSUER
     );
 
+    // Return the balance or 0 if SeagullCoin is not found
     return { balance: line?.balance || '0' };
   } catch (error) {
     console.error('Error fetching SeagullCoin balance:', error.message);
-    throw error;
+    throw error; // Propagate the error for handling in calling functions
   }
 }
 
@@ -195,6 +199,7 @@ process.on('unhandledRejection', (reason) => {
 process.on('uncaughtException', err => {
   console.error('Uncaught Exception:', err);
 });
+
 setInterval(async () => {
   if (client.isConnected()) {
     try {

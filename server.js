@@ -58,7 +58,8 @@ import { OfferModel } from './models/offerModel.js';
 import { NFTModel } from './models/nftModel.js';  // Added a new model for NFT management
 import { MongoClient, ServerApiVersion } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
-import { getSeagullCoinBalance } from './xrplClient.js';
+import { fetchSeagullCoinBalance } from './xrplClient.js';
+
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -544,10 +545,6 @@ app.post('/verify-payment', async (req, res) => {
   }
 });
 
-// Function to fetch the SeagullCoin balance of a wallet (you'll need to implement this with XRPL SDK)
-async function getSeagullCoinBalance(walletAddress) {
-  // Call XRPL API to fetch the account balance
-  // Make sure to use the correct SeagullCoin token is
 
 
 // Protected route to check if the user is logged in before proceeding
@@ -2140,6 +2137,18 @@ app.get('/logout', (req, res) => {
     res.redirect('/index.html');
   });
 });
+
+// Example route to fetch SeagullCoin balance for a given wallet address
+app.get('/user/balance', async (req, res) => {
+    const { walletAddress } = req.query; // Assuming wallet address is passed as a query parameter
+    try {
+        const balance = await fetchSeagullCoinBalance(walletAddress);
+        res.json({ balance: balance.balance });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch balance", message: error.message });
+    }
+});
+
 
 
 // XRPL ping function

@@ -171,30 +171,47 @@
       }, 3000);
     }
 
-    async function loadCollections(walletAddress) {
-      const res = await fetch(`https://xrplcluster.com/v2/accounts/${walletAddress}/nfts`);
+    async function fetchNFTs(walletAddress) {
+      const res = await fetch('https://xrplcluster.com/v2/nft_info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          "method": "nft_info",
+          "params": [{
+            "account": walletAddress
+          }]
+        })
+      });
       const data = await res.json();
+      return data.result;
+    }
 
-      const container = document.getElementById('collections-container');
-      container.innerHTML = '';  // Clear loading text
+    async function loadCollections(walletAddress) {
+      try {
+        const nfts = await fetchNFTs(walletAddress);  // Call fetchNFTs to get NFTs
+        const container = document.getElementById('collections-container');
+        container.innerHTML = '';  // Clear loading text
 
-      if (!data.result.nfts || data.result.nfts.length === 0) {
-        container.innerHTML = 'No collections found.';
-      } else {
-        data.result.nfts.forEach(nft => {
-          const nftDiv = document.createElement('div');
-          nftDiv.className = 'nft-item';
-          nftDiv.innerHTML = `
-            <h3>${nft.name}</h3>
-            <p>${nft.description || 'No description'}</p>
-            <img src="${nft.uri}" alt="${nft.name}" />
-          `;
-          container.appendChild(nftDiv);
-        });
+        if (!nfts || nfts.length === 0) {
+          container.innerHTML = 'No collections found.';
+        } else {
+          nfts.forEach(nft => {
+            const nftDiv = document.createElement('div');
+            nftDiv.className = 'nft-item';
+            nftDiv.innerHTML = `
+              <h3>${nft.name || 'Unnamed NFT'}</h3>
+              <p>${nft.description || 'No description'}</p>
+              <img src="${nft.uri}" alt="${nft.name}" />
+            `;
+            container.appendChild(nftDiv);
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching NFTs:", error);
+        const container = document.getElementById('collections-container');
+        container.innerHTML = 'Error loading collections.';
       }
     }
   </script>
-
-  <script src="nfts.js"></script>
 </body>
 </html>

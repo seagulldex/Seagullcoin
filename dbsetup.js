@@ -3,13 +3,16 @@ import sqlite3 from 'sqlite3';
 // Initialize the database
 const db = new sqlite3.Database('./database.db');
 
+// Enable foreign key support in SQLite
+db.exec('PRAGMA foreign_keys = ON');
+
 // --- SQL Table Definitions ---
 const createUsersTable = `
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     wallet_address TEXT NOT NULL UNIQUE,
     total_mints INTEGER DEFAULT 0,
-    seagullcoin_balance DECIMAL(20, 8) DEFAULT 0,  -- Added column to store SeagullCoin balance
+    seagullcoin_balance DECIMAL(20, 8) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_wallet_address_users ON users(wallet_address);
@@ -26,6 +29,20 @@ const createNFTsTable = `
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_token_id_nfts ON nfts(token_id);
+`;
+
+const createSalesTable = `
+  CREATE TABLE IF NOT EXISTS sales (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nft_id INTEGER NOT NULL,
+    seller_wallet TEXT NOT NULL,
+    buyer_wallet TEXT NOT NULL,
+    sale_price DECIMAL(20, 8) NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (nft_id) REFERENCES nfts(id) ON DELETE CASCADE,
+    FOREIGN KEY (seller_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE,
+    FOREIGN KEY (buyer_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE
+  );
 `;
 
 const createMintingTransactionsTable = `
@@ -92,6 +109,7 @@ const createTables = async () => {
   try {
     await runQuery(createUsersTable);
     await runQuery(createNFTsTable);
+    await runQuery(createSalesTable);
     await runQuery(createMintingTransactionsTable);
     await runQuery(createPaymentsTable);
     await runQuery(createLikesTable);
@@ -101,6 +119,9 @@ const createTables = async () => {
     console.error("Error initializing tables:", err);
   }
 };
+
+// Run the function to create the tables
+createTables();
 
 // --- Insert minted NFT ---
 const insertMintedNFT = (nft) => {
@@ -127,7 +148,7 @@ const insertMintedNFT = (nft) => {
         uri,
         name,
         description,
-        JSON.stringify(properties || {}), // Serialize JSON
+        JSON.stringify(properties || {}),
         collection_id || null
       ],
       function (err) {
@@ -141,6 +162,7 @@ const insertMintedNFT = (nft) => {
   });
 };
 
+// Update SeagullCoin balance
 const updateUserBalance = (walletAddress, amount) => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -157,20 +179,8 @@ const updateUserBalance = (walletAddress, amount) => {
     });
   });
 };
-const mintNFT = async (walletAddress, nftDetails) => {
-  const balance = await checkUserBalance(walletAddress);
 
-  if (balance < 0.5) {
-    throw new Error("Insufficient SeagullCoin balance to mint NFT.");
-  }
-
-  // Proceed with minting logic
-  const mintedNFTId = await insertMintedNFT(nftDetails);
-
-  // After minting, deduct the 0.5 SeagullCoin for the minting cost
-  await updateUserBalance(walletAddress, -0.5);  // Deduct 0.5 SGLCN
-};
-
+// Check user SeagullCoin balance
 const checkUserBalance = (walletAddress) => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -188,7 +198,20 @@ const checkUserBalance = (walletAddress) => {
   });
 };
 
+// Mint NFT logic
+const mintNFT = async (walletAddress, nftDetails) => {
+  const balance = await checkUserBalance(walletAddress);
 
+  if (balance < 0.5) {
+    throw new Error("Insufficient SeagullCoin balance to mint NFT.");
+  }
+
+  // Proceed with minting logic
+  const mintedNFTId = await insertMintedNFT(nftDetails);
+
+  // After minting, deduct the 0.5 SeagullCoin for the minting cost
+  await updateUserBalance(walletAddress, -0.5);  // Deduct 0.5 SGLCN
+};
 
 export { db, createTables, insertMintedNFT };
 export default db;

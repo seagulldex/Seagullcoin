@@ -65,6 +65,23 @@
     nav ul li {
       margin: 0 15px;
     }
+
+    /* Style for NFTs */
+    .nft-item {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 10px;
+      text-align: center;
+      background-color: #222;
+      color: #fff;
+    }
+    .nft-item img {
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -97,7 +114,7 @@
 
     <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
 
-    <!-- Your NFT collection display logic here -->
+    <!-- NFT collection display logic here -->
     <div id="collections-container">Loading collections...</div>
   </main>
 
@@ -123,7 +140,7 @@
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
         indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
-        loadCollections();
+        loadCollections(wallet);  // Pass the wallet address to load the collections
       } else {
         document.getElementById('wallet-info').style.display = 'none';
         indicator.textContent = '🔴 Login';
@@ -154,24 +171,25 @@
       }, 3000);
     }
 
-    async function loadCollections() {
-      const res = await fetch('/api/get-collections');
-      const collections = await res.json();
-      const container = document.getElementById('collections-container');
-      container.innerHTML = '';
+    async function loadCollections(walletAddress) {
+      const res = await fetch(`https://xrplcluster.com/v2/accounts/${walletAddress}/nfts`);
+      const data = await res.json();
 
-      if (collections.length === 0) {
+      const container = document.getElementById('collections-container');
+      container.innerHTML = '';  // Clear loading text
+
+      if (!data.result.nfts || data.result.nfts.length === 0) {
         container.innerHTML = 'No collections found.';
       } else {
-        collections.forEach(collection => {
-          const div = document.createElement('div');
-          div.className = 'collection-item';
-          div.innerHTML = `
-            <h3>${collection.name}</h3>
-            <p>${collection.description}</p>
-            <img src="${collection.icon}" alt="${collection.name}" />
+        data.result.nfts.forEach(nft => {
+          const nftDiv = document.createElement('div');
+          nftDiv.className = 'nft-item';
+          nftDiv.innerHTML = `
+            <h3>${nft.name}</h3>
+            <p>${nft.description || 'No description'}</p>
+            <img src="${nft.uri}" alt="${nft.name}" />
           `;
-          container.appendChild(div);
+          container.appendChild(nftDiv);
         });
       }
     }

@@ -58,7 +58,7 @@ import { OfferModel } from './models/offerModel.js';
 import { NFTModel } from './models/nftModel.js';  // Added a new model for NFT management
 import { MongoClient, ServerApiVersion } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
-
+import { getSeagullCoinBalance } from './xrplClient.js';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -547,10 +547,7 @@ app.post('/verify-payment', async (req, res) => {
 // Function to fetch the SeagullCoin balance of a wallet (you'll need to implement this with XRPL SDK)
 async function getSeagullCoinBalance(walletAddress) {
   // Call XRPL API to fetch the account balance
-  // Make sure to use the correct SeagullCoin token issuer address for verification
-  // Here is where you would interact with the XRPL network
-  return 0.5; // Example hardcoded value; you would replace this with actual API call
-}
+  // Make sure to use the correct SeagullCoin token is
 
 
 // Protected route to check if the user is logged in before proceeding

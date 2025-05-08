@@ -65,7 +65,7 @@
 
     header nav ul li a {
       text-decoration: none;
-      color: #333;
+      color: white;
       font-weight: bold;
     }
 
@@ -127,10 +127,11 @@
       margin-top: 20px;
       text-align: center;
       padding: 20px;
-      background-color: #f4f4f4;
+      background-color: #000; /* Changed to black */
       border-radius: 8px;
       height: 33vh;
       overflow-y: scroll;
+      color: #fff;
     }
 
     .nft-card {
@@ -141,6 +142,8 @@
       padding: 10px;
       border-radius: 8px;
       text-align: center;
+      background-color: #222;
+      color: #fff;
     }
 
     .nft-card img {
@@ -176,6 +179,23 @@
       padding: 20px;
       font-size: 0.9rem;
       color: #777;
+    }
+
+    /* Added logout button */
+    #logout-button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      background-color: #007bff;
+      color: white;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #logout-button:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
@@ -234,6 +254,10 @@
         </select>
       </div>
     </div>
+
+    <!-- Logout Button -->
+    <button id="logout-button" onclick="logout()">Logout</button>
+
   </main>
 
   <footer>
@@ -288,47 +312,37 @@
       const bio = localStorage.getItem('user_bio');
       if (img) document.getElementById('profile-img').src = img;
       if (bio) document.getElementById('bio').value = bio;
-
-      const websiteLink = localStorage.getItem('user_website');
-      if (websiteLink) {
-        document.getElementById('website-link').value = websiteLink;
-        document.getElementById('user-website').href = websiteLink;
-      }
     }
 
     function saveProfile() {
       const bio = document.getElementById('bio').value;
       localStorage.setItem('user_bio', bio);
-      alert('Profile updated!');
+      alert('Profile saved!');
     }
 
     function saveWebsiteLink() {
-      const websiteLink = document.getElementById('website-link').value;
-      if (websiteLink) {
-        localStorage.setItem('user_website', websiteLink);
-        document.getElementById('user-website').href = websiteLink;
-      }
+      const website = document.getElementById('website-link').value;
+      document.getElementById('user-website').href = website;
+      localStorage.setItem('user_website', website);
     }
 
-    async function loadNFTs() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet) return;
-
-      // Replace with your API to get NFTs
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts?wallet=${wallet}`);
-      const nfts = await res.json();
+    function loadNFTs() {
+      // For the sake of demo, using hardcoded NFTs
+      const nfts = [
+        { id: 1, name: 'Seagull #1', imageUrl: 'nft1.jpg', traits: 'Rare' },
+        { id: 2, name: 'Seagull #2', imageUrl: 'nft2.jpg', traits: 'Legendary' }
+      ];
 
       const nftList = document.getElementById('nft-list');
-      nftList.innerHTML = '';
+      nftList.innerHTML = ''; // Clear any existing NFTs
+
       nfts.forEach(nft => {
         const nftCard = document.createElement('div');
         nftCard.classList.add('nft-card');
         nftCard.innerHTML = `
-          <img src="${nft.image}" alt="${nft.name}" />
-          <h4>${nft.name}</h4>
-          <p>${nft.description}</p>
+          <img src="${nft.imageUrl}" alt="${nft.name}" />
+          <p>${nft.name}</p>
           <div class="nft-actions">
-            <button onclick="listNFT(${nft.id})">List for Sale</button>
             <button onclick="transferNFT(${nft.id})">Transfer</button>
             <button onclick="acceptOffer(${nft.id})">Accept Offer</button>
             <button onclick="rejectOffer(${nft.id})">Reject Offer</button>
@@ -339,29 +353,11 @@
       });
     }
 
-    function listNFT(nftId) {
-      // Implement listing functionality
-      alert(`Listing NFT with ID ${nftId} for sale.`);
-    }
-
-    function transferNFT(nftId) {
-      // Implement transfer functionality
-      alert(`Transferring NFT with ID ${nftId}.`);
-    }
-
-    function acceptOffer(nftId) {
-      // Implement accepting offer functionality
-      alert(`Accepting offer for NFT with ID ${nftId}.`);
-    }
-
-    function rejectOffer(nftId) {
-      // Implement rejecting offer functionality
-      alert(`Rejecting offer for NFT with ID ${nftId}.`);
-    }
-
-    function cancelListing(nftId) {
-      // Implement canceling listing functionality
-      alert(`Canceling listing for NFT with ID ${nftId}.`);
+    function logout() {
+      localStorage.removeItem('xumm_wallet_address');
+      localStorage.removeItem('xumm_user');
+      updateWalletStatus();
+      alert('You have logged out.');
     }
 
     function prevPage() {

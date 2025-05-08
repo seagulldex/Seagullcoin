@@ -404,6 +404,9 @@ app.get('/login', async (req, res) => {
   }
 });
 
+console.log(requireLogin.session); // Log session data to verify its content
+
+
 app.get('/user', async (req, res) => {
   const address = req.query.address;
   if (!address) return res.status(400).json({ error: 'Missing address' });
@@ -2073,6 +2076,7 @@ xumm.ping().then(response => {
     console.error("Error connecting to XUMM:", error);
 });
 
+console.log(requireLogin.session); // Log session data to verify its content
 
 
 // Run the cleanup job periodically (every 24 hours for example)

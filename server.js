@@ -425,6 +425,16 @@ app.get('/login-status', async (req, res) => {
 });
 
 
+// Check balance before minting
+app.get('/api/get-seagullcoin-balance/:walletAddress', async (req, res) => {
+    const { walletAddress } = req.params;
+    const balance = await getSeagullCoinBalance(walletAddress);
+
+    res.json({ balance });
+});
+
+
+
 app.get('/user', async (req, res) => {
   const address = req.query.address;
   if (!address) return res.status(400).json({ error: 'Missing address' });

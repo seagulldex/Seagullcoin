@@ -2007,7 +2007,7 @@ app.get('/get-balance/:address', async (req, res) => {
     const seagullCoin = lines.find(line =>
       (line.currency === 'SeagullCoin' || 
        line.currency === '53656167756C6C436F696E000000000000000000') &&
-      line.issuer === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+      line.account === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
     );
 
     const balance = seagullCoin ? parseFloat(seagullCoin.balance).toFixed(2) : '0.00';

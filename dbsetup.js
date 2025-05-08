@@ -27,6 +27,7 @@ const createUserProfilesTable = `
     avatar_uri TEXT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_wallet_address) REFERENCES users(wallet_address) ON DELETE CASCADE
+    
   );
 `;
 
@@ -40,8 +41,12 @@ const createNFTsTable = `
     collection_name TEXT,
     collection_id TEXT,
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  
+
   );
   CREATE INDEX IF NOT EXISTS idx_token_id_nfts ON nfts(token_id);
+  CREATE INDEX IF NOT EXISTS idx_collection_id_nfts ON nfts(collection_id);
+
 `;
 
 const createSalesTable = `
@@ -134,6 +139,8 @@ const createBidsTable = `
   );
   CREATE INDEX IF NOT EXISTS idx_nft_id_bids ON bids(nft_id);
   CREATE INDEX IF NOT EXISTS idx_user_wallet_bids ON bids(user_wallet);
+  CREATE INDEX IF NOT EXISTS idx_user_wallet_nft_id_bids ON bids(user_wallet, nft_id);
+
 `;
 
 const createTransactionHistoryTable = `
@@ -322,12 +329,40 @@ const logError = (err) => {
   // You can use a logging service here (e.g., winston, loggly, etc.)
 };
 
+// Safe, parameterized query
+const query = 'SELECT * FROM users WHERE wallet_address = ?';
+db.get(query, [walletAddress], (err, row) => {
+  if (err) {
+    reject(err);
+  } else {
+    resolve(row);
+  }
+});
+
+// Example validation function
+const isValidWalletAddress = (address) => {
+  const regex = /^[a-zA-Z0-9]{25,35}$/; // Adjust for correct address format
+  return regex.test(address);
+};
+
+if (!isValidWalletAddress(walletAddress)) {
+  throw new Error("Invalid wallet address format.");
+}
+
+
+
 // Example with the transaction flow:
 try {
-  // Some database logic
+  // Some logic that may throw unique constraint errors
 } catch (err) {
-  logError(err); // Log the error
-  throw new Error("Failed to mint NFT. Please try again later."); // Provide user-friendly message
+  if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    // Handle unique constraint violation (e.g., duplicate token_id)
+    throw new Error("This NFT has already been minted.");
+  } else {
+    // Handle other errors
+    logError(err);
+    throw new Error("Failed to mint NFT. Please try again later.");
+  }
 }
 
 

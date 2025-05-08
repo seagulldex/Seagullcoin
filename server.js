@@ -88,6 +88,8 @@ const XRPL_API_URL = 'https://s2.ripple.com:51234/';
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 
+
+// Function to get balance for a single address
 const getBalance = async (address) => {
   const url = `https://s2.ripple.com:51234/`;  // This is the public XRP ledger API URL (Ripple)
   
@@ -107,11 +109,46 @@ const getBalance = async (address) => {
   });
 
   const data = await response.json();
-  console.log(data);
+  console.log(`Balance data for ${address}:`, data);
   return data;
 };
 
-getBalance('r...');  // Replace 'r...' with the wallet address you want to check
+// Function to get balance for all users
+const getAllUserBalances = async (userAddresses) => {
+  const balancePromises = userAddresses.map(address => getBalance(address));  // Iterate over addresses
+  const allBalances = await Promise.all(balancePromises);  // Wait for all balances to be fetched
+  console.log('All user balances:', allBalances);
+};
+
+// Fetch user addresses from the SQLite database
+const getUserAddressesFromDatabase = async () => {
+  return new Promise((resolve, reject) => {
+    const addresses = [];
+    db.all('SELECT address FROM users', [], (err, rows) => {
+      if (err) {
+        reject(err);
+      }
+      rows.forEach((row) => {
+        addresses.push(row.address);
+      });
+      resolve(addresses);
+    });
+  });
+};
+
+// Fetch user addresses from the database and get their balances
+const fetchAndCheckUserBalances = async () => {
+  try {
+    const userAddressesFromDb = await getUserAddressesFromDatabase();
+    await getAllUserBalances(userAddressesFromDb);
+  } catch (err) {
+    console.error('Error fetching user addresses or balances:', err);
+  }
+};
+
+// Call the function to fetch and check balances for all users
+fetchAndCheckUserBalances();
+
 
 /**
  * Confirm a XUMM payment was signed and meets all SGLCN minting criteria.

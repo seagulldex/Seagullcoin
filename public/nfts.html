@@ -172,23 +172,23 @@
     }
 
     async function fetchNFTs(walletAddress) {
-      const res = await fetch('https://xrplcluster.com/v2/nft_info', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          "method": "nft_info",
-          "params": [{
-            "account": walletAddress
-          }]
-        })
+      const res = await fetch(`https://api.xrpldata.com/v1/nfts?account=${walletAddress}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
+
       const data = await res.json();
-      return data.result;
+      
+      if (data && data.nfts) {
+        return data.nfts;  // Assuming the response has an array of NFTs under 'nfts'
+      } else {
+        throw new Error('Error fetching NFTs: No data or invalid response');
+      }
     }
 
     async function loadCollections(walletAddress) {
       try {
-        const nfts = await fetchNFTs(walletAddress);  // Call fetchNFTs to get NFTs
+        const nfts = await fetchNFTs(walletAddress);  // Call the updated fetchNFTs function to get NFTs
         const container = document.getElementById('collections-container');
         container.innerHTML = '';  // Clear loading text
 

@@ -1986,31 +1986,38 @@ app.get('/user/:walletAddress', (req, res) => {
   });
 });
 
-// server.js
 app.get('/get-balance/:address', async (req, res) => {
-  const address = req.params.address;
-  try {
-    const client = new xrpl.Client('wss://xrplcluster.com');
-    await client.connect();
+  const { address } = req.params;
 
-    const accountInfo = await client.request({
-      command: "account_lines",
+  try {
+    const response = await client.request({
+      command: 'account_lines',
       account: address
     });
 
-    const seagullCoin = accountInfo.result.lines.find(
-      line => line.currency === "53656167756C6C436F696E000000000000000000" && line.issuer === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+    const lines = response.result.lines;
+
+    // Log all trustlines for debugging
+    console.log(`Trustlines for ${address}:`);
+    lines.forEach(line => {
+      console.log(`- Currency: ${line.currency}, Issuer: ${line.issuer}, Balance: ${line.balance}`);
+    });
+
+    // Match SeagullCoin by hex or literal and known issuer
+    const seagullCoin = lines.find(line =>
+      (line.currency === 'SeagullCoin' || 
+       line.currency === '53656167756C6C436F696E000000000000000000') &&
+      line.issuer === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
     );
 
-    const balance = seagullCoin ? seagullCoin.balance : "0";
-
+    const balance = seagullCoin ? parseFloat(seagullCoin.balance).toFixed(2) : '0.00';
     res.json({ balance });
-    await client.disconnect();
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error fetching balance' });
+    console.error('Error fetching SeagullCoin balance:', error);
+    res.status(500).json({ error: 'Failed to fetch balance' });
   }
 });
+
 
 
 // Load all NFTs

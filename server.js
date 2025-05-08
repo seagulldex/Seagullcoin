@@ -86,9 +86,7 @@ const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 const router = express.Router();
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
-const hasSeagullCoinTrustline = accountLines.some(l =>
-  l.currency === SGLCN_HEX && l.issuer === SGLCN_ISSUER
-);
+
 
 
 
@@ -109,15 +107,6 @@ const __dirname = dirname(__filename);
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-function hasSeagullCoinTrustline(lines) {
-  return lines.some(
-    l =>
-      l.currency === SGLCN_HEX &&
-      l.issuer === SGLCN_ISSUER &&
-      parseFloat(l.balance) >= 0.5
-  );
 }
 
 

@@ -848,7 +848,7 @@ app.post('/login', async (req, res) => {
 
       // Set session variable for the user
       req.session.walletAddress = walletAddress;
-
+      req.session.
       res.status(200).json({ success: true, message: 'User authenticated', walletAddress });
     }
   } catch (error) {
@@ -953,8 +953,10 @@ app.post('/api/xumm-login', async (req, res) => {
         console.error('Error creating XUMM payload:', error);
         res.status(500).json({ error: 'Failed to create XUMM payload' });
     }
-});app.get('/api/check-login', async (req, res) => {
-  console.log("Session Data:", req.session); // Debugging line to check session
+});
+
+app.get('/api/check-login', async (req, res) => {
+  console.log("Session Data:", req.session); // Debugging
   const payloadUUID = req.session.xummPayload;
 
   if (!payloadUUID) {
@@ -966,8 +968,15 @@ app.post('/api/xumm-login', async (req, res) => {
     return res.status(401).json({ error: 'User has not signed the payload.' });
   }
 
-  return res.json({ address: userAddress });
+  // Save user address in session for future use
+  req.session.userAddress = userAddress;
+
+  return res.json({
+    loggedIn: true,
+    address: userAddress
+  });
 });
+
 
 app.use('/fallback.png', express.static(path.join(__dirname, 'public/fallback.png')));
 

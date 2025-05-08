@@ -5,14 +5,14 @@ import axios from 'axios';
 
 dotenv.config();
 
-// Single XRPL client instance
+// XRPL Client setup
 const client = new xrpl.Client('wss://xrplcluster.com');
 let isConnected = false;
 
 // XUMM SDK instance
 const xummApi = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-// Export the instances
+// Export the instances for use elsewhere
 export { client, xummApi };
 
 /** XRPL disconnect handler */
@@ -22,20 +22,9 @@ client.on('disconnected', () => {
 });
 
 /**
- * Convert a currency name to XRPL hex format (40-character padded).
- * @param {string} str
- * @returns {string}
- */
-function toHexCurrency(str) {
-  return Buffer.from(str, 'utf8').toString('hex').padEnd(40, '0').toUpperCase();
-}
-
-const SGLCN_HEX = toHexCurrency('SeagullCoin');
-
-/**
- * Connect to XRPL with retry logic.
- * @param {number} retryAttempts
- * @param {number} delayMs
+ * Ensure XRPL client is connected and responsive.
+ * @param {number} retryAttempts Number of retries.
+ * @param {number} delayMs Delay between retries in ms.
  */
 async function connectWithRetry(retryAttempts = 5, delayMs = 1000) {
   let attempts = 0;
@@ -68,6 +57,40 @@ async function ensureConnected() {
       isConnected = false;
       await connectWithRetry();
     }
+  }
+}
+
+/**
+ * Fetch SeagullCoin balance from trustline.
+ * @param {string} walletAddress
+ * @returns {Promise<{balance: string}>}
+ */
+export async function fetchSeagullCoinBalance(walletAddress) {
+  try {
+    await ensureConnected();
+
+    const request = {
+      method: 'account_lines',
+      params: [
+        {
+          account: walletAddress,
+          api_version: 2
+        }
+      ]
+    };
+
+    console.log('Fetching SeagullCoin balance:', request);
+
+    const accountInfo = await client.request(request);  // Corrected with params and api_version
+    const line = accountInfo.result.lines.find(l =>
+      l.currency === 'SeagullCoin' && l.issuer === process.env.SGLCN_ISSUER
+    );
+
+    // Return the balance or '0' if no balance found
+    return { balance: line?.balance || '0' };
+  } catch (error) {
+    console.error('Error fetching SeagullCoin balance:', error?.data ?? error);
+    return { error: true, message: error.message || 'Unknown error' };
   }
 }
 
@@ -119,36 +142,6 @@ export async function fetchNFTMetadata(uri) {
   } catch (error) {
     console.error('Error fetching NFT metadata from URI:', error.message);
     return null;
-  }
-}
-
-/**
- * Fetch SeagullCoin balance from trustline.
- * @param {string} walletAddress
- * @returns {Promise<{balance: string}>}
- */
-export async function fetchSeagullCoinBalance(walletAddress) {
-  try {
-    await ensureConnected();
-
-    // No need for 'api_version: 2', we are using ripple-lib's WebSocket
-    const request = {
-      command: 'account_lines',
-      account: walletAddress
-    };
-
-    console.log('Fetching SeagullCoin balance:', request);
-
-    const accountInfo = await client.request(request);
-    const line = accountInfo.result.lines.find(l =>
-      l.currency === 'SeagullCoin' && l.issuer === process.env.SGLCN_ISSUER
-    );
-
-    // Return the balance or '0' if no balance found
-    return { balance: line?.balance || '0' };
-  } catch (error) {
-    console.error('Error fetching SeagullCoin balance:', error?.data ?? error);
-    return { error: true, message: error.message || 'Unknown error' };
   }
 }
 

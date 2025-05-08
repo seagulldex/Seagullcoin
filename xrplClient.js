@@ -195,3 +195,13 @@ process.on('unhandledRejection', (reason) => {
 process.on('uncaughtException', err => {
   console.error('Uncaught Exception:', err);
 });
+setInterval(async () => {
+  if (client.isConnected()) {
+    try {
+      await client.request({ command: "ping" });
+    } catch {
+      console.warn("Ping failed, reconnecting...");
+      await connectWithRetry();
+    }
+  }
+}, 60000); // every 60 seconds

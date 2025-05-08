@@ -125,14 +125,23 @@ export async function fetchSeagullCoinBalance(walletAddress) {
       account: walletAddress,
     });
 
+    // Log the full response for debugging purposes
+    console.log('Account Lines Response:', accountInfo);
+
     // Find the SeagullCoin balance in the account lines
     const line = accountInfo.result.lines.find(
       (l) =>
         l.currency === 'SeagullCoin' && l.issuer === process.env.SGLCN_ISSUER
     );
 
-    // Return the balance or 0 if SeagullCoin is not found
-    return { balance: line?.balance || '0' };
+    // If no SeagullCoin trustline is found, log an error and return balance 0
+    if (!line) {
+      console.error("No trustline for SeagullCoin found.");
+      return { balance: '0' };
+    }
+
+    // Return the SeagullCoin balance
+    return { balance: line.balance || '0' };
   } catch (error) {
     console.error('Error fetching SeagullCoin balance:', error.message);
     throw error; // Propagate the error for handling in calling functions

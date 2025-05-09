@@ -57,7 +57,6 @@ const createNFTsTable = `
   CREATE INDEX IF NOT EXISTS idx_collection_id_nfts ON nfts(collection_id);
 `;
 
-
 const createSalesTable = `
   CREATE TABLE IF NOT EXISTS sales (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -224,7 +223,6 @@ const createTables = async () => {
 // Export the createTables function
 export { createTables };
 
-
 // --- Helper to add the collection_name column if not exists ---
 const addCollectionNameToNFTsTable = async () => {
   const query = `PRAGMA table_info(nfts)`;
@@ -248,23 +246,33 @@ const addCollectionNameToNFTsTable = async () => {
   });
 };
 
-// --- Insert Minted NFT ---
-export const insertMintedNFT = async (nftData) => {
-  const { token_id, metadata_uri, owner_wallet_address, collection_name } = nftData;
-  const query = `INSERT INTO nfts (token_id, metadata_uri, owner_wallet_address, collection_name)
-                 VALUES (?, ?, ?, ?)`;
-  return new Promise((resolve, reject) => {
-    db.run(query, [token_id, metadata_uri, owner_wallet_address, collection_name], function (err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(this.lastID); // Return the last inserted ID
-      }
-    });
+// --- Helper to add the owner_wallet_address column if not exists ---
+const addOwnerWalletAddressToNFTsTable = async () => {
+  const query = `PRAGMA table_info(nfts)`;
+  db.all(query, (err, columns) => {
+    if (err) {
+      console.error('Error fetching table schema:', err);
+      return;
+    }
+
+    const ownerWalletAddressExists = columns.some((col) => col.name === 'owner_wallet_address');
+    if (!ownerWalletAddressExists) {
+      const alterTableQuery = `ALTER TABLE nfts ADD COLUMN owner_wallet_address TEXT`;
+      db.run(alterTableQuery, (err) => {
+        if (err) {
+          console.error('Error adding owner_wallet_address column:', err);
+        } else {
+          console.log('Owner wallet address column added to NFTs table.');
+        }
+      });
+    }
   });
 };
 
-// Call the async function to initialize tables and add the missing column
-createTables().then(() => {
-  addCollectionNameToNFTsTable();
-});
+// --- Insert Minted NFT ---
+export const insertMintedNFT = async (nftData) => {
+  const { token_id, metadata_uri, owner_wallet_address, collection_name } = nftData;
+  const query = `INSERT INTO nfts (token_id, metadata_uri, owner_wallet_address, collection_name) VALUES (?, ?, ?, ?)`;
+  await runQuery(query, [token_id, metadata_uri, owner_wallet_address, collection_name]);
+};
+

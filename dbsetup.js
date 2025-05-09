@@ -54,8 +54,7 @@ const createNFTsTable = `
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_token_id_nfts ON nfts(token_id);
-  CREATE INDEX IF NOT EXISTS idx_collection_id_nfts ON nfts(collection_id);
-`;
+  CREATE INDEX IF NOT EXISTS idx_collection_id_nfts ON nfts(collection_id)
 
 const createSalesTable = `
   CREATE TABLE IF NOT EXISTS sales (
@@ -232,29 +231,7 @@ const addCollectionNameToNFTsTable = async () => {
       console.error('Error fetching table schema:', err);
       return;
     }
-    
-    // Add collection_name column if it doesn't exist in the 'nfts' table
-const addCollectionNameToNFTsTable = async () => {
-  const query = `PRAGMA table_info(nfts)`;
-  db.all(query, (err, columns) => {
-    if (err) {
-      console.error('Error fetching table schema:', err);
-      return;
-    }
 
-    const collectionNameExists = columns.some((col) => col.name === 'collection_name');
-    if (!collectionNameExists) {
-      const alterTableQuery = `ALTER TABLE nfts ADD COLUMN collection_name TEXT`;
-      db.run(alterTableQuery, (err) => {
-        if (err) {
-          console.error('Error adding collection_name column:', err);
-        } else {
-          console.log('Collection name column added to NFTs table.');
-        }
-      });
-    }
-  });
-};
 
     const collectionNameExists = columns.some((col) => col.name === 'collection_name');
     if (!collectionNameExists) {

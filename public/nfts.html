@@ -241,31 +241,39 @@
     }
 
     async function loadCollections(walletAddress) {
-      try {
-        const nfts = await fetchNFTs(walletAddress);  // Call the updated fetchNFTs function to get NFTs
-        const container = document.getElementById('collections-container');
-        container.innerHTML = '';  // Clear loading text
+  try {
+    const nfts = await fetchNftsForAccount(walletAddress);  // Fetch NFTs for the provided wallet
+    const container = document.getElementById('collections-container');
+    container.innerHTML = '';  // Clear any previous content
 
-        if (!nfts || nfts.length === 0) {
-          container.innerHTML = 'No collections found.';
-        } else {
-          nfts.forEach(nft => {
-            const nftDiv = document.createElement('div');
-            nftDiv.className = 'nft-item';
-            nftDiv.innerHTML = `
-              <h3>${nft.name || 'Unnamed NFT'}</h3>
-              <p>${nft.description || 'No description'}</p>
-              <img src="${nft.uri}" alt="${nft.name}" />
-            `;
-            container.appendChild(nftDiv);
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching NFTs:", error);
-        const container = document.getElementById('collections-container');
-        container.innerHTML = 'Error loading collections.';
-      }
+    if (!nfts || nfts.length === 0) {
+      container.innerHTML = 'No collections found.';
+    } else {
+      // Loop through the NFTs and create HTML elements to display them
+      nfts.forEach(nft => {
+        const nftDiv = document.createElement('div');
+        nftDiv.className = 'nft-item';
+        
+        const nftName = nft.name || 'Unnamed NFT';
+        const nftDescription = nft.description || 'No description available';
+        const nftURI = nft.uri || 'default_image_url'; // Ensure the image URL is valid
+
+        nftDiv.innerHTML = `
+          <h3>${nftName}</h3>
+          <p>${nftDescription}</p>
+          <img src="${nftURI}" alt="${nftName}" />
+        `;
+        
+        container.appendChild(nftDiv);
+      });
     }
+  } catch (error) {
+    console.error("Error loading collections:", error);
+    const container = document.getElementById('collections-container');
+    container.innerHTML = 'Error loading collections.';
+  }
+}
+
   </script>
 </body>
 </html>

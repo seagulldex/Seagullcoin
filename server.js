@@ -2279,8 +2279,9 @@ function hexToUtf8(hex) {
 
 // Test route to fetch NFTs for a wallet
 app.get('/test-nfts/:wallet', async (req, res) => {
-  const wallet = req.params.wallet;
-
+  const wallet = "rKoREYA3cFXPbAUtfj1Y2duMMymuWpuNDE";
+  console.log("Using wallet address:", wallet);
+  
   const requestBody = {
     method: 'account_nfts',
     params: [{

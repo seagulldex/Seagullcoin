@@ -2227,38 +2227,66 @@ app.get('/user/balance', async (req, res) => {
     }
 });
 
+
+
 app.get('/test-balance/:address', async (req, res) => {
   const address = req.params.address;
-  const SEAGULL_COIN_HEX = '53656167756C6C436F696E000000000000000000';
+
+  const data = {
+    method: "account_lines",
+    params: [
+      {
+        account: address,
+        limit: 10,
+        ledger_index: "validated",
+        currency: "53656167756C6C436F696E000000000000000000"
+      }
+    ]
+  };
 
   try {
-    const response = await fetch('https://s2.ripple.com:51234/', {
+    // Call the XRP Ledger API
+    const response = await fetch('https://s1.ripple.com:51234', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        method: 'account_lines',
-        params: [{ account: address }]
-      })
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
     });
 
-    const data = await response.json();
+    const result = await response.json();
 
-    if (!data.result || !data.result.account_lines) {
-      return res.json({ address, balance: null, reason: 'No account_lines found' });
+    if (result.result && result.result.lines) {
+      // Find the SeagullCoin balance in the response
+      const seagullCoin = result.result.lines.find(line => line.currency === "53656167756C6C436F696E000000000000000000");
+
+      if (seagullCoin) {
+        res.json({
+          address: address,
+          balance: seagullCoin.balance
+        });
+      } else {
+        res.json({
+          address: address,
+          balance: null,
+          reason: "No SeagullCoin trustline found"
+        });
+      }
+    } else {
+      res.json({
+        address: address,
+        balance: null,
+        reason: result.error || "Error retrieving data"
+      });
     }
-
-    const line = data.result.account_lines.find(
-      l => l.currency === SEAGULL_COIN_HEX
-    );
-
-    const balance = line ? parseFloat(line.balance) : null;
-
-    res.json({ address, balance });
   } catch (error) {
-    console.error('Error retrieving balance:', error);
-    res.status(500).json({ error: 'Failed to retrieve SeagullCoin balance' });
+    res.status(500).json({
+      error: "Internal server error",
+      message: error.message
+    });
   }
 });
+
 
 
 

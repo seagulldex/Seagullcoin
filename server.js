@@ -2235,22 +2235,24 @@ app.get('/user/balance', async (req, res) => {
     }
 });
 
-app.get('/nfts/explore/:wallet', async (req, res) => {
-  const wallet = req.params.wallet;
-  const userNfts = await client.request({
-    command: 'account_nfts',
-    account: wallet
-  });
+app.get('/nfts/explore/:wallet', (req, res) => {
+  const userWallet = req.params.wallet;
+  const limit = parseInt(req.query.limit) || 50;
+  const offset = parseInt(req.query.offset) || 0;
 
-  const userTokenIDs = userNfts.result.account_nfts.map(n => n.NFTokenID);
-
-  // Load all minted NFTs from DB
-  db.all("SELECT * FROM nfts", (err, rows) => {
-    if (err) return res.status(500).send({ error: err.message });
-    const notOwned = rows.filter(nft => !userTokenIDs.includes(nft.token_id));
-    res.json(notOwned);
-  });
+  db.all(
+    `SELECT * FROM nfts WHERE owner IS NULL OR owner != ? LIMIT ? OFFSET ?`,
+    [userWallet, limit, offset],
+    (err, rows) => {
+      if (err) {
+        console.error('Error querying NFTs:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ nfts: rows });
+    }
+  );
 });
+
 
 
 

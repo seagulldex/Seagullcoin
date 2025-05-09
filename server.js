@@ -2235,6 +2235,24 @@ app.get('/user/balance', async (req, res) => {
     }
 });
 
+app.get('/nfts/explore/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+  const userNfts = await client.request({
+    command: 'account_nfts',
+    account: wallet
+  });
+
+  const userTokenIDs = userNfts.result.account_nfts.map(n => n.NFTokenID);
+
+  // Load all minted NFTs from DB
+  db.all("SELECT * FROM nfts", (err, rows) => {
+    if (err) return res.status(500).send({ error: err.message });
+    const notOwned = rows.filter(nft => !userTokenIDs.includes(nft.token_id));
+    res.json(notOwned);
+  });
+});
+
+
 
 
 // XRPL ping function

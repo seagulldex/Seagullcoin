@@ -285,20 +285,41 @@ db.serialize(() => {
   `);
 });
 
-// Initialize SQLite Database
-const initDB = async () => {
-  db = await open({
-    filename: './payloads.db',
-    driver: sqlite3.Database,
-  });
 
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS used_payloads (
-      uuid TEXT PRIMARY KEY,
-      used_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+// Declare the db variable
+let db;
+
+// Initialize SQLite Database function
+const initDB = async () => {
+  try {
+    // Initialize the SQLite database connection
+    db = await open({
+      filename: './payloads.db',
+      driver: sqlite3.Database,
+    });
+
+    // Create the necessary tables if they don't exist
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS used_payloads (
+        uuid TEXT PRIMARY KEY,
+        used_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    console.log("Database initialized successfully.");
+  } catch (err) {
+    console.error("Error initializing database:", err);
+    // Log further details about the error, such as the database state
+    if (db) {
+      console.log("Database connection is open:", db);
+    }
+  }
 };
+
+// Call the function to initialize the database
+initDB();
+
+
 
 // Cleanup expired or rejected payloads
 const cleanupExpiredPayloads = async () => {

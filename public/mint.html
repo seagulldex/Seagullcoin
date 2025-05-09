@@ -409,8 +409,59 @@
       collectionField.parentNode.removeChild(collectionField); // Remove input
     }
   });
-</script>
+    <script>
+  const maxTraits = 8;
+  const traitsContainer = document.getElementById('traits-container');
+  const addTraitBtn = document.getElementById('add-trait-btn');
 
-  </script>
+  addTraitBtn.addEventListener('click', () => {
+    const currentTraits = traitsContainer.querySelectorAll('.trait-row');
+    if (currentTraits.length >= maxTraits) {
+      alert('You can only add up to 8 traits.');
+      return;
+    }
+
+    const traitRow = document.createElement('div');
+    traitRow.className = 'trait-row';
+    traitRow.style.display = 'flex';
+    traitRow.style.gap = '10px';
+    traitRow.style.marginBottom = '8px';
+
+    const traitKey = document.createElement('input');
+    traitKey.type = 'text';
+    traitKey.placeholder = 'Trait type';
+    traitKey.style.flex = '1';
+    traitKey.required = true;
+
+    const traitValue = document.createElement('input');
+    traitValue.type = 'text';
+    traitValue.placeholder = 'Trait value';
+    traitValue.style.flex = '1';
+    traitValue.required = true;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.textContent = '–';
+    removeBtn.style.padding = '0 8px';
+    removeBtn.style.background = '#900';
+    removeBtn.style.color = 'white';
+    removeBtn.style.border = 'none';
+    removeBtn.style.borderRadius = '5px';
+    removeBtn.style.cursor = 'pointer';
+
+    removeBtn.onclick = () => {
+      traitRow.remove();
+    };
+
+    traitRow.appendChild(traitKey);
+    traitRow.appendChild(traitValue);
+    traitRow.appendChild(removeBtn);
+
+    traitsContainer.appendChild(traitRow);
+  });
+
+  // Optional: hide collection field if you want
+  document.getElementById('nft-collection').placeholder = "Enter collection name";
+</script>
 </body>
 </html>

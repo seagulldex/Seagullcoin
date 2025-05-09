@@ -207,6 +207,14 @@ const createTables = async () => {
   }
 };
 
+const initDB = async () => {
+  await createTables(); // Initialize all the tables
+  console.log("Database initialized.");
+};
+
+initDB(); // Call the initialization function to set up the tables
+
+
 createTables();
 
 // --- Insert a minted NFT ---
@@ -247,6 +255,25 @@ const insertMintedNFT = (nft) => {
     );
   });
 };
+
+// --- Get User Address ---
+const getUserAddress = (walletAddress) => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT wallet_address
+      FROM users
+      WHERE wallet_address = ?
+    `;
+    db.get(query, [walletAddress], (err, row) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(row ? row.wallet_address : null); // Returns null if not found
+      }
+    });
+  });
+};
+
 
 // --- Update user balance ---
 const updateUserBalance = (walletAddress, amount) => {
@@ -307,3 +334,13 @@ insertMintedNFT({
   properties: { key: 'value' },
   collection_id: 'collection_id_example'
 });
+
+export {
+  initDB,
+  getUserAddress,
+  upsertUser,
+  insertMintedNFT, // ← THIS is what mint-endpoint.js needs
+  insertPayment,
+  getAllNFTs,
+  getAllCollections
+};

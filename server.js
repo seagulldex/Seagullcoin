@@ -42,6 +42,10 @@ import sanitizeHtml from 'sanitize-html';
 import rippleAddressCodec from 'ripple-address-codec';
 const { isValidAddress } = rippleAddressCodec;
 // Initialize XUMM SDK using environment variables
+import('rippled-ws-client').then(({ default: RippledWsClient }) => {
+  const client = new RippledWsClient('wss://xrplcluster.com');
+  // Your logic here
+});
     
 
 
@@ -59,6 +63,7 @@ import { NFTModel } from './models/nftModel.js';  // Added a new model for NFT m
 import { MongoClient, ServerApiVersion } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { fetchSeagullCoinBalance } from './xrplClient.js';
+
 // ===== Init App and Env =====
 dotenv.config();
 
@@ -82,8 +87,6 @@ const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SER
 const db = new sqlite3.Database('./database.db');
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 const router = express.Router();
-const XRPL_API_URL = 'https://s2.ripple.com:51234/';
-
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 
@@ -149,53 +152,16 @@ const fetchAndCheckUserBalances = async () => {
 fetchAndCheckUserBalances();
 
 
+
+
+
+
 /**
  * Confirm a XUMM payment was signed and meets all SGLCN minting criteria.
  * @param {string} payloadUUID - The XUMM payload UUID from the client.
  * @param {string} expectedSigner - The wallet address of the user.
  * @returns {Promise<{ success: boolean, reason?: string }>}
  */
-
-const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
-const SEAGULLCOIN_HEX = '53656167756C6C436F696E000000000000000000'; // "SeagullCoin" in hex
-
-export const getSeagullBalance = async (walletAddress) => {
-  const url = 'https://s2.ripple.com:51234/';
-
-  const body = {
-    method: 'account_lines',
-    params: [{
-      account: walletAddress
-    }]
-  };
-
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    const json = await res.json();
-    if (!json.result || !json.result.account_lines) {
-      throw new Error('Unexpected response from XRPL.');
-    }
-
-    // Find the line that matches SeagullCoin's issuer and currency
-    const seagullLine = json.result.account_lines.find(line =>
-      line.currency === SEAGULLCOIN_HEX &&
-      line.account === SEAGULLCOIN_ISSUER
-    );
-
-    return seagullLine ? parseFloat(seagullLine.balance) : 0;
-
-  } catch (err) {
-    console.error(`Failed to retrieve balance for ${walletAddress}:`, err.message);
-    return null;
-  }
-};
-
-
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -285,41 +251,20 @@ db.serialize(() => {
   `);
 });
 
-
-// Declare the db variable
-let db;
-
-// Initialize SQLite Database function
+// Initialize SQLite Database
 const initDB = async () => {
-  try {
-    // Initialize the SQLite database connection
-    db = await open({
-      filename: './payloads.db',
-      driver: sqlite3.Database,
-    });
+  db = await open({
+    filename: './payloads.db',
+    driver: sqlite3.Database,
+  });
 
-    // Create the necessary tables if they don't exist
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS used_payloads (
-        uuid TEXT PRIMARY KEY,
-        used_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    console.log("Database initialized successfully.");
-  } catch (err) {
-    console.error("Error initializing database:", err);
-    // Log further details about the error, such as the database state
-    if (db) {
-      console.log("Database connection is open:", db);
-    }
-  }
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS used_payloads (
+      uuid TEXT PRIMARY KEY,
+      used_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 };
-
-// Call the function to initialize the database
-initDB();
-
-
 
 // Cleanup expired or rejected payloads
 const cleanupExpiredPayloads = async () => {
@@ -340,7 +285,6 @@ const cleanupExpiredPayloads = async () => {
 };
 
 initDB();
-
 // Mark payload as used in the database
 const markPayloadUsed = async (uuid) => {
   await db.run(`INSERT OR IGNORE INTO used_payloads (uuid) VALUES (?)`, uuid);
@@ -892,7 +836,6 @@ app.get('/get-messages', async (req, res) => {
  *       200:
  *         description: Messages retrieved successfully
  */
-
 // ===== Health Check =====
 app.get('/health', async (req, res) => {
   try {
@@ -1209,7 +1152,6 @@ app.post('/accept-offer', async (req, res) => {
     res.status(500).json({ error: 'Failed to accept offer.', message: err.message });
   }
 });
-
 /**
  * @swagger
  * /accept-offer:
@@ -1619,7 +1561,6 @@ app.post('/like-nft',
  *       400:
  *         description: Invalid data or already liked
  */
-
 async function getTotalCollections() {
   return new Promise((resolve, reject) => {
     db.get('SELECT COUNT(*) AS total FROM collections', (err, row) => {
@@ -1935,8 +1876,6 @@ app.post('/create-collection',
     res.status(500).json({ error: 'Failed to verify authentication' });
   }
 });
-
-
 // XUMM OAuth callback route
 app.get('/xumm/callback', async (req, res) => {
   const { code } = req.query;
@@ -2150,18 +2089,7 @@ app.get('/all-nfts', (req, res) => {
 });
 
 
-app.get('/get-balance/:walletAddress', async (req, res) => {
-  const { walletAddress } = req.params;
 
-  try {
-    const balance = await getSeagullCoinBalance(walletAddress);  // Query XRPL for the balance
-
-    res.json({ success: true, balance });
-  } catch (err) {
-    console.error('Error fetching balance:', err);
-    res.status(500).json({ success: false, error: 'Error fetching balance' });
-  }
-});
 
 // POST route to start the login flow
 app.post('/api/start-login', async (req, res) => {
@@ -2246,67 +2174,6 @@ app.get('/user/balance', async (req, res) => {
         res.status(500).json({ error: "Failed to fetch balance", message: error.message });
     }
 });
-
-
-
-app.get('/balance/:address', async (req, res) => {
-  const address = req.params.address;
-
-  const data = {
-    method: "account_lines",
-    params: [
-      {
-        account: address,
-        limit: 10,
-        ledger_index: "validated",
-        currency: "53656167756C6C436F696E000000000000000000"
-      }
-    ]
-  };
-
-  try {
-    // Call the XRP Ledger API
-    const response = await fetch('https://s1.ripple.com:51234', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    const result = await response.json();
-
-    if (result.result && result.result.lines) {
-      // Find the SeagullCoin balance in the response
-      const seagullCoin = result.result.lines.find(line => line.currency === "53656167756C6C436F696E000000000000000000");
-
-      if (seagullCoin) {
-        res.json({
-          address: address,
-          balance: seagullCoin.balance
-        });
-      } else {
-        res.json({
-          address: address,
-          balance: null,
-          reason: "No SeagullCoin trustline found"
-        });
-      }
-    } else {
-      res.json({
-        address: address,
-        balance: null,
-        reason: result.error || "Error retrieving data"
-      });
-    }
-  } catch (error) {
-    res.status(500).json({
-      error: "Internal server error",
-      message: error.message
-    });
-  }
-});
-
 
 
 

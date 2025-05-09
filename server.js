@@ -2261,6 +2261,8 @@ app.get('/nfts/explore/:wallet', async (req, res) => {
   const offset = parseInt(req.query.offset) || 0;
 
   try {
+    console.log('Raw XRPL NFT response:', response);
+
     await api.connect();
 
     // Fetch NFTs for the user's wallet address from XRPL

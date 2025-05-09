@@ -2276,11 +2276,19 @@ function hexToUtf8(hex) {
   }
 }
 
-// Test route to fetch NFTs for a wallet
+// Helper for fetch with timeout
+const fetchWithTimeout = (url, timeout = 5000) => {
+  return Promise.race([
+    fetch(url),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+  ]);
+};
+
+// Test route to fetch NFTs for a wallet (limit to 20 NFTs)
 app.get('/test-nfts/:wallet', async (req, res) => {
-  const wallet = "rKoREYA3cFXPbAUtfj1Y2duMMymuWpuNDE";
-  console.log("Using wallet address:", wallet);
-  
+  const wallet = req.params.wallet;
+  console.log('Using wallet address:', wallet);
+
   const requestBody = {
     method: 'account_nfts',
     params: [{
@@ -2303,8 +2311,9 @@ app.get('/test-nfts/:wallet', async (req, res) => {
     }
 
     const nfts = data.result.account_nfts || [];
+    const limitedNfts = nfts.slice(0, 20); // limit processing to 20
 
-    const parsed = await Promise.all(nfts.map(async (nft) => {
+    const parsed = await Promise.all(limitedNfts.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
       let metadata = null;
       let collection = null;
@@ -2313,7 +2322,7 @@ app.get('/test-nfts/:wallet', async (req, res) => {
       if (uri.startsWith('ipfs://')) {
         const ipfsUrl = `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`;
         try {
-          const metaRes = await fetch(ipfsUrl);
+          const metaRes = await fetchWithTimeout(ipfsUrl, 5000);
           if (metaRes.ok) {
             metadata = await metaRes.json();
             collection = metadata.collection || metadata.name || null;
@@ -2322,7 +2331,7 @@ app.get('/test-nfts/:wallet', async (req, res) => {
             metadata = { error: `IPFS status ${metaRes.status}` };
           }
         } catch (e) {
-          metadata = { error: 'Could not fetch IPFS metadata' };
+          metadata = { error: 'IPFS fetch timeout or error' };
         }
       }
 
@@ -2341,6 +2350,7 @@ app.get('/test-nfts/:wallet', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+
 
 
 

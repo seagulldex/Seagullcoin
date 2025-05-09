@@ -1,16 +1,13 @@
-import sqlite3 from 'sqlite3';
-import { promisify } from 'util';
-import { createTables } from './dbsetup.js';
+import sqlite3 from 'sqlite3'; // default import doesn't exist
+const { Database } = sqlite3.verbose(); // enable verbose mode
+const db = new Database('./my.db');
 
 
-const db = new sqlite3.Database('./my.db'); // define first
-const { Database } = sqlite3;
 const runAsync = promisify(db.run.bind(db));
-
-export { db }; // ✅ now db exists
 // dbsetup.js
 export default createTables;
 
+export { db }; // ✅ now db exists
 
 // Enable foreign key support
 db.exec('PRAGMA foreign_keys = ON');

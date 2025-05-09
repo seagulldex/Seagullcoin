@@ -120,7 +120,9 @@ const createCollectionsTable = `
     description TEXT,
     logo_uri TEXT,
     created_by TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    SELECT * FROM collections WHERE collection_name = 'Some Collection';
+
   );
   CREATE INDEX IF NOT EXISTS idx_collection_name ON collections(name);
 `;
@@ -174,6 +176,7 @@ const createNFTMetadataTable = `
     nft_id INTEGER NOT NULL,
     metadata_key TEXT NOT NULL,
     metadata_value TEXT NOT NULL,
+    SELECT * FROM collections WHERE collection_name = 'Some Collection';,
     FOREIGN KEY (nft_id) REFERENCES nfts(id)
   );
 `;
@@ -207,7 +210,7 @@ const createTables = async () => {
   }
 };
 
-createTables();
+(async () => await createTables())();
 
 // --- Insert a minted NFT ---
 const insertMintedNFT = (nft) => {
@@ -390,3 +393,6 @@ export {
   checkUserBalance,
   mintNFT
 };
+
+(async () => await createTables())();
+

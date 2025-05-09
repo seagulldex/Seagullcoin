@@ -2263,19 +2263,28 @@ app.get('/user/balance', async (req, res) => {
 const xrplApiUrl = 'https://s1.ripple.com:51234'; // For Mainnet
 
 
-app.get('/test-nfts/:wallet', async (req, res) => {
-  // Inline helper function
-  function hexToUtf8(hex) {
-    return Buffer.from(hex, 'hex').toString('utf8').replace(/\0/g, '');
-  }
 
+
+// Helper to convert hex-encoded URI to UTF-8 string
+function hexToUtf8(hex) {
+  if (!hex || typeof hex !== 'string') return '';
+  try {
+    return Buffer.from(hex, 'hex').toString('utf8').replace(/\0/g, '');
+  } catch (e) {
+    console.error('Invalid hex string:', hex);
+    return '';
+  }
+}
+
+// Test route to fetch NFTs for a wallet
+app.get('/test-nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
   const requestBody = {
     method: 'account_nfts',
     params: [{
       account: wallet,
-      ledger_index: 'validated',
+      ledger_index: 'validated'
     }]
   };
 
@@ -2283,46 +2292,55 @@ app.get('/test-nfts/:wallet', async (req, res) => {
     const response = await fetch(xrplApiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(requestBody)
     });
 
-    const result = await response.json();
+    const data = await response.json();
 
-    if (result.error) {
-      return res.status(500).json({ error: result.error_message });
+    if (data.result?.error) {
+      return res.status(500).json({ error: data.result.error_message });
     }
 
-    const nfts = result.result.account_nfts || [];
+    const nfts = data.result.account_nfts || [];
 
-    const formattedNfts = await Promise.all(nfts.map(async nft => {
-      const uri = hexToUtf8(nft.URI);  // Using the helper function inline
+    const parsed = await Promise.all(nfts.map(async (nft) => {
+      const uri = hexToUtf8(nft.URI);
       let metadata = null;
+      let collection = null;
+      let icon = null;
 
       if (uri.startsWith('ipfs://')) {
+        const ipfsUrl = `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`;
         try {
-          const ipfsUrl = `https://ipfs.io/ipfs/${uri.split('ipfs://')[1]}`;
           const metaRes = await fetch(ipfsUrl);
           if (metaRes.ok) {
             metadata = await metaRes.json();
+            collection = metadata.collection || metadata.name || null;
+            icon = metadata.image || null;
+          } else {
+            metadata = { error: `IPFS status ${metaRes.status}` };
           }
         } catch (e) {
-          metadata = { error: 'Failed to fetch IPFS metadata' };
+          metadata = { error: 'Could not fetch IPFS metadata' };
         }
       }
 
       return {
         NFTokenID: nft.NFTokenID,
         URI: uri,
-        metadata,
+        collection,
+        icon,
+        metadata
       };
     }));
 
-    res.json({ nfts: formattedNfts });
+    res.json({ nfts: parsed });
   } catch (err) {
     console.error('Error fetching NFTs:', err);
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+
 
 
 

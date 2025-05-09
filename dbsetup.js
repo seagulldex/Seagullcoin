@@ -7,6 +7,16 @@ const runAsync = promisify(db.run.bind(db));
 
 export { db }; // ✅ now db exists
 
+db.serialize(() => {
+  db.each("PRAGMA table_info(nfts);", (err, row) => {
+    if (err) {
+      console.error("Error checking table info:", err);
+    } else {
+      console.log(row); // This will print each column in the 'nfts' table
+    }
+  });
+});
+
 // Enable foreign key support
 db.exec('PRAGMA foreign_keys = ON');
 

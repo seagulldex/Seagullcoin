@@ -2228,10 +2228,38 @@ app.get('/user/balance', async (req, res) => {
 });
 
 app.get('/test-balance/:address', async (req, res) => {
-  const { address } = req.params;
-  const balance = await getSeagullBalance(address);
-  res.json({ address, balance });
+  const address = req.params.address;
+  const SEAGULL_COIN_HEX = '53656167756C6C436F696E000000000000000000';
+
+  try {
+    const response = await fetch('https://s2.ripple.com:51234/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: 'account_lines',
+        params: [{ account: address }]
+      })
+    });
+
+    const data = await response.json();
+
+    if (!data.result || !data.result.account_lines) {
+      return res.json({ address, balance: null, reason: 'No account_lines found' });
+    }
+
+    const line = data.result.account_lines.find(
+      l => l.currency === SEAGULL_COIN_HEX
+    );
+
+    const balance = line ? parseFloat(line.balance) : null;
+
+    res.json({ address, balance });
+  } catch (error) {
+    console.error('Error retrieving balance:', error);
+    res.status(500).json({ error: 'Failed to retrieve SeagullCoin balance' });
+  }
 });
+
 
 
 // XRPL ping function

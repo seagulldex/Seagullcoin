@@ -64,7 +64,7 @@ import { MongoClient, ServerApiVersion } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { fetchSeagullCoinBalance } from './xrplClient.js';
 import { promisify } from 'util'; // 
-
+import { RippleAPI } from 'ripple-lib';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -91,6 +91,8 @@ const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 const router = express.Router();
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
+
+const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 
 
 // Function to get balance for a single address
@@ -2252,38 +2254,8 @@ app.get('/user/balance', async (req, res) => {
     }
 });
 
-app.get('/nfts/explore/:wallet', (req, res) => {
-  const userWallet = req.params.wallet;
-  const limit = parseInt(req.query.limit) || 50;
-  const offset = parseInt(req.query.offset) || 0;
-
-  db.all(
-    `SELECT * FROM nfts WHERE owner_wallet_address IS NULL OR owner_wallet_address != ? LIMIT ? OFFSET ?`,
-    [userWallet, limit, offset],
-    (err, rows) => {
-      if (err) {
-        console.error('Error querying NFTs:', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json({ nfts: rows });
-    }
-  );
-});
-
-const allAsync = promisify(db.all.bind(db)); 
 
 
-// A route to check the table info for 'nfts'
-app.get('/check-nfts-table', async (req, res) => {
-  try {
-    const tableInfo = await allAsync('PRAGMA table_info(nfts)');
-    console.log(tableInfo);  // Logs the table info to the console
-    res.json(tableInfo);     // Sends it back in the response for you to view
-  } catch (error) {
-    console.error('Error retrieving table info:', error);
-    res.status(500).send('Error checking table info');
-  }
-});
 
 
 

@@ -2321,6 +2321,14 @@ async function fetchMetadataFromIPFS(ipfsUrl) {
   }
 }
 
+
+const xrplApiUrl = 'https://s1.ripple.com:51234'; // XRPL Mainnet
+
+// Helper to convert hex-encoded URI to UTF-8 string
+function hexToUtf8(hex) {
+  return Buffer.from(hex, 'hex').toString('utf8').replace(/\0/g, '');
+}
+
 app.get('/test-nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
@@ -2346,19 +2354,19 @@ app.get('/test-nfts/:wallet', async (req, res) => {
 
     const nfts = result.result.account_nfts || [];
 
-    const formatted = await Promise.all(nfts.map(async nft => {
-      const uri = hexToUtf8(nft.URI);
+    const formatted = await Promise.all(nfts.map(async (nft) => {
+      const uri = hexToUtf8(nft.URI || '');
       let metadata = null;
 
       if (uri.startsWith('ipfs://')) {
         try {
-          const ipfsUrl = `https://ipfs.io/ipfs/${uri.split('ipfs://')[1]}`;
+          const ipfsUrl = `https://ipfs.io/ipfs/${uri.slice(7)}`;
           const metaRes = await fetch(ipfsUrl);
           if (metaRes.ok) {
             metadata = await metaRes.json();
           }
-        } catch (e) {
-          metadata = { error: 'Failed to fetch IPFS metadata' };
+        } catch (err) {
+          metadata = { error: 'Failed to load metadata' };
         }
       }
 

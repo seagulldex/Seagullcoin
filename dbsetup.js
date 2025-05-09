@@ -42,7 +42,6 @@ const createNFTsTable = `
     collection_name TEXT,
     collection_id TEXT,
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ALTER TABLE nfts ADD COLUMN collection_name TEXT;
   );
   CREATE INDEX IF NOT EXISTS idx_token_id_nfts ON nfts(token_id);
   CREATE INDEX IF NOT EXISTS idx_collection_id_nfts ON nfts(collection_id);
@@ -121,8 +120,7 @@ const createCollectionsTable = `
     description TEXT,
     logo_uri TEXT,
     created_by TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ALTER TABLE collections ADD COLUMN collection_name TEXT;
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_collection_name ON collections(name);
 `;
@@ -188,6 +186,9 @@ const runQuery = (query) => {
 };
 
 // --- Initialize tables ---
+// dbsetup.js
+
+// Define your createTables function
 const createTables = async () => {
   try {
     await runQuery(createUsersTable);
@@ -209,186 +210,56 @@ const createTables = async () => {
   }
 };
 
-createTables();
+// Export the createTables function
+export { createTables };
 
-// --- Insert a minted NFT ---
-const insertMintedNFT = (nft) => {
-  const {
-    wallet,
-    token_id,
-    uri,
-    name,
-    description,
-    properties,
-    collection_id
-  } = nft;
 
-  return new Promise((resolve, reject) => {
-    const query = `
-      INSERT INTO minted_nfts (wallet, token_id, uri, name, description, properties, collection_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-    db.run(
-      query,
-      [
-        wallet,
-        token_id,
-        uri,
-        name,
-        description,
-        JSON.stringify(properties || {}),
-        collection_id || null
-      ],
-      function (err) {
+// --- Helper to add the collection_name column if not exists ---
+const addCollectionNameToNFTsTable = async () => {
+  const query = `PRAGMA table_info(nfts)`;
+  db.all(query, (err, columns) => {
+    if (err) {
+      console.error('Error fetching table schema:', err);
+      return;
+    }
+
+    const collectionNameExists = columns.some((col) => col.name === 'collection_name');
+    if (!collectionNameExists) {
+      const alterTableQuery = `ALTER TABLE nfts ADD COLUMN collection_name TEXT`;
+      db.run(alterTableQuery, (err) => {
         if (err) {
-          reject(err);
+          console.error('Error adding collection_name column:', err);
         } else {
-          resolve(this.lastID);
+          console.log('Collection name column added to NFTs table.');
         }
-      }
-    );
-  });
-};
-
-// --- Update user balance ---
-const updateUserBalance = (walletAddress, amount) => {
-  return new Promise((resolve, reject) => {
-    const query = `
-      UPDATE users
-      SET seagullcoin_balance = seagullcoin_balance + ?
-      WHERE wallet_address = ?
-    `;
-    db.run(query, [amount, walletAddress], function (err) {
-      if (err) reject(err);
-      else resolve(this.changes);
-    });
-  });
-};
-
-const ensureUserExists = async (walletAddress) => {
-  const query = `
-    INSERT OR IGNORE INTO users (wallet_address)
-    VALUES (?)
-  `;
-  return new Promise((resolve, reject) => {
-    db.run(query, [walletAddress], function (err) {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-};
-
-const upsertUserProfile = async (walletAddress, profile) => {
-  const { display_name, bio, avatar_uri } = profile;
-  const query = `
-    INSERT INTO user_profiles (user_wallet_address, display_name, bio, avatar_uri)
-    VALUES (?, ?, ?, ?)
-    ON CONFLICT(user_wallet_address) DO UPDATE SET
-      display_name = excluded.display_name,
-      bio = excluded.bio,
-      avatar_uri = excluded.avatar_uri,
-      updated_at = CURRENT_TIMESTAMP
-  `;
-  return new Promise((resolve, reject) => {
-    db.run(query, [walletAddress, display_name, bio, avatar_uri], function (err) {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-};
-
-const toggleLikeNFT = async (userWallet, nftId) => {
-  const queryCheck = `SELECT id FROM likes WHERE user_wallet = ? AND nft_id = ?`;
-  const queryInsert = `INSERT INTO likes (user_wallet, nft_id) VALUES (?, ?)`;
-  const queryDelete = `DELETE FROM likes WHERE user_wallet = ? AND nft_id = ?`;
-
-  return new Promise((resolve, reject) => {
-    db.get(queryCheck, [userWallet, nftId], (err, row) => {
-      if (err) return reject(err);
-      const query = row ? queryDelete : queryInsert;
-      db.run(query, [userWallet, nftId], function (err) {
-        if (err) reject(err);
-        else resolve({ liked: !row });
       });
-    });
+    }
   });
 };
 
-const placeBid = (nftId, userWallet, bidAmount) => {
-  const query = `
-    INSERT INTO bids (nft_id, user_wallet, bid_amount)
-    VALUES (?, ?, ?)
-  `;
+
+
+
+// Export other functions if needed
+
+
+export const insertMintedNFT = async (nftData) => {
+  const { token_id, metadata_uri, owner_wallet_address, collection_name } = nftData;
+  const query = `INSERT INTO nfts (token_id, metadata_uri, owner_wallet_address, collection_name)
+                 VALUES (?, ?, ?, ?)`;
   return new Promise((resolve, reject) => {
-    db.run(query, [nftId, userWallet, bidAmount], function (err) {
-      if (err) reject(err);
-      else resolve(this.lastID);
+    db.run(query, [token_id, metadata_uri, owner_wallet_address, collection_name], function (err) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(this.lastID); // Return the last inserted ID
+      }
     });
   });
 };
 
-const logTransaction = (nftId, fromWallet, toWallet, type, amount = null) => {
-  const query = `
-    INSERT INTO transaction_history (nft_id, from_wallet, to_wallet, transaction_type, amount)
-    VALUES (?, ?, ?, ?, ?)
-  `;
-  return new Promise((resolve, reject) => {
-    db.run(query, [nftId, fromWallet, toWallet, type, amount], function (err) {
-      if (err) reject(err);
-      else resolve(this.lastID);
-    });
-  });
-};
+// Call the async function to initialize tables and add the missing column
+createTables().then(() => {
+  addCollectionNameToNFTsTable();
+});
 
-
-
-// --- Check balance ---
-const checkUserBalance = (walletAddress) => {
-  return new Promise((resolve, reject) => {
-    const query = `
-      SELECT seagullcoin_balance
-      FROM users
-      WHERE wallet_address = ?
-    `;
-    db.get(query, [walletAddress], (err, row) => {
-      if (err) reject(err);
-      else resolve(row ? row.seagullcoin_balance : 0);
-    });
-  });
-};
-
-const enableForeignKeys = async () => {
-  await runQuery('PRAGMA foreign_keys = ON');
-  console.log('Foreign keys enabled');
-};
-
-// Call the async function
-enableForeignKeys().catch((err) => console.error(err));
-
-
-// --- Mint NFT (checks + insert) ---
-const mintNFT = async (walletAddress, nftDetails) => {
-  try {
-    await runAsync("BEGIN TRANSACTION");
-
-    const balance = await checkUserBalance(walletAddress);
-    if (balance < 0.5) throw new Error("Insufficient SeagullCoin balance to mint.");
-
-    const insertId = await insertMintedNFT({ wallet: walletAddress, ...nftDetails });
-    await updateUserBalance(walletAddress, -0.5); // Deduct cost
-
-    await runAsync("COMMIT");
-    return insertId;
-  } catch (err) {
-    await runAsync("ROLLBACK");
-    throw err;
-  }
-};
-
-export {
-  createTables,
-  insertMintedNFT,
-  updateUserBalance,
-  checkUserBalance,
-  mintNFT
-};

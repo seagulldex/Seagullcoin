@@ -2289,7 +2289,58 @@ const fetchWithTimeout = (url, timeout = 5000) => {
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
-  console.log('Using wallet address:', wallet);
+
+  // Check cache
+  const cached = nftCache.get(wallet);
+  if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
+    return res.json({ nfts: cached.data });
+  }
+
+  try {
+    const rawNFTs = await fetchAllNFTs(wallet);
+
+    const parsed = await Promise.all(rawNFTs.map(async (nft) => {
+      const uri = hexToUtf8(nft.URI);
+      let metadata = null, collection = null, icon = null;
+
+      if (uri.startsWith('ipfs://')) {
+        const ipfsUrl = `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`;
+        metadata = await fetchWithTimeout(ipfsUrl);
+
+        if (metadata) {
+          collection = metadata.collection || metadata.name || null;
+          icon = metadata.image || null;
+        }
+      }
+
+      return {
+        NFTokenID: nft.NFTokenID,
+        URI: uri,
+        collection,
+        icon,
+        metadata
+      };
+    }));
+
+    // Cache the result
+    nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
+
+    res.json({ nfts: parsed });
+  } catch (err) {
+    console.error('NFT fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch NFTs' });
+  }
+});
+
+// Helper to fetch all NFTs for a wallet with proper caching
+async function fetchAllNFTs(wallet) {
+  if (nftCache.has(wallet)) {
+    const cachedData = nftCache.get(wallet);
+    const currentTime = Date.now();
+    if (currentTime - cachedData.timestamp < 60000) {  // 1-minute cache duration
+      return cachedData.data;
+    }
+  }
 
   const requestBody = {
     method: 'account_nfts',
@@ -2309,49 +2360,19 @@ app.get('/nfts/:wallet', async (req, res) => {
     const data = await response.json();
 
     if (data.result?.error) {
-      return res.status(500).json({ error: data.result.error_message });
+      throw new Error(data.result.error_message);
     }
 
     const nfts = data.result.account_nfts || [];
-    const limitedNfts = nfts.slice(0, 20); // limit processing to 20
-
-    const parsed = await Promise.all(limitedNfts.map(async (nft) => {
-      const uri = hexToUtf8(nft.URI);
-      let metadata = null;
-      let collection = null;
-      let icon = null;
-
-      if (uri.startsWith('ipfs://')) {
-        const ipfsUrl = `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`;
-        try {
-          const metaRes = await fetchWithTimeout(ipfsUrl, 5000);
-          if (metaRes.ok) {
-            metadata = await metaRes.json();
-            collection = metadata.collection || metadata.name || null;
-            icon = metadata.image || null;
-          } else {
-            metadata = { error: `IPFS status ${metaRes.status}` };
-          }
-        } catch (e) {
-          metadata = { error: 'IPFS fetch timeout or error' };
-        }
-      }
-
-      return {
-        NFTokenID: nft.NFTokenID,
-        URI: uri,
-        collection,
-        icon,
-        metadata
-      };
-    }));
-
-    res.json({ nfts: parsed });
-  } catch (err) {
-    console.error('Error fetching NFTs:', err);
-    res.status(500).json({ error: 'Failed to fetch NFTs' });
+    nftCache.set(wallet, { data: nfts, timestamp: Date.now() });
+    return nfts;
+  } catch (error) {
+    console.error('Error fetching NFTs:', error);
+    throw new Error('Failed to fetch NFTs');
   }
-});
+}
+
+
 
 
 

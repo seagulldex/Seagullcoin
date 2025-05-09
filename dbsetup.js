@@ -1,11 +1,9 @@
-import sqlite3 from 'sqlite3'; // default import doesn't exist
-const { Database } = sqlite3.verbose(); // enable verbose mode
-const db = new Database('./my.db');
+import sqlite3 from 'sqlite3';
+import { promisify } from 'util';
 
-
+const db = new sqlite3.Database('./my.db'); // define first
+const { Database } = sqlite3;
 const runAsync = promisify(db.run.bind(db));
-// dbsetup.js
-export default createTables;
 
 export { db }; // ✅ now db exists
 
@@ -209,14 +207,6 @@ const createTables = async () => {
   }
 };
 
-const initDB = async () => {
-  await createTables(); // Initialize all the tables
-  console.log("Database initialized.");
-};
-
-initDB(); // Call the initialization function to set up the tables
-
-
 createTables();
 
 // --- Insert a minted NFT ---
@@ -258,25 +248,6 @@ const insertMintedNFT = (nft) => {
   });
 };
 
-// --- Get User Address ---
-const getUserAddress = (walletAddress) => {
-  return new Promise((resolve, reject) => {
-    const query = `
-      SELECT wallet_address
-      FROM users
-      WHERE wallet_address = ?
-    `;
-    db.get(query, [walletAddress], (err, row) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(row ? row.wallet_address : null); // Returns null if not found
-      }
-    });
-  });
-};
-
-
 // --- Update user balance ---
 const updateUserBalance = (walletAddress, amount) => {
   return new Promise((resolve, reject) => {
@@ -305,52 +276,6 @@ const ensureUserExists = async (walletAddress) => {
   });
 };
 
-// --- Upsert User ---
-const upsertUser = (walletAddress) => {
-  return new Promise((resolve, reject) => {
-    const query = `
-      INSERT INTO users (wallet_address)
-      VALUES (?)
-      ON CONFLICT(wallet_address) DO UPDATE SET
-        wallet_address = excluded.wallet_address
-    `;
-    db.run(query, [walletAddress], function (err) {
-      if (err) reject(err);
-      else resolve(this.changes); // this.changes will be 1 if inserted or updated
-    });
-  });
-};
-
-// --- Insert a payment ---
-const insertPayment = (payment) => {
-  const {
-    payload_uuid,
-    wallet_address,
-    amount,
-    token_code,
-    status
-  } = payment;
-
-  return new Promise((resolve, reject) => {
-    const query = `
-      INSERT INTO payments (payload_uuid, wallet_address, amount, token_code, status)
-      VALUES (?, ?, ?, ?, ?)
-    `;
-    db.run(
-      query,
-      [payload_uuid, wallet_address, amount, token_code, status || 'confirmed'],
-      function (err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(this.lastID); // this.lastID will return the ID of the newly inserted payment
-        }
-      }
-    );
-  });
-};
-
-
 const upsertUserProfile = async (walletAddress, profile) => {
   const { display_name, bio, avatar_uri } = profile;
   const query = `
@@ -370,54 +295,98 @@ const upsertUserProfile = async (walletAddress, profile) => {
   });
 };
 
-// --- Get all NFTs ---
-const getAllNFTs = () => {
+const toggleLikeNFT = async (userWallet, nftId) => {
+  const queryCheck = `SELECT id FROM likes WHERE user_wallet = ? AND nft_id = ?`;
+  const queryInsert = `INSERT INTO likes (user_wallet, nft_id) VALUES (?, ?)`;
+  const queryDelete = `DELETE FROM likes WHERE user_wallet = ? AND nft_id = ?`;
+
   return new Promise((resolve, reject) => {
-    const query = 'SELECT * FROM nfts'; // Simple query to fetch all NFTs from the table
-    db.all(query, [], (err, rows) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(rows); // 'rows' will contain an array of NFT records
-      }
+    db.get(queryCheck, [userWallet, nftId], (err, row) => {
+      if (err) return reject(err);
+      const query = row ? queryDelete : queryInsert;
+      db.run(query, [userWallet, nftId], function (err) {
+        if (err) reject(err);
+        else resolve({ liked: !row });
+      });
     });
   });
 };
 
-// --- Get all collections ---
-const getAllCollections = () => {
+const placeBid = (nftId, userWallet, bidAmount) => {
+  const query = `
+    INSERT INTO bids (nft_id, user_wallet, bid_amount)
+    VALUES (?, ?, ?)
+  `;
   return new Promise((resolve, reject) => {
-    const query = 'SELECT * FROM collections'; // Simple query to fetch all collections from the table
-    db.all(query, [], (err, rows) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(rows); // 'rows' will contain an array of collection records
-      }
+    db.run(query, [nftId, userWallet, bidAmount], function (err) {
+      if (err) reject(err);
+      else resolve(this.lastID);
+    });
+  });
+};
+
+const logTransaction = (nftId, fromWallet, toWallet, type, amount = null) => {
+  const query = `
+    INSERT INTO transaction_history (nft_id, from_wallet, to_wallet, transaction_type, amount)
+    VALUES (?, ?, ?, ?, ?)
+  `;
+  return new Promise((resolve, reject) => {
+    db.run(query, [nftId, fromWallet, toWallet, type, amount], function (err) {
+      if (err) reject(err);
+      else resolve(this.lastID);
     });
   });
 };
 
 
-// --- Example usage ---
-ensureUserExists('user_wallet_address');
-updateUserBalance('user_wallet_address', 10);
-insertMintedNFT({
-  wallet: 'user_wallet_address',
-  token_id: 'token_id_example',
-  uri: 'https://example.com/uri',
-  name: 'NFT Name',
-  description: 'NFT Description',
-  properties: { key: 'value' },
-  collection_id: 'collection_id_example'
-});
+
+// --- Check balance ---
+const checkUserBalance = (walletAddress) => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT seagullcoin_balance
+      FROM users
+      WHERE wallet_address = ?
+    `;
+    db.get(query, [walletAddress], (err, row) => {
+      if (err) reject(err);
+      else resolve(row ? row.seagullcoin_balance : 0);
+    });
+  });
+};
+
+const enableForeignKeys = async () => {
+  await runQuery('PRAGMA foreign_keys = ON');
+  console.log('Foreign keys enabled');
+};
+
+// Call the async function
+enableForeignKeys().catch((err) => console.error(err));
+
+
+// --- Mint NFT (checks + insert) ---
+const mintNFT = async (walletAddress, nftDetails) => {
+  try {
+    await runAsync("BEGIN TRANSACTION");
+
+    const balance = await checkUserBalance(walletAddress);
+    if (balance < 0.5) throw new Error("Insufficient SeagullCoin balance to mint.");
+
+    const insertId = await insertMintedNFT({ wallet: walletAddress, ...nftDetails });
+    await updateUserBalance(walletAddress, -0.5); // Deduct cost
+
+    await runAsync("COMMIT");
+    return insertId;
+  } catch (err) {
+    await runAsync("ROLLBACK");
+    throw err;
+  }
+};
 
 export {
-  initDB,
-  getUserAddress,
-  upsertUser,
-  insertMintedNFT, // ← THIS is what mint-endpoint.js needs
-  insertPayment,
-  getAllNFTs,
-  getAllCollections
+  createTables,
+  insertMintedNFT,
+  updateUserBalance,
+  checkUserBalance,
+  mintNFT
 };

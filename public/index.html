@@ -191,7 +191,7 @@
 
     const fetchSeagullCoinBalance = async (walletAddress) => {
       try {
-        const response = await fetch(`/get-balance/${walletAddress}`);
+        const response = await fetch(`/balance/${walletAddress}`);
         const { balance } = await response.json();
         document.getElementById('user-balance').textContent = `Balance: ${balance} SeagullCoin`;
       } catch (error) {

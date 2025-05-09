@@ -2254,21 +2254,16 @@ app.get('/nfts/explore/:wallet', (req, res) => {
 });
 
 
-
-
-
-// XRPL ping function
+// XRPL ping function (without disconnecting)
 async function xrplPing() {
   try {
-    await client.connect(); // Connect to the XRPL network
+    // You should already have an active connection
     const serverInfo = await client.request({ command: 'server_info' });
     console.log("XRPL connection successful", serverInfo);
-    client.disconnect();  // Disconnect after ping
   } catch (error) {
     console.error("Error connecting to XRPL:", error);
   }
 }
-
 
 
 // Call the XRPL ping when the server starts
@@ -2290,6 +2285,8 @@ console.log(requireLogin.session); // Log session data to verify its content
 setInterval(cleanupExpiredPayloads, 24 * 60 * 60 * 1000); // Every 24 hours
 
 
+    
+    console.log("XRPL client connected");
  // Start the server
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server running on port ' + (process.env.PORT || 3000));

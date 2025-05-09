@@ -54,7 +54,9 @@ const createNFTsTable = `
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_token_id_nfts ON nfts(token_id);
-  CREATE INDEX IF NOT EXISTS idx_collection_id_nfts ON nfts(collection_id)
+  CREATE INDEX IF NOT EXISTS idx_collection_id_nfts ON nfts(collection_id);
+`;
+
 
 const createSalesTable = `
   CREATE TABLE IF NOT EXISTS sales (
@@ -232,7 +234,6 @@ const addCollectionNameToNFTsTable = async () => {
       return;
     }
 
-
     const collectionNameExists = columns.some((col) => col.name === 'collection_name');
     if (!collectionNameExists) {
       const alterTableQuery = `ALTER TABLE nfts ADD COLUMN collection_name TEXT`;
@@ -247,12 +248,7 @@ const addCollectionNameToNFTsTable = async () => {
   });
 };
 
-
-
-
-// Export other functions if needed
-
-
+// --- Insert Minted NFT ---
 export const insertMintedNFT = async (nftData) => {
   const { token_id, metadata_uri, owner_wallet_address, collection_name } = nftData;
   const query = `INSERT INTO nfts (token_id, metadata_uri, owner_wallet_address, collection_name)
@@ -272,4 +268,3 @@ export const insertMintedNFT = async (nftData) => {
 createTables().then(() => {
   addCollectionNameToNFTsTable();
 });
-

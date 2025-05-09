@@ -157,6 +157,47 @@ fetchAndCheckUserBalances();
  * @returns {Promise<{ success: boolean, reason?: string }>}
  */
 
+const SEAGULLCOIN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
+const SEAGULLCOIN_HEX = '53656167756C6C436F696E000000000000000000'; // "SeagullCoin" in hex
+
+export const getSeagullBalance = async (walletAddress) => {
+  const url = 'https://s2.ripple.com:51234/';
+
+  const body = {
+    method: 'account_lines',
+    params: [{
+      account: walletAddress
+    }]
+  };
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const json = await res.json();
+    if (!json.result || !json.result.account_lines) {
+      throw new Error('Unexpected response from XRPL.');
+    }
+
+    // Find the line that matches SeagullCoin's issuer and currency
+    const seagullLine = json.result.account_lines.find(line =>
+      line.currency === SEAGULLCOIN_HEX &&
+      line.account === SEAGULLCOIN_ISSUER
+    );
+
+    return seagullLine ? parseFloat(seagullLine.balance) : 0;
+
+  } catch (err) {
+    console.error(`Failed to retrieve balance for ${walletAddress}:`, err.message);
+    return null;
+  }
+};
+
+
+
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -2186,6 +2227,11 @@ app.get('/user/balance', async (req, res) => {
     }
 });
 
+app.get('/test-balance/:address', async (req, res) => {
+  const { address } = req.params;
+  const balance = await getSeagullBalance(address);
+  res.json({ address, balance });
+});
 
 
 // XRPL ping function

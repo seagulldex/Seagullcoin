@@ -2332,6 +2332,8 @@ function hexToUtf8(hex) {
 app.get('/test-nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
+  const xrplApiUrl = 'https://s1.ripple.com:51234'; // XRPL Mainnet
+
   const requestBody = {
     method: 'account_nfts',
     params: [{
@@ -2348,33 +2350,21 @@ app.get('/test-nfts/:wallet', async (req, res) => {
     });
 
     const result = await response.json();
+
+    // Log the entire response for debugging
+    console.log('XRPL Response:', result);
+
     if (result.error) {
       return res.status(500).json({ error: result.error_message });
     }
 
-    const nfts = result.result.account_nfts || [];
+    // Check if account_nfts is empty or if there's no nfts key in result
+    const nfts = result.result && result.result.account_nfts ? result.result.account_nfts : [];
 
-    const formatted = await Promise.all(nfts.map(async (nft) => {
-      const uri = hexToUtf8(nft.URI || '');
-      let metadata = null;
-
-      if (uri.startsWith('ipfs://')) {
-        try {
-          const ipfsUrl = `https://ipfs.io/ipfs/${uri.slice(7)}`;
-          const metaRes = await fetch(ipfsUrl);
-          if (metaRes.ok) {
-            metadata = await metaRes.json();
-          }
-        } catch (err) {
-          metadata = { error: 'Failed to load metadata' };
-        }
-      }
-
-      return {
-        NFTokenID: nft.NFTokenID,
-        URI: uri,
-        metadata,
-      };
+    // Format NFTs
+    const formatted = nfts.map(nft => ({
+      NFTokenID: nft.NFTokenID,
+      URI: nft.URI,
     }));
 
     res.json({ nfts: formatted });
@@ -2383,6 +2373,7 @@ app.get('/test-nfts/:wallet', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+
 
 
 

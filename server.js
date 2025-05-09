@@ -2091,6 +2091,65 @@ app.get('/all-nfts', (req, res) => {
 
 
 
+app.get('/balance/:address', async (req, res) => {
+  const address = req.params.address;
+
+  const data = {
+    method: "account_lines",
+    params: [
+      {
+        account: address,
+        limit: 10,
+        ledger_index: "validated",
+        currency: "53656167756C6C436F696E000000000000000000"
+      }
+    ]
+  };
+
+  try {
+    // Call the XRP Ledger API
+    const response = await fetch('https://s1.ripple.com:51234', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    if (result.result && result.result.lines) {
+      // Find the SeagullCoin balance in the response
+      const seagullCoin = result.result.lines.find(line => line.currency === "53656167756C6C436F696E000000000000000000");
+
+      if (seagullCoin) {
+        res.json({
+          address: address,
+          balance: seagullCoin.balance
+        });
+      } else {
+        res.json({
+          address: address,
+          balance: null,
+          reason: "No SeagullCoin trustline found"
+        });
+      }
+    } else {
+      res.json({
+        address: address,
+        balance: null,
+        reason: result.error || "Error retrieving data"
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      error: "Internal server error",
+      message: error.message
+    });
+  }
+});
+
+
 // POST route to start the login flow
 app.post('/api/start-login', async (req, res) => {
   const { payloadUUID } = req.body;

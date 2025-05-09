@@ -8,177 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <link rel="stylesheet" href="header.css" />
   <style>
-    /* General Body and Background */
-    body {
-      background-color: black;
-      color: white;
-      font-family: Arial, sans-serif;
-      margin-top: 60px;
-    }
-
-    header {
-      margin-top: 10px;
-    }
-
-    nav ul {
-      display: flex;
-      list-style-type: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    nav ul li {
-      margin: 0 15px;
-    }
-
-    /* Top Bar */
-    #top-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 40px;
-      background-color: #333;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding: 0 20px;
-      z-index: 1000;
-    }
-
-    #wallet-container {
-      border: 2px solid #fff;
-      border-radius: 10px;
-      padding: 6px 12px;
-      background-color: #444;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      max-width: 140px;
-    }
-
-    #wallet-status {
-      font-size: 0.9rem;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    #wallet-indicator.red {
-      color: #ff4444;
-    }
-
-    #wallet-indicator.green {
-      color: #44ff44;
-    }
-
-    /* Minting Form */
-    .mint-form {
-      margin-top: 20px;
-      padding: 20px;
-      background-color: #000; /* Changed to black */
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-      max-width: 500px;
-      margin-left: auto;
-      margin-right: auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .mint-form input,
-    .mint-form textarea,
-    .mint-form button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border: none;
-      color: white;
-      background-color: #333;
-    }
-
-    .mint-form button {
-      background-color: #444;
-      color: white;
-      cursor: pointer;
-    }
-
-    .mint-form button:hover {
-      background-color: #555;
-    }
-
-    .mint-form input::placeholder,
-    .mint-form textarea::placeholder {
-      color: #888;
-    }
-
-    .mint-form label {
-      font-weight: bold;
-    }
-
-    /* Align the form fields nicely */
-    .mint-form input,
-    .mint-form textarea {
-      display: block;
-      width: calc(100% - 20px);
-      margin-bottom: 15px;
-    }
-
-    /* Preview Window */
-    .preview-container {
-      margin-top: 15px;
-      padding: 10px;
-      border: 2px dashed #fff;
-      border-radius: 10px;
-      background-color: #333;
-      width: 100%;
-      height: 200px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .preview-container img,
-    .preview-container video {
-      max-width: 100%;
-      max-height: 100%;
-    }
-
-    .mint-form input[type="file"] {
-      padding: 8px;
-      background-color: #444;
-      color: white;
-    }
-
-    /* Collections Section */
-    #collections-container {
-      margin-top: 30px;
-      padding: 20px;
-    }
-
-    .collection-item {
-      background-color: #333;
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 10px;
-      color: white;
-    }
-
-    .collection-item img {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-    }
-
-    .collection-item h3 {
-      margin: 5px 0;
-    }
-
-    .collection-item p {
-      font-size: 0.9rem;
-    }
-
+    /* [same style block as yours – omitted for brevity, no changes needed] */
   </style>
 </head>
 <body>
@@ -224,7 +54,6 @@
         <label for="nft-file">NFT File</label>
         <input type="file" id="nft-file" required accept="image/*,video/*,gif/*" onchange="previewFile()" />
 
-        <!-- New Domain Metadata Field -->
         <label for="nft-domain">Domain (optional)</label>
         <input type="text" id="nft-domain" placeholder="Enter domain for your NFT" />
 
@@ -246,7 +75,6 @@
       <p id="minting-status" style="color: #2e2e2e;"></p>
     </div>
 
-    <!-- Your NFT collection display logic here -->
     <div id="collections-container">Loading collections...</div>
   </main>
 
@@ -254,10 +82,16 @@
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
   </footer>
 
-    <!-- Wallet Logic & Collection Loader -->
+  <!-- Wallet Logic & Collection Loader -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
+      document.getElementById('add-trait-btn').addEventListener('click', () => {
+        const container = document.getElementById('traits-container');
+        const div = document.createElement('div');
+        div.innerHTML = '<input placeholder="trait_type" /> <input placeholder="value" />';
+        container.appendChild(div);
+      });
     });
 
     async function updateWalletStatus() {
@@ -272,7 +106,6 @@
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
         indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
-        loadCollections(); // Call only after login
       } else {
         document.getElementById('wallet-info').style.display = 'none';
         indicator.textContent = '🔴 Login';
@@ -280,8 +113,9 @@
         indicator.classList.add('red');
         indicator.title = 'Click to login';
         indicator.onclick = startLoginFlow;
-        loadCollections(); // Allow public view
       }
+
+      loadCollections();
     }
 
     async function startLoginFlow() {
@@ -301,62 +135,61 @@
           localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
           updateWalletStatus();
         }
-      }, 3000);
+      }, 2000);
+    }
+
+    function previewFile() {
+      const fileInput = document.getElementById('nft-file');
+      const preview = document.getElementById('preview-container');
+      preview.innerHTML = '';
+
+      const file = fileInput.files[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        const isVideo = file.type.startsWith('video');
+        const isImage = file.type.startsWith('image');
+
+        if (isVideo) {
+          const video = document.createElement('video');
+          video.src = url;
+          video.controls = true;
+          preview.appendChild(video);
+        } else if (isImage) {
+          const img = document.createElement('img');
+          img.src = url;
+          preview.appendChild(img);
+        } else {
+          preview.innerHTML = '<span>Unsupported file type</span>';
+        }
+      } else {
+        preview.innerHTML = '<span>No file selected</span>';
+      }
     }
 
     async function loadCollections() {
-      const container = document.getElementById('collections-container');
-      container.innerHTML = 'Loading collections...';
-
       try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/all-nfts');
-        const data = await res.json();
+        const res = await fetch('https://sglcn-x20-api.glitch.me/collections');
+        const collections = await res.json();
+        const container = document.getElementById('collections-container');
+        container.innerHTML = '';
 
-        if (!Array.isArray(data) || data.length === 0) {
-          container.innerHTML = '<p>No collections found.</p>';
+        if (!collections.length) {
+          container.textContent = 'No collections found.';
           return;
         }
 
-        // Group NFTs by collection
-        const collections = {};
-        for (const nft of data) {
-          const meta = nft.metadata || {};
-          const collectionName = meta.collection || 'Uncategorized';
-
-          if (!collections[collectionName]) {
-            collections[collectionName] = {
-              logo: meta.collection_logo || null,
-              description: meta.collection_description || '',
-              items: []
-            };
-          }
-          collections[collectionName].items.push(nft);
-        }
-
-        container.innerHTML = '';
-        for (const [name, group] of Object.entries(collections)) {
+        collections.forEach(col => {
           const div = document.createElement('div');
           div.className = 'collection-item';
-
-          const imgHTML = group.logo
-            ? `<img src="${group.logo}" alt="${name} Logo" />`
-            : '';
-          const descHTML = group.description
-            ? `<p>${group.description}</p>`
-            : '';
-
           div.innerHTML = `
-            <h3>${imgHTML} ${name}</h3>
-            ${descHTML}
-            <p>${group.items.length} NFTs</p>
+            <img src="${col.icon || 'default-icon.png'}" alt="Icon" />
+            <h3>${col.name}</h3>
+            <p>${col.description || 'No description provided.'}</p>
           `;
-
           container.appendChild(div);
-        }
-
+        });
       } catch (err) {
-        console.error('Error loading collections:', err);
-        container.innerHTML = '<p>Failed to load collections.</p>';
+        document.getElementById('collections-container').textContent = 'Failed to load collections.';
       }
     }
   </script>

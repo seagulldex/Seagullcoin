@@ -11,6 +11,7 @@ db.exec('PRAGMA foreign_keys = ON');
 
 export { db };
 
+
 // --- SQL Table Definitions ---
 const createUsersTable = `
   CREATE TABLE IF NOT EXISTS users (

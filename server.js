@@ -2241,7 +2241,7 @@ app.get('/nfts/explore/:wallet', (req, res) => {
   const offset = parseInt(req.query.offset) || 0;
 
   db.all(
-    `SELECT * FROM nfts WHERE owner IS NULL OR owner != ? LIMIT ? OFFSET ?`,
+    `SELECT * FROM nfts WHERE owner_wallet_address IS NULL OR owner_wallet_address != ? LIMIT ? OFFSET ?`,
     [userWallet, limit, offset],
     (err, rows) => {
       if (err) {
@@ -2252,6 +2252,7 @@ app.get('/nfts/explore/:wallet', (req, res) => {
     }
   );
 });
+
 
 
 // XRPL ping function (without disconnecting)

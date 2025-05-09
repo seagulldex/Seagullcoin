@@ -65,6 +65,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { fetchSeagullCoinBalance } from './xrplClient.js';
 import { promisify } from 'util'; // 
 
+
 // ===== Init App and Env =====
 dotenv.config();
 
@@ -254,11 +255,13 @@ db.serialize(() => {
 
 // Initialize SQLite Database
 const initDB = async () => {
+  // Open the database asynchronously
   db = await open({
     filename: './payloads.db',
     driver: sqlite3.Database,
   });
 
+  // Create table if it doesn't exist
   await db.exec(`
     CREATE TABLE IF NOT EXISTS used_payloads (
       uuid TEXT PRIMARY KEY,
@@ -266,6 +269,20 @@ const initDB = async () => {
     )
   `);
 };
+
+const start = async () => {
+  try {
+    // Correctly using await inside an async function
+    await initDB(); 
+    console.log('Database initialized');
+  } catch (err) {
+    console.error('Error initializing DB:', err);
+  }
+};
+
+// Call the start function
+start();
+
 
 // Cleanup expired or rejected payloads
 const cleanupExpiredPayloads = async () => {

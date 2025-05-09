@@ -2229,7 +2229,7 @@ app.get('/user/balance', async (req, res) => {
 
 
 
-app.get('/test-balance/:address', async (req, res) => {
+app.get('/balance/:address', async (req, res) => {
   const address = req.params.address;
 
   const data = {

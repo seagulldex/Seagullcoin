@@ -96,6 +96,7 @@ const xrplClient = new Client('wss://xrplcluster.com');
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 
+
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 
 
@@ -2320,41 +2321,52 @@ async function fetchMetadataFromIPFS(ipfsUrl) {
   }
 }
 
-// Endpoint to fetch NFTs using the XRPL JSON-RPC API
 app.get('/test-nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
-  const xrplApiUrl = 'https://s.altnet.rippletest.net:51234'; // Public XRPL testnet API
-
   const requestBody = {
-    method: 'account_nfts',  // Use 'nft_history' for fetching NFT history
+    method: 'account_nfts',
     params: [{
       account: wallet,
-      ledger_index: 'validated', // You can change this to other ledger index options
+      ledger_index: 'validated',
     }]
   };
 
   try {
     const response = await fetch(xrplApiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
     });
 
     const result = await response.json();
-
     if (result.error) {
       return res.status(500).json({ error: result.error_message });
     }
 
-    const nfts = result.result.nfts || [];
+    const nfts = result.result.account_nfts || [];
 
-    // Format the NFTs to display NFTokenID and URI
-    const formatted = nfts.map(nft => ({
-      NFTokenID: nft.NFTokenID,
-      URI: nft.URI,
+    const formatted = await Promise.all(nfts.map(async nft => {
+      const uri = hexToUtf8(nft.URI);
+      let metadata = null;
+
+      if (uri.startsWith('ipfs://')) {
+        try {
+          const ipfsUrl = `https://ipfs.io/ipfs/${uri.split('ipfs://')[1]}`;
+          const metaRes = await fetch(ipfsUrl);
+          if (metaRes.ok) {
+            metadata = await metaRes.json();
+          }
+        } catch (e) {
+          metadata = { error: 'Failed to fetch IPFS metadata' };
+        }
+      }
+
+      return {
+        NFTokenID: nft.NFTokenID,
+        URI: uri,
+        metadata,
+      };
     }));
 
     res.json({ nfts: formatted });

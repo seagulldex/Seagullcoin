@@ -3,13 +3,7 @@ import { promisify } from 'util';
 
 const db = new sqlite3.Database('./my.db'); // define first
 const { Database } = sqlite3;
-// First fetch the metadata
-const metadata = await metadataRes.json();
-
-// Then use the fetched metadata to get the collection name
-const collectionName = metadata.collection?.name || 'Uncategorized';
-
-
+const runAsync = promisify(db.run.bind(db));
 
 export { db }; // ✅ now db exists
 
@@ -126,9 +120,7 @@ const createCollectionsTable = `
     description TEXT,
     logo_uri TEXT,
     created_by TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    SELECT * FROM collections WHERE collection_name = 'Some Collection';
-
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_collection_name ON collections(name);
 `;
@@ -182,7 +174,6 @@ const createNFTMetadataTable = `
     nft_id INTEGER NOT NULL,
     metadata_key TEXT NOT NULL,
     metadata_value TEXT NOT NULL,
-    SELECT * FROM collections WHERE collection_name = 'Some Collection';,
     FOREIGN KEY (nft_id) REFERENCES nfts(id)
   );
 `;
@@ -216,7 +207,7 @@ const createTables = async () => {
   }
 };
 
-(async () => await createTables())();
+createTables();
 
 // --- Insert a minted NFT ---
 const insertMintedNFT = (nft) => {
@@ -304,100 +295,15 @@ const upsertUserProfile = async (walletAddress, profile) => {
   });
 };
 
-const toggleLikeNFT = async (userWallet, nftId) => {
-  const queryCheck = `SELECT id FROM likes WHERE user_wallet = ? AND nft_id = ?`;
-  const queryInsert = `INSERT INTO likes (user_wallet, nft_id) VALUES (?, ?)`;
-  const queryDelete = `DELETE FROM likes WHERE user_wallet = ? AND nft_id = ?`;
-
-  return new Promise((resolve, reject) => {
-    db.get(queryCheck, [userWallet, nftId], (err, row) => {
-      if (err) return reject(err);
-      const query = row ? queryDelete : queryInsert;
-      db.run(query, [userWallet, nftId], function (err) {
-        if (err) reject(err);
-        else resolve({ liked: !row });
-      });
-    });
-  });
-};
-
-const placeBid = (nftId, userWallet, bidAmount) => {
-  const query = `
-    INSERT INTO bids (nft_id, user_wallet, bid_amount)
-    VALUES (?, ?, ?)
-  `;
-  return new Promise((resolve, reject) => {
-    db.run(query, [nftId, userWallet, bidAmount], function (err) {
-      if (err) reject(err);
-      else resolve(this.lastID);
-    });
-  });
-};
-
-const logTransaction = (nftId, fromWallet, toWallet, type, amount = null) => {
-  const query = `
-    INSERT INTO transaction_history (nft_id, from_wallet, to_wallet, transaction_type, amount)
-    VALUES (?, ?, ?, ?, ?)
-  `;
-  return new Promise((resolve, reject) => {
-    db.run(query, [nftId, fromWallet, toWallet, type, amount], function (err) {
-      if (err) reject(err);
-      else resolve(this.lastID);
-    });
-  });
-};
-
-
-
-// --- Check balance ---
-const checkUserBalance = (walletAddress) => {
-  return new Promise((resolve, reject) => {
-    const query = `
-      SELECT seagullcoin_balance
-      FROM users
-      WHERE wallet_address = ?
-    `;
-    db.get(query, [walletAddress], (err, row) => {
-      if (err) reject(err);
-      else resolve(row ? row.seagullcoin_balance : 0);
-    });
-  });
-};
-
-const enableForeignKeys = async () => {
-  await runQuery('PRAGMA foreign_keys = ON');
-  console.log('Foreign keys enabled');
-};
-
-// Call the async function
-enableForeignKeys().catch((err) => console.error(err));
-
-
-// --- Mint NFT (checks + insert) ---
-const mintNFT = async (walletAddress, nftDetails) => {
-  try {
-    await runAsync("BEGIN TRANSACTION");
-
-    const balance = await checkUserBalance(walletAddress);
-    if (balance < 0.5) throw new Error("Insufficient SeagullCoin balance to mint.");
-
-    const insertId = await insertMintedNFT({ wallet: walletAddress, ...nftDetails });
-    await updateUserBalance(walletAddress, -0.5); // Deduct cost
-
-    await runAsync("COMMIT");
-    return insertId;
-  } catch (err) {
-    await runAsync("ROLLBACK");
-    throw err;
-  }
-};
-
-export {
-  createTables,
-  insertMintedNFT,
-  updateUserBalance,
-  checkUserBalance,
-  mintNFT
-};
-
-
+// --- Example usage ---
+ensureUserExists('user_wallet_address');
+updateUserBalance('user_wallet_address', 10);
+insertMintedNFT({
+  wallet: 'user_wallet_address',
+  token_id: 'token_id_example',
+  uri: 'https://example.com/uri',
+  name: 'NFT Name',
+  description: 'NFT Description',
+  properties: { key: 'value' },
+  collection_id: 'collection_id_example'
+});

@@ -234,8 +234,8 @@
         <label>NFT Properties</label>
         <div id="traits-container"></div>
         <button type="button" id="add-trait-btn" style="margin-top:10px;">➕ Add Trait</button>
-
-        <button type="submit">Mint NFT</button>
+        <p id="sglcn-balance">Balance: Loading...</p>
+        <button type="button" id="pay-mint-btn">Pay 0.5 SeagullCoin to Mint</button>
       </form>
 
       <!-- Preview Container -->
@@ -254,7 +254,7 @@
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
   </footer>
 
-  <!-- Wallet Logic -->
+    <!-- Wallet Logic & Collection Loader -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
@@ -272,7 +272,7 @@
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
         indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
-        loadCollections();
+        loadCollections(); // Call only after login
       } else {
         document.getElementById('wallet-info').style.display = 'none';
         indicator.textContent = '🔴 Login';
@@ -280,6 +280,7 @@
         indicator.classList.add('red');
         indicator.title = 'Click to login';
         indicator.onclick = startLoginFlow;
+        loadCollections(); // Allow public view
       }
     }
 
@@ -288,7 +289,7 @@
       const data = await res.json();
       const payloadUUID = data.payloadUUID;
 
-      window.open(data.payloadURL, "_blank");
+      window.location.href = data.payloadURL;
 
       const interval = setInterval(async () => {
         const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
@@ -304,46 +305,58 @@
     }
 
     async function loadCollections() {
-      const res = await fetch('/api/get-collections');
-      const collections = await res.json();
       const container = document.getElementById('collections-container');
-      container.innerHTML = '';
+      container.innerHTML = 'Loading collections...';
 
-      if (collections.length === 0) {
-        container.innerHTML = 'No collections found.';
-      } else {
-        collections.forEach(collection => {
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/all-nfts');
+        const data = await res.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          container.innerHTML = '<p>No collections found.</p>';
+          return;
+        }
+
+        // Group NFTs by collection
+        const collections = {};
+        for (const nft of data) {
+          const meta = nft.metadata || {};
+          const collectionName = meta.collection || 'Uncategorized';
+
+          if (!collections[collectionName]) {
+            collections[collectionName] = {
+              logo: meta.collection_logo || null,
+              description: meta.collection_description || '',
+              items: []
+            };
+          }
+          collections[collectionName].items.push(nft);
+        }
+
+        container.innerHTML = '';
+        for (const [name, group] of Object.entries(collections)) {
           const div = document.createElement('div');
           div.className = 'collection-item';
+
+          const imgHTML = group.logo
+            ? `<img src="${group.logo}" alt="${name} Logo" />`
+            : '';
+          const descHTML = group.description
+            ? `<p>${group.description}</p>`
+            : '';
+
           div.innerHTML = `
-            <h3>${collection.name}</h3>
-            <p>${collection.description}</p>
-            <img src="${collection.icon}" alt="${collection.name}" />
+            <h3>${imgHTML} ${name}</h3>
+            ${descHTML}
+            <p>${group.items.length} NFTs</p>
           `;
+
           container.appendChild(div);
-        });
-      }
-    }
-
-    function previewFile() {
-      const file = document.getElementById('nft-file').files[0];
-      const previewContainer = document.getElementById('preview-container');
-
-      if (file) {
-        const fileType = file.type;
-        const fileURL = URL.createObjectURL(file);
-
-        if (fileType.startsWith('image')) {
-          previewContainer.innerHTML = `<img src="${fileURL}" alt="NFT Preview" />`;
-        } else if (fileType.startsWith('video')) {
-          previewContainer.innerHTML = `<video controls src="${fileURL}"></video>`;
-        } else if (fileType === 'image/gif') {
-          previewContainer.innerHTML = `<img src="${fileURL}" alt="NFT Preview" />`;
-        } else {
-          previewContainer.innerHTML = `<span>Unsupported file type</span>`;
         }
-      } else {
-        previewContainer.innerHTML = '<span>No file selected</span>';
+
+      } catch (err) {
+        console.error('Error loading collections:', err);
+        container.innerHTML = '<p>Failed to load collections.</p>';
       }
     }
   </script>

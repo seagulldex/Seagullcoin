@@ -63,7 +63,7 @@ import { NFTModel } from './models/nftModel.js';  // Added a new model for NFT m
 import { MongoClient, ServerApiVersion } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { fetchSeagullCoinBalance } from './xrplClient.js';
-
+import { promisify } from 'util'; // 
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -2251,6 +2251,21 @@ app.get('/nfts/explore/:wallet', (req, res) => {
       res.json({ nfts: rows });
     }
   );
+});
+
+const allAsync = promisify(db.all.bind(db)); 
+
+
+// A route to check the table info for 'nfts'
+app.get('/check-nfts-table', async (req, res) => {
+  try {
+    const tableInfo = await allAsync('PRAGMA table_info(nfts)');
+    console.log(tableInfo);  // Logs the table info to the console
+    res.json(tableInfo);     // Sends it back in the response for you to view
+  } catch (error) {
+    console.error('Error retrieving table info:', error);
+    res.status(500).send('Error checking table info');
+  }
 });
 
 

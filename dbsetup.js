@@ -107,6 +107,7 @@ const createMintedNFTsTable = `
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     properties TEXT,
+    owner_wallet_address TEXT,
     collection_id TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -234,5 +235,7 @@ const addOwnerWalletAddressToNFTsTable = async () => {
 export {
   createTables,
   addColumnIfNotExists,
-  insertMintedNFT
+  insertMintedNFT,
+  addOwnerWalletAddressToNFTsTable
 };
+

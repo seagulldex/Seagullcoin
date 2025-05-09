@@ -2255,6 +2255,64 @@ app.get('/user/balance', async (req, res) => {
 });
 
 
+app.get('/nfts/explore/:wallet', async (req, res) => {
+  const userWallet = req.params.wallet;
+  const limit = parseInt(req.query.limit) || 50;
+  const offset = parseInt(req.query.offset) || 0;
+
+  try {
+    await api.connect();
+
+    // Fetch NFTs for the user's wallet address from XRPL
+    const response = await api.request({
+      command: 'account_nfts',
+      account: userWallet,
+      ledger_index: 'validated',
+    });
+
+    const nfts = response.result.nfts;
+
+    // Check if there are any NFTs
+    if (nfts.length === 0) {
+      return res.status(404).json({ error: 'No NFTs found for this wallet' });
+    }
+
+    // Limit and offset logic
+    const paginatedNFTs = nfts.slice(offset, offset + limit);
+
+    // Map each NFT to include its metadata from IPFS
+    const nftDetails = await Promise.all(
+      paginatedNFTs.map(async (nft) => {
+        const ipfsUrl = nft.URI.replace('ipfs://', 'https://ipfs.io/ipfs/');
+        const metadata = await fetchMetadataFromIPFS(ipfsUrl); // Fetch metadata from IPFS
+        return {
+          tokenId: nft.NFTokenID,
+          metadata: metadata, // The full metadata from IPFS
+        };
+      })
+    );
+
+    res.json({ nfts: nftDetails });
+  } catch (err) {
+    console.error('Error fetching NFTs:', err);
+    res.status(500).json({ error: 'Failed to fetch NFTs' });
+  } finally {
+    api.disconnect();
+  }
+});
+
+// Function to fetch metadata from IPFS
+async function fetchMetadataFromIPFS(ipfsUrl) {
+  try {
+    const response = await fetch(ipfsUrl);
+    if (!response.ok) throw new Error('Failed to fetch IPFS metadata');
+    const metadata = await response.json();
+    return metadata;
+  } catch (err) {
+    console.error('Error fetching metadata from IPFS:', err);
+    return null; // Return null if fetching metadata fails
+  }
+}
 
 
 

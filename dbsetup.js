@@ -3,7 +3,13 @@ import { promisify } from 'util';
 
 const db = new sqlite3.Database('./my.db'); // define first
 const { Database } = sqlite3;
-const runAsync = promisify(db.run.bind(db));
+// First fetch the metadata
+const metadata = await metadataRes.json();
+
+// Then use the fetched metadata to get the collection name
+const collectionName = metadata.collection?.name || 'Uncategorized';
+
+
 
 export { db }; // ✅ now db exists
 
@@ -394,5 +400,4 @@ export {
   mintNFT
 };
 
-(async () => await createTables())();
 

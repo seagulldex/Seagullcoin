@@ -36,7 +36,7 @@ import { xummApi } from './xrplClient.js';
 import mime from 'mime';
 import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the path is correct
 import { requireLogin } from './xummLogin.js';  // Adjust the path if needed
-import { createTables } from './dbsetup.js';
+import { createTables, addOwnerWalletAddressToNFTsTable } from './dbsetup.js';
 import { insertMintedNFT } from './dbsetup.js';
 import sanitizeHtml from 'sanitize-html';
 import rippleAddressCodec from 'ripple-address-codec';

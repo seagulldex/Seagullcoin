@@ -1,24 +1,15 @@
 import sqlite3 from 'sqlite3';
 import { promisify } from 'util';
 
-const db = new sqlite3.Database('./my.db'); // define first
-const { Database } = sqlite3;
+// Open database
+const db = new sqlite3.Database('./my.db');
 const runAsync = promisify(db.run.bind(db));
-
-export { db }; // ✅ now db exists
-
-db.serialize(() => {
-  db.each("PRAGMA table_info(nfts);", (err, row) => {
-    if (err) {
-      console.error("Error checking table info:", err);
-    } else {
-      console.log(row); // This will print each column in the 'nfts' table
-    }
-  });
-});
+const allAsync = promisify(db.all.bind(db));
 
 // Enable foreign key support
 db.exec('PRAGMA foreign_keys = ON');
+
+export { db };
 
 // --- SQL Table Definitions ---
 const createUsersTable = `
@@ -48,7 +39,7 @@ const createNFTsTable = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     token_id TEXT UNIQUE NOT NULL,
     metadata_uri TEXT NOT NULL,
-    owner_wallet_address TEXT NOT NULL,
+    owner_wallet_address TEXT,
     collection_name TEXT,
     collection_id TEXT,
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -188,20 +179,17 @@ const createNFTMetadataTable = `
   );
 `;
 
-// --- Helper to run a query ---
-const runQuery = (query) => {
-  return new Promise((resolve, reject) => {
-    db.run(query, (err) => (err ? reject(err) : resolve()));
+// --- Run SQL query helper ---
+const runQuery = (query, params = []) =>
+  new Promise((resolve, reject) => {
+    db.run(query, params, (err) => (err ? reject(err) : resolve()));
   });
-};
 
-// --- Initialize tables ---
-// dbsetup.js
-
-// Define your createTables function
+// --- Create all tables ---
 const createTables = async () => {
   try {
     await runQuery(createUsersTable);
+    await runQuery(createUserProfilesTable);
     await runQuery(createNFTsTable);
     await runQuery(createSalesTable);
     await runQuery(createMintingTransactionsTable);
@@ -209,70 +197,42 @@ const createTables = async () => {
     await runQuery(createLikesTable);
     await runQuery(createMintedNFTsTable);
     await runQuery(createCollectionsTable);
-    await runQuery(createUserProfilesTable);
     await runQuery(createBidsTable);
     await runQuery(createTransactionHistoryTable);
     await runQuery(createTransactionLogsTable);
     await runQuery(createNFTMetadataTable);
-    console.log("Database tables and indexes initialized.");
+    console.log('All tables initialized successfully.');
   } catch (err) {
-    console.error("Error initializing tables:", err);
+    console.error('Error creating tables:', err);
   }
 };
 
-// Export the createTables function
-export { createTables };
-
-// --- Helper to add the collection_name column if not exists ---
-const addCollectionNameToNFTsTable = async () => {
-  const query = `PRAGMA table_info(nfts)`;
-  db.all(query, (err, columns) => {
-    if (err) {
-      console.error('Error fetching table schema:', err);
-      return;
-    }
-
-    const collectionNameExists = columns.some((col) => col.name === 'collection_name');
-    if (!collectionNameExists) {
-      const alterTableQuery = `ALTER TABLE nfts ADD COLUMN collection_name TEXT`;
-      db.run(alterTableQuery, (err) => {
-        if (err) {
-          console.error('Error adding collection_name column:', err);
-        } else {
-          console.log('Collection name column added to NFTs table.');
-        }
-      });
-    }
-  });
+// --- Add column if not exists helpers ---
+const columnExists = async (table, column) => {
+  const info = await allAsync(`PRAGMA table_info(${table})`);
+  return info.some(col => col.name === column);
 };
 
-// --- Helper to add the owner_wallet_address column if not exists ---
-const addOwnerWalletAddressToNFTsTable = async () => {
-  const query = `PRAGMA table_info(nfts)`;
-  db.all(query, (err, columns) => {
-    if (err) {
-      console.error('Error fetching table schema:', err);
-      return;
-    }
-
-    const ownerWalletAddressExists = columns.some((col) => col.name === 'owner_wallet_address');
-    if (!ownerWalletAddressExists) {
-      const alterTableQuery = `ALTER TABLE nfts ADD COLUMN owner_wallet_address TEXT`;
-      db.run(alterTableQuery, (err) => {
-        if (err) {
-          console.error('Error adding owner_wallet_address column:', err);
-        } else {
-          console.log('Owner wallet address column added to NFTs table.');
-        }
-      });
-    }
-  });
+const addColumnIfNotExists = async (table, column, type) => {
+  if (!(await columnExists(table, column))) {
+    await runQuery(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    console.log(`Added column ${column} to ${table}.`);
+  }
 };
 
-// --- Insert Minted NFT ---
-export const insertMintedNFT = async (nftData) => {
-  const { token_id, metadata_uri, owner_wallet_address, collection_name } = nftData;
+// --- NFT Insert helper ---
+const insertMintedNFT = async ({ token_id, metadata_uri, owner_wallet_address, collection_name }) => {
   const query = `INSERT INTO nfts (token_id, metadata_uri, owner_wallet_address, collection_name) VALUES (?, ?, ?, ?)`;
   await runQuery(query, [token_id, metadata_uri, owner_wallet_address, collection_name]);
 };
 
+const addOwnerWalletAddressToNFTsTable = async () => {
+  await addColumnIfNotExists('nfts', 'owner_wallet_address', 'TEXT');
+};
+
+
+export {
+  createTables,
+  addColumnIfNotExists,
+  insertMintedNFT
+};

@@ -82,6 +82,19 @@
       object-fit: cover;
       border-radius: 8px;
     }
+.nft-collection-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+section h2 {
+  color: #fff;
+  margin-top: 30px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 5px;
+}
   </style>
 </head>
 <body>
@@ -115,7 +128,7 @@
     <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
 
     <!-- NFT collection display logic here -->
-    <div id="collections-container">Loading collections...</div>
+    <div id="collections-container"></div>
   </main>
 
   <footer>
@@ -243,30 +256,61 @@
 
     async function loadCollections(walletAddress) {
   try {
-    const nfts = await fetchNftsForAccount(walletAddress);  // Fetch NFTs for the provided wallet
+    const nfts = await fetchNftsForAccount(walletAddress);
     const container = document.getElementById('collections-container');
-    container.innerHTML = '';  // Clear any previous content
+    container.innerHTML = '';
 
     if (!nfts || nfts.length === 0) {
       container.innerHTML = 'No collections found.';
-    } else {
-      // Loop through the NFTs and create HTML elements to display them
-      nfts.forEach(nft => {
-        const nftDiv = document.createElement('div');
-        nftDiv.className = 'nft-item';
-        
-        const nftName = nft.name || 'Unnamed NFT';
-        const nftDescription = nft.description || 'No description available';
-        const nftURI = nft.uri || 'default_image_url'; // Ensure the image URL is valid
+      return;
+    }
 
-        nftDiv.innerHTML = `
-          <h3>${nftName}</h3>
-          <p>${nftDescription}</p>
-          <img src="${nftURI}" alt="${nftName}" />
-        `;
-        
-        container.appendChild(nftDiv);
+    const collections = {};
+
+    for (const nft of nfts) {
+      if (!nft.URI) continue;
+
+      // Decode IPFS URI from hex
+      const uri = hexToAscii(nft.URI).replace(/^ipfs:\/\//, 'https://ipfs.io/ipfs/');
+      const metadataRes = await fetch(uri);
+      const metadata = await metadataRes.json();
+
+      const collectionName = metadata.collection?.name || 'Uncategorized';
+      const collectionIcon = metadata.collection?.icon || '';
+
+      if (!collections[collectionName]) {
+        collections[collectionName] = {
+          icon: collectionIcon,
+          nfts: []
+        };
+      }
+
+      collections[collectionName].nfts.push({
+        name: metadata.name,
+        image: metadata.image.replace(/^ipfs:\/\//, 'https://ipfs.io/ipfs/'),
+        description: metadata.description || '',
       });
+    }
+
+    // Render collections
+    for (const [name, data] of Object.entries(collections)) {
+      const section = document.createElement('section');
+      section.innerHTML = `
+        <h2>
+          ${data.icon ? `<img src="${data.icon}" alt="${name} Icon" style="height: 24px; vertical-align: middle; margin-right: 6px;">` : ''}
+          ${name}
+        </h2>
+        <div class="nft-collection-grid">
+          ${data.nfts.map(nft => `
+            <div class="nft-item">
+              <img src="${nft.image}" alt="${nft.name}" />
+              <h3>${nft.name}</h3>
+              <p>${nft.description}</p>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      container.appendChild(section);
     }
   } catch (error) {
     console.error("Error loading collections:", error);
@@ -275,6 +319,9 @@
   }
 }
 
+function hexToAscii(hex) {
+  return decodeURIComponent(hex.replace(/^0x/, '').replace(/(..)/g, '%$1'));
+}
   </script>
 </body>
 </html>

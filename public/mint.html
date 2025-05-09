@@ -98,6 +98,15 @@
       color: white;
       background-color: #333;
     }
+    .trait-row input {
+  background-color: #222;
+  border: 1px solid #444;
+}
+
+.trait-row button:hover {
+  background-color: #a00;
+}
+
 
     .mint-form button {
       background-color: #444;
@@ -347,6 +356,61 @@
         previewContainer.innerHTML = '<span>No file selected</span>';
       }
     }
+    <script>
+  const traitsContainer = document.getElementById('traits-container');
+  const addTraitBtn = document.getElementById('add-trait-btn');
+
+  addTraitBtn.addEventListener('click', () => {
+    const currentTraits = traitsContainer.querySelectorAll('.trait-row');
+    if (currentTraits.length >= 8) {
+      alert('You can only add up to 8 traits.');
+      return;
+    }
+
+    const traitRow = document.createElement('div');
+    traitRow.className = 'trait-row';
+    traitRow.style.display = 'flex';
+    traitRow.style.marginBottom = '8px';
+
+    const keyInput = document.createElement('input');
+    keyInput.type = 'text';
+    keyInput.placeholder = 'Trait Type';
+    keyInput.style.marginRight = '5px';
+    keyInput.style.flex = '1';
+
+    const valueInput = document.createElement('input');
+    valueInput.type = 'text';
+    valueInput.placeholder = 'Trait Value';
+    valueInput.style.marginRight = '5px';
+    valueInput.style.flex = '1';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '–';
+    removeBtn.style.backgroundColor = '#800';
+    removeBtn.style.color = '#fff';
+    removeBtn.style.border = 'none';
+    removeBtn.style.padding = '0 10px';
+    removeBtn.style.cursor = 'pointer';
+    removeBtn.style.borderRadius = '4px';
+    removeBtn.onclick = () => traitRow.remove();
+
+    traitRow.appendChild(keyInput);
+    traitRow.appendChild(valueInput);
+    traitRow.appendChild(removeBtn);
+
+    traitsContainer.appendChild(traitRow);
+  });
+
+  // Optional: Clean empty collection field on form submit
+  document.getElementById('mint-form').addEventListener('submit', (e) => {
+    const collectionField = document.getElementById('nft-collection');
+    if (collectionField.value.trim() === '') {
+      collectionField.parentNode.removeChild(collectionField.previousElementSibling); // Remove label
+      collectionField.parentNode.removeChild(collectionField); // Remove input
+    }
+  });
+</script>
+
   </script>
 </body>
 </html>

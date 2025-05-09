@@ -42,6 +42,7 @@ const createNFTsTable = `
     collection_name TEXT,
     collection_id TEXT,
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ALTER TABLE nfts ADD COLUMN collection_name TEXT;
   );
   CREATE INDEX IF NOT EXISTS idx_token_id_nfts ON nfts(token_id);
   CREATE INDEX IF NOT EXISTS idx_collection_id_nfts ON nfts(collection_id);
@@ -120,7 +121,8 @@ const createCollectionsTable = `
     description TEXT,
     logo_uri TEXT,
     created_by TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ALTER TABLE collections ADD COLUMN collection_name TEXT;
   );
   CREATE INDEX IF NOT EXISTS idx_collection_name ON collections(name);
 `;

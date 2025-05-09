@@ -2262,7 +2262,6 @@ app.get('/user/balance', async (req, res) => {
 
 const xrplApiUrl = 'https://s1.ripple.com:51234'; // For Mainnet
 
-const wallet = "rKoREYA3cFXPbAUtfj1Y2duMMymuWpuNDE";
 
 
 

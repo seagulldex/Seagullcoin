@@ -9,9 +9,6 @@ const allAsync = promisify(db.all.bind(db));
 // Enable foreign key support
 db.exec('PRAGMA foreign_keys = ON');
 
-export { db };
-
-
 // --- SQL Table Definitions ---
 const createUsersTable = `
   CREATE TABLE IF NOT EXISTS users (
@@ -21,6 +18,9 @@ const createUsersTable = `
     seagullcoin_balance DECIMAL(20, 8) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+`;
+
+const createUsersIndex = `
   CREATE INDEX IF NOT EXISTS idx_wallet_address_users ON users(wallet_address);
 `;
 
@@ -45,8 +45,6 @@ const createNFTsTable = `
     collection_id TEXT,
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
-  CREATE INDEX IF NOT EXISTS idx_token_id_nfts ON nfts(token_id);
-  CREATE INDEX IF NOT EXISTS idx_collection_id_nfts ON nfts(collection_id);
 `;
 
 const createSalesTable = `
@@ -72,7 +70,6 @@ const createMintingTransactionsTable = `
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (nft_id) REFERENCES nfts(id)
   );
-  CREATE INDEX IF NOT EXISTS idx_wallet_address_minting_transactions ON minting_transactions(wallet_address);
 `;
 
 const createPaymentsTable = `
@@ -85,7 +82,6 @@ const createPaymentsTable = `
     status TEXT DEFAULT 'confirmed',
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
-  CREATE INDEX IF NOT EXISTS idx_wallet_address_payments ON payments(wallet_address);
 `;
 
 const createLikesTable = `
@@ -96,7 +92,6 @@ const createLikesTable = `
     liked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (nft_id) REFERENCES nfts(id)
   );
-  CREATE INDEX IF NOT EXISTS idx_user_wallet_likes ON likes(user_wallet);
 `;
 
 const createMintedNFTsTable = `
@@ -112,8 +107,6 @@ const createMintedNFTsTable = `
     collection_id TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   );
-  CREATE INDEX IF NOT EXISTS idx_token_id_minted_nfts ON minted_nfts(token_id);
-  CREATE INDEX IF NOT EXISTS idx_collection_id_minted_nfts ON minted_nfts(collection_id);
 `;
 
 const createCollectionsTable = `
@@ -125,7 +118,6 @@ const createCollectionsTable = `
     created_by TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
-  CREATE INDEX IF NOT EXISTS idx_collection_name ON collections(name);
 `;
 
 const createBidsTable = `
@@ -138,9 +130,6 @@ const createBidsTable = `
     FOREIGN KEY (nft_id) REFERENCES nfts(id),
     FOREIGN KEY (user_wallet) REFERENCES users(wallet_address)
   );
-  CREATE INDEX IF NOT EXISTS idx_nft_id_bids ON bids(nft_id);
-  CREATE INDEX IF NOT EXISTS idx_user_wallet_bids ON bids(user_wallet);
-  CREATE INDEX IF NOT EXISTS idx_user_wallet_nft_id_bids ON bids(user_wallet, nft_id);
 `;
 
 const createTransactionHistoryTable = `
@@ -156,9 +145,6 @@ const createTransactionHistoryTable = `
     FOREIGN KEY (from_wallet) REFERENCES users(wallet_address),
     FOREIGN KEY (to_wallet) REFERENCES users(wallet_address)
   );
-  CREATE INDEX IF NOT EXISTS idx_nft_id_transactions ON transaction_history(nft_id);
-  CREATE INDEX IF NOT EXISTS idx_from_wallet_transactions ON transaction_history(from_wallet);
-  CREATE INDEX IF NOT EXISTS idx_to_wallet_transactions ON transaction_history(to_wallet);
 `;
 
 const createTransactionLogsTable = `
@@ -168,7 +154,6 @@ const createTransactionLogsTable = `
     action_details TEXT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
-  CREATE INDEX IF NOT EXISTS idx_action_type_logs ON transaction_logs(action_type);
 `;
 
 const createNFTMetadataTable = `
@@ -191,6 +176,7 @@ const runQuery = (query, params = []) =>
 const createTables = async () => {
   try {
     await runQuery(createUsersTable);
+    await runQuery(createUsersIndex);
     await runQuery(createUserProfilesTable);
     await runQuery(createNFTsTable);
     await runQuery(createSalesTable);
@@ -232,11 +218,12 @@ const addOwnerWalletAddressToNFTsTable = async () => {
   await addColumnIfNotExists('nfts', 'owner_wallet_address', 'TEXT');
 };
 
-
 export {
   createTables,
   addColumnIfNotExists,
   insertMintedNFT,
-  addOwnerWalletAddressToNFTsTable
+  addOwnerWalletAddressToNFTsTable,
+  db,
+  runAsync,
+  allAsync
 };
-

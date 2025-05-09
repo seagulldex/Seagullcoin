@@ -2260,45 +2260,7 @@ app.get('/user/balance', async (req, res) => {
     }
 });
 
-
-app.get('/nfts/explore/:wallet', async (req, res) => {
-  const userWallet = req.params.wallet;
-  const limit = parseInt(req.query.limit) || 50;
-  const offset = parseInt(req.query.offset) || 0;
-
-  try {
-    console.log('Raw XRPL NFT response:', response);
-
-    await api.connect();
-
-    // Fetch NFTs for the user's wallet address from XRPL
-    const response = await api.request({
-      command: 
-
-    res.json({ nfts: nftDetails });
-  } catch (err) {
-    console.error('Error fetching NFTs:', err);
-    res.status(500).json({ error: 'Failed to fetch NFTs' });
-  } finally {
-    api.disconnect();
-  }
-});
-
-// Function to fetch metadata from IPFS
-async function fetchMetadataFromIPFS(ipfsUrl) {
-  try {
-    const response = await fetch(ipfsUrl);
-    if (!response.ok) throw new Error('Failed to fetch IPFS metadata');
-    const metadata = await response.json();
-    return metadata;
-  } catch (err) {
-    console.error('Error fetching metadata from IPFS:', err);
-    return null; // Return null if fetching metadata fails
-  }
-}
-
-
-const xrplApiUrl = 'https://s1.ripple.com:51234'; // XRPL Mainnet
+const xrplApiUrl = 'https://s1.ripple.com:51234'; // For Mainnet
 
 
 app.get('/test-nfts/:wallet', async (req, res) => {
@@ -2358,7 +2320,9 @@ app.get('/test-nfts/:wallet', async (req, res) => {
     res.json({ nfts: formattedNfts });
   } catch (err) {
     console.error('Error fetching NFTs:', err);
-    res.status(500).json({ err
+    res.status(500).json({ error: 'Failed to fetch NFTs' });
+  }
+});
 
 
 

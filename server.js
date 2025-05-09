@@ -65,6 +65,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { fetchSeagullCoinBalance } from './xrplClient.js';
 import { promisify } from 'util'; // 
 import { RippleAPI } from 'ripple-lib';
+import { Client } from 'xrpl';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -89,6 +90,9 @@ const { XUMM_CLIENT_ID, XUMM_CLIENT_SECRET, XUMM_REDIRECT_URI, SGLCN_ISSUER, SER
 const db = new sqlite3.Database('./database.db');
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 const router = express.Router();
+const xrplClient = new Client('wss://xrplcluster.com');
+
+
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 
@@ -2316,6 +2320,30 @@ async function fetchMetadataFromIPFS(ipfsUrl) {
   }
 }
 
+app.get('/test-nfts/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+
+  try {
+    await client.connect();
+    const response = await client.request({
+      command: 'account_nfts',
+      account: wallet,
+      ledger_index: 'validated',
+    });
+
+    const results = response.result.account_nfts.map(nft => ({
+      NFTokenID: nft.NFTokenID,
+      URI: nft.URI,
+    }));
+
+    res.json({ nfts: results });
+  } catch (err) {
+    console.error('Error fetching NFTs:', err);
+    res.status(500).json({ error: 'Could not fetch NFTs' });
+  } finally {
+    client.disconnect();
+  }
+});
 
 
 

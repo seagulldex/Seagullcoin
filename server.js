@@ -2320,28 +2320,47 @@ async function fetchMetadataFromIPFS(ipfsUrl) {
   }
 }
 
+// Endpoint to fetch NFTs using the XRPL JSON-RPC API
 app.get('/test-nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
-  try {
-    await client.connect();
-    const response = await client.request({
-      command: 'account_nfts',
+  const xrplApiUrl = 'https://s.altnet.rippletest.net:51234'; // Public XRPL testnet API
+
+  const requestBody = {
+    method: 'account_nfts',  // Use 'nft_history' for fetching NFT history
+    params: [{
       account: wallet,
-      ledger_index: 'validated',
+      ledger_index: 'validated', // You can change this to other ledger index options
+    }]
+  };
+
+  try {
+    const response = await fetch(xrplApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
     });
 
-    const results = response.result.account_nfts.map(nft => ({
+    const result = await response.json();
+
+    if (result.error) {
+      return res.status(500).json({ error: result.error_message });
+    }
+
+    const nfts = result.result.nfts || [];
+
+    // Format the NFTs to display NFTokenID and URI
+    const formatted = nfts.map(nft => ({
       NFTokenID: nft.NFTokenID,
       URI: nft.URI,
     }));
 
-    res.json({ nfts: results });
+    res.json({ nfts: formatted });
   } catch (err) {
     console.error('Error fetching NFTs:', err);
-    res.status(500).json({ error: 'Could not fetch NFTs' });
-  } finally {
-    client.disconnect();
+    res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
 

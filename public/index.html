@@ -153,7 +153,8 @@
       const data = await res.json();
       const payloadUUID = data.payloadUUID;
 
-      window.open(data.payloadURL, "_blank");
+      window.location.href = data.payloadURL;
+
 
       const interval = setInterval(async () => {
         const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);

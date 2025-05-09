@@ -92,6 +92,8 @@ const db = new sqlite3.Database('./database.db');
 const nftStorage = new NFTStorage({ token: process.env.NFT_STORAGE_API_KEY });
 const router = express.Router();
 const xrplClient = new Client('wss://xrplcluster.com');
+const nftCache = new Map(); // key: wallet address, value: { data, timestamp }
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 
 
@@ -2285,7 +2287,7 @@ const fetchWithTimeout = (url, timeout = 5000) => {
 };
 
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
-app.get('/test-nfts/:wallet', async (req, res) => {
+app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   console.log('Using wallet address:', wallet);
 

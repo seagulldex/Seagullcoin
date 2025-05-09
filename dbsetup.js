@@ -1,11 +1,16 @@
 import sqlite3 from 'sqlite3';
 import { promisify } from 'util';
+import { createTables } from './dbsetup.js';
+
 
 const db = new sqlite3.Database('./my.db'); // define first
 const { Database } = sqlite3;
 const runAsync = promisify(db.run.bind(db));
 
 export { db }; // ✅ now db exists
+// dbsetup.js
+export default createTables;
+
 
 // Enable foreign key support
 db.exec('PRAGMA foreign_keys = ON');
@@ -303,6 +308,52 @@ const ensureUserExists = async (walletAddress) => {
   });
 };
 
+// --- Upsert User ---
+const upsertUser = (walletAddress) => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      INSERT INTO users (wallet_address)
+      VALUES (?)
+      ON CONFLICT(wallet_address) DO UPDATE SET
+        wallet_address = excluded.wallet_address
+    `;
+    db.run(query, [walletAddress], function (err) {
+      if (err) reject(err);
+      else resolve(this.changes); // this.changes will be 1 if inserted or updated
+    });
+  });
+};
+
+// --- Insert a payment ---
+const insertPayment = (payment) => {
+  const {
+    payload_uuid,
+    wallet_address,
+    amount,
+    token_code,
+    status
+  } = payment;
+
+  return new Promise((resolve, reject) => {
+    const query = `
+      INSERT INTO payments (payload_uuid, wallet_address, amount, token_code, status)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    db.run(
+      query,
+      [payload_uuid, wallet_address, amount, token_code, status || 'confirmed'],
+      function (err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this.lastID); // this.lastID will return the ID of the newly inserted payment
+        }
+      }
+    );
+  });
+};
+
+
 const upsertUserProfile = async (walletAddress, profile) => {
   const { display_name, bio, avatar_uri } = profile;
   const query = `
@@ -321,6 +372,35 @@ const upsertUserProfile = async (walletAddress, profile) => {
     });
   });
 };
+
+// --- Get all NFTs ---
+const getAllNFTs = () => {
+  return new Promise((resolve, reject) => {
+    const query = 'SELECT * FROM nfts'; // Simple query to fetch all NFTs from the table
+    db.all(query, [], (err, rows) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(rows); // 'rows' will contain an array of NFT records
+      }
+    });
+  });
+};
+
+// --- Get all collections ---
+const getAllCollections = () => {
+  return new Promise((resolve, reject) => {
+    const query = 'SELECT * FROM collections'; // Simple query to fetch all collections from the table
+    db.all(query, [], (err, rows) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(rows); // 'rows' will contain an array of collection records
+      }
+    });
+  });
+};
+
 
 // --- Example usage ---
 ensureUserExists('user_wallet_address');

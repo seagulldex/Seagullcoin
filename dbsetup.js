@@ -69,7 +69,7 @@ const nfts = db.prepare(`
     token_id TEXT UNIQUE,
     collection_name TEXT,
     collection_icon TEXT,
-    owner_wallet TEXT NOT NULL,
+    owner_wallet_address  TEXT NOT NULL,
     source TEXT CHECK(source IN ('minted', 'imported')) DEFAULT 'imported',
     added_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
@@ -133,7 +133,7 @@ const platform_minted_nfts = db.prepare(`
     token_id TEXT UNIQUE,
     collection_name TEXT,
     collection_icon TEXT,
-    owner_wallet TEXT NOT NULL,
+    owner_wallet_address  TEXT NOT NULL,
     minted_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);

@@ -375,7 +375,6 @@ const updateCollection = async (collectionId, name, description, logo_uri) => {
 // NFT Transfer
 const transferNFT = async (nft_id, from_wallet, to_wallet) => {
   try {
-    // Get the NFT by ID
     const nftQuery = `SELECT * FROM nfts WHERE id = ?`;
     const nft = await allAsync(nftQuery, [nft_id]);
 
@@ -383,28 +382,23 @@ const transferNFT = async (nft_id, from_wallet, to_wallet) => {
       throw new Error("NFT not found");
     }
 
-    // Update the owner wallet address
-    const updateQuery = `UPDATE nfts SET owner_wallet_address = ? WHERE id = ?`;
+    if (nft[0].owner_wallet_address !== from_wallet) {
+      throw new Error("The sender is not the owner of this NFT");
+    }
+
+    // Proceed with the transfer logic
+    const updateQuery = `
+      UPDATE nfts
+      SET owner_wallet_address = ?
+      WHERE id = ?`;
+
     await runQuery(updateQuery, [to_wallet, nft_id]);
-
-    // Log the transaction
-    const transactionQuery = `
-      INSERT INTO transaction_history (nft_id, from_wallet, to_wallet, transaction_type, amount)
-      VALUES (?, ?, ?, ?, ?)`;
-
-    await runQuery(transactionQuery, [
-      nft_id,
-      from_wallet,
-      to_wallet,
-      "transfer",
-      0 // No payment involved, just a transfer
-    ]);
-
-    console.log("NFT transferred successfully.");
+    console.log("NFT successfully transferred.");
   } catch (error) {
     console.error("Error transferring NFT:", error);
   }
 };
+
 
 // Place a Bid on NFT
 const placeBid = async (nft_id, user_wallet, bid_amount) => {
@@ -540,7 +534,6 @@ const logTransactionAction = async (action_type, action_details) => {
     console.error("Error logging action:", error);
   }
 };
-
 
 
 export {

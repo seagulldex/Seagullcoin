@@ -574,6 +574,14 @@ const logTransactionAction = async (action_type, action_details) => {
   }
 };
 
+const insertNFTMetadataBulk = async (nft_id, metadata) => {
+  const queries = Object.entries(metadata).map(([key, value]) => {
+    return insertNFTMetadata(nft_id, key, value);
+  });
+  await Promise.all(queries);
+};
+
+
 
 export {
   createTables,

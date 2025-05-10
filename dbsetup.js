@@ -708,5 +708,25 @@ db.all(`PRAGMA table_info(minted_nfts)`, (err, columns) => {
 });
 
 
+// Example usage: Calling the mintNFTWithMetadata function with sample data
+const nftData = {
+  token_id: "NFTOKENID123",
+  metadata_uri: "https://example.com/metadata.json",
+  owner_wallet_address: "rPLvYSKRUc3vqU3b4guho8Ya5ZC2X5ahYa",
+  collection_name: "seagull-collection-001",
+  name: "Cool Seagull NFT",
+  description: "This is a rare Seagull NFT",
+  properties: {
+    rarity: "rare",
+    category: "seagull"
+  }
+};
 
-start();
+const metadata = {
+  artist: "Seagull Artist",
+  creation_date: "2025-05-10",
+  special_feature: "Flying"
+};
+
+// Mint NFT and add metadata
+mintNFTWithMetadata(nftData, metadata);

@@ -71,7 +71,8 @@ const nfts = `
     collection_icon TEXT,
     owner_wallet_address  TEXT NOT NULL,
     source TEXT CHECK(source IN ('minted', 'imported')) DEFAULT 'imported',
-    added_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (nft_id) REFERENCES nfts(id) ON DELETE CASCADE
   )
 `;
 
@@ -561,16 +562,16 @@ const deleteNFT = async (nft_id) => {
 };
 
 // Log an action
-const logTransactionAction = async (action_type, action_details) => {
+const logTransaction = async (nftId, fromWallet, toWallet, amount, transactionType) => {
   const query = `
-    INSERT INTO transaction_logs (action_type, action_details)
-    VALUES (?, ?)`;
+    INSERT INTO transaction_history (nft_id, from_wallet, to_wallet, amount, transaction_type)
+    VALUES (?, ?, ?, ?, ?)`;
 
   try {
-    await runQuery(query, [action_type, action_details]);
-    console.log("Action logged successfully.");
+    await runQuery(query, [nftId, fromWallet, toWallet, amount, transactionType]);
+    console.log("Transaction logged successfully.");
   } catch (error) {
-    console.error("Error logging action:", error);
+    console.error("Error logging transaction:", error);
   }
 };
 

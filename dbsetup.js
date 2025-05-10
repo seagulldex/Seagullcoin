@@ -446,7 +446,19 @@ const mintWithPayment = async (token_id, metadata_uri, owner_wallet_address, col
     await runQuery(updateBalanceQuery, [payment_amount, wallet_address]);
 
     // Mint the NFT
-    await insertMintedNFT({ token_id, metadata_uri, owner_wallet_address, collection_name });
+    await mintNFTWithMetadata({
+  token_id,
+  metadata_uri: metadataURL,
+  owner_wallet_address: ownerWallet,
+  collection_name: "Seagull Collection"
+}, {
+  name,
+  description,
+  image_url,
+  collectionId,
+  mintingWallet
+});
+
 
     // Record the minting transaction
     const insertTransactionQuery = `
@@ -512,3 +524,11 @@ export {
   runAsync,
   allAsync
 };
+
+const start = async () => {
+  await createTables();
+  await addOwnerWalletAddressToNFTsTable();
+  await mintNFT();
+};
+
+start();

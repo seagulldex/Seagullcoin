@@ -133,7 +133,7 @@ const platform_minted_nfts = `
     token_id TEXT UNIQUE,
     collection_name TEXT,
     collection_icon TEXT,
-    owner_wallet_address Undefined,
+    owner_wallet_address TEXT NOT NULL,
     source TEXT CHECK(source IN ('minted', 'imported')) DEFAULT 'imported',
     added_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -255,12 +255,6 @@ const insertMintedNFT = async ({
   description,
   properties
 }) => {
-  // Ensure the owner wallet address is defined
-  if (!owner_wallet_address) {
-    console.error("Error: Owner wallet address is required.");
-    return;
-  }
-
   const query = `
     INSERT INTO minted_nfts (
       token_id, metadata_uri, owner_wallet_address, collection_name, name, description, properties
@@ -300,40 +294,6 @@ const insertNFTMetadata = async (nft_id, key, value) => {
   }
 };
 
-// Example usage of insertMintedNFT
-const exampleNFTData = {
-  token_id: 'NFTOKENID123',
-  metadata_uri: 'https://example.com/metadata.json',
-  owner_wallet_address: 'rPLvYSKRUc3vqU3b4guho8Ya5ZC2X5ahYa',
-  collection_name: 'seagull-collection-001',
-  name: 'Cool Seagull NFT',
-  description: 'This is a rare Seagull NFT',
-  properties: [
-    { trait_type: "Species", value: "Seagull" },
-    { trait_type: "Rarity", value: "Rare" },
-    { trait_type: "Wingspan", value: "1.8m" }
-  ]
-};
-
-// Call the function to insert the NFT
-insertMintedNFT(exampleNFTData);
-
-// Example usage of insertNFTMetadata
-const exampleMetadata = [
-  { key: 'name', value: 'Cool Seagull NFT' },
-  { key: 'description', value: 'This is a rare Seagull NFT' },
-  { key: 'image', value: 'https://example.com/seagull.png' },
-  { key: 'attributes', value: JSON.stringify([
-    { trait_type: "Species", value: "Seagull" },
-    { trait_type: "Rarity", value: "Rare" },
-    { trait_type: "Wingspan", value: "1.8m" }
-  ]) }
-];
-
-// Insert metadata
-exampleMetadata.forEach(async (metadata) => {
-  await insertNFTMetadata('NFTOKENID123', metadata.key, metadata.value);
-});
 
 
 // Example function to handle adding metadata when minting an NFT

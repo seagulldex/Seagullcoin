@@ -214,6 +214,10 @@ const insertMintedNFT = async ({ token_id, metadata_uri, owner_wallet_address, c
   await runQuery(query, [token_id, metadata_uri, owner_wallet_address, collection_name]);
 };
 
+const addOwnerWalletAddressToNFTsTable = async () => {
+  await addColumnIfNotExists('nfts', 'owner_wallet_address', 'TEXT');
+};
+
 // Insert the minted NFT into the database
 const mintNFT = async () => {
   try {
@@ -232,10 +236,12 @@ const mintNFT = async () => {
 // Call the mintNFT function to insert the NFT
 mintNFT();
 
+
 export {
   createTables,
   addColumnIfNotExists,
   insertMintedNFT,
+  addOwnerWalletAddressToNFTsTable,
   db,
   runAsync,
   allAsync

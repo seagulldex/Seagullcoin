@@ -334,6 +334,19 @@ const mintNFT = async () => {
   }
 };
 
+try {
+    const txResult = await client.submitAndWait(mintTx, { wallet });
+
+
+// Extract the NFTokenID from the response
+  const nftId = txResult.result?.meta?.nftoken_id;
+
+  // If not available, fallback to parsing created NFTs
+  const createdNFTs = txResult.result?.meta?.nftokens;
+  if (!nftId && createdNFTs && createdNFTs.length > 0) {
+    nftId = createdNFTs[0].NFToken?.NFTokenID;
+  }
+
 // Call the mintNFT function
 mintNFT();
 
@@ -580,6 +593,20 @@ const insertNFTMetadataBulk = async (nft_id, metadata) => {
   });
   await Promise.all(queries);
 };
+
+
+(async () => {
+  await insertNFTMetadataBulk(nftId, {
+    name: "Cool Seagull NFT",
+    description: "This is a rare Seagull NFT",
+    image: "https://example.com/seagull.png",
+    attributes: JSON.stringify([
+      { trait_type: "Species", value: "Seagull" },
+      { trait_type: "Rarity", value: "Rare" },
+      { trait_type: "Wingspan", value: "1.8m" }
+    ])
+  });
+})();
 
 
 

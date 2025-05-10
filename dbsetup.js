@@ -610,16 +610,6 @@ const insertNFTMetadataBulk = async (nft_id, metadata) => {
 
 
 
-export {
-  createTables,
-  addColumnIfNotExists,
-  insertMintedNFT,
-  addOwnerWalletAddressToNFTsTable,
-  db,
-  runAsync,
-  allAsync
-};
-
 const start = async () => {
   await createTables();
   await addOwnerWalletAddressToNFTsTable();
@@ -656,6 +646,16 @@ const start = async () => {
 
   await mintNFTWithMetadata(nftData, metadata);
 })();
+  
+  export {
+  createTables,
+  addColumnIfNotExists,
+  insertMintedNFT,
+  addOwnerWalletAddressToNFTsTable,
+  db,
+  runAsync,
+  allAsync
+};
 
 
 start();

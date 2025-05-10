@@ -32,6 +32,8 @@
     }
     .nft-card img {
       width: 100%;
+      height: 150px;
+      object-fit: cover;
       border-top-left-radius: 12px;
       border-top-right-radius: 12px;
     }
@@ -51,17 +53,27 @@
       border-radius: 6px;
       cursor: pointer;
     }
+    .login-container {
+      text-align: center;
+      margin-top: 50px;
+    }
   </style>
 </head>
 <body>
+
   <header>
     <div class="profile-info">
-      <span id="user-address">Not logged in</span>
+      <span id="user-address">Checking login...</span>
     </div>
     <div>
       <button onclick="logout()">Logout</button>
     </div>
   </header>
+
+  <div class="login-container" id="login-container" style="display: none;">
+    <h2>Please connect your XUMM wallet</h2>
+    <button onclick="window.location.href='/'">Go to Login</button>
+  </div>
 
   <div class="filter">
     <label for="filter">Filter by trait:</label>
@@ -74,26 +86,45 @@
   </div>
 
   <div class="nft-container" id="nft-list">
-    <!-- NFTs will be appended here -->
+    <!-- NFTs will appear here -->
   </div>
 
   <div style="text-align: center; margin: 1rem;">
     <button onclick="prevPage()">Previous</button>
     <button onclick="nextPage()">Next</button>
   </div>
+
 <script>
   const walletAddress = localStorage.getItem('xumm_wallet');
-  document.getElementById('user-address').innerText = walletAddress || 'Not logged in';
+  const userAddressEl = document.getElementById('user-address');
+  const loginContainer = document.getElementById('login-container');
 
-  if (!walletAddress) {
-    alert("Please connect your XUMM wallet.");
-    window.location.href = "/";
+  if (!walletAddress || walletAddress === 'undefined' || walletAddress === 'null') {
+    userAddressEl.innerText = 'Not logged in';
+    loginContainer.style.display = 'block';
+    document.getElementById('nft-list').style.display = 'none';
+    document.querySelector('.filter').style.display = 'none';
+  } else {
+    userAddressEl.innerText = walletAddress;
+    loginContainer.style.display = 'none';
+    document.getElementById('nft-list').style.display = 'block';
+    document.querySelector('.filter').style.display = 'block';
+    fetchNFTs();
   }
 
   async function fetchNFTs() {
-    const res = await fetch(`/api/nfts?wallet=${walletAddress}`);
-    const data = await res.json();
-    displayNFTs(data.nfts);
+    try {
+      const res = await fetch(`/api/nfts?wallet=${walletAddress}`);
+      const data = await res.json();
+      if (data.nfts && data.nfts.length > 0) {
+        displayNFTs(data.nfts);
+      } else {
+        document.getElementById('nft-list').innerHTML = "<p>No NFTs found.</p>";
+      }
+    } catch (err) {
+      console.error("Error fetching NFTs:", err);
+      document.getElementById('nft-list').innerHTML = "<p>Error loading NFTs.</p>";
+    }
   }
 
   function displayNFTs(nfts) {
@@ -110,23 +141,22 @@
   function filterNFTs() {
     const trait = document.getElementById('filter').value;
     alert('Filtering by: ' + trait);
-    // Add actual filtering logic here
+    // Add actual filter logic later
   }
 
   function prevPage() {
-    alert('Previous page logic to be implemented.');
+    alert('Previous page logic not implemented yet.');
   }
 
   function nextPage() {
-    alert('Next page logic to be implemented.');
+    alert('Next page logic not implemented yet.');
   }
 
   function logout() {
     localStorage.removeItem('xumm_wallet');
     window.location.href = "/";
   }
-
-  window.onload = fetchNFTs;
 </script>
+
 </body>
 </html>

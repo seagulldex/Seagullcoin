@@ -251,6 +251,43 @@ const insertNFTMetadata = async (nft_id, metadata_key, metadata_value) => {
   }
 };
 
+const insertMintedNFT = async ({
+  token_id,
+  metadata_uri,
+  owner_wallet_address,
+  collection_id,
+  name,
+  description,
+  properties
+}) => {
+  const query = `
+    INSERT INTO minted_nfts (
+      token_id, uri, name, description, properties,
+      owner_wallet_address, collection_id
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+  try {
+    await runQuery(query, [
+      token_id,
+      metadata_uri,
+      name,
+      description,
+      JSON.stringify(properties || {}),
+      owner_wallet_address,
+      collection_id
+    ]);
+    console.log("Minted NFT inserted.");
+  } catch (error) {
+    if (error.message.includes("UNIQUE constraint failed")) {
+      console.warn(`Token ID '${token_id}' already exists.`);
+    } else {
+      console.error("Error inserting minted NFT:", error);
+    }
+  }
+};
+
+
 // Example function to handle adding metadata when minting an NFT
 const mintNFTWithMetadata = async (nftData, metadata) => {
   try {
@@ -282,22 +319,6 @@ const addColumnIfNotExists = async (table, column, type) => {
   }
 };
 
-// --- NFT Insert helper ---
-const insertMintedNFT = async ({ token_id, metadata_uri, owner_wallet_address, collection_id, name, description, properties }) => {
-  const query = `
-    INSERT INTO minted_nfts (token_id, uri, name, description, properties, owner_wallet_address, collection_id, wallet)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-  await runQuery(query, [
-    token_id,
-    metadata_uri,
-    name,
-    description,
-    properties || '',
-    owner_wallet_address,
-    collection_id || null,
-    owner_wallet_address // as 'wallet'
-  ]);
-};
 
 
 const addOwnerWalletAddressToNFTsTable = async () => {
@@ -534,6 +555,8 @@ const logTransactionAction = async (action_type, action_details) => {
     console.error("Error logging action:", error);
   }
 };
+
+
 
 
 export {

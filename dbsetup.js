@@ -283,40 +283,7 @@ const getNFTIdByTokenId = async (token_id) => {
 };
 
 
-// Function to insert minted NFT into the database
-const insertMintedNFT = async ({
-  token_id,
-  metadata_uri,
-  owner_wallet_address,
-  collection_name,
-  name,
-  description,
-  properties
-}) => {
-  const query = `
-    INSERT INTO minted_nfts (
-      token_id, metadata_uri, owner_wallet_address, collection_name, name, description, properties
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
-  try {
-    await runQuery(query, [
-      token_id,
-      metadata_uri,
-      owner_wallet_address,
-      collection_name,
-      name,
-      description,
-      JSON.stringify(properties || {})
-    ]);
-    console.log("Minted NFT inserted into the database.");
-  } catch (error) {
-    if (error.message.includes("UNIQUE constraint failed")) {
-      console.warn(`Token ID '${token_id}' already exists.`);
-    } else {
-      console.error("Error inserting minted NFT:", error);
-    }
-  }
-};
 
 // Function to insert NFT metadata into the database
 const insertNFTMetadata = async (nft_id, key, value) => {
@@ -334,22 +301,78 @@ const insertNFTMetadata = async (nft_id, key, value) => {
 
 
 
-// Example function to handle adding metadata when minting an NFT
-const mintNFTWithMetadata = async (nftData, metadata) => {
+async function mintNFTWithMetadata(metadataUrl, wallet, issuer, collectionSlug, imageUrl, properties) {
   try {
-    // Insert the NFT into the database first
-    await insertMintedNFT(nftData);
-
-    // Insert the associated metadata for the NFT
-    const nft_id = await getNFTIdByTokenId(nftData.token_id); // Assuming you have a function to get NFT ID by token_id
-    for (const [key, value] of Object.entries(metadata)) {
-      await insertNFTMetadata(nft_id, key, value);
+    if (!wallet || !/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(wallet)) {
+      throw new Error('Invalid or missing wallet address.');
     }
-    console.log("NFT and metadata successfully minted.");
-  } catch (error) {
-    console.error("Error minting NFT with metadata:", error);
+
+    if (!metadataUrl || !metadataUrl.startsWith('https://')) {
+      throw new Error('Invalid or missing metadata URL.');
+    }
+
+    const tokenId = await broadcastNFTMint(wallet, metadataUrl);
+    if (!tokenId) throw new Error('Failed to mint NFT, token ID missing.');
+
+    // Log context for debugging
+    console.log('NFT Minted:', {
+      tokenId,
+      metadataUrl,
+      issuer,
+      collectionSlug,
+      wallet,
+      imageUrl,
+      properties
+    });
+
+    await insertMintedNFT(
+      tokenId,
+      metadataUrl,
+      issuer,
+      collectionSlug,
+      wallet,
+      imageUrl || null,
+      JSON.stringify(properties || {})
+    );
+
+    return tokenId;
+  } catch (err) {
+    console.error('Error in mintNFTWithMetadata:', err);
+    throw err;
   }
-};
+}
+
+async function insertMintedNFT(tokenId, metadataUrl, issuer, collectionSlug, wallet, imageUrl, properties) {
+  return new Promise((resolve, reject) => {
+    const query = `
+      INSERT INTO minted_nfts (
+        token_id,
+        metadata_url,
+        issuer,
+        collection_slug,
+        wallet,
+        image_url,
+        properties
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.run(
+      query,
+      [tokenId, metadataUrl, issuer, collectionSlug, wallet, imageUrl, properties],
+      function (err) {
+        if (err) {
+          console.error('Error inserting minted NFT:', err);
+          return reject(err);
+        }
+        console.log('Inserted minted NFT:', tokenId);
+        resolve(true);
+      }
+    );
+  });
+}
+
+
+
 
 // Example of minting an NFT with relevant data
 const mintNFT = async () => {

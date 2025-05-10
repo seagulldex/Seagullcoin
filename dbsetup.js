@@ -71,13 +71,21 @@ const nfts = `
     collection_icon TEXT,
     owner_wallet_address TEXT NOT NULL,
     source TEXT CHECK(source IN ('minted', 'imported')) DEFAULT 'imported',
-    added_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TRIGGER IF NOT EXISTS update_nfts_timestamp
+  AFTER UPDATE ON nfts
+  FOR EACH ROW
+  BEGIN
+    UPDATE nfts SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+  END;
 
   CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
   CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
   CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
+
 
 const createMintedNFTsTable = `
   CREATE TABLE IF NOT EXISTS minted_nfts (

@@ -75,6 +75,8 @@ const nfts = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
+  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
+  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
 
 const createMintedNFTsTable = `
@@ -89,6 +91,10 @@ const createMintedNFTsTable = `
     properties TEXT,
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+  
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
+  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
+  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
 
 
@@ -105,6 +111,10 @@ const createSalesTable = `
     FOREIGN KEY (seller_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE,
     FOREIGN KEY (buyer_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE
   );
+  
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
+  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
+  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
 
 const createMintingTransactionsTable = `
@@ -116,6 +126,10 @@ const createMintingTransactionsTable = `
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (nft_id) REFERENCES nfts(id)
   );
+  
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
+  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
+  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
 
 const createPaymentsTable = `
@@ -128,6 +142,10 @@ const createPaymentsTable = `
     status TEXT DEFAULT 'confirmed',
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+  
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
+  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
+  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
 
 const createLikesTable = `
@@ -151,6 +169,10 @@ const createCollectionsTable = `
     created_by TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+  
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
+  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
+  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
 
 const createBidsTable = `
@@ -163,6 +185,10 @@ const createBidsTable = `
     FOREIGN KEY (nft_id) REFERENCES nfts(id),
     FOREIGN KEY (user_wallet) REFERENCES users(wallet_address)
   );
+  
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
+  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
+  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
 
 const createTransactionHistoryTable = `
@@ -178,6 +204,10 @@ const createTransactionHistoryTable = `
     FOREIGN KEY (from_wallet) REFERENCES users(wallet_address),
     FOREIGN KEY (to_wallet) REFERENCES users(wallet_address)
   );
+  
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
+  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
+  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
 
 const createTransactionLogsTable = `
@@ -187,6 +217,10 @@ const createTransactionLogsTable = `
     action_details TEXT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+  
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
+  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
+  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
 
 const createNFTMetadataTable = `
@@ -197,6 +231,10 @@ const createNFTMetadataTable = `
     metadata_value TEXT NOT NULL,
     FOREIGN KEY (nft_id) REFERENCES nfts(id)
   );
+  
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
+  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
+  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
 
 

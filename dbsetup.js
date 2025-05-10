@@ -15,17 +15,6 @@ const ownerWallet = "rPLvYSKRUc3vqU3b4guho8Ya5ZC2X5ahYa";
 const mintingWallet = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U";
 const metadataURL = "https://example.com/metadata.json";
 
-const handleFormSubmit = (event) => {
-  event.preventDefault();
-
-  const tokenId = formData.tokenId; // Assuming formData is a valid object
-  const metadataURI = formData.metadataURI;
-  const walletAddress = formData.walletAddress;
-  const collectionName = formData.collectionName;
-  const name = formData.name;
-  const description = formData.description;
-  const properties = formData.properties;
-
 // Enable foreign key support
 db.exec('PRAGMA foreign_keys = ON');
 
@@ -68,15 +57,7 @@ const createUserProfilesTable = `
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_wallet_address) REFERENCES users(wallet_address) ON DELETE CASCADE
   );
-
-  CREATE TRIGGER IF NOT EXISTS update_user_profiles_timestamp
-  AFTER UPDATE ON user_profiles
-  FOR EACH ROW
-  BEGIN
-    UPDATE user_profiles SET updated_at = CURRENT_TIMESTAMP WHERE user_wallet_address = OLD.user_wallet_address;
-  END;
 `;
-
 
 const nfts = `
   CREATE TABLE IF NOT EXISTS nfts (
@@ -90,21 +71,13 @@ const nfts = `
     collection_icon TEXT,
     owner_wallet_address TEXT NOT NULL,
     source TEXT CHECK(source IN ('minted', 'imported')) DEFAULT 'imported',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    added_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
-
-  CREATE TRIGGER IF NOT EXISTS update_nfts_timestamp
-  AFTER UPDATE ON nfts
-  FOR EACH ROW
-  BEGIN
-    UPDATE nfts SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
-  END;
 
   CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
   CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
   CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
-
 
 const createMintedNFTsTable = `
   CREATE TABLE IF NOT EXISTS minted_nfts (
@@ -118,11 +91,12 @@ const createMintedNFTsTable = `
     properties TEXT,
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
-
-  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON minted_nfts(owner_wallet_address);
-  CREATE INDEX IF NOT EXISTS idx_nfts_collection_name ON minted_nfts(collection_name);
-  CREATE INDEX IF NOT EXISTS idx_minted_nfts_token_id ON minted_nfts(token_id);
+  
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
+  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
+  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
 `;
+
 
 
 const createSalesTable = `
@@ -685,28 +659,6 @@ const start = async () => {
 
   await mintNFTWithMetadata(nftData, metadata);
 })();
-
-db.all(`PRAGMA table_info(minted_nfts)`, (err, columns) => {
-  if (err) {
-    console.error("PRAGMA error:", err);
-    return;
-  }
-
-  const columnNames = columns.map(col => col.name);
-
-  if (!columnNames.includes('metadata_uri')) {
-    db.run(`ALTER TABLE minted_nfts ADD COLUMN metadata_uri TEXT`);
-  }
-
-  if (!columnNames.includes('owner_wallet_address')) {
-    db.run(`ALTER TABLE minted_nfts ADD COLUMN owner_wallet_address TEXT NOT NULL DEFAULT ''`);
-  }
-
-  if (!columnNames.includes('collection_name')) {
-    db.run(`ALTER TABLE minted_nfts ADD COLUMN collection_name TEXT`);
-  }
-});
-
 
 
 start();

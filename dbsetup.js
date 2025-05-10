@@ -64,7 +64,7 @@ const createSalesTable = `
     sale_price DECIMAL(20, 8) NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (nft_id) REFERENCES nfts(id) ON DELETE CASCADE,
-    FOREIGN KEY (seller_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE,
+    FOREIGN KEY (seller_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE
     FOREIGN KEY (buyer_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE
   );
 `;
@@ -113,7 +113,7 @@ const createMintedNFTsTable = `
     properties TEXT,
     owner_wallet_address TEXT,
     collection_id TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL,
   FOREIGN KEY (owner_wallet_address) REFERENCES users(wallet_address) ON DELETE SET NULL
 );
@@ -175,6 +175,11 @@ const createNFTMetadataTable = `
     FOREIGN KEY (nft_id) REFERENCES nfts(id)
   );
 `;
+
+(async () => {
+  await createTables();
+})();
+
 
 
 // --- Run SQL query helper ---
@@ -528,7 +533,17 @@ export {
 const start = async () => {
   await createTables();
   await addOwnerWalletAddressToNFTsTable();
-  await mintNFT();
+  await mintNFTWithMetadata({
+    token_id,
+    metadata_uri: metadataURL,
+    owner_wallet_address: ownerWallet,
+    collection_name: collectionId
+  }, {
+    name,
+    description,
+    image_url
+  });
 };
 
 start();
+

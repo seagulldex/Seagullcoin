@@ -69,12 +69,14 @@ const nfts = `
     token_id TEXT UNIQUE,
     collection_name TEXT,
     collection_icon TEXT,
-    owner_wallet_address  TEXT NOT NULL,
+    owner_wallet_address TEXT NOT NULL,
     source TEXT CHECK(source IN ('minted', 'imported')) DEFAULT 'imported',
-    added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (nft_id) REFERENCES nfts(id) ON DELETE CASCADE
-  )
+    added_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
 `;
+
 
 
 const createSalesTable = `

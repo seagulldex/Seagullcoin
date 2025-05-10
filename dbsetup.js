@@ -5,6 +5,14 @@ import { promisify } from 'util';
 const db = new sqlite3.Database('./my.db');
 const runAsync = promisify(db.run.bind(db));
 const allAsync = promisify(db.all.bind(db));
+const token_id = "NFTOKENID123";
+const name = "Cool Seagull NFT";
+const description = "This is a rare Seagull NFT";
+const image_url = "https://example.com/seagull.png";
+const collectionId = "seagull-collection-001";
+const ownerWallet = "rPLvYSKRUc3vqU3b4guho8Ya5ZC2X5ahYa";
+const mintingWallet = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U";
+const metadataURL = "https://example.com/metadata.json";
 
 // Enable foreign key support
 db.exec('PRAGMA foreign_keys = ON');
@@ -105,9 +113,9 @@ const createMintedNFTsTable = `
     properties TEXT,
     owner_wallet_address TEXT,
     collection_id TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL,
-  FOREIGN KEY (owner_wallet) REFERENCES users(wallet_address) ON DELETE SET NULL
+  FOREIGN KEY (owner_wallet_address) REFERENCES users(wallet_address) ON DELETE SET NULL
 );
 `;
 

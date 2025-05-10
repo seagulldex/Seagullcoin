@@ -113,7 +113,7 @@ const createMintedNFTsTable = `
     properties TEXT,
     owner_wallet_address TEXT,
     collection_id TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL,
   FOREIGN KEY (owner_wallet_address) REFERENCES users(wallet_address) ON DELETE SET NULL
 );
@@ -375,6 +375,129 @@ const transferNFT = async (nft_id, from_wallet, to_wallet) => {
     console.log("NFT transferred successfully.");
   } catch (error) {
     console.error("Error transferring NFT:", error);
+  }
+};
+
+// Place a Bid on NFT
+const placeBid = async (nft_id, user_wallet, bid_amount) => {
+  try {
+    const checkNFTQuery = `SELECT * FROM nfts WHERE id = ?`;
+    const nft = await allAsync(checkNFTQuery, [nft_id]);
+
+    if (nft.length === 0) {
+      throw new Error("NFT not found");
+    }
+
+    // Insert bid into the database
+    const insertBidQuery = `
+      INSERT INTO bids (nft_id, user_wallet, bid_amount)
+      VALUES (?, ?, ?)`;
+    await runQuery(insertBidQuery, [nft_id, user_wallet, bid_amount]);
+
+    console.log("Bid placed successfully.");
+  } catch (error) {
+    console.error("Error placing bid:", error);
+  }
+};
+
+// Like an NFT
+const likeNFT = async (nft_id, user_wallet) => {
+  try {
+    const checkNFTQuery = `SELECT * FROM nfts WHERE id = ?`;
+    const nft = await allAsync(checkNFTQuery, [nft_id]);
+
+    if (nft.length === 0) {
+      throw new Error("NFT not found");
+    }
+
+    // Check if user already liked the NFT
+    const checkLikeQuery = `SELECT * FROM likes WHERE nft_id = ? AND user_wallet = ?`;
+    const existingLike = await allAsync(checkLikeQuery, [nft_id, user_wallet]);
+
+    if (existingLike.length > 0) {
+      throw new Error("User already liked this NFT");
+    }
+
+    // Insert like into the database
+    const insertLikeQuery = `
+      INSERT INTO likes (nft_id, user_wallet)
+      VALUES (?, ?)`;
+    await runQuery(insertLikeQuery, [nft_id, user_wallet]);
+
+    console.log("NFT liked successfully.");
+  } catch (error) {
+    console.error("Error liking NFT:", error);
+  }
+};
+
+// Handle Minting Payments
+const mintWithPayment = async (token_id, metadata_uri, owner_wallet_address, collection_name, wallet_address, payment_amount) => {
+  try {
+    // Validate payment (check if the user has enough SeagullCoin)
+    const checkPaymentQuery = `SELECT seagullcoin_balance FROM users WHERE wallet_address = ?`;
+    const user = await allAsync(checkPaymentQuery, [wallet_address]);
+
+    if (user.length === 0 || parseFloat(user[0].seagullcoin_balance) < parseFloat(payment_amount)) {
+      throw new Error("Insufficient balance for minting");
+    }
+
+    // Deduct the SeagullCoin from the user's balance
+    const updateBalanceQuery = `UPDATE users SET seagullcoin_balance = seagullcoin_balance - ? WHERE wallet_address = ?`;
+    await runQuery(updateBalanceQuery, [payment_amount, wallet_address]);
+
+    // Mint the NFT
+    await insertMintedNFT({ token_id, metadata_uri, owner_wallet_address, collection_name });
+
+    // Record the minting transaction
+    const insertTransactionQuery = `
+      INSERT INTO minting_transactions (nft_id, wallet_address, amount)
+      VALUES (?, ?, ?)`;
+    const nft_id = await getNFTIdByTokenId(token_id);
+    await runQuery(insertTransactionQuery, [nft_id, wallet_address, payment_amount]);
+
+    console.log("NFT minted and payment processed successfully.");
+  } catch (error) {
+    console.error("Error minting NFT with payment:", error);
+  }
+};
+
+// Handle Payment
+const recordPayment = async (payload_uuid, wallet_address, amount, token_code, status = "confirmed") => {
+  try {
+    const query = `
+      INSERT INTO payments (payload_uuid, wallet_address, amount, token_code, status)
+      VALUES (?, ?, ?, ?, ?)`;
+    await runQuery(query, [payload_uuid, wallet_address, amount, token_code, status]);
+    console.log("Payment recorded successfully.");
+  } catch (error) {
+    console.error("Error recording payment:", error);
+  }
+};
+
+// Delete NFT
+const deleteNFT = async (nft_id) => {
+  try {
+    await runQuery('BEGIN TRANSACTION');
+    await runQuery('DELETE FROM nfts WHERE id = ?', [nft_id]);
+    await runQuery('COMMIT');
+    console.log("NFT deleted successfully.");
+  } catch (error) {
+    await runQuery('ROLLBACK');
+    console.error("Error deleting NFT:", error);
+  }
+};
+
+// Log an action
+const logTransactionAction = async (action_type, action_details) => {
+  const query = `
+    INSERT INTO transaction_logs (action_type, action_details)
+    VALUES (?, ?)`;
+
+  try {
+    await runQuery(query, [action_type, action_details]);
+    console.log("Action logged successfully.");
+  } catch (error) {
+    console.error("Error logging action:", error);
   }
 };
 

@@ -22,6 +22,8 @@ db.exec('PRAGMA foreign_keys = ON');
 (async () => {
   await addColumnIfNotExists('nfts', 'name', 'TEXT');
   await addColumnIfNotExists('nfts', 'description', 'TEXT');
+  await addColumnIfNotExists("nfts", "updated_at", "TEXT");
+  await addColumnIfNotExists("minted_nfts", "updated_at", "TEXT");
   await addColumnIfNotExists('nfts', 'properties', 'TEXT');
 })();
 
@@ -57,19 +59,22 @@ const createUserProfilesTable = `
   );
 `;
 
-const createNFTsTable = `
+const nfts = `
   CREATE TABLE IF NOT EXISTS nfts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    token_id TEXT UNIQUE NOT NULL,
-    metadata_uri TEXT NOT NULL,
-    owner_wallet_address TEXT,
+    name TEXT NOT NULL,
+    description TEXT,
+    image_url TEXT NOT NULL,
+    metadata_url TEXT,
+    token_id TEXT UNIQUE,
     collection_name TEXT,
-    collection_id TEXT,
-    minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL
-
-  );
+    collection_icon TEXT,
+    owner_wallet_address  TEXT NOT NULL,
+    source TEXT CHECK(source IN ('minted', 'imported')) DEFAULT 'imported',
+    added_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
 `;
+
 
 const createSalesTable = `
   CREATE TABLE IF NOT EXISTS sales (
@@ -118,22 +123,23 @@ const createLikesTable = `
   );
 `;
 
-const createMintedNFTsTable = `
-  CREATE TABLE IF NOT EXISTS minted_nfts (
+const platform_minted_nfts = `
+  CREATE TABLE IF NOT EXISTS nfts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    wallet TEXT NOT NULL,
-    token_id TEXT UNIQUE NOT NULL,
-    uri TEXT NOT NULL,
     name TEXT NOT NULL,
-    description TEXT NOT NULL,
-    properties TEXT,
-    owner_wallet_address TEXT,
-    collection_id TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL,
-  FOREIGN KEY (owner_wallet_address) REFERENCES users(wallet_address) ON DELETE SET NULL
-);
+    description TEXT,
+    image_url TEXT NOT NULL,
+    metadata_url TEXT,
+    token_id TEXT UNIQUE,
+    collection_name TEXT,
+    collection_icon TEXT,
+    owner_wallet_address TEXT NOT NULL,
+    source TEXT CHECK(source IN ('minted', 'imported')) DEFAULT 'imported',
+    added_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `;
+
+
 
 const createCollectionsTable = `
   CREATE TABLE IF NOT EXISTS collections (
@@ -205,12 +211,12 @@ const createTables = async () => {
     await runQuery(createUsersTable);
     await runQuery(createUsersIndex);
     await runQuery(createUserProfilesTable);
-    await runQuery(createNFTsTable);
+    await runQuery(nfts);
     await runQuery(createSalesTable);
     await runQuery(createMintingTransactionsTable);
     await runQuery(createPaymentsTable);
     await runQuery(createLikesTable);
-    await runQuery(createMintedNFTsTable);
+    await runQuery(platform_minted_nfts);
     await runQuery(createCollectionsTable);
     await runQuery(createBidsTable);
     await runQuery(createTransactionHistoryTable);
@@ -251,6 +257,43 @@ const insertNFTMetadata = async (nft_id, metadata_key, metadata_value) => {
   }
 };
 
+const insertMintedNFT = async ({
+  token_id,
+  metadata_uri,
+  owner_wallet_address,
+  collection_id,
+  name,
+  description,
+  properties
+}) => {
+  const query = `
+    INSERT INTO minted_nfts (
+      token_id, uri, name, description, properties,
+      owner_wallet_address, collection_id
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+  try {
+    await runQuery(query, [
+      token_id,
+      metadata_uri,
+      name,
+      description,
+      JSON.stringify(properties || {}),
+      owner_wallet_address,
+      collection_id
+    ]);
+    console.log("Minted NFT inserted.");
+  } catch (error) {
+    if (error.message.includes("UNIQUE constraint failed")) {
+      console.warn(`Token ID '${token_id}' already exists.`);
+    } else {
+      console.error("Error inserting minted NFT:", error);
+    }
+  }
+};
+
+
 // Example function to handle adding metadata when minting an NFT
 const mintNFTWithMetadata = async (nftData, metadata) => {
   try {
@@ -282,22 +325,6 @@ const addColumnIfNotExists = async (table, column, type) => {
   }
 };
 
-// --- NFT Insert helper ---
-const insertMintedNFT = async ({ token_id, metadata_uri, owner_wallet_address, collection_id, name, description, properties }) => {
-  const query = `
-    INSERT INTO minted_nfts (token_id, uri, name, description, properties, owner_wallet_address, collection_id, wallet)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-  await runQuery(query, [
-    token_id,
-    metadata_uri,
-    name,
-    description,
-    properties || '',
-    owner_wallet_address,
-    collection_id || null,
-    owner_wallet_address // as 'wallet'
-  ]);
-};
 
 
 const addOwnerWalletAddressToNFTsTable = async () => {

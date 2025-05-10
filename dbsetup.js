@@ -1,8 +1,7 @@
 import sqlite3 from 'sqlite3';
+const db = sqlite3.verbose().Database('./my.db');
 import { promisify } from 'util';
 
-// Open database
-const db = new sqlite3.Database('./my.db');
 const runAsync = promisify(db.run.bind(db));
 const allAsync = promisify(db.all.bind(db));
 const token_id = "NFTOKENID123";
@@ -16,6 +15,11 @@ const metadataURL = "https://example.com/metadata.json";
 
 // Enable foreign key support
 db.exec('PRAGMA foreign_keys = ON');
+
+(async () => {
+  await createTables();
+})();
+
 
 // --- SQL Table Definitions ---
 const createUsersTable = `
@@ -113,7 +117,7 @@ const createMintedNFTsTable = `
     properties TEXT,
     owner_wallet_address TEXT,
     collection_id TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL,
   FOREIGN KEY (owner_wallet_address) REFERENCES users(wallet_address) ON DELETE SET NULL
 );
@@ -175,11 +179,6 @@ const createNFTMetadataTable = `
     FOREIGN KEY (nft_id) REFERENCES nfts(id)
   );
 `;
-
-(async () => {
-  await createTables();
-})();
-
 
 
 // --- Run SQL query helper ---

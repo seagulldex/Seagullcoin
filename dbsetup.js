@@ -140,22 +140,6 @@ const createLikesTable = `
   );
 `;
 
-const platform_minted_nfts = `
-  CREATE TABLE IF NOT EXISTS nfts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    image_url TEXT NOT NULL,
-    metadata_url TEXT,
-    token_id TEXT UNIQUE,
-    collection_name TEXT,
-    collection_icon TEXT,
-    owner_wallet_address TEXT NOT NULL,
-    source TEXT CHECK(source IN ('minted', 'imported')) DEFAULT 'imported',
-    added_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`;
-
 
 
 const createCollectionsTable = `
@@ -233,7 +217,6 @@ const createTables = async () => {
     await runQuery(createMintingTransactionsTable);
     await runQuery(createPaymentsTable);
     await runQuery(createLikesTable);
-    await runQuery(platform_minted_nfts);
     await runQuery(createCollectionsTable);
     await runQuery(createBidsTable);
     await runQuery(createTransactionHistoryTable);

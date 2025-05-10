@@ -1,5 +1,7 @@
-import sqlite3 from 'sqlite3';
-const db = sqlite3.verbose().Database('./my.db');
+import sqlite3Init from 'sqlite3';
+const sqlite3 = sqlite3Init.verbose();
+const db = new sqlite3.Database('./my.db');
+
 import { promisify } from 'util';
 
 const runAsync = promisify(db.run.bind(db));
@@ -56,6 +58,8 @@ const createNFTsTable = `
     collection_name TEXT,
     collection_id TEXT,
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL
+
   );
 `;
 
@@ -68,7 +72,7 @@ const createSalesTable = `
     sale_price DECIMAL(20, 8) NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (nft_id) REFERENCES nfts(id) ON DELETE CASCADE,
-    FOREIGN KEY (seller_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE
+    FOREIGN KEY (seller_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE,
     FOREIGN KEY (buyer_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE
   );
 `;
@@ -117,7 +121,7 @@ const createMintedNFTsTable = `
     properties TEXT,
     owner_wallet_address TEXT,
     collection_id TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL,
   FOREIGN KEY (owner_wallet_address) REFERENCES users(wallet_address) ON DELETE SET NULL
 );
@@ -543,6 +547,29 @@ const start = async () => {
     image_url
   });
 };
+
+(async () => {
+  const nftData = {
+    token_id: token_id,
+    metadata_uri: metadataURL,
+    owner_wallet_address: ownerWallet,
+    collection_name: "Seagull Legends"
+  };
+
+  const metadata = {
+    name: name,
+    description: description,
+    image: image_url,
+    attributes: JSON.stringify([
+      { trait_type: "Species", value: "Seagull" },
+      { trait_type: "Rarity", value: "Rare" },
+      { trait_type: "Wingspan", value: "1.8m" }
+    ])
+  };
+
+  await mintNFTWithMetadata(nftData, metadata);
+})();
+
 
 start();
 

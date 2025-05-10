@@ -676,9 +676,23 @@ const start = async () => {
 })();
 
 db.all(`PRAGMA table_info(minted_nfts)`, (err, columns) => {
-  const hasMetadataUri = columns.some(col => col.name === 'metadata_uri');
-  if (!hasMetadataUri) {
+  if (err) {
+    console.error("PRAGMA error:", err);
+    return;
+  }
+
+  const columnNames = columns.map(col => col.name);
+
+  if (!columnNames.includes('metadata_uri')) {
     db.run(`ALTER TABLE minted_nfts ADD COLUMN metadata_uri TEXT`);
+  }
+
+  if (!columnNames.includes('owner_wallet_address')) {
+    db.run(`ALTER TABLE minted_nfts ADD COLUMN owner_wallet_address TEXT NOT NULL DEFAULT ''`);
+  }
+
+  if (!columnNames.includes('collection_name')) {
+    db.run(`ALTER TABLE minted_nfts ADD COLUMN collection_name TEXT`);
   }
 });
 

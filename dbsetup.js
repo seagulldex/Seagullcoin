@@ -280,6 +280,21 @@ const insertMintedNFT = async ({
   }
 };
 
+// Function to insert NFT metadata into the database
+const insertNFTMetadata = async (nft_id, key, value) => {
+  const query = `
+    INSERT INTO nft_metadata (nft_id, metadata_key, metadata_value)
+    VALUES (?, ?, ?)`;
+
+  try {
+    await runQuery(query, [nft_id, key, value]);
+    console.log(`Metadata inserted: ${key} = ${value}`);
+  } catch (error) {
+    console.error("Error inserting NFT metadata:", error);
+  }
+};
+
+
 
 // Example function to handle adding metadata when minting an NFT
 const mintNFTWithMetadata = async (nftData, metadata) => {
@@ -342,20 +357,6 @@ const addOwnerWalletAddressToNFTsTable = async () => {
   await addColumnIfNotExists('nfts', 'owner_wallet_address', 'TEXT');
 };
 
-// Insert the minted NFT into the database
-const mintNFT = async () => {
-  try {
-    await insertMintedNFT({
-      token_id: "NFTOKENID123", // Replace with actual NFTOKENID
-      metadata_uri: "https://example.com/metadata.json", // Replace with actual metadata URI
-      owner_wallet_address: "rPLvYSKRUc3vqU3b4guho8Ya5ZC2X5ahYa", // Replace with actual owner wallet address
-      collection_name: "MyNFTCollection" // Replace with actual collection name
-    });
-    console.log("NFT successfully minted and added to the database.");
-  } catch (error) {
-    console.error("Error inserting minted NFT into the database:", error);
-  }
-};
 
 const mintNFTWithTransaction = async () => {
   const insertNFTQuery = `INSERT INTO nfts (token_id, metadata_uri, owner_wallet_address, collection_name) VALUES (?, ?, ?, ?)`;

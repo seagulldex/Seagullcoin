@@ -4,6 +4,7 @@ const db = new sqlite3.Database('./my.db');
 
 import { promisify } from 'util';
 
+const { broadcastNFTMint } = require('./xrpl-utils');
 const runAsync = promisify(db.run.bind(db));
 const allAsync = promisify(db.all.bind(db));
 const token_id = "NFTOKENID123";

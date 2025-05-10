@@ -98,7 +98,6 @@ const createMintedNFTsTable = `
   CREATE TABLE IF NOT EXISTS minted_nfts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     wallet TEXT NOT NULL,
-    token_id TEXT NOT NULL,
     uri TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
@@ -232,6 +231,30 @@ const mintNFT = async () => {
     console.error("Error inserting minted NFT into the database:", error);
   }
 };
+
+const mintNFTWithTransaction = async () => {
+  const insertNFTQuery = `INSERT INTO nfts (token_id, metadata_uri, owner_wallet_address, collection_name) VALUES (?, ?, ?, ?)`;
+
+  const dbTransaction = async (token_id, metadata_uri, owner_wallet_address, collection_name) => {
+    try {
+      await runQuery('BEGIN TRANSACTION');
+      await runQuery(insertNFTQuery, [token_id, metadata_uri, owner_wallet_address, collection_name]);
+      await runQuery('COMMIT');
+      console.log("NFT successfully minted and added to the database.");
+    } catch (error) {
+      await runQuery('ROLLBACK');
+      console.error("Error inserting minted NFT into the database:", error);
+    }
+  };
+
+  await dbTransaction(
+    "NFTOKENID123",
+    "https://example.com/metadata.json",
+    "rPLvYSKRUc3vqU3b4guho8Ya5ZC2X5ahYa",
+    "MyNFTCollection"
+  );
+};
+
 
 // Call the mintNFT function to insert the NFT
 mintNFT();

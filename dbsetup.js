@@ -57,7 +57,7 @@ const createNFTsTable = `
     owner_wallet_address TEXT,
     collection_name TEXT,
     collection_id TEXT,
-    minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL
 
   );
@@ -121,7 +121,7 @@ const createMintedNFTsTable = `
     properties TEXT,
     owner_wallet_address TEXT,
     collection_id TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL,
   FOREIGN KEY (owner_wallet_address) REFERENCES users(wallet_address) ON DELETE SET NULL
 );
@@ -520,7 +520,6 @@ const logTransactionAction = async (action_type, action_details) => {
     console.error("Error logging action:", error);
   }
 };
-
 
 
 export {

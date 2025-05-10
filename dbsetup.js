@@ -107,12 +107,11 @@ const createMintedNFTsTable = `
     properties TEXT,
     minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
-  
-  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
-  CREATE INDEX idx_nfts_collection_name ON nfts(collection_name);
-  CREATE INDEX idx_minted_nfts_nft_id ON minted_nfts(nft_id);
-`;
 
+  CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON minted_nfts(owner_wallet_address);
+  CREATE INDEX IF NOT EXISTS idx_nfts_collection_name ON minted_nfts(collection_name);
+  CREATE INDEX IF NOT EXISTS idx_minted_nfts_token_id ON minted_nfts(token_id);
+`;
 
 
 const createSalesTable = `
@@ -675,6 +674,14 @@ const start = async () => {
 
   await mintNFTWithMetadata(nftData, metadata);
 })();
+
+db.all(`PRAGMA table_info(minted_nfts)`, (err, columns) => {
+  const hasMetadataUri = columns.some(col => col.name === 'metadata_uri');
+  if (!hasMetadataUri) {
+    db.run(`ALTER TABLE minted_nfts ADD COLUMN metadata_uri TEXT`);
+  }
+});
+
 
 
 start();

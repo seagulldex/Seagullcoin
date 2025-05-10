@@ -245,45 +245,32 @@ const getNFTIdByTokenId = async (token_id) => {
 };
 
 
-const insertNFTMetadata = async (nft_id, metadata_key, metadata_value) => {
-  const query = `
-    INSERT INTO nft_metadata (nft_id, metadata_key, metadata_value)
-    VALUES (?, ?, ?)`;
-  try {
-    await runQuery(query, [nft_id, metadata_key, metadata_value]);
-    console.log("Metadata inserted successfully.");
-  } catch (error) {
-    console.error("Error inserting metadata:", error);
-  }
-};
-
+// Function to insert minted NFT into the database
 const insertMintedNFT = async ({
   token_id,
   metadata_uri,
   owner_wallet_address,
-  collection_id,
+  collection_name,
   name,
   description,
   properties
 }) => {
   const query = `
     INSERT INTO minted_nfts (
-      token_id, uri, name, description, properties,
-      owner_wallet_address, collection_id
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      token_id, metadata_uri, owner_wallet_address, collection_name, name, description, properties
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
   try {
     await runQuery(query, [
       token_id,
       metadata_uri,
+      owner_wallet_address,
+      collection_name,
       name,
       description,
-      JSON.stringify(properties || {}),
-      owner_wallet_address,
-      collection_id
+      JSON.stringify(properties || {})
     ]);
-    console.log("Minted NFT inserted.");
+    console.log("Minted NFT inserted into the database.");
   } catch (error) {
     if (error.message.includes("UNIQUE constraint failed")) {
       console.warn(`Token ID '${token_id}' already exists.`);
@@ -310,6 +297,30 @@ const mintNFTWithMetadata = async (nftData, metadata) => {
     console.error("Error minting NFT with metadata:", error);
   }
 };
+
+// Example of minting an NFT with relevant data
+const mintNFT = async () => {
+  try {
+    const nftData = {
+      token_id: "NFTOKENID123", // Replace with actual token ID
+      metadata_uri: "https://example.com/metadata.json", // Replace with actual metadata URI
+      owner_wallet_address: "rPLvYSKRUc3vqU3b4guho8Ya5ZC2X5ahYa", // Replace with actual owner wallet address
+      collection_name: "MyNFTCollection", // Replace with actual collection name
+      name: "Cool Seagull NFT", // NFT Name
+      description: "This is a rare Seagull NFT", // NFT Description
+      properties: { color: "blue", rarity: "rare" } // Example properties
+    };
+
+    // Insert the minted NFT into the database
+    await insertMintedNFT(nftData);
+    console.log("NFT successfully minted and added to the database.");
+  } catch (error) {
+    console.error("Error minting NFT:", error);
+  }
+};
+
+// Call the mintNFT function
+mintNFT();
 
 
 // --- Add column if not exists helpers ---

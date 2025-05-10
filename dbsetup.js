@@ -59,19 +59,22 @@ const createUserProfilesTable = `
   );
 `;
 
-const createNFTsTable = `
+const nfts = db.prepare(`
   CREATE TABLE IF NOT EXISTS nfts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    token_id TEXT UNIQUE NOT NULL,
-    metadata_uri TEXT NOT NULL,
-    owner_wallet_address TEXT,
+    name TEXT NOT NULL,
+    description TEXT,
+    image_url TEXT NOT NULL,
+    metadata_url TEXT,
+    token_id TEXT UNIQUE,
     collection_name TEXT,
-    collection_id TEXT,
-    minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL
+    collection_icon TEXT,
+    owner_wallet TEXT NOT NULL,
+    source TEXT CHECK(source IN ('minted', 'imported')) DEFAULT 'imported',
+    added_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
 
-  );
-`;
 
 const createSalesTable = `
   CREATE TABLE IF NOT EXISTS sales (
@@ -120,22 +123,21 @@ const createLikesTable = `
   );
 `;
 
-const createMintedNFTsTable = `
-  CREATE TABLE IF NOT EXISTS minted_nfts (
+const platform_minted_nfts = db.prepare(`
+  CREATE TABLE IF NOT EXISTS platform_minted_nfts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    wallet TEXT NOT NULL,
-    token_id TEXT UNIQUE NOT NULL,
-    uri TEXT NOT NULL,
     name TEXT NOT NULL,
-    description TEXT NOT NULL,
-    properties TEXT,
-    owner_wallet_address TEXT,
-    collection_id TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL,
-  FOREIGN KEY (owner_wallet_address) REFERENCES users(wallet_address) ON DELETE SET NULL
-);
-`;
+    description TEXT,
+    image_url TEXT NOT NULL,
+    metadata_url TEXT,
+    token_id TEXT UNIQUE,
+    collection_name TEXT,
+    collection_icon TEXT,
+    owner_wallet TEXT NOT NULL,
+    minted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 
 const createCollectionsTable = `
   CREATE TABLE IF NOT EXISTS collections (
@@ -207,12 +209,12 @@ const createTables = async () => {
     await runQuery(createUsersTable);
     await runQuery(createUsersIndex);
     await runQuery(createUserProfilesTable);
-    await runQuery(createNFTsTable);
+    await runQuery(nfts);
     await runQuery(createSalesTable);
     await runQuery(createMintingTransactionsTable);
     await runQuery(createPaymentsTable);
     await runQuery(createLikesTable);
-    await runQuery(createMintedNFTsTable);
+    await runQuery(platform_minted_nfts);
     await runQuery(createCollectionsTable);
     await runQuery(createBidsTable);
     await runQuery(createTransactionHistoryTable);

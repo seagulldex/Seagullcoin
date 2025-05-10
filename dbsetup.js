@@ -218,6 +218,21 @@ const addOwnerWalletAddressToNFTsTable = async () => {
   await addColumnIfNotExists('nfts', 'owner_wallet_address', 'TEXT');
 };
 
+const run = async () => {
+  await createTables(); // optional if already initialized
+
+  await insertMintedNFT({
+    token_id: "NFTOKENID123",
+    metadata_uri: "https://example.com/metadata.json",
+    owner_wallet_address: "rPLvYSKRUc3vqU3b4guho8Ya5ZC2X5ahYa",
+    collection_name: "MyNFTCollection"
+  });
+
+  console.log("Minted NFT inserted successfully.");
+};
+
+run().catch(console.error);
+
 export {
   createTables,
   addColumnIfNotExists,

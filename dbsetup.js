@@ -209,9 +209,9 @@ const createTables = async () => {
 const getNFTIdByTokenId = async (token_id) => {
   const query = `
     SELECT id FROM nfts WHERE token_id = ?`;
-  
+
   try {
-    const result = await runQuery(query, [token_id]);
+    const result = await allAsync(query, [token_id]);
     if (result.length === 0) {
       throw new Error("NFT with the given token ID not found.");
     }

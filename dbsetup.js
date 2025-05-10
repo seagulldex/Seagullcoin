@@ -98,14 +98,17 @@ const createMintedNFTsTable = `
   CREATE TABLE IF NOT EXISTS minted_nfts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     wallet TEXT NOT NULL,
+    token_id TEXT UNIQUE NOT NULL,
     uri TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     properties TEXT,
     owner_wallet_address TEXT,
     collection_id TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE SET NULL,
+  FOREIGN KEY (owner_wallet) REFERENCES users(wallet_address) ON DELETE SET NULL
+);
 `;
 
 const createCollectionsTable = `
@@ -247,6 +250,7 @@ const mintNFTWithTransaction = async () => {
     }
   };
 
+  
   await dbTransaction(
     "NFTOKENID123",
     "https://example.com/metadata.json",
@@ -254,6 +258,30 @@ const mintNFTWithTransaction = async () => {
     "MyNFTCollection"
   );
 };
+
+db.get('SELECT * FROM nfts WHERE token_id = ?', [token_id], (err, row) => {
+  if (err) {
+    console.error('DB lookup error:', err);
+    return;
+  }
+
+  if (row) {
+    console.log('Token ID already exists:', token_id);
+    return; // Skip insert
+  }
+
+  db.run(`
+    INSERT INTO nfts (token_id, name, description, image_url, collection_id, owner_wallet, minting_wallet, metadata_url)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `, [token_id, name, description, image_url, collectionId, ownerWallet, mintingWallet, metadataURL], (err) => {
+    if (err) {
+      console.error('Error inserting minted NFT into the database:', err);
+    } else {
+      console.log('NFT inserted successfully:', token_id);
+    }
+  });
+});
+
 
 
 // Call the mintNFT function to insert the NFT

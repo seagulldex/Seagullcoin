@@ -730,3 +730,6 @@ const metadata = {
 
 // Mint NFT and add metadata
 mintNFTWithMetadata(nftData, metadata);
+  
+  // Example call to simulate form submission
+handleFormSubmit();

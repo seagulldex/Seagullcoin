@@ -22,6 +22,8 @@ db.exec('PRAGMA foreign_keys = ON');
 (async () => {
   await addColumnIfNotExists('nfts', 'name', 'TEXT');
   await addColumnIfNotExists('nfts', 'description', 'TEXT');
+  await addColumnIfNotExists("nfts", "updated_at", "TEXT");
+  await addColumnIfNotExists("minted_nfts", "updated_at", "TEXT");
   await addColumnIfNotExists('nfts', 'properties', 'TEXT');
 })();
 
@@ -555,8 +557,6 @@ const logTransactionAction = async (action_type, action_details) => {
     console.error("Error logging action:", error);
   }
 };
-
-
 
 
 export {

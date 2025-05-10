@@ -18,6 +18,23 @@ const metadataURL = "https://example.com/metadata.json";
 // Enable foreign key support
 db.exec('PRAGMA foreign_keys = ON');
 
+ // Define the helper if not already defined
+  async function addColumnIfNotExists(table, column, type) {
+    const columns = await db.all(`PRAGMA table_info(${table})`);
+    const columnExists = columns.some(col => col.name === column);
+    if (!columnExists) {
+      await db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+      console.log(`Added missing column '${column}' to table '${table}'`);
+    }
+  }
+
+(async () => {
+  await addColumnIfNotExists('nfts', 'name', 'TEXT');
+  await addColumnIfNotExists('nfts', 'description', 'TEXT');
+  await addColumnIfNotExists('nfts', 'properties', 'TEXT');
+})();
+
+
 (async () => {
   await createTables();
 })();

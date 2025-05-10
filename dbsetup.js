@@ -176,6 +176,7 @@ const createNFTMetadataTable = `
   );
 `;
 
+
 // --- Run SQL query helper ---
 const runQuery = (query, params = []) =>
   new Promise((resolve, reject) => {
@@ -204,6 +205,53 @@ const createTables = async () => {
     console.error('Error creating tables:', err);
   }
 };
+
+const getNFTIdByTokenId = async (token_id) => {
+  const query = `
+    SELECT id FROM nfts WHERE token_id = ?`;
+  
+  try {
+    const result = await runQuery(query, [token_id]);
+    if (result.length === 0) {
+      throw new Error("NFT with the given token ID not found.");
+    }
+    return result[0].id; // Assuming 'id' is your primary key
+  } catch (error) {
+    console.error("Error fetching NFT ID by token ID:", error);
+    throw error;
+  }
+};
+
+
+const insertNFTMetadata = async (nft_id, metadata_key, metadata_value) => {
+  const query = `
+    INSERT INTO nft_metadata (nft_id, metadata_key, metadata_value)
+    VALUES (?, ?, ?)`;
+  try {
+    await runQuery(query, [nft_id, metadata_key, metadata_value]);
+    console.log("Metadata inserted successfully.");
+  } catch (error) {
+    console.error("Error inserting metadata:", error);
+  }
+};
+
+// Example function to handle adding metadata when minting an NFT
+const mintNFTWithMetadata = async (nftData, metadata) => {
+  try {
+    // Insert the NFT into the database first
+    await insertMintedNFT(nftData);
+
+    // Insert the associated metadata for the NFT
+    const nft_id = await getNFTIdByTokenId(nftData.token_id); // Assuming you have a function to get NFT ID by token_id
+    for (const [key, value] of Object.entries(metadata)) {
+      await insertNFTMetadata(nft_id, key, value);
+    }
+    console.log("NFT and metadata successfully minted.");
+  } catch (error) {
+    console.error("Error minting NFT with metadata:", error);
+  }
+};
+
 
 // --- Add column if not exists helpers ---
 const columnExists = async (table, column) => {
@@ -267,33 +315,34 @@ const mintNFTWithTransaction = async () => {
   );
 };
 
-db.get('SELECT * FROM nfts WHERE token_id = ?', [token_id], (err, row) => {
-  if (err) {
-    console.error('DB lookup error:', err);
-    return;
-  }
-
-  if (row) {
-    console.log('Token ID already exists:', token_id);
-    return; // Skip insert
-  }
-
-  db.run(`
-    INSERT INTO nfts (token_id, name, description, image_url, collection_id, owner_wallet, minting_wallet, metadata_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `, [token_id, name, description, image_url, collectionId, ownerWallet, mintingWallet, metadataURL], (err) => {
-    if (err) {
-      console.error('Error inserting minted NFT into the database:', err);
-    } else {
-      console.log('NFT inserted successfully:', token_id);
-    }
-  });
-});
-
-
-
 // Call the mintNFT function to insert the NFT
 mintNFT();
+
+const createCollection = async (name, description, logo_uri, created_by) => {
+  const query = `
+    INSERT INTO collections (name, description, logo_uri, created_by)
+    VALUES (?, ?, ?, ?)`;
+  try {
+    await runQuery(query, [name, description, logo_uri, created_by]);
+    console.log("Collection created successfully.");
+  } catch (error) {
+    console.error("Error creating collection:", error);
+  }
+};
+
+// Function to update a collection
+const updateCollection = async (collectionId, name, description, logo_uri) => {
+  const query = `
+    UPDATE collections
+    SET name = ?, description = ?, logo_uri = ?
+    WHERE id = ?`;
+  try {
+    await runQuery(query, [name, description, logo_uri, collectionId]);
+    console.log("Collection updated successfully.");
+  } catch (error) {
+    console.error("Error updating collection:", error);
+  }
+};
 
 
 export {

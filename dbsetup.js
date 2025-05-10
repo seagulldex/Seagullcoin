@@ -57,7 +57,15 @@ const createUserProfilesTable = `
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_wallet_address) REFERENCES users(wallet_address) ON DELETE CASCADE
   );
+
+  CREATE TRIGGER IF NOT EXISTS update_user_profiles_timestamp
+  AFTER UPDATE ON user_profiles
+  FOR EACH ROW
+  BEGIN
+    UPDATE user_profiles SET updated_at = CURRENT_TIMESTAMP WHERE user_wallet_address = OLD.user_wallet_address;
+  END;
 `;
+
 
 const nfts = `
   CREATE TABLE IF NOT EXISTS nfts (

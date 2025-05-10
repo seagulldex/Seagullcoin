@@ -18,15 +18,6 @@ const metadataURL = "https://example.com/metadata.json";
 // Enable foreign key support
 db.exec('PRAGMA foreign_keys = ON');
 
- // Define the helper if not already defined
-  async function addColumnIfNotExists(table, column, type) {
-    const columns = await db.all(`PRAGMA table_info(${table})`);
-    const columnExists = columns.some(col => col.name === column);
-    if (!columnExists) {
-      await db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
-      console.log(`Added missing column '${column}' to table '${table}'`);
-    }
-  }
 
 (async () => {
   await addColumnIfNotExists('nfts', 'name', 'TEXT');
@@ -292,10 +283,22 @@ const addColumnIfNotExists = async (table, column, type) => {
 };
 
 // --- NFT Insert helper ---
-const insertMintedNFT = async ({ token_id, metadata_uri, owner_wallet_address, collection_name }) => {
-  const query = `INSERT INTO nfts (token_id, metadata_uri, owner_wallet_address, collection_name) VALUES (?, ?, ?, ?)`;
-  await runQuery(query, [token_id, metadata_uri, owner_wallet_address, collection_name]);
+const insertMintedNFT = async ({ token_id, metadata_uri, owner_wallet_address, collection_id, name, description, properties }) => {
+  const query = `
+    INSERT INTO minted_nfts (token_id, uri, name, description, properties, owner_wallet_address, collection_id, wallet)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+  await runQuery(query, [
+    token_id,
+    metadata_uri,
+    name,
+    description,
+    properties || '',
+    owner_wallet_address,
+    collection_id || null,
+    owner_wallet_address // as 'wallet'
+  ]);
 };
+
 
 const addOwnerWalletAddressToNFTsTable = async () => {
   await addColumnIfNotExists('nfts', 'owner_wallet_address', 'TEXT');
@@ -537,6 +540,7 @@ const logTransactionAction = async (action_type, action_details) => {
     console.error("Error logging action:", error);
   }
 };
+
 
 
 export {

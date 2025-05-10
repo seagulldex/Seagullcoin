@@ -77,6 +77,20 @@ const nfts = `
   CREATE INDEX IF NOT EXISTS idx_owner_wallet_address_nfts ON nfts(owner_wallet_address);
 `;
 
+const createMintedNFTsTable = `
+  CREATE TABLE IF NOT EXISTS minted_nfts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token_id TEXT UNIQUE,
+    metadata_uri TEXT,
+    owner_wallet_address TEXT NOT NULL,
+    collection_name TEXT,
+    name TEXT,
+    description TEXT,
+    properties TEXT,
+    minted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+`;
+
 
 
 const createSalesTable = `

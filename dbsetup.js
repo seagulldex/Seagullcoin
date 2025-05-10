@@ -4,6 +4,16 @@ const db = new sqlite3.Database('./my.db');
 
 import { promisify } from 'util';
 
+export {
+  createTables,
+  addColumnIfNotExists,
+  insertMintedNFT,
+  addOwnerWalletAddressToNFTsTable,
+  db,
+  runAsync,
+  allAsync
+};
+
 const runAsync = promisify(db.run.bind(db));
 const allAsync = promisify(db.all.bind(db));
 const token_id = "NFTOKENID123";
@@ -15,8 +25,20 @@ const ownerWallet = "rPLvYSKRUc3vqU3b4guho8Ya5ZC2X5ahYa";
 const mintingWallet = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U";
 const metadataURL = "https://example.com/metadata.json";
 
+const handleFormSubmit = (event) => {
+  event.preventDefault();
+
+  const tokenId = formData.tokenId; // Assuming formData is a valid object
+  const metadataURI = formData.metadataURI;
+  const walletAddress = formData.walletAddress;
+  const collectionName = formData.collectionName;
+  const name = formData.name;
+  const description = formData.description;
+  const properties = formData.properties;
+
 // Enable foreign key support
 db.exec('PRAGMA foreign_keys = ON');
+  
 
 
 (async () => {
@@ -627,17 +649,6 @@ const logTransaction = async (nftId, fromWallet, toWallet, amount, transactionTy
   }
 };
 
-
-export {
-  createTables,
-  addColumnIfNotExists,
-  insertMintedNFT,
-  addOwnerWalletAddressToNFTsTable,
-  db,
-  runAsync,
-  allAsync
-};
-
 const start = async () => {
   await createTables();
   await addOwnerWalletAddressToNFTsTable();
@@ -699,4 +710,3 @@ db.all(`PRAGMA table_info(minted_nfts)`, (err, columns) => {
 
 
 start();
-

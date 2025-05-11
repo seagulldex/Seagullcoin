@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Your NFTs - SGLCN-X20</title>
+  <title>User Profile - SGLCN-X20</title>
   <link rel="stylesheet" href="style.css"/>
-  <link rel="stylesheet" href="header.css" />
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+  <link rel="stylesheet" href="header.css" />
   <style>
     #top-bar {
       position: fixed;
@@ -73,36 +73,42 @@
       padding: 20px;
     }
 
-    .nft-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 20px;
-    }
-
-    .nft-card {
-      background-color: #f4f4f4;
-      border: 1px solid #ccc;
-      border-radius: 12px;
-      overflow: hidden;
+    .profile-section {
+      max-width: 400px;
+      margin: 0 auto;
       text-align: center;
-      padding: 10px;
     }
 
-    .nft-card img {
-      width: 100%;
-      height: 200px;
+    .profile-section input[type="file"] {
+      margin-top: 10px;
+    }
+
+    .profile-picture {
+      width: 120px;
+      height: 120px;
       object-fit: cover;
-      border-radius: 10px;
+      border-radius: 50%;
+      margin: 10px auto;
+      display: block;
+      border: 2px solid #333;
     }
 
-    .nft-card h3 {
-      margin: 10px 0 5px;
-      font-size: 1.1rem;
+    textarea {
+      width: 100%;
+      height: 100px;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      resize: vertical;
     }
 
-    .nft-card p {
-      font-size: 0.9rem;
-      color: #555;
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
     }
 
     footer {
@@ -110,6 +116,40 @@
       padding: 20px;
       font-size: 0.9rem;
       color: #777;
+    }
+
+    /* NFT Card Styling */
+    .nft-cards-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .nft-card {
+      width: 200px;
+      padding: 15px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .nft-image {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .nft-card h3 {
+      margin-top: 10px;
+      font-size: 1.1rem;
+    }
+
+    .nft-card p {
+      font-size: 0.9rem;
+      color: #666;
     }
   </style>
 </head>
@@ -135,12 +175,10 @@
   </header>
 
   <main>
-    <h1>Your NFTs</h1>
-    <div id="nft-board" class="nft-grid"></div>
-  <div id="nft-cards" class="nft-cards-container">
-    <!-- NFT cards will be injected here -->
-  </div>
-</main>
+    <div id="nft-cards" class="nft-cards-container">
+      <!-- NFT cards will be injected here -->
+    </div>
+  </main>
 
   <footer>
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
@@ -149,7 +187,7 @@
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
-      fetchNFTs();
+      fetchNFTs(); // Fetch and display NFTs
     });
 
     async function updateWalletStatus() {
@@ -184,44 +222,49 @@
           localStorage.setItem('xumm_wallet_address', loginStatus.account);
           localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
           updateWalletStatus();
-          fetchNFTs(); // Refresh NFTs after login
         }
       }, 3000);
     }
 
     async function fetchNFTs() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
+      const wallet = 'rKoREYA3cFXPbAUtfj1Y2duMMymuWpuNDE';  // Direct wallet address
       if (!wallet) return;
 
       try {
-        const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts?wallet=${wallet}`);
-        const nfts = await res.json();
-        renderNFTs(nfts);
+        const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts/${wallet}`);
+        const data = await res.json();
+        console.log('Fetched NFTs:', data);
+        renderNFTs(data);
       } catch (err) {
         console.error('Failed to fetch NFTs:', err);
       }
     }
 
     function renderNFTs(nfts) {
-      const board = document.getElementById('nft-board');
-      board.innerHTML = '';
-
-      if (!Array.isArray(nfts) || nfts.length === 0) {
-        board.innerHTML = '<p>No NFTs found.</p>';
-        return;
-      }
+      if (!nfts || !Array.isArray(nfts)) return;
+      const container = document.getElementById('nft-cards');
+      container.innerHTML = ''; // Clear existing content
 
       nfts.forEach(nft => {
         const card = document.createElement('div');
-        card.className = 'nft-card';
+        card.classList.add('nft-card');
 
-        card.innerHTML = `
-          <img src="${nft.image || 'default-nft.png'}" alt="NFT Image"/>
-          <h3>${nft.name || 'Untitled NFT'}</h3>
-          <p>${nft.description || ''}</p>
-        `;
+        const img = document.createElement('img');
+        img.src = nft.image || 'default-image-url.jpg';
+        img.alt = nft.name || 'NFT Image';
+        img.classList.add('nft-image');
 
-        board.appendChild(card);
+        const title = document.createElement('h3');
+        title.innerText = nft.name || 'No Name';
+
+        const description = document.createElement('p');
+        description.innerText = nft.description || 'No description available';
+
+        card.appendChild(img);
+        card.appendChild(title);
+        card.appendChild(description);
+
+        container.appendChild(card);
       });
     }
   </script>

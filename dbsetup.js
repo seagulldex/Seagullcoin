@@ -1,7 +1,6 @@
 import sqlite3Init from 'sqlite3';
 const sqlite3 = sqlite3Init.verbose();
 const db = new sqlite3.Database('./my.db');
-const walletAddress = xummResponse.payload.address; // ensure this is correct
 
 import { promisify } from 'util';
 

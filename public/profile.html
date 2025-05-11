@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -119,6 +117,40 @@
       font-size: 0.9rem;
       color: #777;
     }
+
+    /* NFT Card Styling */
+    .nft-cards-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .nft-card {
+      width: 200px;
+      padding: 15px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .nft-image {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .nft-card h3 {
+      margin-top: 10px;
+      font-size: 1.1rem;
+    }
+
+    .nft-card p {
+      font-size: 0.9rem;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -143,12 +175,8 @@
   </header>
 
   <main>
-    <div class="profile-section">
-      <h1>User Profile</h1>
-      <img id="profile-img" class="profile-picture" src="default-avatar.png" alt="Profile Picture" />
-      <input type="file" id="profile-upload" accept="image/*" />
-      <textarea id="bio" placeholder="Write something about yourself..."></textarea>
-      <button onclick="saveProfile()">Save Profile</button>
+    <div id="nft-cards" class="nft-cards-container">
+      <!-- NFT cards will be injected here -->
     </div>
   </main>
 
@@ -159,7 +187,7 @@
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
-      loadProfile();
+      fetchNFTs(); // Fetch and display NFTs
     });
 
     async function updateWalletStatus() {
@@ -198,29 +226,46 @@
       }, 3000);
     }
 
-    document.getElementById('profile-upload').addEventListener('change', function () {
-      const file = this.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          document.getElementById('profile-img').src = e.target.result;
-          localStorage.setItem('user_profile_img', e.target.result);
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+    async function fetchNFTs() {
+      const wallet = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';  // Direct wallet address
+      if (!wallet) return;
 
-    function saveProfile() {
-      const bio = document.getElementById('bio').value;
-      localStorage.setItem('user_bio', bio);
-      alert('Profile updated!');
+      try {
+        const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts/${wallet}`);
+        const data = await res.json();
+        console.log('Fetched NFTs:', data);
+        renderNFTs(data);
+      } catch (err) {
+        console.error('Failed to fetch NFTs:', err);
+      }
     }
 
-    function loadProfile() {
-      const img = localStorage.getItem('user_profile_img');
-      const bio = localStorage.getItem('user_bio');
-      if (img) document.getElementById('profile-img').src = img;
-      if (bio) document.getElementById('bio').value = bio;
+    function renderNFTs(nfts) {
+      if (!nfts || !Array.isArray(nfts)) return;
+      const container = document.getElementById('nft-cards');
+      container.innerHTML = ''; // Clear existing content
+
+      nfts.forEach(nft => {
+        const card = document.createElement('div');
+        card.classList.add('nft-card');
+
+        const img = document.createElement('img');
+        img.src = nft.image || 'default-image-url.jpg';
+        img.alt = nft.name || 'NFT Image';
+        img.classList.add('nft-image');
+
+        const title = document.createElement('h3');
+        title.innerText = nft.name || 'No Name';
+
+        const description = document.createElement('p');
+        description.innerText = nft.description || 'No description available';
+
+        card.appendChild(img);
+        card.appendChild(title);
+        card.appendChild(description);
+
+        container.appendChild(card);
+      });
     }
   </script>
 </body>

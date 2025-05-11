@@ -3,322 +3,150 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>User NFTs - SGLCN-X20</title>
-  <link rel="stylesheet" href="style.css"/>
-  <link rel="stylesheet" href="header.css" />
+  <title>SGLCN-X20 NFT Explorer</title>
   <style>
-    :root {
-      --card-width: 220px;
-      --card-gap: 20px;
-    }
-
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
-      background-color: #000;
-      margin-top: 60px;
-    }
-
-    #top-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 40px;
-      background-color: #2e2e2e;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding: 0 20px;
-      z-index: 1000;
-    }
-
-    #logout-btn {
-      padding: 6px 12px;
-      font-weight: bold;
-      display: none;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      margin-top: -6px;
-    }
-
-    #logout-btn:hover {
-      background-color: #0056b3;
-    }
-
-    #wallet-container {
-      border: 2px solid #000;
-      border-radius: 10px;
-      padding: 6px 12px;
-      background-color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      max-width: 140px;
-    }
-
-    #wallet-status {
-      font-size: 0.9rem;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    #wallet-indicator.red {
-      color: #ff4444;
-    }
-
-    #wallet-indicator.green {
-      color: #44ff44;
-    }
-
-    header nav ul {
-      display: flex;
-      list-style-type: none;
       margin: 0;
-      padding: 0;
+      background-color: #f2f2f2;
     }
-
-    header nav ul li {
-      margin: 0 15px;
-    }
-
-    header nav ul li a {
-      text-decoration: none;
+    header {
+      background-color: #0d0d0d;
+      padding: 10px 20px;
       color: white;
-      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
-
+    header h1 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
     main {
       padding: 20px;
     }
-
-    .nft-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(var(--card-width), 1fr));
-      gap: var(--card-gap);
-      justify-content: center;
-    }
-
-    .nft-card {
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 12px;
-      padding: 12px;
+    .spinner {
+      display: none;
       text-align: center;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-top: 20px;
     }
-
+    .spinner img {
+      width: 40px;
+    }
+    #nft-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .nft-card {
+      background: white;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-align: center;
+    }
     .nft-card img {
-      width: 100%;
-      height: 180px;
-      object-fit: contain;
+      max-width: 100%;
       border-radius: 8px;
-      margin-bottom: 10px;
     }
-
-    .nft-card h3 {
-      font-size: 1rem;
-      margin: 5px 0;
-    }
-
-    .nft-card p {
-      font-size: 0.85rem;
-      color: #444;
-    }
-
     .pagination {
       text-align: center;
       margin-top: 20px;
     }
-
     .pagination button {
-      padding: 6px 12px;
       margin: 0 5px;
-      font-weight: bold;
-      border-radius: 4px;
-      border: none;
-      background-color: #ddd;
+      padding: 6px 12px;
+      font-size: 1rem;
       cursor: pointer;
-    }
-
-    .pagination button:disabled {
-      background-color: #bbb;
-    }
-
-    #loading-spinner {
-      text-align: center;
-      margin-top: 40px;
-    }
-
-    #loading-spinner img {
-      width: 100px;
-    }
-
-    .seagull-spinner {
-      animation: rotateSeagull 2s linear infinite;
-    }
-
-    @keyframes rotateSeagull {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <div id="top-bar">
-    <div style="flex:1;">
-      <button id="logout-btn">Logout</button>
-    </div>
-    <div id="wallet-container">
-      <div id="wallet-status">
-        <span id="wallet-indicator" class="red">🔴 Login</span>
-      </div>
-    </div>
-  </div>
-
   <header>
-    <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="nfts.html">NFTs</a></li>
-        <li><a href="mint.html">Mint NFT</a></li>
-        <li><a href="messages.html">Messages</a></li>
-      </ul>
-    </nav>
+    <h1>SGLCN-X20 NFT Explorer</h1>
   </header>
-
   <main>
-    <h1>Your NFTs</h1>
-    <div id="loading-spinner">
-      <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading Seagull" class="seagull-spinner">
-      <p>Loading your NFTs...</p>
+    <div class="spinner" id="loading-spinner">
+      <img src="https://cdn.glitch.global/placeholder/loading-spinner.gif" alt="Loading..."/>
     </div>
-    <div id="nft-container" class="nft-grid" style="display:none;"></div>
+    <div id="nft-container"></div>
     <div class="pagination" id="pagination"></div>
   </main>
 
   <script>
+    const walletAddress = "rKoREYA3cFXPbAUtfj1Y2duMMymuWpuNDE";
     let allNFTs = [];
     let currentPage = 1;
-    const nftsPerPage = 20;
-
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
-    });
-
-    async function updateWalletStatus() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      const indicator = document.getElementById('wallet-indicator');
-
-      if (wallet) {
-        indicator.textContent = '🟢 Connected';
-        indicator.classList.remove('red');
-        indicator.classList.add('green');
-        indicator.title = 'Logged in';
-        document.getElementById('logout-btn').style.display = 'inline-block';
-        fetchNFTs(wallet);
-      } else {
-        indicator.textContent = '🔴 Login';
-        indicator.classList.remove('green');
-        indicator.classList.add('red');
-        indicator.title = 'Click to login';
-        indicator.onclick = startLoginFlow;
-      }
-    }
-
-    async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-      const data = await res.json();
-      window.open(data.payloadURL, "_blank");
-
-      const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-        const loginStatus = await check.json();
-
-        if (loginStatus.loggedIn) {
-          clearInterval(interval);
-          localStorage.setItem('xumm_wallet_address', loginStatus.account);
-          updateWalletStatus();
-        }
-      }, 3000);
-    }
+    const pageSize = 12;
 
     async function fetchNFTs(wallet) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds
+
       try {
         document.getElementById('loading-spinner').style.display = 'block';
         document.getElementById('nft-container').style.display = 'none';
 
-        const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts/${wallet}`);
+        const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts/${wallet}`, {
+          signal: controller.signal
+        });
         const data = await res.json();
         allNFTs = (data.nfts || []).filter(nft => nft.metadata && nft.metadata.image && nft.metadata.name);
         displayPage(1);
       } catch (err) {
-        console.error("NFT fetch error:", err);
-        document.getElementById('nft-container').innerHTML = "<p style='color:red;'>Failed to load NFTs.</p>";
+        if (err.name === 'AbortError') {
+          console.error("NFT fetch error: Request timed out");
+          document.getElementById('nft-container').innerHTML = "<p style='color:red;'>Request timed out. Please try again later.</p>";
+        } else {
+          console.error("NFT fetch error:", err);
+          document.getElementById('nft-container').innerHTML = "<p style='color:red;'>Failed to load NFTs.</p>";
+        }
       } finally {
+        clearTimeout(timeoutId);
         document.getElementById('loading-spinner').style.display = 'none';
         document.getElementById('nft-container').style.display = 'grid';
       }
     }
-
-    document.getElementById('logout-btn').onclick = () => {
-      localStorage.removeItem('xumm_wallet_address');
-      location.reload();
-    };
 
     function displayPage(page) {
       currentPage = page;
       const container = document.getElementById('nft-container');
       container.innerHTML = "";
 
-      const start = (page - 1) * nftsPerPage;
-      const end = start + nftsPerPage;
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize;
       const nftsToShow = allNFTs.slice(start, end);
 
-      if (nftsToShow.length === 0) {
-        container.innerHTML = "<p>No NFTs found. Please try again later.</p>";
-        return;
-      }
-
       for (const nft of nftsToShow) {
-        const { metadata } = nft;
         const card = document.createElement('div');
-        card.className = "nft-card";
-
-        const img = document.createElement('img');
-        img.src = metadata.image;
-        img.alt = metadata.name;
-
-        const name = document.createElement('h3');
-        name.textContent = metadata.name;
-
-        const desc = document.createElement('p');
-        desc.textContent = metadata.description || "";
-
-        card.appendChild(img);
-        card.appendChild(name);
-        card.appendChild(desc);
+        card.className = 'nft-card';
+        card.innerHTML = `
+          <img src="${nft.metadata.image}" alt="${nft.metadata.name}">
+          <h3>${nft.metadata.name}</h3>
+          <p>${nft.metadata.description || ''}</p>
+        `;
         container.appendChild(card);
       }
 
-      buildPagination();
+      updatePagination();
     }
 
-    function buildPagination() {
-      const totalPages = Math.ceil(allNFTs.length / nftsPerPage);
-      const pagEl = document.getElementById('pagination');
-      pagEl.innerHTML = "";
+    function updatePagination() {
+      const totalPages = Math.ceil(allNFTs.length / pageSize);
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = "";
 
       for (let i = 1; i <= totalPages; i++) {
         const btn = document.createElement('button');
         btn.textContent = i;
-        if (i === currentPage) btn.disabled = true;
+        btn.disabled = (i === currentPage);
         btn.onclick = () => displayPage(i);
-        pagEl.appendChild(btn);
+        pagination.appendChild(btn);
       }
     }
+
+    // Initial fetch
+    fetchNFTs(walletAddress);
   </script>
 </body>
 </html>

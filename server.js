@@ -2567,6 +2567,35 @@ app.post('/buy-nft', async (req, res) => {
   }
 });
 
+app.post('/accept-sell-offer', async (req, res) => {
+  const { walletAddress, sellOfferId } = req.body;
+
+  if (!walletAddress || !sellOfferId) {
+    return res.status(400).json({ error: 'Missing walletAddress or sellOfferId' });
+  }
+
+  try {
+    const tx = {
+      TransactionType: 'NFTokenAcceptOffer',
+      Account: walletAddress,
+      NFTokenSellOffer: sellOfferId
+    };
+
+    const payload = {
+      txjson: tx,
+      options: {
+        submit: true,
+        expire: 60,
+      }
+    };
+
+    const { uuid, next } = await xumm.payload.create(payload);
+    return res.json({ next, uuid });
+  } catch (err) {
+    console.error('Accept Sell Offer error:', err?.data ?? err);
+    return res.status(500).json({ error: 'Failed to accept sell offer' });
+  }
+});
 
 
 

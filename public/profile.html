@@ -113,6 +113,16 @@
     #loading-spinner img {
       width: 100px;
     }
+
+    .seagull-spinner {
+      width: 100px;
+      animation: rotateSeagull 2s linear infinite;
+    }
+
+    @keyframes rotateSeagull {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -139,7 +149,7 @@
   <main>
     <h1>Your NFTs</h1>
     <div id="loading-spinner">
-      <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading seagull...">
+      <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading Seagull" class="seagull-spinner">
       <p>Loading your NFTs...</p>
     </div>
     <div id="nft-container" class="nft-grid" style="display:none;"></div>
@@ -217,6 +227,10 @@
       const start = (page - 1) * nftsPerPage;
       const end = start + nftsPerPage;
       const nftsToShow = allNFTs.slice(start, end);
+
+      if (nftsToShow.length === 0) {
+        container.innerHTML = "<p>No NFTs found. Please try again later.</p>";
+      }
 
       for (const nft of nftsToShow) {
         const metadata = nft.metadata;

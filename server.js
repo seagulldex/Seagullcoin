@@ -2465,16 +2465,17 @@ app.post('/sell-nft', async (req, res) => {
         issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
         value: price.toString(),
       },
-      Flags: 1
+      Flags: 1 // Sell offer
     };
 
-    const payload = await xumm.payload.createAndSubscribe({ txjson: tx });
-    return res.json({ next: payload.next }); // fix this: return the next URL
+    const payload = await xumm.payload.create({ txjson: tx });
+    return res.json({ next: payload.next.always }); // This returns the XUMM signing URL
   } catch (err) {
     console.error('Sell NFT error:', err?.data ?? err);
     return res.status(500).json({ error: 'Failed to create sell offer' });
   }
 });
+
 
 // XRPL ping function (without disconnecting)
 async function xrplPing() {

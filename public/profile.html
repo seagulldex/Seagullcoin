@@ -203,15 +203,16 @@
         const card = document.createElement('div');
         card.className = "nft-card";
         const metadata = nft.metadata || {};
+
         const img = document.createElement('img');
-        img.src = nft.image || "https://via.placeholder.com/200";
-        img.alt = nft.name;
+        img.src = metadata.image || "https://via.placeholder.com/200";
+        img.alt = metadata.name || "NFT";
 
         const name = document.createElement('h3');
-        name.textContent = nft.name || "Unnamed NFT";
+        name.textContent = metadata.name || "Unnamed NFT";
 
         const desc = document.createElement('p');
-        desc.textContent = nft.description || "";
+        desc.textContent = metadata.description || "";
 
         card.appendChild(img);
         card.appendChild(name);

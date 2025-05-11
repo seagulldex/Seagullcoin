@@ -2531,6 +2531,43 @@ app.post('/create-trustline', async (req, res) => {
   }
 });
 
+app.post('/buy-nft', async (req, res) => {
+  const { walletAddress, nftId, price } = req.body;
+
+  if (!walletAddress || !nftId || !price) {
+    return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
+  }
+
+  try {
+    const tx = {
+      TransactionType: 'NFTokenCreateOffer',
+      Account: walletAddress,
+      NFTokenID: nftId,
+      Amount: {
+        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (hex)
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+        value: price.toString(), // amount of SGLCN offered
+      },
+      Flags: 0 // Buy offer (not sell)
+    };
+
+    const payload = {
+      txjson: tx,
+      options: {
+        submit: true,
+        expire: 60,
+      }
+    };
+
+    const { uuid, next } = await xumm.payload.create(payload);
+    return res.json({ next, uuid });
+  } catch (err) {
+    console.error('Buy NFT error:', err?.data ?? err);
+    return res.status(500).json({ error: 'Failed to create buy offer' });
+  }
+});
+
+
 
 
 

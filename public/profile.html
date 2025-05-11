@@ -7,6 +7,18 @@
   <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="header.css" />
   <style>
+    :root {
+      --card-width: 220px;
+      --card-gap: 20px;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      margin-top: 60px;
+    }
+
     #top-bar {
       position: fixed;
       top: 0;
@@ -61,11 +73,6 @@
       color: #44ff44;
     }
 
-    body {
-      margin-top: 60px;
-      font-family: Arial, sans-serif;
-    }
-
     header nav ul {
       display: flex;
       list-style-type: none;
@@ -79,7 +86,7 @@
 
     header nav ul li a {
       text-decoration: none;
-      color: #white;
+      color: white;
       font-weight: bold;
     }
 
@@ -89,23 +96,36 @@
 
     .nft-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(var(--card-width), 1fr));
+      gap: var(--card-gap);
+      justify-content: center;
     }
 
     .nft-card {
+      background: #fff;
       border: 1px solid #ccc;
       border-radius: 12px;
       padding: 12px;
-      background: #f8f8f8;
       text-align: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
     .nft-card img {
-      max-width: 100%;
-      max-height: 200px;
+      width: 100%;
+      height: 180px;
       object-fit: contain;
       border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .nft-card h3 {
+      font-size: 1rem;
+      margin: 5px 0;
+    }
+
+    .nft-card p {
+      font-size: 0.85rem;
+      color: #444;
     }
 
     .pagination {
@@ -117,7 +137,14 @@
       padding: 6px 12px;
       margin: 0 5px;
       font-weight: bold;
+      border-radius: 4px;
+      border: none;
+      background-color: #ddd;
       cursor: pointer;
+    }
+
+    .pagination button:disabled {
+      background-color: #bbb;
     }
 
     #loading-spinner {
@@ -130,7 +157,6 @@
     }
 
     .seagull-spinner {
-      width: 100px;
       animation: rotateSeagull 2s linear infinite;
     }
 
@@ -151,6 +177,7 @@
       </div>
     </div>
   </div>
+
   <header>
     <nav>
       <ul>
@@ -252,10 +279,11 @@
 
       if (nftsToShow.length === 0) {
         container.innerHTML = "<p>No NFTs found. Please try again later.</p>";
+        return;
       }
 
       for (const nft of nftsToShow) {
-        const metadata = nft.metadata;
+        const { metadata } = nft;
         const card = document.createElement('div');
         card.className = "nft-card";
 

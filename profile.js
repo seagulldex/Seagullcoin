@@ -1,13 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>User Profile - SGLCN-X20</title>
+  <title>Your NFTs - SGLCN-X20</title>
   <link rel="stylesheet" href="style.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <link rel="stylesheet" href="header.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <style>
     #top-bar {
       position: fixed;
@@ -18,7 +17,7 @@
       background-color: #2e2e2e;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       padding: 0 20px;
       z-index: 1000;
     }
@@ -48,22 +47,6 @@
       color: #44ff44;
     }
 
-    #logout-button {
-      padding: 3px 8px;
-      font-size: 0.96rem;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      position: relative;
-      top: -5px; /* Adjust this value to move the button higher */
-    }
-
-    #logout-button:hover {
-      background-color: #0056b3;
-    }
-
     body {
       margin-top: 60px;
       font-family: Arial, sans-serif;
@@ -82,7 +65,7 @@
 
     header nav ul li a {
       text-decoration: none;
-      color: white;
+      color: #333;
       font-weight: bold;
     }
 
@@ -90,92 +73,36 @@
       padding: 20px;
     }
 
-    .profile-section {
-      max-width: 400px;
-      margin: 0 auto;
-      text-align: center;
-    }
-
-    .profile-picture {
-      width: 120px;
-      height: 120px;
-      object-fit: cover;
-      border-radius: 50%;
-      margin: 10px auto;
-      display: block;
-      border: 2px solid #333;
-    }
-
-    textarea {
-      width: 100%;
-      height: 50px;
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      background-color: #333;
-      color: #fff;
-      resize: vertical;
-    }
-
-    button {
-      margin-top: 10px;
-      padding: 8px 16px;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .website-link {
-      margin-top: 10px;
-      font-size: 1rem;
-      display: inline-block;
-      text-decoration: none;
-      color: #007bff;
-    }
-
-    .nft-section {
-      margin-top: 20px;
-      text-align: center;
-      padding: 20px;
-      background-color: #000;
-      border-radius: 8px;
-      height: 33vh;
-      overflow-y: scroll;
-      color: #fff;
+    .nft-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
     }
 
     .nft-card {
-      display: inline-block;
-      width: 150px;
-      margin: 10px;
-      border: 1px solid #ddd;
-      padding: 10px;
-      border-radius: 8px;
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      overflow: hidden;
       text-align: center;
-      background-color: #222;
-      color: #fff;
+      padding: 10px;
     }
 
     .nft-card img {
       width: 100%;
-      height: 100px;
+      height: 200px;
       object-fit: cover;
-      border-radius: 6px;
+      border-radius: 10px;
     }
 
-    .pagination {
-      display: flex;
-      justify-content: center;
-      margin-top: 20px;
+    .nft-card h3 {
+      margin: 10px 0 5px;
+      font-size: 1.1rem;
     }
 
-    .pagination button {
-      padding: 8px 16px;
-      margin: 0 5px;
-      cursor: pointer;
-      border-radius: 6px;
-      border: 1px solid #ddd;
+    .nft-card p {
+      font-size: 0.9rem;
+      color: #555;
     }
 
     footer {
@@ -189,7 +116,6 @@
 <body>
 
   <div id="top-bar">
-    <button id="logout-button" onclick="logout()">Logout</button>
     <div id="wallet-container">
       <div id="wallet-status">
         <span id="wallet-indicator" class="red">🔴 Login</span>
@@ -209,36 +135,8 @@
   </header>
 
   <main>
-    <div class="profile-section">
-      <h1>User Profile</h1>
-      <img id="profile-img" class="profile-picture" src="default-avatar.png" alt="Profile Picture" />
-      <input type="file" id="profile-upload" accept="image/*" />
-      <textarea id="bio" placeholder="Write something about yourself..."></textarea>
-      <button onclick="saveProfile()">Save Profile</button>
-
-      <div class="website-link-section">
-        <input type="text" id="website-link" placeholder="Enter your website URL" />
-        <button onclick="saveWebsiteLink()">Save Website</button>
-        <a id="user-website" href="#" class="website-link" target="_blank">Your Website</a>
-      </div>
-    </div>
-
-    <div class="nft-section" id="nft-section">
-      <h2>Your NFTs</h2>
-      <div id="nft-list"></div>
-      <div class="pagination">
-        <button onclick="prevPage()">Previous</button>
-        <button onclick="nextPage()">Next</button>
-      </div>
-      <div>
-        <label for="filter">Filter by Trait:</label>
-        <select id="filter" onchange="filterNFTs()">
-          <option value="">All Traits</option>
-          <option value="rare">Rare</option>
-          <option value="legendary">Legendary</option>
-        </select>
-      </div>
-    </div>
+    <h1>Your NFTs</h1>
+    <div id="nft-board" class="nft-grid"></div>
   </main>
 
   <footer>
@@ -248,8 +146,7 @@
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
-      loadProfile();
-      loadNFTs();
+      fetchNFTs();
     });
 
     async function updateWalletStatus() {
@@ -284,83 +181,45 @@
           localStorage.setItem('xumm_wallet_address', loginStatus.account);
           localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
           updateWalletStatus();
+          fetchNFTs(); // Refresh NFTs after login
         }
       }, 3000);
     }
 
-    function logout() {
-      localStorage.removeItem('xumm_wallet_address');
-      localStorage.removeItem('xumm_user');
-      location.reload();
-    }
+    async function fetchNFTs() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      if (!wallet) return;
 
-    function loadProfile() {
-      const img = localStorage.getItem('user_profile_img');
-      const bio = localStorage.getItem('user_bio');
-      const website = localStorage.getItem('user_website');
-      if (img) document.getElementById('profile-img').src = img;
-      if (bio) document.getElementById('bio').value = bio;
-      if (website) {
-        document.getElementById('website-link').value = website;
-        document.getElementById('user-website').href = website;
-        document.getElementById('user-website').textContent = website;
+      try {
+        const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts?wallet=${wallet}`);
+        const nfts = await res.json();
+        renderNFTs(nfts);
+      } catch (err) {
+        console.error('Failed to fetch NFTs:', err);
       }
     }
 
-    function saveProfile() {
-      const bio = document.getElementById('bio').value;
-      localStorage.setItem('user_bio', bio);
-      const fileInput = document.getElementById('profile-upload');
-      if (fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          document.getElementById('profile-img').src = e.target.result;
-          localStorage.setItem('user_profile_img', e.target.result);
-        };
-        reader.readAsDataURL(fileInput.files[0]);
+    function renderNFTs(nfts) {
+      const board = document.getElementById('nft-board');
+      board.innerHTML = '';
+
+      if (!Array.isArray(nfts) || nfts.length === 0) {
+        board.innerHTML = '<p>No NFTs found.</p>';
+        return;
       }
-    }
 
-    function saveWebsiteLink() {
-      const url = document.getElementById('website-link').value;
-      localStorage.setItem('user_website', url);
-      document.getElementById('user-website').href = url;
-      document.getElementById('user-website').textContent = url;
-    }
+      nfts.forEach(nft => {
+        const card = document.createElement('div');
+        card.className = 'nft-card';
 
-    function loadNFTs() {
-      const dummyNFTs = [
-        { id: 1, name: "Rare Seagull", img: "nft1.png", trait: "rare" },
-        { id: 2, name: "Legendary Seagull", img: "nft2.png", trait: "legendary" },
-        { id: 3, name: "Common Seagull", img: "nft3.png", trait: "common" },
-      ];
-
-      const nftList = document.getElementById('nft-list');
-      nftList.innerHTML = "";
-      dummyNFTs.forEach(nft => {
-        const nftCard = document.createElement('div');
-        nftCard.classList.add('nft-card');
-        nftCard.innerHTML = `
-          <img src="${nft.img}" alt="${nft.name}">
-          <h3>${nft.name}</h3>
+        card.innerHTML = `
+          <img src="${nft.image || 'default-nft.png'}" alt="NFT Image"/>
+          <h3>${nft.name || 'Untitled NFT'}</h3>
+          <p>${nft.description || ''}</p>
         `;
-        nftList.appendChild(nftCard);
+
+        board.appendChild(card);
       });
-    }
-
-    function filterNFTs() {
-      const trait = document.getElementById('filter').value;
-      loadNFTs();  // Call the function to reload NFTs based on the filter.
-    }
-
-    function nextPage() {
-      console.log('Next page clicked');
-      // Implement pagination logic.
-    }
-
-    function prevPage() {
-      console.log('Previous page clicked');
-      // Implement pagination logic.
     }
   </script>
 </body>

@@ -21,6 +21,21 @@
       z-index: 1000;
     }
 
+    #logout-btn {
+      padding: 6px 12px;
+      font-weight: bold;
+      display: none;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      margin-top: -6px;
+    }
+
+    #logout-btn:hover {
+      background-color: #0056b3;
+    }
+
     #wallet-container {
       border: 2px solid #000;
       border-radius: 10px;
@@ -64,7 +79,7 @@
 
     header nav ul li a {
       text-decoration: none;
-      color: #333;
+      color: #white;
       font-weight: bold;
     }
 
@@ -128,7 +143,7 @@
 <body>
   <div id="top-bar">
     <div style="flex:1;">
-      <button id="logout-btn" style="padding:6px 12px; font-weight:bold; display:none;">Logout</button>
+      <button id="logout-btn">Logout</button>
     </div>
     <div id="wallet-container">
       <div id="wallet-status">
@@ -136,7 +151,6 @@
       </div>
     </div>
   </div>
-
   <header>
     <nav>
       <ul>
@@ -170,14 +184,13 @@
     async function updateWalletStatus() {
       const wallet = localStorage.getItem('xumm_wallet_address');
       const indicator = document.getElementById('wallet-indicator');
-      const logoutBtn = document.getElementById('logout-btn');
 
       if (wallet) {
-        indicator.textContent = '🟢 NFTs';
+        indicator.textContent = '🟢 Connected';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Logged in';
-        logoutBtn.style.display = 'inline-block';
+        document.getElementById('logout-btn').style.display = 'inline-block';
         fetchNFTs(wallet);
       } else {
         indicator.textContent = '🔴 Login';
@@ -185,7 +198,6 @@
         indicator.classList.add('red');
         indicator.title = 'Click to login';
         indicator.onclick = startLoginFlow;
-        logoutBtn.style.display = 'none';
       }
     }
 

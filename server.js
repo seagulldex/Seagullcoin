@@ -2485,6 +2485,54 @@ app.post('/sell-nft', async (req, res) => {
 });
 
 
+const createTrustline = async (walletAddress) => {
+  const trustlineTx = {
+    TransactionType: 'TrustSet',
+    Account: walletAddress,
+    LimitAmount: {
+      currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin currency code (hex)
+      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer
+      value: '1000000', // Set a limit on how much SeagullCoin the wallet can hold
+    },
+  };
+
+  const payload = {
+    txjson: trustlineTx,
+    options: {
+      submit: true,
+      expire: 60,
+    },
+  };
+
+  try {
+    const { uuid, next } = await xumm.payload.create(payload);
+    console.log('Trustline Payload Created:', next);
+    return { uuid, next };
+  } catch (err) {
+    console.error('Error creating trustline:', err);
+    return { error: 'Failed to create trustline' };
+  }
+};
+
+
+app.post('/create-trustline', async (req, res) => {
+  const { walletAddress } = req.body;
+
+  if (!walletAddress) {
+    return res.status(400).json({ error: 'Missing walletAddress' });
+  }
+
+  try {
+    const { uuid, next } = await createTrustline(walletAddress);
+    return res.json({ next, uuid });
+  } catch (err) {
+    console.error('Trustline error:', err);
+    return res.status(500).json({ error: 'Failed to create trustline' });
+  }
+});
+
+
+
 
 // XRPL ping function (without disconnecting)
 async function xrplPing() {

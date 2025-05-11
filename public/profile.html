@@ -173,6 +173,15 @@
   </main>
 
   <script>
+    function convertIPFSToURL(ipfsUrl) {
+  if (!ipfsUrl) return "";
+  if (ipfsUrl.startsWith("ipfs://")) {
+    return "https://cloudflare-ipfs.com/ipfs/" + ipfsUrl.slice(7);
+  }
+  return ipfsUrl;
+}
+
+    
     let allNFTs = [];
     let currentPage = 1;
     const nftsPerPage = 20;
@@ -260,7 +269,7 @@
         card.className = "nft-card";
 
         const img = document.createElement('img');
-        img.src = metadata.image;
+        img.src = convertIPFSToURL(metadata.image);
         img.alt = metadata.name;
 
         const name = document.createElement('h3');

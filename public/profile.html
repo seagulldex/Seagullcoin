@@ -158,10 +158,11 @@
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      nftoken_id: nft.NFTokenID,
-      amount: amount,
-      wallet: localStorage.getItem("xumm_wallet"), // or however you're storing the wallet
-    }),
+  walletAddress: localStorage.getItem("xumm_wallet_address"),
+  nftId: nft.NFTokenID,
+  price: amount
+}),
+
   });
 
   const result = await response.json();

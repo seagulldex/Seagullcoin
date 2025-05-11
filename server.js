@@ -2318,7 +2318,12 @@ app.get('/nfts/:wallet', async (req, res) => {
       if (res.ok) {
         metadata = await res.json();
         collection = metadata.collection || metadata.name || null;
-        icon = metadata.image || null;
+        if (metadata.image?.startsWith('ipfs://')) {
+  icon = `https://nftstorage.link/ipfs/${metadata.image.replace('ipfs://', '')}`;
+} else {
+  icon = metadata.image || null;
+}
+
       }
     } catch (err) {
       console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);

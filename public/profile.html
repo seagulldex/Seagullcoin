@@ -150,7 +150,28 @@
         // Add Sell and Transfer buttons for each NFT
         const sellButton = document.createElement('button');
         sellButton.textContent = 'Sell';
-        sellButton.onclick = () => alert('Sell functionality for ' + metadata.name);
+        sellButton.onclick = async () => {
+  const amount = prompt("Enter price in SeagullCoin:");
+  if (!amount) return;
+
+  const response = await fetch("/sell-nft", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      nftoken_id: nft.NFTokenID,
+      amount: amount,
+      wallet: localStorage.getItem("xumm_wallet"), // or however you're storing the wallet
+    }),
+  });
+
+  const result = await response.json();
+  if (result.next) {
+    window.open(result.next.always, "_blank"); // Open the XUMM signing URL
+  } else {
+    alert("Error creating sell offer.");
+  }
+};
+
 
         const transferButton = document.createElement('button');
         transferButton.textContent = 'Transfer';

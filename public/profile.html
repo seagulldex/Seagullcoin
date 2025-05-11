@@ -126,15 +126,16 @@
   </style>
 </head>
 <body>
-
   <div id="top-bar">
-    <div id="wallet-container">
-      <div id="wallet-status">
-        <span id="wallet-indicator" class="red">🔴 Login</span>
-      </div>
+  <div style="flex:1;">
+    <button id="logout-btn" style="padding:6px 12px; font-weight:bold; display:none;">Logout</button>
+  </div>
+  <div id="wallet-container">
+    <div id="wallet-status">
+      <span id="wallet-indicator" class="red">🔴 Login</span>
     </div>
   </div>
-
+</div>
   <header>
     <nav>
       <ul>
@@ -218,6 +219,12 @@
         document.getElementById('nft-container').style.display = 'grid';
       }
     }
+    
+    document.getElementById('logout-btn').onclick = () => {
+  localStorage.removeItem('xumm_wallet_address');
+  location.reload();
+};
+
 
     function displayPage(page) {
       currentPage = page;

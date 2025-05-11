@@ -2279,11 +2279,19 @@ function hexToUtf8(hex) {
 }
 
 // Helper for fetch with timeout
-const fetchWithTimeout = (url, timeout = 5000) => {
-  return Promise.race([
-    fetch(url),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-  ]);
+const fetchWithTimeout = (url, options = {}, timeout = 7000) => {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Timeout")), timeout);
+    fetch(url, options)
+      .then(res => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch(err => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
 };
 
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)

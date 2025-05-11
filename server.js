@@ -2381,12 +2381,6 @@ async function fetchAllNFTs(wallet) {
 }
 
 
-
-
-
-
-
-
 // XRPL ping function (without disconnecting)
 async function xrplPing() {
   try {

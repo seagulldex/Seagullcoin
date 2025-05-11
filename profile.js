@@ -46,39 +46,6 @@
     #wallet-indicator.green {
       color: #44ff44;
     }
-.nft-cards-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 20px;
-}
-
-.nft-card {
-  width: 200px;
-  padding: 15px;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
-
-.nft-image {
-  width: 100%;
-  height: auto;
-  border-radius: 8px;
-}
-
-.nft-card h3 {
-  margin-top: 10px;
-  font-size: 1.1rem;
-}
-
-.nft-card p {
-  font-size: 0.9rem;
-  color: #666;
-}
-
 
     body {
       margin-top: 60px;
@@ -170,7 +137,10 @@
   <main>
     <h1>Your NFTs</h1>
     <div id="nft-board" class="nft-grid"></div>
-  </main>
+  <div id="nft-cards" class="nft-cards-container">
+    <!-- NFT cards will be injected here -->
+  </div>
+</main>
 
   <footer>
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>

@@ -202,7 +202,7 @@
       for (const nft of nftsToShow) {
         const card = document.createElement('div');
         card.className = "nft-card";
-
+        const metadata = nft.metadata || {};
         const img = document.createElement('img');
         img.src = nft.image || "https://via.placeholder.com/200";
         img.alt = nft.name;

@@ -104,6 +104,15 @@
       font-weight: bold;
       cursor: pointer;
     }
+
+    #loading-spinner {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    #loading-spinner img {
+      width: 100px;
+    }
   </style>
 </head>
 <body>
@@ -129,7 +138,11 @@
 
   <main>
     <h1>Your NFTs</h1>
-    <div id="nft-container" class="nft-grid"></div>
+    <div id="loading-spinner">
+      <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading seagull...">
+      <p>Loading your NFTs...</p>
+    </div>
+    <div id="nft-container" class="nft-grid" style="display:none;"></div>
     <div class="pagination" id="pagination"></div>
   </main>
 
@@ -180,13 +193,19 @@
 
     async function fetchNFTs(wallet) {
       try {
+        document.getElementById('loading-spinner').style.display = 'block';
+        document.getElementById('nft-container').style.display = 'none';
+
         const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts/${wallet}`);
         const data = await res.json();
-        allNFTs = data.nfts || [];
+        allNFTs = (data.nfts || []).filter(nft => nft.metadata && nft.metadata.image && nft.metadata.name);
         displayPage(1);
       } catch (err) {
         console.error("NFT fetch error:", err);
         document.getElementById('nft-container').innerHTML = "<p style='color:red;'>Failed to load NFTs.</p>";
+      } finally {
+        document.getElementById('loading-spinner').style.display = 'none';
+        document.getElementById('nft-container').style.display = 'grid';
       }
     }
 
@@ -200,16 +219,16 @@
       const nftsToShow = allNFTs.slice(start, end);
 
       for (const nft of nftsToShow) {
+        const metadata = nft.metadata;
         const card = document.createElement('div');
         card.className = "nft-card";
-        const metadata = nft.metadata || {};
 
         const img = document.createElement('img');
-        img.src = metadata.image || "https://via.placeholder.com/200";
-        img.alt = metadata.name || "NFT";
+        img.src = metadata.image;
+        img.alt = metadata.name;
 
         const name = document.createElement('h3');
-        name.textContent = metadata.name || "Unnamed NFT";
+        name.textContent = metadata.name;
 
         const desc = document.createElement('p');
         desc.textContent = metadata.description || "";

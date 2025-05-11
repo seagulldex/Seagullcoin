@@ -2448,6 +2448,35 @@ app.post('/transfer-nft', async (req, res) => {
   }
 });
 
+app.post('/sell-nft', async (req, res) => {
+  const { walletAddress, nftId, price } = req.body;
+
+  if (!walletAddress || !nftId || !price) {
+    return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
+  }
+
+  try {
+    const tx = {
+      TransactionType: 'NFTokenCreateOffer',
+      Account: walletAddress,
+      NFTokenID: nftId,
+      Amount: {
+        currency: 'SeagullCoin',
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+        value: price.toString(), // e.g. '1.0' SeagullCoin
+      },
+      Flags: 1 // sell offer
+    };
+
+    const payload = await xumm.payload.createAndSubscribe({ txjson: tx });
+    return res.json({ uuid: payload.uuid });
+  } catch (err) {
+    console.error('Sell NFT error:', err);
+    res.status(500).json({ error: 'Failed to create sell offer' });
+  }
+});
+
+
 
 // XRPL ping function (without disconnecting)
 async function xrplPing() {

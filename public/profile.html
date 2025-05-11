@@ -127,15 +127,16 @@
 </head>
 <body>
   <div id="top-bar">
-  <div style="flex:1;">
-    <button id="logout-btn" style="padding:6px 12px; font-weight:bold; display:none;">Logout</button>
-  </div>
-  <div id="wallet-container">
-    <div id="wallet-status">
-      <span id="wallet-indicator" class="red">🔴 Login</span>
+    <div style="flex:1;">
+      <button id="logout-btn" style="padding:6px 12px; font-weight:bold; display:none;">Logout</button>
+    </div>
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
+      </div>
     </div>
   </div>
-</div>
+
   <header>
     <nav>
       <ul>
@@ -169,12 +170,14 @@
     async function updateWalletStatus() {
       const wallet = localStorage.getItem('xumm_wallet_address');
       const indicator = document.getElementById('wallet-indicator');
+      const logoutBtn = document.getElementById('logout-btn');
 
       if (wallet) {
         indicator.textContent = '🟢 NFTs';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Logged in';
+        logoutBtn.style.display = 'inline-block';
         fetchNFTs(wallet);
       } else {
         indicator.textContent = '🔴 Login';
@@ -182,6 +185,7 @@
         indicator.classList.add('red');
         indicator.title = 'Click to login';
         indicator.onclick = startLoginFlow;
+        logoutBtn.style.display = 'none';
       }
     }
 
@@ -219,12 +223,11 @@
         document.getElementById('nft-container').style.display = 'grid';
       }
     }
-    
-    document.getElementById('logout-btn').onclick = () => {
-  localStorage.removeItem('xumm_wallet_address');
-  location.reload();
-};
 
+    document.getElementById('logout-btn').onclick = () => {
+      localStorage.removeItem('xumm_wallet_address');
+      location.reload();
+    };
 
     function displayPage(page) {
       currentPage = page;
@@ -277,6 +280,5 @@
       }
     }
   </script>
-
 </body>
 </html>

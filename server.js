@@ -2415,6 +2415,39 @@ async function fetchAllNFTs(wallet) {
 }
 
 
+// /transfer-nft — direct transfer to another wallet
+app.post('/transfer-nft', async (req, res) => {
+  const { walletAddress, nftId, recipientAddress } = req.body;
+
+  if (!walletAddress || !nftId || !recipientAddress) {
+    return res.status(400).json({ success: false, message: 'Missing parameters' });
+  }
+
+  try {
+    const tx = {
+      TransactionType: 'NFTokenCreateOffer',
+      Account: walletAddress,
+      NFTokenID: nftId,
+      Destination: recipientAddress,
+      Flags: 9, // Transfer only (fully automatic accept mode)
+    };
+
+    const prepared = await client.autofill(tx);
+    // NOTE: Replace this with actual signing logic
+    // const signed = signWithYourWallet(prepared);
+    // const result = await client.submitAndWait(signed.tx_blob);
+
+    return res.json({
+      success: true,
+      message: `Transfer offer created for NFT ${nftId} (not signed)`,
+      tx: prepared,
+    });
+  } catch (err) {
+    console.error('Transfer NFT error:', err);
+    return res.status(500).json({ success: false, message: 'Internal error' });
+  }
+});
+
 
 // XRPL ping function (without disconnecting)
 async function xrplPing() {

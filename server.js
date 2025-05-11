@@ -2308,27 +2308,32 @@ app.get('/nfts/:wallet', async (req, res) => {
     const rawNFTs = await fetchAllNFTs(wallet);
 
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
-      const uri = hexToUtf8(nft.URI);
-      let metadata = null, collection = null, icon = null;
+  const uri = hexToUtf8(nft.URI);
+  let metadata = null, collection = null, icon = null;
 
-      if (uri.startsWith('ipfs://')) {
-        const ipfsUrl = `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`;
-        metadata = await fetchWithTimeout(ipfsUrl);
-
-        if (metadata) {
-          collection = metadata.collection || metadata.name || null;
-          icon = metadata.image || null;
-        }
+  if (uri.startsWith('ipfs://')) {
+    const ipfsUrl = `https://nftstorage.link/ipfs/${uri.replace('ipfs://', '')}`;
+    try {
+      const res = await fetchWithTimeout(ipfsUrl, {}, 6000);  // Shorter timeout per fetch
+      if (res.ok) {
+        metadata = await res.json();
+        collection = metadata.collection || metadata.name || null;
+        icon = metadata.image || null;
       }
+    } catch (err) {
+      console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
+    }
+  }
 
-      return {
-        NFTokenID: nft.NFTokenID,
-        URI: uri,
-        collection,
-        icon,
-        metadata
-      };
-    }));
+  return {
+    NFTokenID: nft.NFTokenID,
+    URI: uri,
+    collection,
+    icon,
+    metadata
+  };
+}));
+
 
     // Cache the result
     nftCache.set(wallet, { data: parsed, timestamp: Date.now() });

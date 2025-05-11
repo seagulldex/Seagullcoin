@@ -1,6 +1,7 @@
 import sqlite3Init from 'sqlite3';
 const sqlite3 = sqlite3Init.verbose();
 const db = new sqlite3.Database('./my.db');
+const walletAddress = xummResponse.payload.address; // ensure this is correct
 
 import { promisify } from 'util';
 
@@ -227,6 +228,21 @@ const createTables = async () => {
     console.error('Error creating tables:', err);
   }
 };
+
+
+
+
+// Placeholder for your XUMM login initiation logic
+async function initiateXummLogin() {
+  // Implement your actual XUMM login logic here, typically involving an API call to XUMM
+  // This is a placeholder example, replace it with actual code to initiate the login
+  return {
+    payload: {
+      address: 'rPLvYSKRUc3vqU3b4guho8Ya5ZC2X5ahYa' // Example address
+    }
+  };
+}
+
 
 const getNFTIdByTokenId = async (token_id) => {
   const query = `

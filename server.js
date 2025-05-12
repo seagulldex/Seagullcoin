@@ -2646,35 +2646,64 @@ async function getNFTokenOwner(tokenId) {
   return owner;
 }
 
+async function getMintedNFTsFromBlockchain() {
+  // Query the blockchain (XRPL or other) to get a list of minted NFTs
+  // This can include getting the token_id, owner, and other basic NFT info.
+  
+  // Example of getting NFTs from XRPL (you will need the XRPL SDK to do this)
+  // For example, this is a placeholder and needs to be replaced with actual logic
+  const nftData = await xrplClient.request({
+    method: 'account_nfts',
+    params: {
+      account: 'rEXAMPLEOWNER', // Replace with dynamic wallet addresses as needed
+    }
+  });
+
+  return nftData.result.nfts; // This returns the list of minted NFTs
+}
+
+async function getMetadataFromStorage(token_id) {
+  try {
+    // This assumes the metadata is stored on IPFS or NFT.Storage
+    const metadataUrl = `https://ipfs.io/ipfs/${token_id}`; // Replace this with the actual IPFS URL or NFT.Storage
+    
+    const response = await fetch(metadataUrl);
+    const metadata = await response.json();
+
+    return metadata;
+  } catch (error) {
+    console.error("Error fetching metadata for token_id:", token_id, error);
+    return {};
+  }
+}
+
+const walletAddress = 'rEXAMPLEOWNER'; // Replace with an actual wallet address
+
 
 // Get full NFT catalog: all minted NFTs and their current owners
 app.get('/catalog', async (req, res) => {
   try {
-    // Replace the testNFT with the actual query to fetch NFTs
-    const nfts = await getNFTCatalog(); // This should be a function fetching actual NFTs from your source (e.g., database, blockchain, etc.)
+    // Query the blockchain or external service for minted NFTs
+    const mintedNFTs = await getMintedNFTsFromBlockchain(); // Implement this function
+    
+    // Fetch metadata for each NFT from IPFS or NFT.Storage
+    const nfts = await Promise.all(mintedNFTs.map(async (nft) => {
+      const metadata = await getMetadataFromStorage(nft.token_id); // Implement this function
+      return {
+        token_id: nft.token_id,
+        owner: nft.owner,
+        metadata: metadata
+      };
+    }));
 
-    res.json({ success: true, nfts });
+    res.json({ success: true, nfts: nfts });
   } catch (e) {
     res.json({ success: false, error: e.message });
   }
 });
 
-// Example function to fetch NFTs (You need to replace this with actual logic)
-async function getNFTCatalog() {
-  // Fetching NFTs logic here, for example, querying a database or API
-  return [
-    {
-      token_id: '00080000AABBCCDDEEFF00112233445566778899D3',
-      owner: 'rEXAMPLEOWNER',
-      metadata: {
-        name: 'Test NFT',
-        description: 'This is a test NFT',
-        image: 'ipfs://bafybeid2x..../metadata.jpg'
-      }
-    },
-    // Add more NFTs here as needed
-  ];
-}
+
+
 
 
 // Call the XRPL ping when the server starts

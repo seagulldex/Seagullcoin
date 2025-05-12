@@ -89,21 +89,16 @@
 
   <script>
     function convertIPFSToURL(ipfsUrl) {
-  if (!ipfsUrl) return "https://via.placeholder.com/200?text=No+Image";
-
-  if (ipfsUrl.includes("ipfs://")) {
-    return "https://ipfs.io/ipfs/" + ipfsUrl.split("ipfs://")[1];
-  }
-
-  // Fallback: try to extract CID if included in URL
-  if (ipfsUrl.match(/Qm[1-9A-HJ-NP-Za-km-z]{44,}/)) {
-    const cid = ipfsUrl.match(/Qm[1-9A-HJ-NP-Za-km-z]{44,}/)[0];
-    return `https://ipfs.io/ipfs/${cid}`;
-  }
-
-  return ipfsUrl;
-}
-
+      if (!ipfsUrl) return "https://via.placeholder.com/200?text=No+Image";
+      if (ipfsUrl.includes("ipfs://")) {
+        return "https://ipfs.io/ipfs/" + ipfsUrl.split("ipfs://")[1];
+      }
+      if (ipfsUrl.match(/Qm[1-9A-HJ-NP-Za-km-z]{44,}/)) {
+        const cid = ipfsUrl.match(/Qm[1-9A-HJ-NP-Za-km-z]{44,}/)[0];
+        return `https://ipfs.io/ipfs/${cid}`;
+      }
+      return ipfsUrl;
+    }
 
     let allNFTs = [];
     let currentPage = 1;
@@ -206,48 +201,45 @@
         const desc = document.createElement('p');
         desc.textContent = metadata.description || "No description available.";
         if (metadata.collection) {
-        const collectionLabel = document.createElement('p');
-        collectionLabel.innerHTML = `<strong>Collection:</strong> ${metadata.collection.name || "Unnamed"}`;
-        card.appendChild(collectionLabel);
-       }
+          const collectionLabel = document.createElement('p');
+          collectionLabel.innerHTML = `<strong>Collection:</strong> ${metadata.collection.name || "Unnamed"}`;
+          card.appendChild(collectionLabel);
+        }
 
         if (metadata.properties && typeof metadata.properties === "object") {
-        const propList = document.createElement('ul');
-        propList.style.textAlign = "left";
-        for (const key in metadata.properties) {
-        const li = document.createElement('li');
-        li.textContent = `${key}: ${metadata.properties[key]}`;
-        propList.appendChild(li);
-         }
-        card.appendChild(propList);
-       }
-
+          const propList = document.createElement('ul');
+          propList.style.textAlign = "left";
+          for (const key in metadata.properties) {
+            const li = document.createElement('li');
+            li.textContent = `${key}: ${metadata.properties[key]}`;
+            propList.appendChild(li);
+          }
+          card.appendChild(propList);
+        }
 
         const transferButton = document.createElement('button');
         transferButton.textContent = 'Transfer';
         transferButton.onclick = async () => {
-        const destWallet = prompt("Enter destination wallet address:");
-        if (!destWallet) return;
+          const destWallet = prompt("Enter destination wallet address:");
+          if (!destWallet) return;
 
-        const response = await fetch("/transfer-nft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-        sender: localStorage.getItem("xumm_wallet_address"),
-        nftId: nft.NFTokenID,
-        destination: destWallet
-        }),
-      });
+          const response = await fetch("/transfer-nft", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sender: localStorage.getItem("xumm_wallet_address"),
+              nftId: nft.NFTokenID,
+              destination: destWallet
+            }),
+          });
 
-       const result = await response.json();
-       if (result.next) {
-       window.open(result.next.always, "_blank");
-       } else {
-       alert("Error initiating transfer.");
-       }
-     };
-
-
+          const result = await response.json();
+          if (result.next) {
+            window.open(result.next.always, "_blank");
+          } else {
+            alert("Error initiating transfer.");
+          }
+        };
 
         card.appendChild(img);
         card.appendChild(name);
@@ -285,7 +277,6 @@
               alert("Error creating sell offer.");
             }
           };
-          
           card.appendChild(sellButton);
         }
 

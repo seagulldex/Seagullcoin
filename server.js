@@ -2291,7 +2291,7 @@ const fetchWithTimeout = (url, options = {}, timeout = 7000) => {
 };
 
 // Define multiple IPFS gateways
-const IPFS_GATEWAYS = [
+const ipfsGateways = [
   'https://nftstorage.link/ipfs/',
   'https://gateway.pinata.cloud/ipfs/',
   'https://cloudflare-ipfs.com/ipfs/',
@@ -2299,24 +2299,26 @@ const IPFS_GATEWAYS = [
   'https://ipfs.io/ipfs/'
 ];
 
-
 // Helper to fetch metadata from IPFS with retries
-async function fetchMetadataWithRetry(cid, retries = 3, timeout = 20000) {
-  for (let gateway of IPFS_GATEWAYS) {
-    const url = gateway + cid;
-    for (let attempt = 0; attempt < retries; attempt++) {
-      try {
-        const res = await fetchWithTimeout(url, timeout);
-        if (!res.ok) throw new Error(`Failed with status ${res.status}`);
-        return await res.json(); // Success
-      } catch (err) {
-        console.warn(`Attempt ${attempt + 1} failed for ${url}:`, err.message);
-        // Retry the same gateway
+const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
+  let attempt = 0;
+  let metadata = null;
+
+  while (attempt < retries && !metadata) {
+    const gatewayUrl = ipfsGateways[attempt % ipfsGateways.length];  // Cycle through gateways
+    try {
+      const res = await fetchWithTimeout(gatewayUrl + ipfsUrl.replace('ipfs://', ''), {}, 10000);  // 10 seconds
+      if (res.ok) {
+        metadata = await res.json();
       }
+    } catch (err) {
+      console.warn(`Retry attempt ${attempt + 1} failed with gateway ${gatewayUrl}: ${err.message}`);
     }
+    attempt++;
   }
-  throw new Error(`Failed to fetch metadata for CID ${cid} from all gateways`);
-}
+
+  return metadata;
+};
 
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
 app.get('/nfts/:wallet', async (req, res) => {

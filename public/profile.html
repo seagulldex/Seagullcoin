@@ -9,46 +9,52 @@
   <style>
     .nft-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 16px;
       padding: 20px;
     }
-
     .nft-card {
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 12px;
+      border: 1px solid #444;
+      border-radius: 12px;
+      padding: 14px;
+      background: #1e1e1e;
+      color: #fff;
       text-align: center;
-      background: #2a2a2a;
     }
-
     .nft-card img {
-      max-width: 100%;
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
       border-radius: 8px;
+      margin-bottom: 10px;
     }
-
     .pagination {
       text-align: center;
       margin: 20px;
     }
-
     .pagination button {
       margin: 0 5px;
-      padding: 5px 10px;
+      padding: 5px 12px;
     }
-
     #logout-btn {
       display: none;
     }
-
-    .green {
-      color: green;
+    .green { color: green; }
+    .red { color: red; }
+    .trait {
+      font-size: 0.9em;
+      text-align: left;
+      margin: 2px 0;
     }
-
-    .red {
-      color: red;
+    button {
+      margin: 5px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      background: #00bfa5;
+      color: white;
+      cursor: pointer;
     }
-
     .seagull-spinner {
       width: 50px;
     }
@@ -88,23 +94,6 @@
   </main>
 
   <script>
-    function convertIPFSToURL(ipfsUrl) {
-  if (!ipfsUrl) return "https://via.placeholder.com/200?text=No+Image";
-
-  if (ipfsUrl.includes("ipfs://")) {
-    return "https://ipfs.io/ipfs/" + ipfsUrl.split("ipfs://")[1];
-  }
-
-  // Fallback: try to extract CID if included in URL
-  if (ipfsUrl.match(/Qm[1-9A-HJ-NP-Za-km-z]{44,}/)) {
-    const cid = ipfsUrl.match(/Qm[1-9A-HJ-NP-Za-km-z]{44,}/)[0];
-    return `https://ipfs.io/ipfs/${cid}`;
-  }
-
-  return ipfsUrl;
-}
-
-
     let allNFTs = [];
     let currentPage = 1;
     const nftsPerPage = 50;
@@ -112,6 +101,13 @@
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
     });
+
+    function convertIPFSToURL(ipfsUrl) {
+      if (!ipfsUrl) return "https://via.placeholder.com/200?text=No+Image";
+      return ipfsUrl.startsWith("ipfs://")
+        ? "https://ipfs.io/ipfs/" + ipfsUrl.split("ipfs://")[1]
+        : ipfsUrl;
+    }
 
     async function updateWalletStatus() {
       const wallet = localStorage.getItem('xumm_wallet_address');
@@ -121,14 +117,12 @@
         indicator.textContent = '🟢 Connected';
         indicator.classList.remove('red');
         indicator.classList.add('green');
-        indicator.title = 'Logged in';
         document.getElementById('logout-btn').style.display = 'inline-block';
         fetchNFTs(wallet);
       } else {
         indicator.textContent = '🔴 Login';
         indicator.classList.remove('green');
         indicator.classList.add('red');
-        indicator.title = 'Click to login';
         indicator.onclick = startLoginFlow;
       }
     }
@@ -145,10 +139,16 @@
         if (loginStatus.loggedIn) {
           clearInterval(interval);
           localStorage.setItem('xumm_wallet_address', loginStatus.account);
+          localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
           updateWalletStatus();
         }
       }, 3000);
     }
+
+    document.getElementById('logout-btn').onclick = () => {
+      localStorage.clear();
+      location.reload();
+    };
 
     async function fetchNFTs(wallet) {
       try {
@@ -158,55 +158,23 @@
         const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts/${wallet}`);
         const data = await res.json();
         allNFTs = data.nfts || [];
-
-        console.log("Total NFTs fetched:", allNFTs.length);
-        console.log("NFTs missing metadata:", allNFTs.filter(nft => !nft.metadata || !nft.metadata.name || !nft.metadata.image).length);
-
         displayPage(1);
       } catch (err) {
-        console.error("NFT fetch error:", err);
-        document.getElementById('nft-container').innerHTML = "<p style='color:red;'>Failed to load NFTs.</p>";
+        console.error("Error loading NFTs:", err);
       } finally {
         document.getElementById('loading-spinner').style.display = 'none';
         document.getElementById('nft-container').style.display = 'grid';
       }
     }
 
-    document.getElementById('logout-btn').onclick = () => {
-      localStorage.removeItem('xumm_wallet_address');
-      location.reload();
-    };
-
     function displayPage(page) {
       currentPage = page;
       const container = document.getElementById('nft-container');
       container.innerHTML = "";
-      
-      function updatePagination() {
-  const pagination = document.getElementById('pagination');
-  pagination.innerHTML = "";
-
-  const totalPages = Math.ceil(allNFTs.length / nftsPerPage);
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.textContent = i;
-    if (i === currentPage) {
-      btn.disabled = true;
-    }
-    btn.onclick = () => displayPage(i);
-    pagination.appendChild(btn);
-  }
-}
-
 
       const start = (page - 1) * nftsPerPage;
       const end = start + nftsPerPage;
       const nftsToShow = allNFTs.slice(start, end);
-
-      if (nftsToShow.length === 0) {
-        container.innerHTML = "<p>No NFTs found. Please try again later.</p>";
-        return;
-      }
 
       for (const nft of nftsToShow) {
         const metadata = nft.metadata || {};
@@ -214,117 +182,126 @@
         card.className = "nft-card";
 
         const img = document.createElement('img');
-        img.src = convertIPFSToURL(metadata.image) || "https://via.placeholder.com/200?text=No+Image";
+        img.src = convertIPFSToURL(metadata.image);
         img.alt = metadata.name || "Unnamed NFT";
-
-        const name = document.createElement('h3');
-        name.textContent = metadata.name || "Unnamed NFT";
-
-        const desc = document.createElement('p');
-        desc.textContent = metadata.description || "No description available.";
-        if (metadata.collection) {
-        const collectionLabel = document.createElement('p');
-        collectionLabel.innerHTML = `<strong>Collection:</strong> ${metadata.collection.name || "Unnamed"}`;
-        card.appendChild(collectionLabel);
-       }
-
-        if (metadata.properties && typeof metadata.properties === "object") {
-        const propList = document.createElement('ul');
-        propList.style.textAlign = "left";
-        for (const key in metadata.properties) {
-        const li = document.createElement('li');
-        li.textContent = `${key}: ${metadata.properties[key]}`;
-        propList.appendChild(li);
-         }
-        card.appendChild(propList);
-       }
-
-
-        const transferButton = document.createElement('button');
-        transferButton.textContent = 'Transfer';
-        transferButton.onclick = async () => {
-        const destWallet = prompt("Enter destination wallet address:");
-        if (!destWallet) return;
-
-        const response = await fetch("https://sglcn-x20-api.glitch.me/transfer-nft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-        sender: localStorage.getItem("xumm_wallet_address"),
-        nftId: nft.NFTokenID,
-        destination: destWallet,
-        xummPayloadUUID: localStorage.getItem('xumm_payload_uuid') // Or another way to pass it if needed
-       }),
-      });
-
-
-       const result = await response.json();
-       if (result.next) {
-       window.open(result.next.always, "_blank");
-       } else {
-       alert("Error initiating transfer.");
-       }
-     };
-
-
-
         card.appendChild(img);
-        card.appendChild(name);
-        card.appendChild(desc);
-        card.appendChild(transferButton);
 
-        // Handle Listed or Sell Offer NFTs
-        if (nft.listed || nft.sellOffer) {
-          const listedLabel = document.createElement('p');
-          listedLabel.textContent = "Already Listed for Sale";
-          listedLabel.style.color = "green";
-          listedLabel.style.fontWeight = "bold";
-          card.appendChild(listedLabel);
-        } else {
-          const sellButton = document.createElement('button');
-          sellButton.textContent = 'Sell';
-          sellButton.onclick = async () => {
-            const amount = prompt("Enter price in SeagullCoin:");
-            if (!amount) return;
+        card.innerHTML += `
+          <h3>${metadata.name || "Unnamed NFT"}</h3>
+          <p>${metadata.description || "No description"}</p>
+          ${metadata.collection ? `<p><strong>Collection:</strong> ${metadata.collection.name}</p>` : ''}
+        `;
 
-            const response = await fetch("/sell-nft", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                walletAddress: localStorage.getItem("xumm_wallet_address"),
-                nftId: nft.NFTokenID,
-                price: amount
-              }),
-            });
-
-            const result = await response.json();
-            if (result.next) {
-              window.open(result.next.always, "_blank");
-            } else {
-              alert("Error creating sell offer.");
-            }
-          };
-          
-          card.appendChild(sellButton);
+        if (Array.isArray(metadata.attributes)) {
+          metadata.attributes.forEach(attr => {
+            const trait = document.createElement('div');
+            trait.className = "trait";
+            trait.textContent = `${attr.trait_type} : ${attr.value}`;
+            card.appendChild(trait);
+          });
         }
+        
+        // Handle Listed or Sell Offer NFTs
+if (nft.listed || nft.sellOffer) {
+  const listedLabel = document.createElement('p');
+  listedLabel.textContent = "Already Listed for Sale";
+  listedLabel.style.color = "green";
+  listedLabel.style.fontWeight = "bold";
+  card.appendChild(listedLabel);
+} else {
+  const sellButton = document.createElement('button');
+  sellButton.textContent = 'Sell (SGLCN)';
+  sellButton.classList.add("mint-btn");
+  sellButton.onclick = async () => {
+    const amount = prompt("Enter price in SeagullCoin:");
+    if (!amount) return;
+
+    const response = await fetch("/sell-nft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        walletAddress: localStorage.getItem("xumm_wallet_address"),
+        nftId: nft.NFTokenID,
+        price: amount
+      }),
+    });
+
+    const result = await response.json();
+    if (result?.next?.always) {
+      window.open(result.next.always, "_blank");
+    } else {
+      alert("Error creating sell offer.");
+    }
+  };
+  card.appendChild(sellButton);
+}
+
+
+        const transferBtn = document.createElement('button');
+        transferBtn.textContent = 'Transfer';
+        transferBtn.onclick = async () => {
+          const destination = prompt("Wallet address to transfer to:");
+          if (!destination) return;
+          const res = await fetch("https://sglcn-x20-api.glitch.me/transfer-nft", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sender: localStorage.getItem("xumm_wallet_address"),
+              nftId: nft.NFTokenID,
+              destination,
+              xummPayloadUUID: localStorage.getItem("xumm_payload_uuid")
+            })
+          });
+          const result = await res.json();
+          if (result?.next?.always) {
+            window.open(result.next.always, "_blank");
+          } else {
+            alert("Transfer failed.");
+          }
+        };
+        card.appendChild(transferBtn);
+
+        const sellBtn = document.createElement('button');
+        sellBtn.textContent = 'Sell (SGLCN)';
+        sellBtn.onclick = async () => {
+          const price = prompt("Enter sale price in SeagullCoin:");
+          if (!price) return;
+          const res = await fetch("https://sglcn-x20-api.glitch.me/sell-nft", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              owner: localStorage.getItem("xumm_wallet_address"),
+              nftId: nft.NFTokenID,
+              amount: price,
+              xummPayloadUUID: localStorage.getItem("xumm_payload_uuid")
+            })
+          });
+          const result = await res.json();
+          if (result?.next?.always) {
+            window.open(result.next.always, "_blank");
+          } else {
+            alert("Failed to create sell offer.");
+          }
+        };
+        card.appendChild(sellBtn);
 
         container.appendChild(card);
       }
 
-      buildPagination();
+      updatePagination();
     }
 
-    function buildPagination() {
-      const totalPages = Math.ceil(allNFTs.length / nftsPerPage);
-      const pagEl = document.getElementById('pagination');
-      pagEl.innerHTML = "";
+    function updatePagination() {
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = "";
 
+      const totalPages = Math.ceil(allNFTs.length / nftsPerPage);
       for (let i = 1; i <= totalPages; i++) {
         const btn = document.createElement('button');
         btn.textContent = i;
         if (i === currentPage) btn.disabled = true;
         btn.onclick = () => displayPage(i);
-        pagEl.appendChild(btn);
+        pagination.appendChild(btn);
       }
     }
   </script>

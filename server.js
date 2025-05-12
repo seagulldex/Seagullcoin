@@ -2753,6 +2753,75 @@ app.get('/catalog', async (req, res) => {
 });
 
 
+app.get('/listed', async (req, res) => {
+  try {
+    const allMintedNFTs = await loadAllMintedNFTs(); // You must implement this based on your storage system
+
+    const listed = await Promise.all(allMintedNFTs.map(async (nft) => {
+      const uri = hexToUtf8(nft.URI);
+      let metadata = null, collection = null, icon = null;
+      let listed = false, price = null;
+
+      // Try loading metadata
+      if (uri.startsWith('ipfs://')) {
+        try {
+          const ipfsUrl = uri.replace('ipfs://', '');
+          metadata = await fetchMetadataWithRetry(ipfsUrl);
+          if (metadata) {
+            collection = metadata.collection || metadata.name || null;
+            icon = metadata.image || null;
+          }
+        } catch (e) {
+          console.warn(`Metadata load failed for ${nft.NFTokenID}`);
+        }
+      }
+
+      // Check for valid sell offer in SeagullCoin
+      try {
+        const offerRes = await fetch(xrplApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            method: 'nft_sell_offers',
+            params: [{ nft_id: nft.NFTokenID }]
+          })
+        });
+
+        const offerData = await offerRes.json();
+        if (offerData.result?.offers?.length > 0) {
+          const valid = offerData.result.offers.find(o =>
+            o.amount?.currency === '53656167756C6C436F696E000000000000000000' &&
+            o.amount?.issuer === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+          );
+          if (valid) {
+            listed = true;
+            price = parseFloat(valid.amount?.value);
+          }
+        }
+      } catch (err) {
+        console.warn(`Offer check failed: ${err.message}`);
+      }
+
+      if (listed) {
+        return {
+          NFTokenID: nft.NFTokenID,
+          URI: uri,
+          metadata,
+          collection,
+          icon,
+          price
+        };
+      } else {
+        return null;
+      }
+    }));
+
+    // Filter out nulls
+    const onlyListed = listed.filter(n => n !== null);
+    res.json({ listed: onlyListed });
+
+  } cat
+
 
 
 

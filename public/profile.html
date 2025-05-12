@@ -200,42 +200,41 @@
             card.appendChild(trait);
           });
         }
-        
+
         // Handle Listed or Sell Offer NFTs
-if (nft.listed || nft.sellOffer) {
-  const listedLabel = document.createElement('p');
-  listedLabel.textContent = "Already Listed for Sale";
-  listedLabel.style.color = "green";
-  listedLabel.style.fontWeight = "bold";
-  card.appendChild(listedLabel);
-} else {
-  const sellButton = document.createElement('button');
-  sellButton.textContent = 'Sell (SGLCN)';
-  sellButton.classList.add("mint-btn");
-  sellButton.onclick = async () => {
-    const amount = prompt("Enter price in SeagullCoin:");
-    if (!amount) return;
+        if (nft.listed || nft.sellOffer) {
+          const listedLabel = document.createElement('p');
+          listedLabel.textContent = `Listed for Sale: ${nft.sellOffer.price} SGLCN`;
+          listedLabel.style.color = "green";
+          listedLabel.style.fontWeight = "bold";
+          card.appendChild(listedLabel);
+        } else {
+          const sellButton = document.createElement('button');
+          sellButton.textContent = 'Sell (SGLCN)';
+          sellButton.classList.add("mint-btn");
+          sellButton.onclick = async () => {
+            const amount = prompt("Enter price in SeagullCoin:");
+            if (!amount) return;
 
-    const response = await fetch("/sell-nft", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        walletAddress: localStorage.getItem("xumm_wallet_address"),
-        nftId: nft.NFTokenID,
-        price: amount
-      }),
-    });
+            const response = await fetch("/sell-nft", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                walletAddress: localStorage.getItem("xumm_wallet_address"),
+                nftId: nft.NFTokenID,
+                price: amount
+              }),
+            });
 
-    const result = await response.json();
-    if (result?.next?.always) {
-      window.open(result.next.always, "_blank");
-    } else {
-      alert("Error creating sell offer.");
-    }
-  };
-  card.appendChild(sellButton);
-}
-
+            const result = await response.json();
+            if (result?.next?.always) {
+              window.open(result.next.always, "_blank");
+            } else {
+              alert("Error creating sell offer.");
+            }
+          };
+          card.appendChild(sellButton);
+        }
 
         const transferBtn = document.createElement('button');
         transferBtn.textContent = 'Transfer';
@@ -260,7 +259,6 @@ if (nft.listed || nft.sellOffer) {
           }
         };
         card.appendChild(transferBtn);
-
 
         container.appendChild(card);
       }

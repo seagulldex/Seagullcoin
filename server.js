@@ -5,8 +5,8 @@ import cors from 'cors';
 import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
-import dotenv from 'dotenv';
-import fs from 'fs';
+import dotenv from 'dotehttps://glitch.com/edit/#!/sglcn-x20-api?path=server.js%3A9%3A29nv';
+import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import rateLimit from 'express-rate-limit';
@@ -2822,6 +2822,7 @@ app.get('/listed', async (req, res) => {
   res.status(500).json({ error: 'Failed to fetch listed NFTs', details: err.message });
 }
 });
+
 
 
 

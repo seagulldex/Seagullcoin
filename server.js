@@ -2555,6 +2555,25 @@ app.post('/buy-nft', async (req, res) => {
   }
 });
 
+const checkTrustline = async (walletAddress) => {
+  const response = await xrplClient.request({
+    method: "account_lines",
+    params: [
+      {
+        account: walletAddress,
+      },
+    ],
+  });
+  
+  const trustlines = response.result.lines;
+  const seagullCoinTrustline = trustlines.find(
+    (line) => line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno" && line.currency === "53656167756C6C436F696E000000000000000000"
+  );
+  
+  return seagullCoinTrustline;
+};
+
+
 app.post('/accept-sell-offer', async (req, res) => {
   const { walletAddress, sellOfferId } = req.body;
 

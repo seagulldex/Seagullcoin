@@ -2325,6 +2325,7 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
+  // Check cache
   const cached = nftCache.get(wallet);
   if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
     return res.json({ nfts: cached.data });
@@ -2350,6 +2351,7 @@ app.get('/nfts/:wallet', async (req, res) => {
         }
       }
 
+      // Check for valid SeagullCoin listing
       let listed = false;
       let price = null;
 
@@ -2364,18 +2366,18 @@ app.get('/nfts/:wallet', async (req, res) => {
         });
 
         const offerData = await offerRes.json();
+        const offers = offerData.result?.offers || [];
 
-        if (offerData.result?.offers?.length > 0) {
-          const validOffer = offerData.result.offers.find(offer =>
-            offer.amount?.currency === '53656167756C6C436F696E000000000000000000' &&
-            offer.amount?.issuer === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
-          );
+        const validOffer = offers.find(offer =>
+          offer.amount?.currency === '53656167756C6C436F696E000000000000000000' &&
+          offer.amount?.issuer === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+        );
 
-          if (validOffer) {
-            listed = true;
-            price = parseFloat(validOffer.amount?.value);
-          }
+        if (validOffer) {
+          listed = true;
+          price = parseFloat(validOffer.amount?.value);
         }
+
       } catch (err) {
         console.warn(`Offer check failed for ${nft.NFTokenID}: ${err.message}`);
       }
@@ -2392,6 +2394,7 @@ app.get('/nfts/:wallet', async (req, res) => {
     }));
 
     nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
+
     res.json({ nfts: parsed });
   } catch (err) {
     console.error('NFT fetch error:', err);

@@ -2618,6 +2618,61 @@ async function xrplPing() {
   }
 }
 
+async function loadAllMintedNFTs() {
+  // Example: if stored in a JSON file or database
+  const fs = require('fs').promises;
+  const raw = await fs.readFile('./minted_nfts.json', 'utf-8');
+  return JSON.parse(raw);
+}
+
+async function getMetadataFromIPFS(cid) {
+  const axios = require('axios');
+  const response = await axios.get(`https://ipfs.io/ipfs/${cid}`);
+  return response.data;
+}
+
+async function getNFTokenOwner(tokenId) {
+  const xrpl = require('xrpl');
+  const client = new xrpl.Client("wss://xrplcluster.com");
+  await client.connect();
+
+  const nftData = await client.request({
+    command: "nft_info",
+    nft_id: tokenId
+  });
+
+  const owner = nftData.result?.nft_info?.owner;
+  await client.disconnect();
+  return owner;
+}
+
+
+// Get full NFT catalog: all minted NFTs and their current owners
+app.get('/catalog', async (req, res) => {
+  try {
+    // Example: load minted NFTs from local DB or storage
+    const nftList = await loadAllMintedNFTs(); // <-- you must implement this
+
+    // For each NFT, resolve current owner and metadata
+    const result = await Promise.all(nftList.map(async (nft) => {
+      const meta = await getMetadataFromIPFS(nft.metadata_uri); // extract name, image, etc.
+      const owner = await getNFTokenOwner(nft.token_id); // use XRPL API
+
+      return {
+        token_id: nft.token_id,
+        owner: owner,
+        metadata: meta
+      };
+    }));
+
+    res.json({ success: true, nfts: result });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ success: false, error: 'Failed to load catalog' });
+  }
+});
+
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

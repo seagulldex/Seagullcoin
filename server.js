@@ -67,6 +67,8 @@ import { fetchSeagullCoinBalance } from './xrplClient.js';
 import { promisify } from 'util'; // 
 import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
+import { createServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 
 // ===== Init App and Env =====
 dotenv.config();

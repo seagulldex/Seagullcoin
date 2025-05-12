@@ -2404,6 +2404,23 @@ async function fetchAllNFTs(wallet) {
   }
 }
 
+const hasSeagullCoinTrustline = async (walletAddress) => {
+  try {
+    const accountLines = await client.request({
+      command: 'account_lines',
+      account: walletAddress,
+    });
+
+    return accountLines.result.lines.some(line =>
+      line.currency === 'SeagullCoin' &&
+      line.account === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+    );
+  } catch (error) {
+    console.error(`Trustline check failed for ${walletAddress}:`, error);
+    return false;
+  }
+};
+
 
 
 // /transfer-nft — direct transfer to another wallet
@@ -2445,6 +2462,7 @@ app.post('/sell-nft', async (req, res) => {
   if (!walletAddress || !nftId || !price) {
     return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
   }
+  
 
   try {
     // The transaction object for the NFT sell offer
@@ -2742,35 +2760,6 @@ app.get('/listings', async (req, res) => {
         OfferNode: nftOffer.NFTokenOfferNode,
         Price: parseFloat(nftOffer.Amount), // Adjust price if needed
         // Add more fields as needed based on your use case
-      };
-    });
-
-    res.json({ listings });
-  } catch (err) {
-    console.error('Error in /listings:', err);
-    res.status(500).json({ error: 'Failed to fetch NFT listings' });
-  }
-});
-
-
-app.get('/listings', async (req, res) => {
-  try {
-    const nftOffers = await fetchNFTListings();
-    console.log('Fetched NFT offers:', nftOffers);  // Log the fetched NFT offers
-
-    if (!nftOffers || nftOffers.length === 0) {
-      return res.status(404).json({ error: 'No NFT listings found' });
-    }
-
-    const listings = nftOffers.map(nftOffer => {
-      // Check if nftOffer contains the expected properties
-      console.log('Processing NFT offer:', nftOffer);
-      return {
-        NFTokenID: nftOffer.NFTokenID,
-        Amount: nftOffer.Amount,
-        Owner: nftOffer.Owner,
-        OfferNode: nftOffer.NFTokenOfferNode,
-        Price: parseFloat(nftOffer.Amount),  // Adjust price if needed
       };
     });
 

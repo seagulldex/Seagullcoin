@@ -2755,7 +2755,7 @@ app.get('/catalog', async (req, res) => {
 
 app.get('/listed', async (req, res) => {
   try {
-    const allMintedNFTs = await loadAllMintedNFTs(); // You must implement this based on your storage system
+    const allMintedNFTs = await loadAllMintedNFTs(); // Implement this function to load NFTs from your storage
 
     const listed = await Promise.all(allMintedNFTs.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
@@ -2772,7 +2772,7 @@ app.get('/listed', async (req, res) => {
             icon = metadata.image || null;
           }
         } catch (e) {
-          console.warn(`Metadata load failed for ${nft.NFTokenID}`);
+          console.warn(`Metadata load failed for ${nft.NFTokenID}: ${e.message}`);
         }
       }
 
@@ -2799,7 +2799,7 @@ app.get('/listed', async (req, res) => {
           }
         }
       } catch (err) {
-        console.warn(`Offer check failed: ${err.message}`);
+        console.warn(`Offer check failed for ${nft.NFTokenID}: ${err.message}`);
       }
 
       if (listed) {
@@ -2817,10 +2817,15 @@ app.get('/listed', async (req, res) => {
     }));
 
     // Filter out nulls
-    const onlyListed = listed.filter(n => n !== null);
+    const onlyListed = listed.filter(n => n);  // Filter out null or undefined values
     res.json({ listed: onlyListed });
 
-  } cat
+  } catch (err) {
+  console.error('Error in /listed:', err.stack || err);
+  res.status(500).json({ error: 'Failed to fetch listed NFTs', details: err.message });
+}
+});
+
 
 
 

@@ -2452,31 +2452,37 @@ app.post('/sell-nft', async (req, res) => {
   }
 
   try {
+    // The transaction object for the NFT sell offer
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
       NFTokenID: nftId,
       Amount: {
-        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin in hex
-        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-        value: price.toString(),
+        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (Hex code)
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer
+        value: price.toString(), // Make sure to convert price to a string
       },
-      Flags: 1 // Sell offer flag
+      Flags: 1, // Ensure you're setting the correct flag for selling
     };
 
+    // XUMM payload creation
     const payload = {
       txjson: tx,
       options: {
-        submit: true,
-        expire: 60,
-      }
+        submit: true, // Automatically submit the transaction after signing
+        expire: 60, // Expiration time for the offer (in seconds)
+      },
     };
 
+    // Create the payload with XUMM API
     const { uuid, next } = await xumm.payload.create(payload);
+
+    // Return the payload URL and UUID to the client for signing
     return res.json({ next, uuid });
+
   } catch (err) {
     console.error('Sell NFT error:', err?.data ?? err);
-    return res.status(500).json({ error: 'Failed to create sell offer' });
+    return res.status(500).json({ error: 'Failed to create sell offer', details: err.message });
   }
 });
 
@@ -2488,7 +2494,7 @@ const createTrustline = async (walletAddress) => {
     LimitAmount: {
       currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin currency code (hex)
       issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer
-      value: '1000000', // Set a limit on how much SeagullCoin the wallet can hold
+      value: '333333333', // Set a limit on how much SeagullCoin the wallet can hold
     },
   };
 

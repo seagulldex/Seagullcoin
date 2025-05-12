@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NFT Collections - SGLCN-X20</title>
   <link rel="stylesheet" href="style.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <link rel="stylesheet" href="header.css" />
   <style>
     #top-bar {
@@ -49,6 +48,8 @@
 
     body {
       margin-top: 60px;
+      background-color: #111;
+      color: #fff;
     }
 
     header {
@@ -66,35 +67,50 @@
       margin: 0 15px;
     }
 
-    /* Style for NFTs */
     .nft-item {
-      border: 1px solid #ddd;
+      border: 1px solid #444;
       border-radius: 10px;
       padding: 10px;
-      margin: 10px;
-      text-align: center;
       background-color: #222;
-      color: #fff;
+      text-align: center;
+      width: 160px;
     }
+
     .nft-item img {
-      width: 150px;
+      width: 100%;
       height: 150px;
       object-fit: cover;
       border-radius: 8px;
     }
-.nft-collection-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 10px;
-}
 
-section h2 {
-  color: #fff;
-  margin-top: 30px;
-  border-bottom: 1px solid #444;
-  padding-bottom: 5px;
-}
+    .nft-collection-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin: 10px 0;
+    }
+
+    section h2 {
+      color: #fff;
+      margin-top: 30px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    section h2 img {
+      height: 24px;
+      vertical-align: middle;
+      border-radius: 4px;
+    }
+
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      color: #aaa;
+    }
   </style>
 </head>
 <body>
@@ -124,21 +140,17 @@ section h2 {
   <main>
     <h1>NFT Collections</h1>
     <p>Browse SeagullCoin-backed NFT collections minted on this platform.</p>
-
-    <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
-
-    <!-- NFT collection display logic here -->
-    <div id="collections-container"></div>
+    <div id="collections-container">Loading collections...</div>
   </main>
 
   <footer>
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
   </footer>
 
-  <!-- Wallet Logic -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
+      loadCollections();
     });
 
     async function updateWalletStatus() {
@@ -146,16 +158,12 @@ section h2 {
       const indicator = document.getElementById('wallet-indicator');
 
       if (wallet) {
-        document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wallet-address').innerText = wallet;
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
         indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
-        loadCollections(wallet);  // Pass the wallet address to load the collections
       } else {
-        document.getElementById('wallet-info').style.display = 'none';
         indicator.textContent = '🔴 Login';
         indicator.classList.remove('green');
         indicator.classList.add('red');
@@ -184,144 +192,43 @@ section h2 {
       }, 3000);
     }
 
-    async function fetchNFTs(walletAddress) {
-      const res = await fetch(`https://api.xrpldata.com/v1/nfts?account=${walletAddress}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
+    async function loadCollections() {
+      const container = document.getElementById('collections-container');
+      container.innerHTML = '';
 
-      const data = await res.json();
-      
-      if (data && data.nfts) {
-        return data.nfts;  // Assuming the response has an array of NFTs under 'nfts'
-      } else {
-        throw new Error('Error fetching NFTs: No data or invalid response');
-      }
-    }
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/catalog');
+        const collections = await res.json();
 
-    async function fetchNftsForAccount(account) {
-  try {
-    // Making a request to the XRP Ledger via RPC
-    const response = await fetch('https://s1.ripple.com:51234', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        method: "account_nfts",
-        params: [{
-          account: account, // The user's wallet address
-          ledger_index: "validated"
-        }]
-      })
-    });
+        if (!collections || Object.keys(collections).length === 0) {
+          container.innerHTML = 'No collections found.';
+          return;
+        }
 
-    // Parse the response
-    const data = await response.json();
-
-    // Check if the response contains NFTs
-    if (data.result && data.result.account_nfts) {
-      const nfts = data.result.account_nfts;
-      return nfts;
-    } else {
-      return [];
-    }
-  } catch (error) {
-    console.error("Error fetching NFTs from XRP Ledger:", error);
-    return [];
-  }
-}
-
-
-    async function displayUserNfts(account) {
-      const nftsContainer = document.getElementById('nft-items-container');
-      nftsContainer.innerHTML = 'Loading NFTs...';
-
-      // Fetch the NFTs for the provided account
-      const nfts = await fetchNftsForAccount(account);
-
-      if (nfts.length === 0) {
-        nftsContainer.innerHTML = 'No NFTs found for this account.';
-      } else {
-        // Render the NFTs
-        nftsContainer.innerHTML = nfts.map(nft => `
-          <div class="nft-item">
-            <img src="${nft.URI}" alt="${nft.name}" />
-            <h3>${nft.name}</h3>
-            <p>${nft.description || 'No description available'}</p>
-          </div>
-        `).join('');
-      }
-    }
-
-    async function loadCollections(walletAddress) {
-  try {
-    const nfts = await fetchNftsForAccount(walletAddress);
-    const container = document.getElementById('collections-container');
-    container.innerHTML = '';
-
-    if (!nfts || nfts.length === 0) {
-      container.innerHTML = 'No collections found.';
-      return;
-    }
-
-    const collections = {};
-
-    for (const nft of nfts) {
-      if (!nft.URI) continue;
-
-      // Decode IPFS URI from hex
-      const uri = hexToAscii(nft.URI).replace(/^ipfs:\/\//, 'https://ipfs.io/ipfs/');
-      const metadataRes = await fetch(uri);
-      const metadata = await metadataRes.json();
-
-      const collectionName = metadata.collection?.name || 'Uncategorized';
-      const collectionIcon = metadata.collection?.icon || '';
-
-      if (!collections[collectionName]) {
-        collections[collectionName] = {
-          icon: collectionIcon,
-          nfts: []
-        };
-      }
-
-      collections[collectionName].nfts.push({
-        name: metadata.name,
-        image: metadata.image.replace(/^ipfs:\/\//, 'https://ipfs.io/ipfs/'),
-        description: metadata.description || '',
-      });
-    }
-
-    // Render collections
-    for (const [name, data] of Object.entries(collections)) {
-      const section = document.createElement('section');
-      section.innerHTML = `
-        <h2>
-          ${data.icon ? `<img src="${data.icon}" alt="${name} Icon" style="height: 24px; vertical-align: middle; margin-right: 6px;">` : ''}
-          ${name}
-        </h2>
-        <div class="nft-collection-grid">
-          ${data.nfts.map(nft => `
-            <div class="nft-item">
-              <img src="${nft.image}" alt="${nft.name}" />
-              <h3>${nft.name}</h3>
-              <p>${nft.description}</p>
+        for (const [name, data] of Object.entries(collections)) {
+          const section = document.createElement('section');
+          section.innerHTML = `
+            <h2>
+              ${data.icon ? `<img src="${data.icon}" alt="${name} Icon" />` : ''}
+              ${name}
+            </h2>
+            <div class="nft-collection-grid">
+              ${data.nfts.map(nft => `
+                <div class="nft-item">
+                  <img src="${nft.image}" alt="${nft.name}" />
+                  <h3>${nft.name}</h3>
+                  <p>${nft.description || ''}</p>
+                </div>
+              `).join('')}
             </div>
-          `).join('')}
-        </div>
-      `;
-      container.appendChild(section);
+          `;
+          container.appendChild(section);
+        }
+      } catch (error) {
+        console.error('Failed to load collections:', error);
+        container.innerHTML = 'Failed to load collections.';
+      }
     }
-  } catch (error) {
-    console.error("Error loading collections:", error);
-    const container = document.getElementById('collections-container');
-    container.innerHTML = 'Error loading collections.';
-  }
-}
-
-function hexToAscii(hex) {
-  return decodeURIComponent(hex.replace(/^0x/, '').replace(/(..)/g, '%$1'));
-}
   </script>
 </body>
 </html>

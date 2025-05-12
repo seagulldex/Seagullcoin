@@ -2343,76 +2343,12 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
-
-  // Check cache
-  const cached = nftCache.get(wallet);
-  if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
-    return res.json({ nfts: cached.data });
-  }
+  const offset = parseInt(req.query.offset) || 0;
+  const limit = parseInt(req.query.limit) || 20;
 
   try {
-    const rawNFTs = await fetchAllNFTs(wallet);
+    co
 
-    const parsed = await Promise.all(rawNFTs.map(async (nft) => {
-      const uri = hexToUtf8(nft.URI);
-      let metadata = null, collection = null, icon = null;
-      let sellOffer = null;
-
-      if (uri.startsWith('ipfs://')) {
-        const ipfsUrl = uri.replace('ipfs://', '');
-        try {
-          metadata = await fetchMetadataWithRetry(ipfsUrl);
-          if (metadata) {
-            collection = metadata.collection || metadata.name || null;
-            icon = metadata.image || null;
-          }
-        } catch (err) {
-          console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
-        }
-      }
-
-      // Fetch sell offer (only SeagullCoin)
-      try {
-        const offerReq = await fetch(xrplApiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            method: 'nft_sell_offers',
-            params: [{ nft_id: nft.NFTokenID }]
-          })
-        });
-
-        const offerData = await offerReq.json();
-        if (offerData.result?.offers) {
-          const validOffers = offerData.result.offers.filter(o =>
-            o.amount && o.amount.currency === 'SeagullCoin'
-          );
-          if (validOffers.length > 0) {
-            sellOffer = validOffers[0];
-          }
-        }
-      } catch (e) {
-        console.warn(`Offer check failed for ${nft.NFTokenID}: ${e.message}`);
-      }
-
-      return {
-        NFTokenID: nft.NFTokenID,
-        URI: uri,
-        collection,
-        icon,
-        metadata,
-        sellOffer
-      };
-    }));
-
-    nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
-
-    res.json({ nfts: parsed });
-  } catch (err) {
-    console.error('NFT fetch error:', err);
-    res.status(500).json({ error: 'Failed to fetch NFTs' });
-  }
-});
 
 
 // Helper to fetch all NFTs for a wallet with proper caching

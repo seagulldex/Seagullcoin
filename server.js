@@ -69,6 +69,7 @@ import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 
 
+
 // ===== Init App and Env =====
 dotenv.config();
 
@@ -2668,32 +2669,28 @@ async function xrplPing() {
   }
 }
 
+// Then define your functions without using require()
 async function loadAllMintedNFTs() {
-  // Example: if stored in a JSON file or database
-  const fs = require('fs').promises;
-  const raw = await fs.readFile('./minted_nfts.json', 'utf-8');
-  return JSON.parse(raw);
+  const raw = await fs.readFile('./minted_nfts.json', { encoding: 'utf-8' });
+  return JSON.parse(raw);
 }
 
+
 async function getMetadataFromIPFS(cid) {
-  const axios = require('axios');
-  const response = await axios.get(`https://ipfs.io/ipfs/${cid}`);
-  return response.data;
+  const response = await axios.get(`https://ipfs.io/ipfs/${cid}`);
+  return response.data;
 }
 
 async function getNFTokenOwner(tokenId) {
-  const xrpl = require('xrpl');
-  const client = new xrpl.Client("wss://xrplcluster.com");
-  await client.connect();
-
-  const nftData = await client.request({
-    command: "nft_info",
-    nft_id: tokenId
-  });
-
-  const owner = nftData.result?.nft_info?.owner;
-  await client.disconnect();
-  return owner;
+  const client = new xrpl.Client("wss://xrplcluster.com");
+  await client.connect();
+  const nftData = await client.request({
+    command: "nft_info",
+    nft_id: tokenId
+  });
+  const owner = nftData.result?.nft_info?.owner;
+  await client.disconnect();
+  return owner;
 }
 
 async function getMintedNFTsFromBlockchain() {

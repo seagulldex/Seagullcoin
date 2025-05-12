@@ -208,19 +208,19 @@
         if (metadata.collection) {
         const collectionLabel = document.createElement('p');
         collectionLabel.innerHTML = `<strong>Collection:</strong> ${metadata.collection.name || "Unnamed"}`;
-  card.appendChild(collectionLabel);
-}
+        card.appendChild(collectionLabel);
+       }
 
-if (metadata.properties && typeof metadata.properties === "object") {
-  const propList = document.createElement('ul');
-  propList.style.textAlign = "left";
-  for (const key in metadata.properties) {
-    const li = document.createElement('li');
-    li.textContent = `${key}: ${metadata.properties[key]}`;
-    propList.appendChild(li);
-  }
-  card.appendChild(propList);
-}
+        if (metadata.properties && typeof metadata.properties === "object") {
+        const propList = document.createElement('ul');
+        propList.style.textAlign = "left";
+        for (const key in metadata.properties) {
+        const li = document.createElement('li');
+        li.textContent = `${key}: ${metadata.properties[key]}`;
+        propList.appendChild(li);
+         }
+        card.appendChild(propList);
+       }
 
 
         const transferButton = document.createElement('button');
@@ -285,6 +285,7 @@ if (metadata.properties && typeof metadata.properties === "object") {
               alert("Error creating sell offer.");
             }
           };
+          
           card.appendChild(sellButton);
         }
 

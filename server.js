@@ -2336,11 +2336,11 @@ app.get('/nfts/:wallet', async (req, res) => {
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
       let metadata = null, collection = null, icon = null;
+      let sellOffer = null;
 
       if (uri.startsWith('ipfs://')) {
         const ipfsUrl = uri.replace('ipfs://', '');
         try {
-          // Fetch metadata with retry mechanism
           metadata = await fetchMetadataWithRetry(ipfsUrl);
           if (metadata) {
             collection = metadata.collection || metadata.name || null;
@@ -2351,16 +2351,40 @@ app.get('/nfts/:wallet', async (req, res) => {
         }
       }
 
+      // Fetch sell offer (only SeagullCoin)
+      try {
+        const offerReq = await fetch(xrplApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            method: 'nft_sell_offers',
+            params: [{ nft_id: nft.NFTokenID }]
+          })
+        });
+
+        const offerData = await offerReq.json();
+        if (offerData.result?.offers) {
+          const validOffers = offerData.result.offers.filter(o =>
+            o.amount && o.amount.currency === 'SeagullCoin'
+          );
+          if (validOffers.length > 0) {
+            sellOffer = validOffers[0];
+          }
+        }
+      } catch (e) {
+        console.warn(`Offer check failed for ${nft.NFTokenID}: ${e.message}`);
+      }
+
       return {
         NFTokenID: nft.NFTokenID,
         URI: uri,
         collection,
         icon,
-        metadata
+        metadata,
+        sellOffer
       };
     }));
 
-    // Cache the result
     nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
 
     res.json({ nfts: parsed });
@@ -2369,6 +2393,7 @@ app.get('/nfts/:wallet', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+
 
 // Helper to fetch all NFTs for a wallet with proper caching
 async function fetchAllNFTs(wallet) {

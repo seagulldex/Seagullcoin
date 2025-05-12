@@ -7,7 +7,51 @@
   <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="header.css" />
   <style>
-    /* Your previous styles here */
+    .nft-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      padding: 20px;
+    }
+
+    .nft-card {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      background: #fff;
+    }
+
+    .nft-card img {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+
+    .pagination {
+      text-align: center;
+      margin: 20px;
+    }
+
+    .pagination button {
+      margin: 0 5px;
+      padding: 5px 10px;
+    }
+
+    #logout-btn {
+      display: none;
+    }
+
+    .green {
+      color: green;
+    }
+
+    .red {
+      color: red;
+    }
+
+    .seagull-spinner {
+      width: 50px;
+    }
   </style>
 </head>
 <body>
@@ -21,6 +65,7 @@
       </div>
     </div>
   </div>
+
   <header>
     <nav>
       <ul>
@@ -103,7 +148,11 @@
 
         const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts/${wallet}`);
         const data = await res.json();
-        allNFTs = (data.nfts || []).filter(nft => nft.metadata && nft.metadata.image && nft.metadata.name);
+        allNFTs = data.nfts || [];
+
+        console.log("Total NFTs fetched:", allNFTs.length);
+        console.log("NFTs missing metadata:", allNFTs.filter(nft => !nft.metadata || !nft.metadata.name || !nft.metadata.image).length);
+
         displayPage(1);
       } catch (err) {
         console.error("NFT fetch error:", err);
@@ -130,59 +179,57 @@
 
       if (nftsToShow.length === 0) {
         container.innerHTML = "<p>No NFTs found. Please try again later.</p>";
+        return;
       }
 
       for (const nft of nftsToShow) {
-        const metadata = nft.metadata;
+        const metadata = nft.metadata || {};
         const card = document.createElement('div');
         card.className = "nft-card";
 
         const img = document.createElement('img');
-        img.src = convertIPFSToURL(metadata.image);
-        img.alt = metadata.name;
+        img.src = convertIPFSToURL(metadata.image) || "https://via.placeholder.com/200?text=No+Image";
+        img.alt = metadata.name || "Unnamed NFT";
 
         const name = document.createElement('h3');
-        name.textContent = metadata.name;
+        name.textContent = metadata.name || "Unnamed NFT";
 
         const desc = document.createElement('p');
-        desc.textContent = metadata.description || "";
+        desc.textContent = metadata.description || "No description available.";
 
-        // Add Sell and Transfer buttons for each NFT
         const sellButton = document.createElement('button');
         sellButton.textContent = 'Sell';
         sellButton.onclick = async () => {
-  const amount = prompt("Enter price in SeagullCoin:");
-  if (!amount) return;
+          const amount = prompt("Enter price in SeagullCoin:");
+          if (!amount) return;
 
-  const response = await fetch("/sell-nft", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-  walletAddress: localStorage.getItem("xumm_wallet_address"),
-  nftId: nft.NFTokenID,
-  price: amount
-}),
+          const response = await fetch("/sell-nft", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              walletAddress: localStorage.getItem("xumm_wallet_address"),
+              nftId: nft.NFTokenID,
+              price: amount
+            }),
+          });
 
-  });
-
-  const result = await response.json();
-  if (result.next) {
-    window.open(result.next.always, "_blank"); // Open the XUMM signing URL
-  } else {
-    alert("Error creating sell offer.");
-  }
-};
-
+          const result = await response.json();
+          if (result.next) {
+            window.open(result.next.always, "_blank");
+          } else {
+            alert("Error creating sell offer.");
+          }
+        };
 
         const transferButton = document.createElement('button');
         transferButton.textContent = 'Transfer';
-        transferButton.onclick = () => alert('Transfer functionality for ' + metadata.name);
+        transferButton.onclick = () => alert('Transfer functionality for ' + (metadata.name || 'NFT'));
 
         card.appendChild(img);
         card.appendChild(name);
         card.appendChild(desc);
-        card.appendChild(sellButton);  // Add the Sell button
-        card.appendChild(transferButton);  // Add the Transfer button
+        card.appendChild(sellButton);
+        card.appendChild(transferButton);
         container.appendChild(card);
       }
 
@@ -195,7 +242,7 @@
       pagEl.innerHTML = "";
 
       for (let i = 1; i <= totalPages; i++) {
-        const btn = document.createElement('button'); 
+        const btn = document.createElement('button');
         btn.textContent = i;
         if (i === currentPage) btn.disabled = true;
         btn.onclick = () => displayPage(i);

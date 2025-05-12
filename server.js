@@ -2453,12 +2453,10 @@ app.post('/transfer-nft', async (req, res) => {
   }
 });
 
-
 // Handle GET requests gracefully
 app.get('/transfer-nft', (req, res) => {
   res.status(405).json({ success: false, message: 'Use POST method for /transfer-nft' });
 });
-
 
 
 

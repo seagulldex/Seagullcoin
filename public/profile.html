@@ -252,9 +252,11 @@
         body: JSON.stringify({
         sender: localStorage.getItem("xumm_wallet_address"),
         nftId: nft.NFTokenID,
-        destination: destWallet
-        }),
+        destination: destWallet,
+        xummPayloadUUID: localStorage.getItem('xumm_payload_uuid') // Or another way to pass it if needed
+       }),
       });
+
 
        const result = await response.json();
        if (result.next) {

@@ -67,8 +67,7 @@ import { fetchSeagullCoinBalance } from './xrplClient.js';
 import { promisify } from 'util'; // 
 import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
-import { createServer } from 'http';
-import { Server as SocketIOServer } from 'socket.io';
+
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -2424,29 +2423,32 @@ app.post('/transfer-nft', async (req, res) => {
   }
 
   try {
+    if (!client.isConnected()) {
+      await client.connect();  // Add this line
+    }
+
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
       NFTokenID: nftId,
       Destination: recipientAddress,
-      Flags: 9, // Transfer only (fully automatic accept mode)
+      Flags: 9, // Transfer-only flag
     };
 
     const prepared = await client.autofill(tx);
-    // NOTE: Replace this with actual signing logic
-    // const signed = signWithYourWallet(prepared);
-    // const result = await client.submitAndWait(signed.tx_blob);
-
     return res.json({
       success: true,
       message: `Transfer offer created for NFT ${nftId} (not signed)`,
       tx: prepared,
     });
   } catch (err) {
-    console.error('Transfer NFT error:', err);
+    console.error('Transfer NFT error:', err?.data || err?.message || err);
     return res.status(500).json({ success: false, message: 'Internal error' });
   }
 });
+
+
+
 
 app.post('/sell-nft', async (req, res) => {
   const { walletAddress, nftId, price } = req.body;

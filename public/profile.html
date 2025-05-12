@@ -246,7 +246,7 @@
         const destWallet = prompt("Enter destination wallet address:");
         if (!destWallet) return;
 
-        const response = await fetch("/transfer-nft", {
+        const response = await fetch("https://sglcn-x20-api.glitch.me/transfer-nft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

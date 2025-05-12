@@ -2650,27 +2650,21 @@ async function getNFTokenOwner(tokenId) {
 // Get full NFT catalog: all minted NFTs and their current owners
 app.get('/catalog', async (req, res) => {
   try {
-    // Example: load minted NFTs from local DB or storage
-    const nftList = await loadAllMintedNFTs(); // <-- you must implement this
-
-    // For each NFT, resolve current owner and metadata
-    const result = await Promise.all(nftList.map(async (nft) => {
-      const meta = await getMetadataFromIPFS(nft.metadata_uri); // extract name, image, etc.
-      const owner = await getNFTokenOwner(nft.token_id); // use XRPL API
-
-      return {
-        token_id: nft.token_id,
-        owner: owner,
-        metadata: meta
-      };
-    }));
-
-    res.json({ success: true, nfts: result });
+    const testNFT = {
+      token_id: '00080000AABBCCDDEEFF00112233445566778899D3',
+      owner: 'rEXAMPLEOWNER',
+      metadata: {
+        name: 'Test NFT',
+        description: 'This is a test NFT',
+        image: 'ipfs://bafybeid2x..../metadata.jpg'
+      }
+    };
+    res.json({ success: true, nfts: [testNFT] });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ success: false, error: 'Failed to load catalog' });
+    res.json({ success: false, error: e.message });
   }
 });
+
 
 
 

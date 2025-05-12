@@ -1,0 +1,11 @@
+[
+  {
+    "token_id": "00080000AABBCCDDEEFF00112233445566778899D3",
+    "owner": "rEXAMPLEOWNER",
+    "metadata": {
+      "name": "Test NFT",
+      "description": "A sample NFT from the catalog",
+      "image": "ipfs://bafybeia.../test.jpg"
+    }
+  }
+]

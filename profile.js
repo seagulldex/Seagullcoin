@@ -128,7 +128,8 @@
 
     .nft-card {
       width: 200px;
-      padding: 15px;
+      height: 320px; /* limit vertical size */
+      padding: 10px;
       background-color: #fff;
       border: 1px solid #ccc;
       border-radius: 8px;
@@ -149,7 +150,13 @@
 
     .nft-card p {
       font-size: 0.9rem;
-      color: #666;
+      color: #555;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
     }
   </style>
 </head>

@@ -2455,6 +2455,11 @@ app.post('/sell-nft', async (req, res) => {
     return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
   }
 
+  // Ensure the price is a valid number
+  if (isNaN(price) || price <= 0) {
+    return res.status(400).json({ error: 'Invalid price' });
+  }
+
   try {
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
@@ -2472,7 +2477,7 @@ app.post('/sell-nft', async (req, res) => {
       txjson: tx,
       options: {
         submit: true,
-        expire: 60,
+        expire: 60, // Optional: Set expiration for the offer
       }
     };
 
@@ -2485,6 +2490,7 @@ app.post('/sell-nft', async (req, res) => {
 });
 
 
+
 const createTrustline = async (walletAddress) => {
   const trustlineTx = {
     TransactionType: 'TrustSet',
@@ -2492,7 +2498,7 @@ const createTrustline = async (walletAddress) => {
     LimitAmount: {
       currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin currency code (hex)
       issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer
-      value: '1000000', // Set a limit on how much SeagullCoin the wallet can hold
+      value: '586000000', // Set a limit on how much SeagullCoin the wallet can hold
     },
   };
 

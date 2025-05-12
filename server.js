@@ -2753,6 +2753,36 @@ app.get('/listings', async (req, res) => {
 });
 
 
+app.get('/listings', async (req, res) => {
+  try {
+    const nftOffers = await fetchNFTListings();
+    console.log('Fetched NFT offers:', nftOffers);  // Log the fetched NFT offers
+
+    if (!nftOffers || nftOffers.length === 0) {
+      return res.status(404).json({ error: 'No NFT listings found' });
+    }
+
+    const listings = nftOffers.map(nftOffer => {
+      // Check if nftOffer contains the expected properties
+      console.log('Processing NFT offer:', nftOffer);
+      return {
+        NFTokenID: nftOffer.NFTokenID,
+        Amount: nftOffer.Amount,
+        Owner: nftOffer.Owner,
+        OfferNode: nftOffer.NFTokenOfferNode,
+        Price: parseFloat(nftOffer.Amount),  // Adjust price if needed
+      };
+    });
+
+    res.json({ listings });
+  } catch (err) {
+    console.error('Error in /listings:', err);
+    res.status(500).json({ error: 'Failed to fetch NFT listings' });
+  }
+});
+
+
+
 
 
 

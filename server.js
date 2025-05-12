@@ -2705,20 +2705,21 @@ async function fetchNFTListings() {
   const request = {
     command: 'search',
     query: {
-      ledger_entry_type: 'NFTokenOffer', // We only want NFTokenOffers
+      ledger_entry_type: 'NFTokenOffer',
       filters: [
         {
           field: 'Amount',
           operator: '>=',
-          value: '0.5' // You can set your criteria (e.g., min price)
+          value: '0.5' // Adjust if necessary for SeagullCoin
         }
       ]
     }
   };
 
   const response = await client.request(request);
-  const nftOffers = response.result?.ledger;
+  console.log('XRPL Response:', response);  // Log the response to check structure
 
+  const nftOffers = response.result?.ledger || [];
   await client.disconnect();
 
   return nftOffers;
@@ -2728,19 +2729,19 @@ app.get('/listings', async (req, res) => {
   try {
     const nftOffers = await fetchNFTListings();
     
-    if (!nftOffers) {
+    if (!nftOffers || nftOffers.length === 0) {
       return res.status(404).json({ error: 'No NFT listings found' });
     }
 
     const listings = nftOffers.map(nftOffer => {
-      // You may need to decode or manipulate the NFT data here depending on the structure
+      // Ensure that these properties exist on each NFT offer
       return {
         NFTokenID: nftOffer.NFTokenID,
         Amount: nftOffer.Amount,
         Owner: nftOffer.Owner,
         OfferNode: nftOffer.NFTokenOfferNode,
-        Price: parseFloat(nftOffer.Amount), // Adjust accordingly if needed
-        // Add more fields based on your needs
+        Price: parseFloat(nftOffer.Amount), // Adjust price if needed
+        // Add more fields as needed based on your use case
       };
     });
 

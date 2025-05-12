@@ -2411,6 +2411,7 @@ async function fetchAllNFTs(wallet) {
 }
 
 
+
 // /transfer-nft — direct transfer to another wallet
 app.post('/transfer-nft', async (req, res) => {
   const { walletAddress, nftId, recipientAddress } = req.body;

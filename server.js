@@ -2423,37 +2423,36 @@ app.post('/transfer-nft', async (req, res) => {
   }
 
   try {
-    // Ensure client is connected to XRPL
-    if (!client.isConnected()) {
-      console.log('Connecting to XRPL...');
-      await client.connect();
-    }
-
-    console.log('Client connected to XRPL.');
-
-    const tx = {
+    // Create unsigned transfer offer
+    const txJson = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
       NFTokenID: nftId,
       Destination: recipientAddress,
-      Flags: 9, // Transfer-only flag (no sale, just transfer)
+      Flags: 9 // Transfer only
     };
 
-    console.log('Prepared transfer TX:', tx);
-
-    const prepared = await client.autofill(tx);
+    // Create XUMM sign request
+    const payload = await xumm.payload.create({
+      txjson: txJson,
+      options: {
+        submit: true
+      }
+    });
 
     return res.json({
       success: true,
-      message: `Transfer offer created for NFT ${nftId} (not signed)`,
-      tx: prepared,
+      message: 'XUMM payload created for NFT transfer',
+      uuid: payload.uuid,
+      next: payload.next
     });
 
   } catch (err) {
-    console.error('Transfer NFT error:', err?.data || err?.message || err);
+    console.error('Transfer NFT error:', err);
     return res.status(500).json({ success: false, message: 'Internal error' });
   }
 });
+
 
 // Handle GET requests gracefully
 app.get('/transfer-nft', (req, res) => {

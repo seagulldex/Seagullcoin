@@ -2650,7 +2650,20 @@ async function getNFTokenOwner(tokenId) {
 // Get full NFT catalog: all minted NFTs and their current owners
 app.get('/catalog', async (req, res) => {
   try {
-    const testNFT = {
+    // Replace the testNFT with the actual query to fetch NFTs
+    const nfts = await getNFTCatalog(); // This should be a function fetching actual NFTs from your source (e.g., database, blockchain, etc.)
+
+    res.json({ success: true, nfts });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
+// Example function to fetch NFTs (You need to replace this with actual logic)
+async function getNFTCatalog() {
+  // Fetching NFTs logic here, for example, querying a database or API
+  return [
+    {
       token_id: '00080000AABBCCDDEEFF00112233445566778899D3',
       owner: 'rEXAMPLEOWNER',
       metadata: {
@@ -2658,14 +2671,10 @@ app.get('/catalog', async (req, res) => {
         description: 'This is a test NFT',
         image: 'ipfs://bafybeid2x..../metadata.jpg'
       }
-    };
-    res.json({ success: true, nfts: [testNFT] });
-  } catch (e) {
-    res.json({ success: false, error: e.message });
-  }
-});
-
-
+    },
+    // Add more NFTs here as needed
+  ];
+}
 
 
 // Call the XRPL ping when the server starts

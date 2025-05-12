@@ -162,24 +162,6 @@ const fetchAndCheckUserBalances = async () => {
   }
 };
 
-// Create a simple HTTP server
-const server = createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Socket.io server running');
-});
-
-// Initialize Socket.io with the HTTP server
-const io = new SocketIOServer(server);
-
-// Listen for client connections
-io.on('connection', (socket) => {
-  console.log('A user connected');
-  
-  // Emit a new NFT event with some sample data
-  const nftData = { id: '123', name: 'NFT Name', image: 'image_url' };
-  socket.emit('newNFT', nftData); // Send new NFT data to the client
-});
-
 // Call the function to fetch and check balances for all users
 fetchAndCheckUserBalances();
 
@@ -2347,7 +2329,47 @@ app.get('/nfts/:wallet', async (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
 
   try {
-    co
+    const allNFTs = await fetchAllNFTs(wallet);
+    const total = allNFTs.length;
+    const selected = allNFTs.slice(offset, offset + limit);
+
+    const parsed = await Promise.all(selected.map(async (nft) => {
+      const uri = hexToUtf8(nft.URI);
+      let metadata = null, collection = null, icon = null;
+
+      if (uri.startsWith('ipfs://')) {
+        const ipfsUrl = uri.replace('ipfs://', '');
+        try {
+          metadata = await fetchMetadataWithRetry(ipfsUrl);
+          if (metadata) {
+            collection = metadata.collection || metadata.name || null;
+            icon = metadata.image || null;
+          }
+        } catch (err) {
+          console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
+        }
+      }
+
+      return {
+        NFTokenID: nft.NFTokenID,
+        URI: uri,
+        collection,
+        icon,
+        metadata
+      };
+    }));
+
+    res.json({
+      total,
+      offset,
+      limit,
+      nfts: parsed
+    });
+  } catch (err) {
+    console.error('NFT fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch NFTs' });
+  }
+});
 
 
 

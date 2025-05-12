@@ -181,6 +181,23 @@
       currentPage = page;
       const container = document.getElementById('nft-container');
       container.innerHTML = "";
+      
+      function updatePagination() {
+  const pagination = document.getElementById('pagination');
+  pagination.innerHTML = "";
+
+  const totalPages = Math.ceil(allNFTs.length / nftsPerPage);
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    if (i === currentPage) {
+      btn.disabled = true;
+    }
+    btn.onclick = () => displayPage(i);
+    pagination.appendChild(btn);
+  }
+}
+
 
       const start = (page - 1) * nftsPerPage;
       const end = start + nftsPerPage;

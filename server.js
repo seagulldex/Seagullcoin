@@ -2324,15 +2324,16 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
-  const offset = parseInt(req.query.offset) || 0;
-  const limit = parseInt(req.query.limit) || 20;
+
+  const cached = nftCache.get(wallet);
+  if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
+    return res.json({ nfts: cached.data });
+  }
 
   try {
-    const allNFTs = await fetchAllNFTs(wallet);
-    const total = allNFTs.length;
-    const selected = allNFTs.slice(offset, offset + limit);
+    const rawNFTs = await fetchAllNFTs(wallet);
 
-    const parsed = await Promise.all(selected.map(async (nft) => {
+    const parsed = await Promise.all(rawNFTs.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
       let metadata = null, collection = null, icon = null;
 
@@ -2349,26 +2350,55 @@ app.get('/nfts/:wallet', async (req, res) => {
         }
       }
 
+      let listed = false;
+      let price = null;
+
+      try {
+        const offerRes = await fetch(xrplApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            method: 'nft_sell_offers',
+            params: [{ nft_id: nft.NFTokenID }]
+          })
+        });
+
+        const offerData = await offerRes.json();
+
+        if (offerData.result?.offers?.length > 0) {
+          const validOffer = offerData.result.offers.find(offer =>
+            offer.amount?.currency === '53656167756C6C436F696E000000000000000000' &&
+            offer.amount?.issuer === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+          );
+
+          if (validOffer) {
+            listed = true;
+            price = parseFloat(validOffer.amount?.value);
+          }
+        }
+      } catch (err) {
+        console.warn(`Offer check failed for ${nft.NFTokenID}: ${err.message}`);
+      }
+
       return {
         NFTokenID: nft.NFTokenID,
         URI: uri,
         collection,
         icon,
-        metadata
+        metadata,
+        listed,
+        price
       };
     }));
 
-    res.json({
-      total,
-      offset,
-      limit,
-      nfts: parsed
-    });
+    nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
+    res.json({ nfts: parsed });
   } catch (err) {
     console.error('NFT fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+
 
 
 

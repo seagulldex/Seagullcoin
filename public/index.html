@@ -100,7 +100,10 @@
     <section class="hero">
       <h1>Welcome to SeagullCoin NFT Marketplace</h1>
       <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
-      <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
+      <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span>
+      <br/>
+<button id="add-trustline-btn" style="margin-top: 10px; display: none;">Add SeagullCoin Trustline</button>
+</div>
     </section>
 
     <div id="user-info">
@@ -199,6 +202,14 @@
         console.error('Error fetching SeagullCoin balance:', error);
       }
     };
+    
+    document.getElementById('add-trustline-btn').style.display = 'inline-block';
+document.getElementById('add-trustline-btn').onclick = async () => {
+  const trustlineRes = await fetch(`https://sglcn-x20-api.glitch.me/add-trustline?account=${wallet}`);
+  const trustlineData = await trustlineRes.json();
+  window.location.href = trustlineData.payloadURL;
+};
+
 
     // WebSocket to fetch live token price
     const socket = new WebSocket("wss://api.onthedex.live/public/v1/ticker/SeagullCoin.rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno");

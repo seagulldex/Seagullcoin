@@ -2854,7 +2854,6 @@ const SEAGULLCOIN_HEX = "53656167756C6C436F696E000000000000000000";
 const SEAGULLCOIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
 
 
-
 async function hasSeagullCoinTrustline(walletAddress, client) {
   try {
     const response = await client.request({
@@ -2865,9 +2864,12 @@ async function hasSeagullCoinTrustline(walletAddress, client) {
     console.log("Trustlines for", walletAddress, JSON.stringify(response.result.lines, null, 2));
 
     return response.result.lines.some(line => {
+      const currency = line.currency?.toUpperCase();
+      const counterparty = line.account || line.issuer; // some SDKs use .issuer
+
       return (
-        (line.currency === "SeagullCoin" || line.currency === "53656167756C6C436F696E000000000000000000") &&
-        line.account === SEAGULLCOIN_ISSUER
+        (currency === "SEAGULLCOIN" || currency === SEAGULLCOIN_HEX.toUpperCase()) &&
+        counterparty === SEAGULLCOIN_ISSUER
       );
     });
   } catch (error) {
@@ -2875,6 +2877,7 @@ async function hasSeagullCoinTrustline(walletAddress, client) {
     return false;
   }
 }
+
 
 
 
@@ -2979,57 +2982,7 @@ app.post('/pay', async (req, res) => {
   const payload = {
     txjson: {
       TransactionType: 'Payment',
-      Destination: SERVICE_WALLET,
-      Amount: {
-        currency: SEAGULLCOIN_HEX,
-        issuer: SEAGULLCOIN_ISSUER,
-        value: "0.5"
-      }
-    },
-    options: {
-      submit: true,
-      return_url: {
-        web: "https://outgoing-destiny-bladder.glitch.me/success.html",
-        app: "https://outgoing-destiny-bladder.glitch.me/success.html"
-      }
-    }
-  };
-
-  try {
-    const created = await xumm.payload.createAndSubscribe(payload, event => {
-      if (event.data.signed === true) {
-        console.log("Payment signed by", wallet);
-        return true;
-      }
-      if (event.data.signed === false) {
-        console.log("Payment declined by", wallet);
-        return false;
-      }
-    });
-
-    // Track status
-    payments[created.uuid] = {
-      wallet,
-      paid: false
-    };
-
-    created.resolved.then(resolved => {
-      if (resolved.signed) {
-        payments[created.uuid].paid = true;
-      } else {
-        delete payments[created.uuid];
-      }
-    });
-
-    res.json({
-      uuid: created.uuid,
-      next: created.next
-    });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Failed to create payment' });
-  }
-});
+      Destination:
 
 
 

@@ -2457,6 +2457,32 @@ app.post('/transfer-nft', async (req, res) => {
 });
 
 
+async function checkTrustline(client, walletAddress) {
+  let attempts = 0;
+  let hasTrustline = false;
+  
+  while (attempts < 5 && !hasTrustline) {  // Retry up to 5 times
+    const accountLines = await client.request({
+      command: "account_lines",
+      account: walletAddress,
+    });
+
+    hasTrustline = accountLines.result.lines.some(
+      line =>
+        line.currency === "53656167756C6C436F696E000000000000000000" &&
+        line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+    );
+
+    if (!hasTrustline) {
+      attempts++;
+      console.log(`Trustline not found, retrying... Attempt ${attempts}`);
+      await new Promise(resolve => setTimeout(resolve, 3000));  // 3-second delay between retries
+    }
+  }
+
+  return hasTrustline;
+}
+
 app.post('/sell-nft', async (req, res) => {
   const { walletAddress, nftId, price, lastTrustPayloadUuid } = req.body;
 
@@ -2470,18 +2496,9 @@ app.post('/sell-nft', async (req, res) => {
     await client.connect();
 
     // Check trustline
-    const accountLines = await client.request({
-      command: "account_lines",
-      account: walletAddress,
-    });
+    let hasTrustline = await checkTrustline(client, walletAddress);
 
-    let hasTrustline = accountLines.result.lines.some(
-      line =>
-        line.currency === "53656167756C6C436F696E000000000000000000" &&
-        line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-    );
-
-    // If no trustline, fallback check using payload UUID
+    // If no trustline and trustline creation is required
     if (!hasTrustline && lastTrustPayloadUuid) {
       const trustStatus = await xumm.payload.get(lastTrustPayloadUuid);
 
@@ -2490,20 +2507,9 @@ app.post('/sell-nft', async (req, res) => {
         trustStatus.meta.resolved === true &&
         trustStatus.response.txid
       ) {
-        // Allow 1.5s delay to ensure trustline appears
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
         // Retry trustline check
-        const updatedLines = await client.request({
-          command: "account_lines",
-          account: walletAddress,
-        });
-
-        hasTrustline = updatedLines.result.lines.some(
-          line =>
-            line.currency === "53656167756C6C436F696E000000000000000000" &&
-            line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-        );
+        console.log("Trustline not found, retrying after trustline creation...");
+        hasTrustline = await checkTrustline(client, walletAddress);
       }
     }
 
@@ -2542,12 +2548,10 @@ app.post('/sell-nft', async (req, res) => {
         issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
         value: price.toString(),
       },
-      Flags: 1, // flag for sell offer
+      Flags: 1,
     };
 
-    // Log the transaction before sending to XUMM
     console.log("Transaction Before Sending to XUMM:", tx);  // log the transaction
-
     const sellPayload = await xumm.payload.create({
       txjson: tx,
       options: {
@@ -2556,9 +2560,7 @@ app.post('/sell-nft', async (req, res) => {
       },
     });
 
-    // Log the response from XUMM payload creation
-    console.log("Sell Payload Response:", sellPayload);  // log the response
-
+    console.log("Sell Payload Response:", sellPayload);  // log the response from XUMM payload creation
     return res.json({
       requiresTrustline: false,
       next: sellPayload.next,
@@ -2572,6 +2574,7 @@ app.post('/sell-nft', async (req, res) => {
     await client.disconnect();
   }
 });
+
 
 
 

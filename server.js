@@ -2774,6 +2774,61 @@ app.get('/nfts', async (req, res) => {
   }
 });
 
+async function loadActiveOffers(wallet) {
+  const container = document.getElementById('active-offers');
+  container.innerHTML = '<h3>Active Offers</h3>';
+
+  try {
+    const res = await fetch(`https://sglcn-x20-api.glitch.me/active-offers/${wallet}`);
+    const { sellOffers, buyOffers } = await res.json();
+
+    sellOffers.forEach(offer => {
+      const bar = document.createElement('div');
+      bar.style.margin = "4px 0";
+      bar.innerHTML = `
+        <span>( amount ${offer.amount} SGLCN )</span>
+        <button onclick="cancelOffer('${offer.offerId}')">Cancel Sell</button>
+      `;
+      container.appendChild(bar);
+    });
+
+    buyOffers.forEach(offer => {
+      const bar = document.createElement('div');
+      bar.style.margin = "4px 0";
+      bar.innerHTML = `
+        <span>( offer ${offer.amount} SGLCN )</span>
+        <button onclick="cancelOffer('${offer.offerId}')">Cancel Buy</button>
+      `;
+      container.appendChild(bar);
+    });
+
+  } catch (err) {
+    console.error("Error loading active offers:", err);
+  }
+}
+
+async function cancelOffer(offerId) {
+  const confirmCancel = confirm("Cancel this offer?");
+  if (!confirmCancel) return;
+
+  const res = await fetch("https://sglcn-x20-api.glitch.me/cancel-offer", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      offerId,
+      walletAddress: localStorage.getItem("xumm_wallet_address")
+    })
+  });
+
+  const data = await res.json();
+  if (data?.next?.always) {
+    window.open(data.next.always, "_blank");
+  } else {
+    alert("Failed to cancel offer.");
+  }
+}
+
+
 
 
 // Call the XRPL ping when the server starts

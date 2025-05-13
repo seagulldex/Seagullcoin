@@ -2431,7 +2431,7 @@ app.post('/transfer-nft', async (req, res) => {
       NFTokenID: nftId,
       Destination: recipientAddress,
       Amount: "0",
-      Flags: 1 << 9 // 512: tfTransferable (for gifting)
+      Flags: 1 // 512: tfTransferable (for gifting)
       
 
     };

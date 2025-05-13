@@ -67,6 +67,8 @@ import { fetchSeagullCoinBalance } from './xrplClient.js';
 import { promisify } from 'util'; // 
 import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
+import { fetchSeagullOffers } from "./offers.js";
+
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -479,6 +481,16 @@ app.post('/api/posts', (req, res) => {
 
 app.use('/api', mintRouter);  // Assuming mintRouter handles your mint-related endpoints
 
+router.get("/active-offers/:wallet", async (req, res) => {
+  const wallet = req.params.wallet;
+
+  if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(wallet)) {
+    return res.status(400).json({ error: "Invalid XRPL address" });
+  }
+
+  const offers = await fetchSeagullOffers(wallet);
+  res.json({ wallet, offers });
+});
 
 app.get('/login', async (req, res) => {
   try {

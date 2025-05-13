@@ -284,6 +284,42 @@ function displayNFTs() {
     container.appendChild(card);
   }
 }
+    function transferNFT(nftId, recipientAddress) {
+  const walletAddress = localStorage.getItem('xumm_wallet_address');
+  if (!walletAddress || !nftId || !recipientAddress) {
+    alert("Missing wallet address, NFT ID, or recipient.");
+    return;
+  }
+
+  fetch('/transfer-nft', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      walletAddress,
+      nftId,
+      recipientAddress
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('transfer-ui').style.display = 'block';
+    if (data.success) {
+      const link = data.next?.always;
+      document.getElementById('status').innerText = 'Transfer offer created!';
+      if (link) {
+        document.getElementById('xumm-sign-link').href = link;
+        document.getElementById('xumm-sign-link').style.display = 'inline-block';
+      }
+    } else {
+      document.getElementById('status').innerText = 'Failed to create transfer offer.';
+    }
+  })
+  .catch(err => {
+    console.error('Error:', err);
+    document.getElementById('status').innerText = 'An error occurred while creating transfer.';
+  });
+}
+
 </script>
 </body>
 </html>

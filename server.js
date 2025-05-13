@@ -2468,46 +2468,6 @@ app.post('/sell-nft', async (req, res) => {
   try {
     await client.connect();
 
-    // 1. Check if the sender wallet has the SeagullCoin trustline
-    const senderAccountLines = await client.request({
-      command: "account_lines",
-      account: walletAddress,
-    });
-
-    const senderHasTrustline = senderAccountLines.result.lines.some(
-      line =>
-        line.currency.toUpperCase() === "53656167756C6C436F696E000000000000000000" &&
-        line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-    );
-
-    if (!senderHasTrustline) {
-      // 2. Prompt sender to approve trustline setup via XUMM
-      const trustlineTx = {
-        TransactionType: "TrustSet",
-        Account: walletAddress,
-        LimitAmount: {
-          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin hex
-          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-          value: "1000000", // Adjust trust limit as needed
-        },
-      };
-
-      const trustPayload = await xumm.payload.create({
-        txjson: trustlineTx,
-        options: {
-          submit: true,
-          expire: 60,
-        },
-      });
-
-      return res.status(200).json({
-        requiresTrustline: true,
-        message: "Sender wallet is missing SeagullCoin trustline. Please approve it first.",
-        next: trustPayload.next,
-        uuid: trustPayload.uuid,
-      });
-    }
-
     // 3. Check if the buyer wallet has the SeagullCoin trustline
     const buyerAccountLines = await client.request({
       command: "account_lines",
@@ -2554,34 +2514,7 @@ app.post('/sell-nft', async (req, res) => {
       Account: walletAddress,
       NFTokenID: nftId,
       Amount: {
-        currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
-        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-        value: price.toString(),
-      },
-      Flags: 1, // Sell offer
-    };
-
-    const sellPayload = await xumm.payload.create({
-      txjson: tx,
-      options: {
-        submit: true,
-        expire: 60,
-      },
-    });
-
-    return res.json({
-      requiresTrustline: false,
-      next: sellPayload.next,
-      uuid: sellPayload.uuid,
-    });
-
-  } catch (err) {
-    console.error("Sell NFT error:", err?.data ?? err);
-    return res.status(500).json({ error: "Failed to process sell offer", details: err.message });
-  } finally {
-    await client.disconnect();
-  }
-});
+        currency:
 
 
 

@@ -2476,7 +2476,7 @@ app.post('/sell-nft', async (req, res) => {
 
     const hasTrustline = accountLines.result.lines.some(
       line =>
-        line.currency === "SeagullCoin" &&
+        line.currency === "53656167756C6C436F696E000000000000000000" &&
         line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
     );
 

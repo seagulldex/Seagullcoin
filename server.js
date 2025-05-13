@@ -166,6 +166,7 @@ fetchAndCheckUserBalances();
 
 
 
+const payments = {};
 
 
 
@@ -2938,6 +2939,64 @@ app.get('/offers/:wallet', async (req, res) => {
   }
 });
 
+app.post('/pay', async (req, res) => {
+  const { wallet } = req.body;
+  if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
+
+  const payload = {
+    txjson: {
+      TransactionType: 'Payment',
+      Destination: SERVICE_WALLET, // your minting service wallet
+      Amount: {
+        currency: "53656167756C6C436F696E000000000000000000", // Hex for "SeagullCoin"
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+        value: "0.5"
+      }
+    },
+    options: {
+      submit: true,
+      return_url: {
+        web: "https://sglcn-x20-api.glitch.me/success.html",
+        app: "https://sglcn-x20-api.glitch.me/success.html"
+      }
+    }
+  };
+
+  try {
+    const created = await xumm.payload.createAndSubscribe(payload, event => {
+      if (event.data.signed === true) {
+        console.log("Payment signed by", wallet);
+        return true;
+      }
+      if (event.data.signed === false) {
+        console.log("Payment declined by", wallet);
+        return false;
+      }
+    });
+
+    // Store payment UUID in memory or DB to confirm before minting
+    payments[created.uuid] = {
+      wallet,
+      paid: false
+    };
+
+    created.resolved.then(async (resolved) => {
+      if (resolved.signed) {
+        payments[created.uuid].paid = true;
+      } else {
+        delete payments[created.uuid];
+      }
+    });
+
+    res.json({
+      uuid: created.uuid,
+      next: created.next
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to create payment' });
+  }
+});
 
 
 app.post('/nft-offers', async (req, res) => {

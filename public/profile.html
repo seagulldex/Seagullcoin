@@ -78,9 +78,9 @@
   <main>
     <h1>Your NFTs</h1>
     <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
-  <button id="tab-single" class="active-tab">Single NFTs</button>
-  <button id="tab-collections">Collections</button>
-</div>
+      <button id="tab-single" class="active-tab">Single NFTs</button>
+      <button id="tab-collections">Collections</button>
+    </div>
     <div id="loading-spinner">
       <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading Seagull" class="seagull-spinner">
       <p>Loading your NFTs...</p>
@@ -263,8 +263,13 @@
 
       loading = false;
     }
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('xumm_wallet_address');
+      localStorage.removeItem('xumm_payload_uuid');
+      updateWalletStatus();
+    });
     
- 
   </script>
 </body>
 </html>

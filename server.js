@@ -2680,59 +2680,30 @@ async function getMetadataFromStorage(token_id) {
 const walletAddress = 'rEXAMPLEOWNER'; // Replace with an actual wallet address
 
 
-// Get full NFT catalog: all minted NFTs and their current owners
-app.get("/catalog", async (req, res) => {
-  const client = new xrpl.Client("wss://xrplcluster.com");
+
+export async function getCurrentOwner(nftId) {
+  const client = new xrpl.Client('wss://xrplcluster.com'); // XRPL mainnet WebSocket
   await client.connect();
 
-  const mintWallet = "rMINTINGWALLET"; // Replace with your actual wallet
-
   try {
-    const nftResp = await client.request({
-      command: "account_nfts",
-      account: mintWallet,
+    const response = await client.request({
+      command: 'nft_info',
+      nft_id: nftId
     });
 
-    const nfts = await Promise.all(nftResp.result.account_nfts.map(async (nft) => {
-      const uriHex = nft.URI || "";
-      const uri = Buffer.from(uriHex, "hex").toString("utf8");
-
-      let metadata = {};
-      try {
-        const fetchRes = await fetch(uri);
-        metadata = await fetchRes.json();
-      } catch (e) {
-        metadata = { error: "Failed to fetch metadata" };
-      }
-
-      let offers = [];
-      try {
-        const offerResp = await client.request({
-          command: "nft_sell_offers",
-          nft_id: nft.NFTokenID
-        });
-
-        offers = (offerResp.result.offers || []).filter(o =>
-          o.amount?.currency === "53656167756C6C436F696E000000000000000000" &&
-          o.amount?.issuer === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-        );
-      } catch (e) {}
-
-      return {
-        token_id: nft.NFTokenID,
-        owner: nft.Issuer || mintWallet,
-        metadata,
-        offers
-      };
-    }));
-
+    return response.result?.nft_object?.owner || null;
+  } catch (err) {
+    console.error('Error fetching NFT info:', err?.data ?? err);
+    return null;
+  } finally {
     await client.disconnect();
-    res.json({ success: true, nfts });
-  } catch (e) {
-    await client.disconnect();
-    res.status(500).json({ success: false, error: e.message });
   }
-});
+}
+
+
+// Get full NFT catalog: all minted NFTs and their current owners
+a
+
 
 
 

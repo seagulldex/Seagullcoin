@@ -2418,9 +2418,9 @@ async function fetchAllNFTs(wallet) {
 
 // /transfer-nft — direct transfer to another wallet
 app.post('/transfer-nft', async (req, res) => {
-  const { walletAddress, nftId, recipientAddress, amount } = req.body;  // Add 'amount' to the request body
+  const { walletAddress, nftId, recipientAddress } = req.body;
 
-  if (!walletAddress || !nftId || !recipientAddress || !amount) {  // Ensure 'amount' is provided
+  if (!walletAddress || !nftId || !recipientAddress) {
     return res.status(400).json({ success: false, message: 'Missing parameters' });
   }
 
@@ -2430,8 +2430,10 @@ app.post('/transfer-nft', async (req, res) => {
       Account: walletAddress,
       NFTokenID: nftId,
       Destination: recipientAddress,
-      Amount: amount,  // Add the 'Amount' field to the transaction
+      Amount: "0",
       Flags: 1 << 9 // 512: tfTransferable (for gifting)
+      
+
     };
 
     // If you're using XUMM:
@@ -2458,6 +2460,7 @@ app.post('/transfer-nft', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Internal error' });
   }
 });
+
 
 
 

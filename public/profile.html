@@ -223,6 +223,41 @@ function displayNFTs() {
       });
     }
 
+    async function transferNFT(nftId) {
+  const recipient = prompt("Enter the wallet address to transfer this NFT to:");
+  const sender = localStorage.getItem("xumm_wallet_address");
+
+  if (!recipient || !sender) {
+    alert("Transfer cancelled or wallet not connected.");
+    return;
+  }
+
+  try {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/transfer-nft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletAddress: sender,
+        nftId,
+        recipientAddress: recipient
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Please sign the transfer in your XUMM app.");
+      window.open(data.next.always, "_blank");
+    } else {
+      alert("Transfer failed: " + data.message);
+    }
+  } catch (err) {
+    console.error("Transfer error:", err);
+    alert("An error occurred during transfer.");
+  }
+}
+
+    
     // Transfer Button
     const transferButton = document.createElement('button');
     transferButton.textContent = 'Transfer NFT';
@@ -267,38 +302,6 @@ function displayNFTs() {
   }
 }
 
-// Transfer NFT Function
-async function transferNFT(nftId) {
-  const receiver = prompt("Enter the recipient's wallet address:");
-  if (!receiver) {
-    alert("Please enter a valid recipient address.");
-    return;
-  }
-
-  const payload = {
-    walletAddress: localStorage.getItem("xumm_wallet_address"),
-    nftId: nftId,
-    receiver: receiver
-  };
-
-  const response = await fetch("/transfer-nft", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  const result = await response.json();
-  console.log("Backend Response:", result); // Log the response for debugging
-
-  if (result.success) {
-    // Redirect the user to the XUMM sign-in page for finalizing the transaction
-    const signUrl = result.next.always;
-    window.open(signUrl, "_blank");  // Open the signing URL in a new tab
-    alert("Please complete the transfer by signing in XUMM.");
-  } else {
-    alert("Error transferring NFT.");
-  }
-}
 </script>
 </body>
 </html>

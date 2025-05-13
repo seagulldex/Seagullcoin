@@ -2896,6 +2896,43 @@ app.get('/active-offers/:walletAddress', async (req, res) => {
   }
 });
 
+app.get('/offers/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+  const client = new xrpl.Client(xrplApiUrl);
+  await client.connect();
+
+  try {
+    const accountObjects = await client.request({
+      command: "account_objects",
+      account: wallet,
+      type: "nf_token_offer"
+    });
+
+    const offers = accountObjects.result.account_objects || [];
+
+    const sellOffers = offers.filter(o => o.Flags & xrpl.NFTokenOfferFlags.tfSellNFToken);
+    const buyOffers = offers.filter(o => !(o.Flags & xrpl.NFTokenOfferFlags.tfSellNFToken));
+
+    res.json({
+      success: true,
+      sellOffers: sellOffers.map(o => ({
+        id: o.index,
+        amount: (parseFloat(o.Amount.value) / 1000000).toFixed(2),
+        tokenId: o.NFTokenID
+      })),
+      buyOffers: buyOffers.map(o => ({
+        id: o.index,
+        amount: (parseFloat(o.Amount.value) / 10000000).toFixed(2),
+        tokenId: o.NFTokenID
+      }))
+    });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  } finally {
+    client.disconnect();
+  }
+});
+
 
 
 

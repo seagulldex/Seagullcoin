@@ -2458,29 +2458,28 @@ app.post('/transfer-nft', async (req, res) => {
 
 
 async function checkTrustline(client, walletAddress) {
-  let attempts = 0;
-  let hasTrustline = false;
-  
-  while (attempts < 5 && !hasTrustline) {  // Retry up to 5 times
-    const accountLines = await client.request({
-      command: "account_lines",
-      account: walletAddress,
-    });
+  const accountLines = await client.request({
+    command: "account_lines",
+    account: walletAddress,
+  });
 
-    hasTrustline = accountLines.result.lines.some(
-      line =>
-        line.currency === "53656167756C6C436F696E000000000000000000" &&
-        line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-    );
+  const foundLine = accountLines.result.lines.find(
+    line =>
+      line.currency === "53656167756C6C436F696E000000000000000000" &&
+      line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+  );
 
-    if (!hasTrustline) {
-      attempts++;
-      console.log(`Trustline not found, retrying... Attempt ${attempts}`);
-      await new Promise(resolve => setTimeout(resolve, 3000));  // 3-second delay between retries
-    }
+  return !!foundLine;
+}
+
+async function waitForTransactionValidation(client, txid, retries = 10) {
+  for (let i = 0; i < retries; i++) {
+    const result = await client.request({ command: "tx", transaction: txid });
+    if (result.result.validated) return true;
+    console.log(`Waiting for trustline TX to validate... (${i + 1}/10)`);
+    await new Promise(resolve => setTimeout(resolve, 3000));
   }
-
-  return hasTrustline;
+  return false;
 }
 
 app.post('/sell-nft', async (req, res) => {
@@ -2495,21 +2494,18 @@ app.post('/sell-nft', async (req, res) => {
   try {
     await client.connect();
 
-    // Check trustline
     let hasTrustline = await checkTrustline(client, walletAddress);
 
-    // If no trustline and trustline creation is required
     if (!hasTrustline && lastTrustPayloadUuid) {
       const trustStatus = await xumm.payload.get(lastTrustPayloadUuid);
+      const txid = trustStatus.response?.txid;
 
-      if (
-        trustStatus.meta.signed === true &&
-        trustStatus.meta.resolved === true &&
-        trustStatus.response.txid
-      ) {
-        // Retry trustline check
-        console.log("Trustline not found, retrying after trustline creation...");
-        hasTrustline = await checkTrustline(client, walletAddress);
+      if (trustStatus.meta.signed && trustStatus.meta.resolved && txid) {
+        const validated = await waitForTransactionValidation(client, txid);
+        if (validated) {
+          console.log("Trustline TX validated.");
+          hasTrustline = await checkTrustline(client, walletAddress);
+        }
       }
     }
 
@@ -2538,14 +2534,47 @@ app.post('/sell-nft', async (req, res) => {
       });
     }
 
-    // Trustline confirmed — proceed to sell offer
+    // Proceed to create the sell offer
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
       NFTokenID: nftId,
       Amount: {
         currency: "53656167756C6C436F696E000000000000000000",
-        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25W
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+        value: price.toString(),
+      },
+      Flags: 1,
+    };
+
+    console.log("Creating sell payload with tx:", tx);
+
+    const sellPayload = await xumm.payload.create({
+      txjson: tx,
+      options: {
+        submit: true,
+        expire: 60,
+      },
+    });
+
+    console.log("Sell Payload Response:", sellPayload);
+    return res.json({
+      requiresTrustline: false,
+      next: sellPayload.next,
+      uuid: sellPayload.uuid,
+    });
+
+  } catch (err) {
+    console.error("Sell NFT error:", err?.data ?? err);
+    return res.status(500).json({
+      error: "Failed to process sell offer",
+      details: err.message,
+    });
+  } finally {
+    await client.disconnect();
+  }
+});
+
 
 
 

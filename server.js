@@ -2497,7 +2497,7 @@ const createTrustline = async (walletAddress) => {
     LimitAmount: {
       currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin currency code (hex)
       issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer
-      value: '333333333', // Set a limit on how much SeagullCoin the wallet can hold
+      value: '587000000', // Set a limit on how much SeagullCoin the wallet can hold
     },
   };
 

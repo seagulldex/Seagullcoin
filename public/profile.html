@@ -78,21 +78,20 @@
   <main>
     <h1>Your NFTs</h1>
     <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
-  <button id="tab-single" class="active-tab">Single NFTs</button>
-  <button id="tab-collections">Collections</button>
-</div>
+      <button id="tab-single" class="active-tab">Single NFTs</button>
+      <button id="tab-collections">Collections</button>
+    </div>
     <div id="loading-spinner">
       <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading Seagull" class="seagull-spinner">
       <p>Loading your NFTs...</p>
     </div>
     <div style="text-align: center; margin: 20px;">
-  <button id="prev-page">Previous</button>
-  <button id="next-page">Next</button>
-</div>
+      <button id="prev-page">Previous</button>
+      <button id="next-page">Next</button>
+    </div>
     <div id="nft-container" class="nft-grid" style="display:none;"></div>
   </main>
 
-  
   <script>
 let allNFTs = [];
 let currentIndex = 0;
@@ -189,7 +188,7 @@ async function fetchNFTs(wallet) {
   }
 }
 
-    function convertIPFSToURL(ipfsUrl) {
+function convertIPFSToURL(ipfsUrl) {
   if (!ipfsUrl) return '';
   return ipfsUrl.replace(/^ipfs:\/\//, 'https://ipfs.io/ipfs/');
 }
@@ -257,70 +256,10 @@ function displayNFTs() {
       card.appendChild(sellButton);
     }
 
-    const transferBtn = document.createElement('button');
-    transferBtn.textContent = 'Transfer';
-    transferBtn.onclick = async () => {
-      const destination = prompt("Wallet address to transfer to:");
-      if (!destination) return;
-      const res = await fetch("https://sglcn-x20-api.glitch.me/transfer-nft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sender: localStorage.getItem("xumm_wallet_address"),
-          nftId: nft.NFTokenID,
-          destination,
-          xummPayloadUUID: localStorage.getItem("xumm_payload_uuid")
-        })
-      });
-      const result = await res.json();
-      if (result?.next?.always) {
-        window.open(result.next.always, "_blank");
-      } else {
-        alert("Transfer failed.");
-      }
-    };
-    card.appendChild(transferBtn);
-
     container.appendChild(card);
   }
-}
-    function transferNFT(nftId, recipientAddress) {
-  const walletAddress = localStorage.getItem('xumm_wallet_address');
-  if (!walletAddress || !nftId || !recipientAddress) {
-    alert("Missing wallet address, NFT ID, or recipient.");
-    return;
-  }
-
-  fetch('/transfer-nft', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      walletAddress,
-      nftId,
-      recipientAddress
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    document.getElementById('transfer-ui').style.display = 'block';
-    if (data.success) {
-      const link = data.next?.always;
-      document.getElementById('status').innerText = 'Transfer offer created!';
-      if (link) {
-        document.getElementById('xumm-sign-link').href = link;
-        document.getElementById('xumm-sign-link').style.display = 'inline-block';
-      }
-    } else {
-      document.getElementById('status').innerText = 'Failed to create transfer offer.';
-    }
-  })
-  .catch(err => {
-    console.error('Error:', err);
-    document.getElementById('status').innerText = 'An error occurred while creating transfer.';
-  });
 }
 
 </script>
 </body>
 </html>
-

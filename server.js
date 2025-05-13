@@ -2372,43 +2372,47 @@ app.get('/nfts/:wallet', async (req, res) => {
 
 // Helper to fetch all NFTs for a wallet with proper caching
 async function fetchAllNFTs(wallet) {
-  if (nftCache.has(wallet)) {
-    const cachedData = nftCache.get(wallet);
-    const currentTime = Date.now();
-    if (currentTime - cachedData.timestamp < 60000) {  // 1-minute cache duration
-      return cachedData.data;
-    }
-  }
-
-  const requestBody = {
-    method: 'account_nfts',
-    params: [{
-      account: wallet,
-      ledger_index: 'validated'
-    }]
-  };
+  let allNFTs = [];
+  let marker = null;
 
   try {
-    const response = await fetch(xrplApiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
+    do {
+      const requestBody = {
+        method: 'account_nfts',
+        params: [{
+          account: wallet,
+          ledger_index: 'validated',
+          ...(marker && { marker })
+        }]
+      };
 
-    const data = await response.json();
+      const response = await fetch(xrplApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
 
-    if (data.result?.error) {
-      throw new Error(data.result.error_message);
-    }
+      const data = await response.json();
 
-    const nfts = data.result.account_nfts || [];
-    nftCache.set(wallet, { data: nfts, timestamp: Date.now() });
-    return nfts;
+      if (data.result?.error) {
+        throw new Error(data.result.error_message);
+      }
+
+      allNFTs.push(...(data.result.account_nfts || []));
+      marker = data.result.marker || null;
+
+    } while (marker);
+
+    // Cache full result
+    nftCache.set(wallet, { data: allNFTs, timestamp: Date.now() });
+    return allNFTs;
+
   } catch (error) {
     console.error('Error fetching NFTs:', error);
     throw new Error('Failed to fetch NFTs');
   }
 }
+
 
 
 

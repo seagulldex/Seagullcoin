@@ -2848,35 +2848,30 @@ async function cancelOffer(offerId) {
   }
 }
 
-
-const SEAGULL_COIN_CURRENCY = "53656167756C6C436F696E000000000000000000";  // SeagullCoin currency code
-const SEAGULLCOIN_HEX = "53656167756C6C436F696E000000000000000000";
 const SEAGULLCOIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
+const SEAGULLCOIN_HEX = "53656167756C6C436F696E000000000000000000";
 
-
-async function hasSeagullCoinTrustline(walletAddress, client) {
+async function hasSeagullCoinTrustline(walletAddress) {
   try {
-    const response = await client.request({
-      command: "account_lines",
-      account: walletAddress
+    const result = await axios.get(`https://xumm.app/api/v1/platform/user-account-lines/${walletAddress}`, {
+      headers: {
+        'X-API-Key': process.env.XUMM_API_KEY
+      }
     });
 
-    console.log("Trustlines for", walletAddress, JSON.stringify(response.result.lines, null, 2));
+    const lines = result.data.lines;
 
-    return response.result.lines.some(line => {
-      const currency = line.currency?.toUpperCase();
-      const counterparty = line.account || line.issuer; // some SDKs use .issuer
-
-      return (
-        (currency === "SEAGULLCOIN" || currency === SEAGULLCOIN_HEX.toUpperCase()) &&
-        counterparty === SEAGULLCOIN_ISSUER
-      );
-    });
+    return lines.some(line =>
+      (line.currency === 'SeagullCoin' || line.currency === '53656167756C6C436F696E000000000000000000') &&
+      line.account === SEAGULLCOIN_ISSUER
+    );
   } catch (error) {
-    console.error("Trustline check failed:", error);
+    console.error('XUMM trustline check failed:', error.response?.data || error.message);
     return false;
   }
 }
+
+
 
 // Payment route
 app.post('/pay', async (req, res) => {

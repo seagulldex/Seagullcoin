@@ -2828,42 +2828,62 @@ async function cancelOffer(offerId) {
   }
 }
 
-app.get("/active-offers/:walletAddress", async (req, res) => {
-  const walletAddress = req.params.walletAddress;
 
+// SeagullCoin currency details
+const SEAGULL_COIN_CURRENCY = "53656167756C6C436F696E000000000000000000";  // SeagullCoin currency code
+
+// Function to fetch offers from XRPL for a given wallet address
+async function fetchOffersFromXRPL(walletAddress) {
   try {
-    const client = new xrpl.Client("wss://xrplcluster.com");
-    console.log("Connecting to XRPL...");
-    await client.connect();
+    // Replace with the XRPL endpoint you are using
+    const xrplEndpoint = `https://s1.ripple.com:51234`; // Default public XRPL server
+    const data = {
+      "method": "account_offers",
+      "params": [{
+        "account": walletAddress
+      }]
+    };
 
-    console.log(`Fetching offers for wallet: ${walletAddress}`);
-    const response = await client.request({
-      command: "account_objects",
-      account: walletAddress,
-      type: "offer"
-    });
+    // Make the request to the XRPL server
+    const response = await axios.post(xrplEndpoint, data);
 
-    const offers = response.result.account_objects || [];
+    // Check if the response contains offers
+    if (response.data && response.data.result && response.data.result.offers) {
+      // Filter out only SeagullCoin offers
+      const filteredOffers = response.data.result.offers.filter(offer => 
+        offer.amount.currency === SEAGULL_COIN_CURRENCY &&
+        offer.amount.issuer === SEAGULL_COIN_ISSUER
+      );
+      
+      return { offers: filteredOffers };  // Return the filtered offers
+    } else {
+      return { offers: [] };  // Return empty offers if none are found
+    }
+  } catch (error) {
+    console.error('Error fetching offers from XRPL:', error);
+    throw new Error('Failed to fetch offers from XRPL');
+  }
+}
 
-    const SGLCN_HEX = "53656167756C6C436F696E000000000000000000";
-    const buyOffers = offers.filter(o => o.TakerGets.currency === SGLCN_HEX);
-    const sellOffers = offers.filter(o => o.TakerPays.currency === SGLCN_HEX);
+module.exports = { fetchOffersFromXRPL };
 
-    await client.disconnect();
 
+app.get('/active-offers/:walletAddress', async (req, res) => {
+  try {
+    const walletAddress = req.params.walletAddress;
+    const offersData = await fetchOffersFromXRPL(walletAddress);
+
+    // Format the response and send it to the client
     res.json({
       wallet: walletAddress,
-      sellOffers,
-      buyOffers
+      sellOffers: offersData.offers || [],  // If offers are present, include them, else return empty array
+      buyOffers: []  // Add logic for buy offers if necessary
     });
-  } catch (e) {
-    console.error("XRPL error:", e?.data?.error_message || e.message || e);
-    res.status(500).json({ error: "Failed to fetch active offers" });
+  } catch (error) {
+    console.error('Error fetching active offers:', error);
+    res.status(500).json({ error: 'Failed to fetch active offers' });
   }
 });
-
-
-
 
 
 // Call the XRPL ping when the server starts

@@ -2457,39 +2457,42 @@ app.post('/transfer-nft', async (req, res) => {
 });
 
 
+app.post('/sell-nft', async (req, res) => {
+  const { walletAddress, nftId, price } = req.body;
 
-
-
-
-
-const createTrustline = async (walletAddress) => {
-  const trustlineTx = {
-    TransactionType: 'TrustSet',
-    Account: walletAddress,
-    LimitAmount: {
-      currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin currency code (hex)
-      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer
-      value: '587000000', // Set a limit on how much SeagullCoin the wallet can hold
-    },
-  };
-
-  const payload = {
-    txjson: trustlineTx,
-    options: {
-      submit: true,
-      expire: 60,
-    },
-  };
+  if (!walletAddress || !nftId || !price) {
+    return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
+  }
 
   try {
+    const tx = {
+      TransactionType: 'NFTokenCreateOffer',
+      Account: walletAddress,
+      NFTokenID: nftId,
+      Amount: {
+        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (hex)
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+        value: price.toString(),
+      },
+      Flags: 1, // Sell offer
+    };
+
+    const payload = {
+      txjson: tx,
+      options: {
+        submit: true,
+        expire: 60,
+      },
+    };
+
     const { uuid, next } = await xumm.payload.create(payload);
-    console.log('Trustline Payload Created:', next);
-    return { uuid, next };
+    return res.json({ next, uuid });
+
   } catch (err) {
-    console.error('Error creating trustline:', err);
-    return { error: 'Failed to create trustline' };
+    console.error('Sell NFT error:', err?.data ?? err);
+    return res.status(500).json({ error: 'Failed to create sell offer', details: err.message });
   }
-};
+});
 
 
 

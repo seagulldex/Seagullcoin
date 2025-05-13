@@ -2960,7 +2960,7 @@ async function fetchOffersFromXRPL(walletAddress) {
     if (response.data && response.data.result && response.data.result.offers) {
       // Filter out only SeagullCoin offers
       const filteredOffers = response.data.result.offers.filter(offer => 
-        offer.amount.currency === SEAGULL_COIN_CURRENCY &&
+        offer.amount.currency === SEAGULLCOIN_HEX &&
         offer.amount.issuer === SEAGULL_COIN_ISSUER
       );
       

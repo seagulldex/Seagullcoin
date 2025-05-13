@@ -2545,46 +2545,7 @@ app.post('/sell-nft', async (req, res) => {
       NFTokenID: nftId,
       Amount: {
         currency: "53656167756C6C436F696E000000000000000000",
-        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-        value: price.toString(),
-      },
-      Flags: 1,
-    };
-
-    console.log("Transaction Before Sending to XUMM:", tx);  // log the transaction
-    const sellPayload = await xumm.payload.create({
-      txjson: tx,
-      options: {
-        submit: true,
-        expire: 60,
-      },
-    });
-
-    console.log("Sell Payload Response:", sellPayload);  // log the response from XUMM payload creation
-    return res.json({
-      requiresTrustline: false,
-      next: sellPayload.next,
-      uuid: sellPayload.uuid,
-    });
-
-  } catch (err) {
-    console.error("Sell NFT error:", err?.data ?? err);
-    return res.status(500).json({ error: "Failed to process sell offer", details: err.message });
-  } finally {
-    await client.disconnect();
-  }
-});
-
-
-
-
-
-
-
-app.post('/accept-sell-offer', async (req, res) => {
-  const { walletAddress, sellOfferId } = req.body;
-
-  if (!walletAddress || !sellOffe
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25W
 
 
 

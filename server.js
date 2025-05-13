@@ -2951,23 +2951,21 @@ app.post('/nft-offers', async (req, res) => {
     const client = new xrpl.Client("wss://xrplcluster.com");
     await client.connect();
 
+    // Fetch all account objects without specifying the type
     const response = await client.request({
       command: "account_objects",
       account: walletAddress,
-      type: "nf_token_offer",
       ledger_index: "validated"
     });
 
-    // Log the full response to debug
+    // Log the response to debug
     console.log("XRPL Response:", response);
 
-    const offers = response.result.account_objects;
-    if (!offers) {
-      return res.status(404).json({ success: false, message: "No offers found" });
-    }
+    const offers = response.result.account_objects || [];
 
-    const incoming = offers.filter(o => o.Destination === walletAddress);
-    const outgoing = offers.filter(o => o.Account === walletAddress);
+    // Filter offers from the account
+    const incoming = offers.filter(o => o.Destination === walletAddress && o.Type === "NFTokenOffer");
+    const outgoing = offers.filter(o => o.Account === walletAddress && o.Type === "NFTokenOffer");
 
     await client.disconnect();
 
@@ -2982,6 +2980,7 @@ app.post('/nft-offers', async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal error" });
   }
 });
+
 
 
 

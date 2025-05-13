@@ -121,20 +121,103 @@ button#tab-single, button#tab-collections {
 
   <script>
     let allNFTs = [];
-    let currentIndex = 0;
-    const nftsPerBatch = 20;
-    let loading = false;
+let currentPage = 1;
+const nftsPerPage = 12;
 
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
-    });
+document.getElementById("tab-single").onclick = () => {
+  document.getElementById("tab-single").classList.add("active-tab");
+  document.getElementById("tab-collections").classList.remove("active-tab");
+  document.getElementById("nft-container").style.display = 'grid';
+  document.getElementById("collection-container").style.display = 'none';
+  renderPage(currentPage);
+};
 
-    window.addEventListener('scroll', async () => {
-      if (loading) return;
-      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
-        loadMoreNFTs();
-      }
+document.getElementById("tab-collections").onclick = () => {
+  document.getElementById("tab-single").classList.remove("active-tab");
+  document.getElementById("tab-collections").classList.add("active-tab");
+  document.getElementById("nft-container").style.display = 'none';
+  document.getElementById("collection-container").style.display = 'grid';
+  renderCollections();
+};
+
+document.getElementById("prev-page").onclick = () => {
+  if (currentPage > 1) {
+    currentPage--;
+    renderPage(currentPage);
+  }
+};
+
+document.getElementById("next-page").onclick = () => {
+  if ((currentPage * nftsPerPage) < allNFTs.length) {
+    currentPage++;
+    renderPage(currentPage);
+  }
+};
+
+function renderPage(page) {
+  const container = document.getElementById("nft-container");
+  container.innerHTML = "";
+  const start = (page - 1) * nftsPerPage;
+  const end = start + nftsPerPage;
+  const batch = allNFTs.slice(start, end);
+  batch.forEach(nft => container.appendChild(buildNFTCard(nft)));
+
+  // Pagination UI
+  document.getElementById("page-info").textContent = `Page ${currentPage}`;
+  document.getElementById("prev-page").disabled = currentPage === 1;
+  document.getElementById("next-page").disabled = end >= allNFTs.length;
+}
+
+function buildNFTCard(nft) {
+  const metadata = nft.metadata || {};
+  const card = document.createElement('div');
+  card.className = "nft-card";
+  const img = document.createElement('img');
+  img.src = convertIPFSToURL(metadata.image);
+  card.appendChild(img);
+
+  card.innerHTML += `
+    <h3>${metadata.name || "Unnamed NFT"}</h3>
+    <p>${metadata.description || "No description"}</p>
+    ${metadata.collection ? `<p><strong>Collection:</strong> ${metadata.collection.name}</p>` : ''}
+  `;
+
+  if (Array.isArray(metadata.attributes)) {
+    metadata.attributes.forEach(attr => {
+      const trait = document.createElement('div');
+      trait.className = "trait";
+      trait.textContent = `${attr.trait_type} : ${attr.value}`;
+      card.appendChild(trait);
     });
+  }
+
+  return card;
+}
+
+function renderCollections() {
+  const container = document.getElementById("collection-container");
+  container.innerHTML = "";
+  const grouped = {};
+
+  allNFTs.forEach(nft => {
+    const collection = nft.metadata?.collection?.name || "Uncategorized";
+    if (!grouped[collection]) grouped[collection] = [];
+    grouped[collection].push(nft);
+  });
+
+  for (const [collectionName, nfts] of Object.entries(grouped)) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "nft-card";
+    wrapper.innerHTML = `<h2>${collectionName}</h2>`;
+    nfts.slice(0, 3).forEach(nft => {
+      const img = document.createElement('img');
+      img.src = convertIPFSToURL(nft.metadata?.image);
+      wrapper.appendChild(img);
+    });
+    container.appendChild(wrapper);
+  }
+}
+
 
     function convertIPFSToURL(ipfsUrl) {
       if (!ipfsUrl) return "https://via.placeholder.com/200?text=No+Image";

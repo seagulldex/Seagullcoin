@@ -2681,26 +2681,59 @@ const walletAddress = 'rEXAMPLEOWNER'; // Replace with an actual wallet address
 
 
 // Get full NFT catalog: all minted NFTs and their current owners
-app.get('/catalog', async (req, res) => {
+app.get("/catalog", async (req, res) => {
+  const client = new xrpl.Client("wss://xrplcluster.com");
+  await client.connect();
+
+  const mintWallet = "rMINTINGWALLET"; // Replace with your actual wallet
+
   try {
-    // Query the blockchain or external service for minted NFTs
-    const mintedNFTs = await getMintedNFTsFromBlockchain(); // Implement this function
-    
-    // Fetch metadata for each NFT from IPFS or NFT.Storage
-    const nfts = await Promise.all(mintedNFTs.map(async (nft) => {
-      const metadata = await getMetadataFromStorage(nft.token_id); // Implement this function
+    const nftResp = await client.request({
+      command: "account_nfts",
+      account: mintWallet,
+    });
+
+    const nfts = await Promise.all(nftResp.result.account_nfts.map(async (nft) => {
+      const uriHex = nft.URI || "";
+      const uri = Buffer.from(uriHex, "hex").toString("utf8");
+
+      let metadata = {};
+      try {
+        const fetchRes = await fetch(uri);
+        metadata = await fetchRes.json();
+      } catch (e) {
+        metadata = { error: "Failed to fetch metadata" };
+      }
+
+      let offers = [];
+      try {
+        const offerResp = await client.request({
+          command: "nft_sell_offers",
+          nft_id: nft.NFTokenID
+        });
+
+        offers = (offerResp.result.offers || []).filter(o =>
+          o.amount?.currency === "53656167756C6C436F696E000000000000000000" &&
+          o.amount?.issuer === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+        );
+      } catch (e) {}
+
       return {
-        token_id: nft.token_id,
-        owner: nft.owner,
-        metadata: metadata
+        token_id: nft.NFTokenID,
+        owner: nft.Issuer || mintWallet,
+        metadata,
+        offers
       };
     }));
 
-    res.json({ success: true, nfts: nfts });
+    await client.disconnect();
+    res.json({ success: true, nfts });
   } catch (e) {
-    res.json({ success: false, error: e.message });
+    await client.disconnect();
+    res.status(500).json({ success: false, error: e.message });
   }
 });
+
 
 
 

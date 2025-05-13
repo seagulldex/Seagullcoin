@@ -588,8 +588,6 @@ app.get('/gravatar/:hash', async (req, res) => {
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views')); // Ensure views are stored in /views
-
-
 app.get('/confirm-login/:payloadUUID', async (req, res) => {
   try {
     const { payloadUUID } = req.params;
@@ -2314,63 +2312,55 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
   return metadata;
 };
 
-
-
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
   // Check cache
   const cached = nftCache.get(wallet);
-  const currentTime = Date.now();
-
-  if (cached && (currentTime - cached.timestamp < CACHE_DURATION)) {
+  if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
     return res.json({ nfts: cached.data });
-  } else {
-    // If cache expired, clear it
-    if (cached) {
-      nftCache.delete(wallet);  // Clear expired cache
-    }
+  }
 
-    try {
-      const rawNFTs = await fetchAllNFTs(wallet); // Fetch fresh NFTs
-      const parsed = await Promise.all(rawNFTs.map(async (nft) => {
-        const uri = hexToUtf8(nft.URI);
-        let metadata = null, collection = null, icon = null;
+  try {
+    const rawNFTs = await fetchAllNFTs(wallet);
 
-        if (uri.startsWith('ipfs://')) {
-          const ipfsUrl = uri.replace('ipfs://', '');
-          try {
-            metadata = await fetchMetadataWithRetry(ipfsUrl);
-            if (metadata) {
-              collection = metadata.collection || metadata.name || null;
-              icon = metadata.image || null;
-            }
-          } catch (err) {
-            console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
+    const parsed = await Promise.all(rawNFTs.map(async (nft) => {
+      const uri = hexToUtf8(nft.URI);
+      let metadata = null, collection = null, icon = null;
+
+      if (uri.startsWith('ipfs://')) {
+        const ipfsUrl = uri.replace('ipfs://', '');
+        try {
+          // Fetch metadata with retry mechanism
+          metadata = await fetchMetadataWithRetry(ipfsUrl);
+          if (metadata) {
+            collection = metadata.collection || metadata.name || null;
+            icon = metadata.image || null;
           }
+        } catch (err) {
+          console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
         }
+      }
 
-        return {
-          NFTokenID: nft.NFTokenID,
-          URI: uri,
-          collection,
-          icon,
-          metadata
-        };
-      }));
+      return {
+        NFTokenID: nft.NFTokenID,
+        URI: uri,
+        collection,
+        icon,
+        metadata
+      };
+    }));
 
-      // Cache the result
-      nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
+    // Cache the result
+    nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
 
-      res.json({ nfts: parsed });
-    } catch (err) {
-      console.error('NFT fetch error:', err);
-      res.status(500).json({ error: 'Failed to fetch NFTs' });
-    }
+    res.json({ nfts: parsed });
+  } catch (err) {
+    console.error('NFT fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
-
 
 // Helper to fetch all NFTs for a wallet with proper caching
 async function fetchAllNFTs(wallet) {
@@ -2471,6 +2461,12 @@ app.post('/sell-nft', async (req, res) => {
     return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
   }
   
+  const hasTrustline = await hasSeagullCoinTrustline(walletAddress);
+  if (!hasTrustline) {
+    return res.status(400).json({
+      error: 'Wallet must first establish a trustline with SeagullCoin (SGLCN-X20)',
+    });
+  }
 
   try {
     // The transaction object for the NFT sell offer
@@ -2535,7 +2531,7 @@ const createTrustline = async (walletAddress) => {
     console.error('Error creating trustline:', err);
     return { error: 'Failed to create trustline' };
   }
-};
+};,
 
 
 
@@ -2777,6 +2773,8 @@ app.get('/listings', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch NFT listings' });
   }
 });
+
+
 
 
 

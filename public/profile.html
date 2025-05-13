@@ -275,20 +275,26 @@ async function transferNFT(nftId) {
     return;
   }
 
+  const payload = {
+    walletAddress: localStorage.getItem("xumm_wallet_address"),
+    nftId: nftId,
+    receiver: receiver
+  };
+
   const response = await fetch("/transfer-nft", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      walletAddress: localStorage.getItem("xumm_wallet_address"),
-      nftId: nftId,
-      receiver: receiver
-    }),
+    body: JSON.stringify(payload),
   });
 
   const result = await response.json();
+  console.log("Backend Response:", result); // Log the response for debugging
+
   if (result.success) {
-    alert("NFT successfully transferred!");
-    fetchNFTs(localStorage.getItem("xumm_wallet_address"));
+    // Redirect the user to the XUMM sign-in page for finalizing the transaction
+    const signUrl = result.next.always;
+    window.open(signUrl, "_blank");  // Open the signing URL in a new tab
+    alert("Please complete the transfer by signing in XUMM.");
   } else {
     alert("Error transferring NFT.");
   }

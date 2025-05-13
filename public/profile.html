@@ -223,6 +223,13 @@ function displayNFTs() {
       });
     }
 
+    // Transfer Button
+    const transferButton = document.createElement('button');
+    transferButton.textContent = 'Transfer NFT';
+    transferButton.onclick = () => transferNFT(nft.NFTokenID);
+    card.appendChild(transferButton);
+
+    // Sell Button
     if (nft.listed || nft.sellOffer) {
       const priceLabel = document.createElement('p');
       priceLabel.textContent = `Price: ${nft.sellOffer || nft.listed.price} SeagullCoin`;
@@ -260,6 +267,32 @@ function displayNFTs() {
   }
 }
 
+// Transfer NFT Function
+async function transferNFT(nftId) {
+  const receiver = prompt("Enter the recipient's wallet address:");
+  if (!receiver) {
+    alert("Please enter a valid recipient address.");
+    return;
+  }
+
+  const response = await fetch("/transfer-nft", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      walletAddress: localStorage.getItem("xumm_wallet_address"),
+      nftId: nftId,
+      receiver: receiver
+    }),
+  });
+
+  const result = await response.json();
+  if (result.success) {
+    alert("NFT successfully transferred!");
+    fetchNFTs(localStorage.getItem("xumm_wallet_address"));
+  } else {
+    alert("Error transferring NFT.");
+  }
+}
 </script>
 </body>
 </html>

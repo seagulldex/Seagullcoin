@@ -2430,24 +2430,34 @@ app.post('/transfer-nft', async (req, res) => {
       Account: walletAddress,
       NFTokenID: nftId,
       Destination: recipientAddress,
-      Flags: 9, // Transfer only (fully automatic accept mode)
+      Flags: 1 << 9 // 512: tfTransferable (for gifting)
     };
 
-    const prepared = await client.autofill(tx);
-    // NOTE: Replace this with actual signing logic
-    // const signed = signWithYourWallet(prepared);
-    // const result = await client.submitAndWait(signed.tx_blob);
+    // If you're using XUMM:
+    const xummPayload = {
+      txjson: tx,
+      options: {
+        submit: true,
+        expire: 5,
+      }
+    };
+
+    const { created } = await xumm.payload.createAndSubscribe(xummPayload, event => {
+      if (event.data.signed === true) return event.data;
+    });
 
     return res.json({
       success: true,
-      message: `Transfer offer created for NFT ${nftId} (not signed)`,
-      tx: prepared,
+      next: created.next,
+      message: `Transfer request created. Sign to complete.`,
     });
+
   } catch (err) {
     console.error('Transfer NFT error:', err);
     return res.status(500).json({ success: false, message: 'Internal error' });
   }
 });
+
 
 app.post('/sell-nft', async (req, res) => {
   const { walletAddress, nftId, price } = req.body;

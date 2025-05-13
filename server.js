@@ -518,6 +518,11 @@ app.get('/login-status', async (req, res) => {
     return res.json({ loggedIn: false, waiting: true });
   }
 });
+
+
+
+
+
 app.get('/user', async (req, res) => {
   const address = req.query.address;
   if (!address) return res.status(400).json({ error: 'Missing address' });
@@ -588,6 +593,8 @@ app.get('/gravatar/:hash', async (req, res) => {
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views')); // Ensure views are stored in /views
+
+
 app.get('/confirm-login/:payloadUUID', async (req, res) => {
   try {
     const { payloadUUID } = req.params;
@@ -1210,6 +1217,7 @@ app.post('/reject-offer', async (req, res) => {
     res.status(500).json({ error: 'Failed to reject the offer.', message: err.message });
   }
 });
+
 /**
  * @swagger
  * /reject-offer:
@@ -1664,6 +1672,7 @@ async function getTotalNFTs() {
   });
 }
 
+
 app.get('/metrics', async (req, res) => {
   try {
     const totalNFTs = await getTotalNFTs();
@@ -1735,7 +1744,6 @@ app.get('/recent', async (req, res) => {
  *       200:
  *         description: Recent NFTs retrieved
  */
-
 
 // Get all NFTs for the logged-in user
 
@@ -1892,7 +1900,6 @@ app.post('/create-collection',
     res.status(500).json({ error: 'Failed to verify authentication' });
   }
 });
-
 // XUMM OAuth callback route
 app.get('/xumm/callback', async (req, res) => {
   const { code } = req.query;
@@ -2402,23 +2409,6 @@ async function fetchAllNFTs(wallet) {
   }
 }
 
-const hasSeagullCoinTrustline = async (walletAddress) => {
-  try {
-    const accountLines = await client.request({
-      command: 'account_lines',
-      account: walletAddress,
-    });
-
-    return accountLines.result.lines.some(line =>
-      line.currency === 'SeagullCoin' &&
-      line.account === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
-    );
-  } catch (error) {
-    console.error(`Trustline check failed for ${walletAddress}:`, error);
-    return false;
-  }
-};
-
 
 
 // /transfer-nft — direct transfer to another wallet
@@ -2459,13 +2449,6 @@ app.post('/sell-nft', async (req, res) => {
 
   if (!walletAddress || !nftId || !price) {
     return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
-  }
-  
-  const hasTrustline = await hasSeagullCoinTrustline(walletAddress);
-  if (!hasTrustline) {
-    return res.status(400).json({
-      error: 'Wallet must first establish a trustline with SeagullCoin (SGLCN-X20)',
-    });
   }
 
   try {
@@ -2531,7 +2514,7 @@ const createTrustline = async (walletAddress) => {
     console.error('Error creating trustline:', err);
     return { error: 'Failed to create trustline' };
   }
-};,
+};
 
 
 
@@ -2718,62 +2701,6 @@ app.get('/catalog', async (req, res) => {
     res.json({ success: false, error: e.message });
   }
 });
-
-
-async function fetchNFTListings() {
-  const client = new xrpl.Client(xrplApiUrl);
-  await client.connect();
-
-  const request = {
-    command: 'search',
-    query: {
-      ledger_entry_type: 'NFTokenOffer',
-      filters: [
-        {
-          field: 'Amount',
-          operator: '>=',
-          value: '0.5' // Adjust if necessary for SeagullCoin
-        }
-      ]
-    }
-  };
-
-  const response = await client.request(request);
-  console.log('XRPL Response:', response);  // Log the response to check structure
-
-  const nftOffers = response.result?.ledger || [];
-  await client.disconnect();
-
-  return nftOffers;
-}
-
-app.get('/listings', async (req, res) => {
-  try {
-    const nftOffers = await fetchNFTListings();
-    
-    if (!nftOffers || nftOffers.length === 0) {
-      return res.status(404).json({ error: 'No NFT listings found' });
-    }
-
-    const listings = nftOffers.map(nftOffer => {
-      // Ensure that these properties exist on each NFT offer
-      return {
-        NFTokenID: nftOffer.NFTokenID,
-        Amount: nftOffer.Amount,
-        Owner: nftOffer.Owner,
-        OfferNode: nftOffer.NFTokenOfferNode,
-        Price: parseFloat(nftOffer.Amount), // Adjust price if needed
-        // Add more fields as needed based on your use case
-      };
-    });
-
-    res.json({ listings });
-  } catch (err) {
-    console.error('Error in /listings:', err);
-    res.status(500).json({ error: 'Failed to fetch NFT listings' });
-  }
-});
-
 
 
 

@@ -2314,55 +2314,63 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
   return metadata;
 };
 
+
+
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
   // Check cache
   const cached = nftCache.get(wallet);
-  if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
+  const currentTime = Date.now();
+
+  if (cached && (currentTime - cached.timestamp < CACHE_DURATION)) {
     return res.json({ nfts: cached.data });
-  }
+  } else {
+    // If cache expired, clear it
+    if (cached) {
+      nftCache.delete(wallet);  // Clear expired cache
+    }
 
-  try {
-    const rawNFTs = await fetchAllNFTs(wallet);
+    try {
+      const rawNFTs = await fetchAllNFTs(wallet); // Fetch fresh NFTs
+      const parsed = await Promise.all(rawNFTs.map(async (nft) => {
+        const uri = hexToUtf8(nft.URI);
+        let metadata = null, collection = null, icon = null;
 
-    const parsed = await Promise.all(rawNFTs.map(async (nft) => {
-      const uri = hexToUtf8(nft.URI);
-      let metadata = null, collection = null, icon = null;
-
-      if (uri.startsWith('ipfs://')) {
-        const ipfsUrl = uri.replace('ipfs://', '');
-        try {
-          // Fetch metadata with retry mechanism
-          metadata = await fetchMetadataWithRetry(ipfsUrl);
-          if (metadata) {
-            collection = metadata.collection || metadata.name || null;
-            icon = metadata.image || null;
+        if (uri.startsWith('ipfs://')) {
+          const ipfsUrl = uri.replace('ipfs://', '');
+          try {
+            metadata = await fetchMetadataWithRetry(ipfsUrl);
+            if (metadata) {
+              collection = metadata.collection || metadata.name || null;
+              icon = metadata.image || null;
+            }
+          } catch (err) {
+            console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
           }
-        } catch (err) {
-          console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
         }
-      }
 
-      return {
-        NFTokenID: nft.NFTokenID,
-        URI: uri,
-        collection,
-        icon,
-        metadata
-      };
-    }));
+        return {
+          NFTokenID: nft.NFTokenID,
+          URI: uri,
+          collection,
+          icon,
+          metadata
+        };
+      }));
 
-    // Cache the result
-    nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
+      // Cache the result
+      nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
 
-    res.json({ nfts: parsed });
-  } catch (err) {
-    console.error('NFT fetch error:', err);
-    res.status(500).json({ error: 'Failed to fetch NFTs' });
+      res.json({ nfts: parsed });
+    } catch (err) {
+      console.error('NFT fetch error:', err);
+      res.status(500).json({ error: 'Failed to fetch NFTs' });
+    }
   }
 });
+
 
 // Helper to fetch all NFTs for a wallet with proper caching
 async function fetchAllNFTs(wallet) {
@@ -2769,8 +2777,6 @@ app.get('/listings', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch NFT listings' });
   }
 });
-
-
 
 
 

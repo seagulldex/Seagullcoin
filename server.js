@@ -2464,35 +2464,88 @@ app.post('/sell-nft', async (req, res) => {
     return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
   }
 
+  const client = new xrpl.Client("wss://xrplcluster.com"); // Use mainnet/testnet as needed
+  await client.connect();
+
   try {
+    // Check for existing trustline to SeagullCoin
+    const accountLines = await client.request({
+      command: "account_lines",
+      account: walletAddress,
+    });
+
+    const hasTrustline = accountLines.result.lines.some(
+      line =>
+        line.currency === "SeagullCoin" &&
+        line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+    );
+
+    if (!hasTrustline) {
+      // Return trustline payload to the frontend
+      const trustlineTx = {
+        TransactionType: "TrustSet",
+        Account: walletAddress,
+        LimitAmount: {
+          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin (hex)
+          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+          value: "1000000", // You can set a sensible trust limit
+        },
+      };
+
+      const trustPayload = await xumm.payload.create({
+        txjson: trustlineTx,
+        options: {
+          submit: true,
+          expire: 60,
+        },
+      });
+
+      await client.disconnect();
+
+      return res.status(200).json({
+        requiresTrustline: true,
+        message: "Wallet is missing SeagullCoin trustline. Please approve it first.",
+        next: trustPayload.next,
+        uuid: trustPayload.uuid,
+      });
+    }
+
+    // Wallet has the trustline, continue with NFT sell offer
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
       NFTokenID: nftId,
       Amount: {
-        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (hex)
-        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+        currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
         value: price.toString(),
       },
       Flags: 1, // Sell offer
     };
 
-    const payload = {
+    const sellPayload = await xumm.payload.create({
       txjson: tx,
       options: {
         submit: true,
         expire: 60,
       },
-    };
+    });
 
-    const { uuid, next } = await xumm.payload.create(payload);
-    return res.json({ next, uuid });
+    await client.disconnect();
+
+    return res.json({
+      requiresTrustline: false,
+      next: sellPayload.next,
+      uuid: sellPayload.uuid,
+    });
 
   } catch (err) {
-    console.error('Sell NFT error:', err?.data ?? err);
-    return res.status(500).json({ error: 'Failed to create sell offer', details: err.message });
+    await client.disconnect();
+    console.error("Sell NFT error:", err?.data ?? err);
+    return res.status(500).json({ error: "Failed to process sell offer", details: err.message });
   }
 });
+
 
 
 
@@ -3012,6 +3065,34 @@ app.post('/nft-offers', async (req, res) => {
   } catch (err) {
     console.error("Offer fetch error:", err);
     return res.status(500).json({ success: false, message: "Internal error" });
+  }
+});
+
+
+app.get('/verify-trustline/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+
+  const client = new xrpl.Client("wss://xrplcluster.com");
+  await client.connect();
+
+  try {
+    const accountLines = await client.request({
+      command: "account_lines",
+      account: wallet,
+    });
+
+    const hasTrustline = accountLines.result.lines.some(
+      line =>
+        line.currency === "53656167756C6C436F696E000000000000000000" &&
+        line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+    );
+
+    await client.disconnect();
+    return res.json({ hasTrustline });
+
+  } catch (err) {
+    await client.disconnect();
+    return res.status(500).json({ error: "Failed to verify trustline", details: err.message });
   }
 });
 

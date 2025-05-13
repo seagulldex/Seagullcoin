@@ -2542,11 +2542,12 @@ app.post('/sell-nft', async (req, res) => {
         issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
         value: price.toString(),
       },
-      Flags: 1,
+      Flags: 1, // flag for sell offer
     };
-     console.log("Sell Offer TX:", tx);
 
-    
+    // Log the transaction before sending to XUMM
+    console.log("Transaction Before Sending to XUMM:", tx);  // log the transaction
+
     const sellPayload = await xumm.payload.create({
       txjson: tx,
       options: {
@@ -2554,6 +2555,9 @@ app.post('/sell-nft', async (req, res) => {
         expire: 60,
       },
     });
+
+    // Log the response from XUMM payload creation
+    console.log("Sell Payload Response:", sellPayload);  // log the response
 
     return res.json({
       requiresTrustline: false,
@@ -2568,6 +2572,7 @@ app.post('/sell-nft', async (req, res) => {
     await client.disconnect();
   }
 });
+
 
 
 

@@ -2703,12 +2703,8 @@ export async function getCurrentOwner(nftId) {
 
 let mintedNFTs = [];
 
-async function startServer() {
-  try {
-    // Load JSON at runtime
-    mintedNFTs = JSON.parse(await fs.readFile('./minted-nfts.json', 'utf-8'));
-    console.log('NFTs loaded:', mintedNFTs);
-    
+
+
 
 app.get('/catalog', async (req, res) => {
   try {
@@ -2746,9 +2742,37 @@ app.get('/catalog', async (req, res) => {
 
 
 
+// Route to get all available NFT sale offers
+app.get('/nfts', async (req, res) => {
+  try {
+    await client.connect();
 
+    // Search for NFTokenOffers, which represent NFTs available for sale
+    const response = await client.request({
+      command: 'search',
+      query: {
+        ledger_entry_type: 'NFTokenOffer',
+        filters: []
+      }
+    });
 
+    const nftOffers = response.result?.ledger || [];
+    const nftData = nftOffers.map(nft => ({
+      token_id: nft.NFTokenID,
+      price: nft.Amount?.value, // Amount the NFT is listed for
+      issuer: nft.Issuer,
+      owner: nft.Account,
+      metadata_url: nft.URI, // Optional metadata link (if available)
+    }));
 
+    res.json({ success: true, nfts: nftData });
+  } catch (err) {
+    console.error('Error fetching NFTs:', err);
+    res.status(500).json({ success: false, error: 'Error fetching NFTs' });
+  } finally {
+    await client.disconnect();
+  }
+});
 
 
 

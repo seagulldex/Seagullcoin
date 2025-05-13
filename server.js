@@ -2850,11 +2850,11 @@ async function cancelOffer(offerId) {
 
 
 const SEAGULL_COIN_CURRENCY = "53656167756C6C436F696E000000000000000000";  // SeagullCoin currency code
-
-const SEAGULLCOIN_HEX = "53656167756C6C436F696E000000000000000000"; // "SeagullCoin"
+const SEAGULLCOIN_HEX = "53656167756C6C436F696E000000000000000000";
 const SEAGULLCOIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
 
-// client should already be connected
+
+
 async function hasSeagullCoinTrustline(walletAddress, client) {
   try {
     const response = await client.request({
@@ -2862,16 +2862,20 @@ async function hasSeagullCoinTrustline(walletAddress, client) {
       account: walletAddress
     });
 
-    return response.result.lines.some(
-      line =>
-        line.currency === SEAGULLCOIN_HEX &&
+    console.log("Trustlines for", walletAddress, JSON.stringify(response.result.lines, null, 2));
+
+    return response.result.lines.some(line => {
+      return (
+        (line.currency === "SeagullCoin" || line.currency === "53656167756C6C436F696E000000000000000000") &&
         line.account === SEAGULLCOIN_ISSUER
-    );
+      );
+    });
   } catch (error) {
-    console.error("Error checking trustline:", error);
+    console.error("Trustline check failed:", error);
     return false;
   }
 }
+
 
 
 // Function to fetch offers from XRPL for a given wallet address
@@ -2962,25 +2966,31 @@ app.get('/offers/:wallet', async (req, res) => {
   }
 });
 
+// Payment route
 app.post('/pay', async (req, res) => {
   const { wallet } = req.body;
   if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
 
+  const trustline = await hasSeagullCoinTrustline(wallet, client);
+  if (!trustline) {
+    return res.status(400).json({ error: 'Missing SeagullCoin trustline' });
+  }
+
   const payload = {
     txjson: {
       TransactionType: 'Payment',
-      Destination: SERVICE_WALLET, // your minting service wallet
+      Destination: SERVICE_WALLET,
       Amount: {
-        currency: "53656167756C6C436F696E000000000000000000", // Hex for "SeagullCoin"
-        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+        currency: SEAGULLCOIN_HEX,
+        issuer: SEAGULLCOIN_ISSUER,
         value: "0.5"
       }
     },
     options: {
       submit: true,
       return_url: {
-        web: "https://sglcn-x20-api.glitch.me/success.html",
-        app: "https://sglcn-x20-api.glitch.me/success.html"
+        web: "https://outgoing-destiny-bladder.glitch.me/success.html",
+        app: "https://outgoing-destiny-bladder.glitch.me/success.html"
       }
     }
   };
@@ -2997,13 +3007,13 @@ app.post('/pay', async (req, res) => {
       }
     });
 
-    // Store payment UUID in memory or DB to confirm before minting
+    // Track status
     payments[created.uuid] = {
       wallet,
       paid: false
     };
 
-    created.resolved.then(async (resolved) => {
+    created.resolved.then(resolved => {
       if (resolved.signed) {
         payments[created.uuid].paid = true;
       } else {
@@ -3020,6 +3030,7 @@ app.post('/pay', async (req, res) => {
     res.status(500).json({ error: 'Failed to create payment' });
   }
 });
+
 
 
 app.post('/nft-offers', async (req, res) => {
@@ -3065,9 +3076,6 @@ app.post('/nft-offers', async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal error" });
   }
 });
-
-
-
 
 
 

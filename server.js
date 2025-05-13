@@ -96,7 +96,6 @@ const nftCache = new Map(); // key: wallet address, value: { data, timestamp }
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 
-
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 
 
@@ -149,6 +148,8 @@ const getUserAddressesFromDatabase = async () => {
     });
   });
 };
+
+
 
 // Fetch user addresses from the database and get their balances
 const fetchAndCheckUserBalances = async () => {
@@ -2700,9 +2701,50 @@ export async function getCurrentOwner(nftId) {
   }
 }
 
+let mintedNFTs = [];
 
-// Get full NFT catalog: all minted NFTs and their current owners
-a
+async function startServer() {
+  try {
+    // Load JSON at runtime
+    mintedNFTs = JSON.parse(await fs.readFile('./minted-nfts.json', 'utf-8'));
+    console.log('NFTs loaded:', mintedNFTs);
+    
+
+app.get('/catalog', async (req, res) => {
+  try {
+    const client = new xrpl.Client('wss://xrplcluster.com'); // XRPL Mainnet
+    await client.connect();
+
+    const catalog = await Promise.all(
+      mintedNFTs.map(async (nft) => {
+        try {
+          const nftInfo = await client.request({
+            command: 'nft_info',
+            nft_id: nft.nft_id
+          });
+
+          return {
+            token_id: nft.nft_id,
+            owner: nftInfo.result.nft_object.owner,
+            metadata_url: nft.metadata_url
+          };
+        } catch (err) {
+          return {
+            token_id: nft.nft_id,
+            error: 'Failed to fetch NFT info'
+          };
+        }
+      })
+    );
+
+    await client.disconnect();
+    res.json({ success: true, catalog });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
 
 
 

@@ -2464,31 +2464,31 @@ app.post('/sell-nft', async (req, res) => {
     return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
   }
 
-  const client = new xrpl.Client("wss://xrplcluster.com"); // Use mainnet/testnet as needed
-  await client.connect();
-
+  const client = new xrpl.Client("wss://xrplcluster.com"); // Adjust for testnet/devnet if needed
   try {
-    // Check for existing trustline to SeagullCoin
-    const accountLines = await client.request({
+    await client.connect();
+
+    // 1. Check if the sender wallet has the SeagullCoin trustline
+    const senderAccountLines = await client.request({
       command: "account_lines",
       account: walletAddress,
     });
 
-    const hasTrustline = accountLines.result.lines.some(
+    const senderHasTrustline = senderAccountLines.result.lines.some(
       line =>
-        line.currency === "53656167756C6C436F696E000000000000000000" &&
+        line.currency.toUpperCase() === "53656167756C6C436F696E000000000000000000" &&
         line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
     );
 
-    if (!hasTrustline) {
-      // Return trustline payload to the frontend
+    if (!senderHasTrustline) {
+      // 2. Prompt sender to approve trustline setup via XUMM
       const trustlineTx = {
         TransactionType: "TrustSet",
         Account: walletAddress,
         LimitAmount: {
-          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin (hex)
+          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin hex
           issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-          value: "1000000", // You can set a sensible trust limit
+          value: "1000000", // Adjust trust limit as needed
         },
       };
 
@@ -2500,17 +2500,55 @@ app.post('/sell-nft', async (req, res) => {
         },
       });
 
-      await client.disconnect();
-
       return res.status(200).json({
         requiresTrustline: true,
-        message: "Wallet is missing SeagullCoin trustline. Please approve it first.",
+        message: "Sender wallet is missing SeagullCoin trustline. Please approve it first.",
         next: trustPayload.next,
         uuid: trustPayload.uuid,
       });
     }
 
-    // Wallet has the trustline, continue with NFT sell offer
+    // 3. Check if the buyer wallet has the SeagullCoin trustline
+    const buyerAccountLines = await client.request({
+      command: "account_lines",
+      account: req.body.buyerWalletAddress,  // Assuming `buyerWalletAddress` is sent in the request
+    });
+
+    const buyerHasTrustline = buyerAccountLines.result.lines.some(
+      line =>
+        line.currency.toUpperCase() === "53656167756C6C436F696E000000000000000000" &&
+        line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+    );
+
+    if (!buyerHasTrustline) {
+      // 4. Prompt buyer to approve trustline setup via XUMM
+      const trustlineTxForBuyer = {
+        TransactionType: "TrustSet",
+        Account: req.body.buyerWalletAddress,
+        LimitAmount: {
+          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin hex
+          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+          value: "1000000", // Adjust trust limit as needed
+        },
+      };
+
+      const trustPayloadForBuyer = await xumm.payload.create({
+        txjson: trustlineTxForBuyer,
+        options: {
+          submit: true,
+          expire: 60,
+        },
+      });
+
+      return res.status(200).json({
+        requiresTrustline: true,
+        message: "Buyer wallet is missing SeagullCoin trustline. Please approve it first.",
+        next: trustPayloadForBuyer.next,
+        uuid: trustPayloadForBuyer.uuid,
+      });
+    }
+
+    // 5. Create NFToken sell offer now that trustlines are confirmed
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
@@ -2531,8 +2569,6 @@ app.post('/sell-nft', async (req, res) => {
       },
     });
 
-    await client.disconnect();
-
     return res.json({
       requiresTrustline: false,
       next: sellPayload.next,
@@ -2540,69 +2576,13 @@ app.post('/sell-nft', async (req, res) => {
     });
 
   } catch (err) {
-    await client.disconnect();
     console.error("Sell NFT error:", err?.data ?? err);
     return res.status(500).json({ error: "Failed to process sell offer", details: err.message });
+  } finally {
+    await client.disconnect();
   }
 });
 
-
-
-
-
-app.post('/buy-nft', async (req, res) => {
-  const { walletAddress, nftId, price } = req.body;
-
-  if (!walletAddress || !nftId || !price) {
-    return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
-  }
-
-  try {
-    const tx = {
-      TransactionType: 'NFTokenCreateOffer',
-      Account: walletAddress,
-      NFTokenID: nftId,
-      Amount: {
-        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (hex)
-        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-        value: price.toString(), // amount of SGLCN offered
-      },
-      Flags: 0 // Buy offer (not sell)
-    };
-
-    const payload = {
-      txjson: tx,
-      options: {
-        submit: true,
-        expire: 60,
-      }
-    };
-
-    const { uuid, next } = await xumm.payload.create(payload);
-    return res.json({ next, uuid });
-  } catch (err) {
-    console.error('Buy NFT error:', err?.data ?? err);
-    return res.status(500).json({ error: 'Failed to create buy offer' });
-  }
-});
-
-const checkTrustline = async (walletAddress) => {
-  const response = await xrplClient.request({
-    method: "account_lines",
-    params: [
-      {
-        account: walletAddress,
-      },
-    ],
-  });
-  
-  const trustlines = response.result.lines;
-  const seagullCoinTrustline = trustlines.find(
-    (line) => line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno" && line.currency === "53656167756C6C436F696E000000000000000000"
-  );
-  
-  return seagullCoinTrustline;
-};
 
 
 app.post('/accept-sell-offer', async (req, res) => {

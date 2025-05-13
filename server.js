@@ -1138,26 +1138,8 @@ app.get('/listings', async (req, res) => {
  *       400:
  *         description: Invalid data or insufficient SeagullCoin
  */
-app.post('/api/list-nft', async (req, res) => {
-  // list-nft logic here
-});// Remove duplicate route definitions
 
-// Example route for creating an NFT offer
-app.post('/create-nft-offer', async (req, res) => {
-  const { walletAddress, nftokenID, amount } = req.body;
 
-  try {
-    // Call the async function to create the NFT offer
-    const nftOfferResponse = await createNftOfferPayload(walletAddress, nftokenID, amount, true);
-    console.log(nftOfferResponse); // Log the resolved response
-
-    // Send the response back to the client
-    res.json(nftOfferResponse); 
-  } catch (error) {
-    console.error('Error creating NFT offer:', error);
-    res.status(500).json({ error: 'Failed to create NFT offer' });
-  }
-});
 
 // Accept an offer
 app.post('/accept-offer', async (req, res) => {

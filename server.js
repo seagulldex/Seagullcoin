@@ -2878,6 +2878,71 @@ async function hasSeagullCoinTrustline(walletAddress, client) {
   }
 }
 
+// Payment route
+app.post('/pay', async (req, res) => {
+  const { wallet } = req.body;
+  if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
+
+  const trustline = await hasSeagullCoinTrustline(wallet, client);
+  if (!trustline) {
+    return res.status(400).json({ error: 'Missing SeagullCoin trustline' });
+  }
+
+  const payload = {
+    txjson: {
+      TransactionType: 'Payment',
+      Destination: SERVICE_WALLET,
+      Amount: {
+        currency: SEAGULLCOIN_HEX,
+        issuer: SEAGULLCOIN_ISSUER,
+        value: "0.5"
+      }
+    },
+    options: {
+      submit: true,
+      return_url: {
+        web: "https://outgoing-destiny-bladder.glitch.me/success.html",
+        app: "https://outgoing-destiny-bladder.glitch.me/success.html"
+      }
+    }
+  };
+
+  try {
+    const created = await xumm.payload.createAndSubscribe(payload, event => {
+      if (event.data.signed === true) {
+        console.log("Payment signed by", wallet);
+        return true;
+      }
+      if (event.data.signed === false) {
+        console.log("Payment declined by", wallet);
+        return false;
+      }
+    });
+
+    // Track status
+    payments[created.uuid] = {
+      wallet,
+      paid: false
+    };
+
+    created.resolved.then(resolved => {
+      if (resolved.signed) {
+        payments[created.uuid].paid = true;
+      } else {
+        delete payments[created.uuid];
+      }
+    });
+
+    res.json({
+      uuid: created.uuid,
+      next: created.next
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to create payment' });
+  }
+});
+
 
 
 
@@ -2968,21 +3033,6 @@ app.get('/offers/:wallet', async (req, res) => {
     client.disconnect();
   }
 });
-
-// Payment route
-app.post('/pay', async (req, res) => {
-  const { wallet } = req.body;
-  if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
-
-  const trustline = await hasSeagullCoinTrustline(wallet, client);
-  if (!trustline) {
-    return res.status(400).json({ error: 'Missing SeagullCoin trustline' });
-  }
-
-  const payload = {
-    txjson: {
-      TransactionType: 'Payment',
-      Destination:
 
 
 

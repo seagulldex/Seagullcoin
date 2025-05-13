@@ -2940,6 +2940,49 @@ app.get('/offers/:wallet', async (req, res) => {
 
 
 
+app.post('/nft-offers', async (req, res) => {
+  const { walletAddress } = req.body;
+
+  if (!walletAddress) {
+    return res.status(400).json({ success: false, message: 'Missing wallet address' });
+  }
+
+  try {
+    const client = new xrpl.Client("wss://xrplcluster.com");
+    await client.connect();
+
+    const response = await client.request({
+      command: "account_objects",
+      account: walletAddress,
+      type: "nf_token_offer",
+      ledger_index: "validated"
+    });
+
+    // Log the full response to debug
+    console.log("XRPL Response:", response);
+
+    const offers = response.result.account_objects;
+    if (!offers) {
+      return res.status(404).json({ success: false, message: "No offers found" });
+    }
+
+    const incoming = offers.filter(o => o.Destination === walletAddress);
+    const outgoing = offers.filter(o => o.Account === walletAddress);
+
+    await client.disconnect();
+
+    return res.json({
+      success: true,
+      incoming,
+      outgoing
+    });
+
+  } catch (err) {
+    console.error("Offer fetch error:", err);
+    return res.status(500).json({ success: false, message: "Internal error" });
+  }
+});
+
 
 
 // Call the XRPL ping when the server starts

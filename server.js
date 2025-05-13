@@ -2459,33 +2459,7 @@ app.post('/transfer-nft', async (req, res) => {
 
 
 
-app.post('/sell-nft', async (req, res) => {
-  const { walletAddress, nftId, price } = req.body;
 
-  if (!walletAddress || !nftId || !price) {
-    return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
-  }
-
-  try {
-    // The transaction object for the NFT sell offer
-    const tx = {
-      TransactionType: 'NFTokenCreateOffer',
-      Account: walletAddress,
-      NFTokenID: nftId,
-      Amount: {
-        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (Hex code)
-        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer
-        value: price.toString(), // Make sure to convert price to a string
-      },
-      Flags: 1, // Ensure you're setting the correct flag for selling
-    };
-
-    // XUMM payload creation
-    const payload = {
-      txjson: tx,
-      options: {
-        submit: true, // Automatically submit the transaction after signing
-        expire
 
 
 const createTrustline = async (walletAddress) => {

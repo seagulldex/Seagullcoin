@@ -2851,6 +2851,29 @@ async function cancelOffer(offerId) {
 
 const SEAGULL_COIN_CURRENCY = "53656167756C6C436F696E000000000000000000";  // SeagullCoin currency code
 
+const SEAGULLCOIN_HEX = "53656167756C6C436F696E000000000000000000"; // "SeagullCoin"
+const SEAGULLCOIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
+
+// client should already be connected
+async function hasSeagullCoinTrustline(walletAddress, client) {
+  try {
+    const response = await client.request({
+      command: "account_lines",
+      account: walletAddress
+    });
+
+    return response.result.lines.some(
+      line =>
+        line.currency === SEAGULLCOIN_HEX &&
+        line.account === SEAGULLCOIN_ISSUER
+    );
+  } catch (error) {
+    console.error("Error checking trustline:", error);
+    return false;
+  }
+}
+
+
 // Function to fetch offers from XRPL for a given wallet address
 async function fetchOffersFromXRPL(walletAddress) {
   try {
@@ -3042,6 +3065,8 @@ app.post('/nft-offers', async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal error" });
   }
 });
+
+
 
 
 

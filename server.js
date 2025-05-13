@@ -2418,9 +2418,9 @@ async function fetchAllNFTs(wallet) {
 
 // /transfer-nft — direct transfer to another wallet
 app.post('/transfer-nft', async (req, res) => {
-  const { walletAddress, nftId, recipientAddress } = req.body;
+  const { walletAddress, nftId, recipientAddress, amount } = req.body;  // Add 'amount' to the request body
 
-  if (!walletAddress || !nftId || !recipientAddress) {
+  if (!walletAddress || !nftId || !recipientAddress || !amount) {  // Ensure 'amount' is provided
     return res.status(400).json({ success: false, message: 'Missing parameters' });
   }
 
@@ -2430,6 +2430,7 @@ app.post('/transfer-nft', async (req, res) => {
       Account: walletAddress,
       NFTokenID: nftId,
       Destination: recipientAddress,
+      Amount: amount,  // Add the 'Amount' field to the transaction
       Flags: 1 << 9 // 512: tfTransferable (for gifting)
     };
 
@@ -2457,6 +2458,7 @@ app.post('/transfer-nft', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Internal error' });
   }
 });
+
 
 
 app.post('/sell-nft', async (req, res) => {

@@ -2829,7 +2829,6 @@ async function cancelOffer(offerId) {
 }
 
 
-// SeagullCoin currency details
 const SEAGULL_COIN_CURRENCY = "53656167756C6C436F696E000000000000000000";  // SeagullCoin currency code
 
 // Function to fetch offers from XRPL for a given wallet address
@@ -2865,15 +2864,13 @@ async function fetchOffersFromXRPL(walletAddress) {
   }
 }
 
-module.exports = { fetchOffersFromXRPL };
-
-
+// Endpoint to get active offers for a wallet
 app.get('/active-offers/:walletAddress', async (req, res) => {
   try {
     const walletAddress = req.params.walletAddress;
     const offersData = await fetchOffersFromXRPL(walletAddress);
 
-    // Format the response and send it to the client
+    // Return response with filtered offers
     res.json({
       wallet: walletAddress,
       sellOffers: offersData.offers || [],  // If offers are present, include them, else return empty array
@@ -2884,6 +2881,9 @@ app.get('/active-offers/:walletAddress', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch active offers' });
   }
 });
+
+
+
 
 
 // Call the XRPL ping when the server starts

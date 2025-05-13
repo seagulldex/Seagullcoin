@@ -2828,6 +2828,41 @@ async function cancelOffer(offerId) {
   }
 }
 
+app.get("/active-offers/:walletAddress", async (req, res) => {
+  const walletAddress = req.params.walletAddress;
+
+  try {
+    const client = new xrpl.Client("wss://xrplcluster.com");
+    console.log("Connecting to XRPL...");
+    await client.connect();
+
+    console.log(`Fetching offers for wallet: ${walletAddress}`);
+    const response = await client.request({
+      command: "account_objects",
+      account: walletAddress,
+      type: "offer"
+    });
+
+    const offers = response.result.account_objects || [];
+
+    const SGLCN_HEX = "53656167756C6C436F696E000000000000000000";
+    const buyOffers = offers.filter(o => o.TakerGets.currency === SGLCN_HEX);
+    const sellOffers = offers.filter(o => o.TakerPays.currency === SGLCN_HEX);
+
+    await client.disconnect();
+
+    res.json({
+      wallet: walletAddress,
+      sellOffers,
+      buyOffers
+    });
+  } catch (e) {
+    console.error("XRPL error:", e?.data?.error_message || e.message || e);
+    res.status(500).json({ error: "Failed to fetch active offers" });
+  }
+});
+
+
 
 
 

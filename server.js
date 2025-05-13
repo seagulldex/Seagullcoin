@@ -2464,57 +2464,47 @@ app.post('/sell-nft', async (req, res) => {
     return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
   }
 
-  const client = new xrpl.Client("wss://xrplcluster.com"); // Adjust for testnet/devnet if needed
+  const client = new xrpl.Client("wss://xrplcluster.com");
   try {
     await client.connect();
 
-    // 3. Check if the buyer wallet has the SeagullCoin trustline
-    const buyerAccountLines = await client.request({
-      command: "account_lines",
-      account: req.body.buyerWalletAddress,  // Assuming `buyerWalletAddress` is sent in the request
-    });
+    // Seller can list without a trustline — skip checking
 
-    const buyerHasTrustline = buyerAccountLines.result.lines.some(
-      line =>
-        line.currency.toUpperCase() === "53656167756C6C436F696E000000000000000000" &&
-        line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-    );
-
-    if (!buyerHasTrustline) {
-      // 4. Prompt buyer to approve trustline setup via XUMM
-      const trustlineTxForBuyer = {
-        TransactionType: "TrustSet",
-        Account: req.body.buyerWalletAddress,
-        LimitAmount: {
-          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin hex
-          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-          value: "1000000", // Adjust trust limit as needed
-        },
-      };
-
-      const trustPayloadForBuyer = await xumm.payload.create({
-        txjson: trustlineTxForBuyer,
-        options: {
-          submit: true,
-          expire: 60,
-        },
-      });
-
-      return res.status(200).json({
-        requiresTrustline: true,
-        message: "Buyer wallet is missing SeagullCoin trustline. Please approve it first.",
-        next: trustPayloadForBuyer.next,
-        uuid: trustPayloadForBuyer.uuid,
-      });
-    }
-
-    // 5. Create NFToken sell offer now that trustlines are confirmed
+    // Create NFToken sell offer priced in SeagullCoin
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
       NFTokenID: nftId,
       Amount: {
-        currency:
+        currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin hex
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+        value: price.toString(),
+      },
+      Flags: 1, // Sell offer
+    };
+
+    const sellPayload = await xumm.payload.create({
+      txjson: tx,
+      options: {
+        submit: true,
+        expire: 60,
+      },
+    });
+
+    return res.json({
+      requiresTrustline: false,
+      next: sellPayload.next,
+      uuid: sellPayload.uuid,
+    });
+
+  } catch (err) {
+    console.error("Sell NFT error:", err?.data ?? err);
+    return res.status(500).json({ error: "Failed to process sell offer", details: err.message });
+  } finally {
+    await client.disconnect();
+  }
+});
+
 
 
 

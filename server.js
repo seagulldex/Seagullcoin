@@ -2485,21 +2485,7 @@ app.post('/sell-nft', async (req, res) => {
       txjson: tx,
       options: {
         submit: true, // Automatically submit the transaction after signing
-        expire: 60, // Expiration time for the offer (in seconds)
-      },
-    };
-
-    // Create the payload with XUMM API
-    const { uuid, next } = await xumm.payload.create(payload);
-
-    // Return the payload URL and UUID to the client for signing
-    return res.json({ next, uuid });
-
-  } catch (err) {
-    console.error('Sell NFT error:', err?.data ?? err);
-    return res.status(500).json({ error: 'Failed to create sell offer', details: err.message });
-  }
-});
+        expire
 
 
 const createTrustline = async (walletAddress) => {
@@ -2968,23 +2954,6 @@ async function fetchOffersFromXRPL(walletAddress) {
   }
 }
 
-// Endpoint to get active offers for a wallet
-app.get('/active-offers/:walletAddress', async (req, res) => {
-  try {
-    const walletAddress = req.params.walletAddress;
-    const offersData = await fetchOffersFromXRPL(walletAddress);
-
-    // Return response with filtered offers
-    res.json({
-      wallet: walletAddress,
-      sellOffers: offersData.offers || [],  // If offers are present, include them, else return empty array
-      buyOffers: []  // Add logic for buy offers if necessary
-    });
-  } catch (error) {
-    console.error('Error fetching active offers:', error);
-    res.status(500).json({ error: 'Failed to fetch active offers' });
-  }
-});
 
 app.get('/offers/:wallet', async (req, res) => {
   const wallet = req.params.wallet;

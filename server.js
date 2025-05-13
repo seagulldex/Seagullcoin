@@ -2544,7 +2544,9 @@ app.post('/sell-nft', async (req, res) => {
       },
       Flags: 1,
     };
+     console.log("Sell Offer TX:", tx);
 
+    
     const sellPayload = await xumm.payload.create({
       txjson: tx,
       options: {

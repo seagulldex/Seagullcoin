@@ -184,6 +184,7 @@
         const img = document.createElement('img');
         img.src = convertIPFSToURL(metadata.image);
         img.alt = metadata.name || "Unnamed NFT";
+        img.loading = "lazy";  // Adding lazy loading
         card.appendChild(img);
 
         card.innerHTML += `
@@ -272,11 +273,10 @@
       paginationDiv.innerHTML = "";
 
       for (let i = 1; i <= totalPages; i++) {
-        const btn = document.createElement("button");
-        btn.textContent = i;
-        if (i === currentPage) btn.disabled = true;
-        btn.onclick = () => displayPage(i);
-        paginationDiv.appendChild(btn);
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.onclick = () => displayPage(i);
+        paginationDiv.appendChild(button);
       }
     }
   </script>

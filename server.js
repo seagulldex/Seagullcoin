@@ -3093,45 +3093,37 @@ async function checkBalance(walletAddress) {
   return response.data.result.account_data.Balance / 1000000; // Convert from drops to XRP
 }
 
-// Mint Check Endpoint
 app.post('/mint-check', async (req, res) => {
-  const { walletAddress } = req.body;
+  try {
+    const { walletAddress } = req.body;
 
-  if (!walletAddress) {
-    return res.status(400).json({ error: 'Wallet address is required' });
-  }
+    // Connect to the XRP Ledger using the XRPL library
+    const client = new xrpl.Client("wss://s.altnet.rippletest.net:51233");
+    await client.connect();
 
-  // Step 1: Check if the wallet has a trustline for SeagullMansions
-  const response = await axios.post('https://s2.ripple.com:51234', {
-    method: 'account_lines',
-    params: [{
+    // Check the wallet's balance for SeagullMansions
+    const accountInfo = await client.request({
+      command: 'account_info',
       account: walletAddress
-    }]
-  });
+    });
 
-  const trustline = response.data.result.lines.find(line => line.currency === 'SeagullMansions' && line.account === SERVICED_WALLET);
+    // Find SeagullMansions balance (assuming it's stored as a currency)
+    const seagullMansionsBalance = accountInfo.result.account_data.Balance / 1000000; // Convert from drops to SeagullMansions
 
-  if (!trustline) {
-    return res.status(400).json({ error: 'Trustline to SeagullMansions token not found' });
+    if (seagullMansionsBalance >= 0.18) {
+      res.json({ message: 'You can mint an NFT!' });
+    } else {
+      res.status(400).json({ error: 'Insufficient SeagullMansions balance. You need at least 0.18' });
+    }
+
+    // Disconnect the client after the request
+    client.disconnect();
+  } catch (error) {
+    console.error('Error in /mint-check:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
+});
 
-  // Step 2: Check if the wallet has sent 0.18 SeagullMansions
-  const balance = await checkBalance(walletAddress);
-
-  if (balance < SEAGULL_MANSIONS_COST) {
-    return res.status(400).json({ error: `Insufficient funds. You need at least ${SEAGULL_MANSIONS_COST} SeagullMansions` });
-  }
-
-  // Step 3: Check how many NFTs the wallet has minted
-  // This assumes you have a function to track minted NFTs by wallet. You could store it in a DB.
-  // For now, we'll mock the count as 0 for simplicity.
-  const mintedCount = 0; // Replace with actual query for minted count
-
-  if (mintedCount >= MAX_MINTS_PER_WALLET) {
-    return res.status(400).json({ error: `You have reached the max mint limit of ${MAX_MINTS_PER_WALLET} NFTs` });
-  }
-
-  res.json({ message: 'You can mint an NFT!' })
 
 // Mint Endpoint
 app.post('/mint', async (req, res) => {

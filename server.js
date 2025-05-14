@@ -2529,51 +2529,7 @@ app.post('/sell-nft', async (req, res) => {
       return res.json({
         requiresTrustline: true,
         message: "Seller wallet missing SeagullCoin trustline",
-        next: trustPayload.next,
-        uuid: trustPayload.uuid,
-      });
-    }
-
-    // Proceed to create the sell offer
-    const tx = {
-      TransactionType: 'NFTokenCreateOffer',
-      Account: walletAddress,
-      NFTokenID: nftId,
-      Amount: {
-        currency: "53656167756C6C436F696E000000000000000000",
-        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-        value: price.toString(),
-      },
-      Flags: 1,
-    };
-
-    console.log("Creating sell payload with tx:", tx);
-
-    const sellPayload = await xumm.payload.create({
-      txjson: tx,
-      options: {
-        submit: true,
-        expire: 60,
-      },
-    });
-
-    console.log("Sell Payload Response:", sellPayload);
-    return res.json({
-      requiresTrustline: false,
-      next: sellPayload.next,
-      uuid: sellPayload.uuid,
-    });
-
-  } catch (err) {
-    console.error("Sell NFT error:", err?.data ?? err);
-    return res.status(500).json({
-      error: "Failed to process sell offer",
-      details: err.message,
-    });
-  } finally {
-    await client.disconnect();
-  }
-});
+        next: trustP
 
 
 

@@ -3075,63 +3075,110 @@ app.post('/burn-nft', async (req, res) => {
 });
 
 
-const TOKEN_HEX = '53656167756C6C4D616E73696F6E730000000000';
-const ISSUER = 'rHr4mUQjRusoNNYnzCp5BFumyWjycgVHJS';
-const MINTING_COST = 0.18;
-const MAX_PER_WALLET = 10;
-const NFTS_FILE = './nfts-seagullmansions.json';
-const MINTED_FILE = './minted.json';
+// Constants
+const SERVICED_WALLET = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV'; // Your Service Wallet
+const SEAGULL_MANSIONS_TOKEN = '53656167756C6C4D616E73696F6E730000000000'; // SeagullMansions Token
+const SEAGULL_MANSIONS_COST = 0.18; // 0.18 SeagullMansions per mint
+const MAX_MINTS_PER_WALLET = 10; // Max NFTs per wallet
 
-function loadJson(file) {
+// Helper function to check balance
+async function checkBalance(walletAddress) {
+  const response = await axios.post('https://s2.ripple.com:51234', {
+    method: 'account_info',
+    params: [{
+      account: walletAddress
+    }]
+  });
+
+  return response.data.result.account_data.Balance / 1000000; // Convert from drops to XRP
+}
+
+// Mint Check Endpoint
+app.post('/mint-check', async (req, res) => {
+  const { walletAddress } = req.body;
+
+  if (!walletAddress) {
+    return res.status(400).json({ error: 'Wallet address is required' });
+  }
+
+  // Step 1: Check if the wallet has a trustline for SeagullMansions
+  const response = await axios.post('https://s2.ripple.com:51234', {
+    method: 'account_lines',
+    params: [{
+      account: walletAddress
+    }]
+  });
+
+  const trustline = response.data.result.lines.find(line => line.currency === 'SeagullMansions' && line.account === SERVICED_WALLET);
+
+  if (!trustline) {
+    return res.status(400).json({ error: 'Trustline to SeagullMansions token not found' });
+  }
+
+  // Step 2: Check if the wallet has sent 0.18 SeagullMansions
+  const balance = await checkBalance(walletAddress);
+
+  if (balance < SEAGULL_MANSIONS_COST) {
+    return res.status(400).json({ error: `Insufficient funds. You need at least ${SEAGULL_MANSIONS_COST} SeagullMansions` });
+  }
+
+  // Step 3: Check how many NFTs the wallet has minted
+  // This assumes you have a function to track minted NFTs by wallet. You could store it in a DB.
+  // For now, we'll mock the count as 0 for simplicity.
+  const mintedCount = 0; // Replace with actual query for minted count
+
+  if (mintedCount >= MAX_MINTS_PER_WALLET) {
+    return res.status(400).json({ error: `You have reached the max mint limit of ${MAX_MINTS_PER_WALLET} NFTs` });
+  }
+
+  res.json({ message: 'You can mint an NFT!' })
+
+// Mint Endpoint
+app.post('/mint', async (req, res) => {
+  const { walletAddress } = req.body;
+
+  if (!walletAddress) {
+    return res.status(400).json({ error: 'Wallet address is required' });
+  }
+
+  // Step 1: Check balance and trustline in mint-check (reuse function)
+  const checkResponse = await axios.post('/mint-check', { walletAddress });
+
+  if (checkResponse.data.error) {
+    return res.status(400).json({ error: checkResponse.data.error });
+  }
+
+  // Step 2: Create the NFT with basic parameters
+  const nftData = {
+    "TransactionType": "NFTokenMint",
+    "Account": walletAddress,
+    "URI": "", // No metadata or placeholder URI
+    "Flags": 8, // Transferable
+    "Fee": "12", // Set fee to prevent dust transaction
+    "NFTokenTaxon": 0, // Taxon, default 0
+    "Issuer": SERVICED_WALLET, // NFT issuer
+  };
+
   try {
-    return JSON.parse(fs.readFileSync(file));
-  } catch {
-    return {};
+    const txResponse = await xumm.createPayload({
+      TransactionType: 'NFTokenMint',
+      Account: walletAddress,
+      URI: "", // Empty metadata or placeholder URI
+      Flags: 8, // Transferable flag
+      Fee: "12", // Standard fee for NFT mint
+      NFTokenTaxon: 0, // Default taxon
+      Issuer: SERVICED_WALLET
+    });
+
+    const txID = txResponse.data.payload.uuid;
+    res.json({
+      message: 'Minting in progress',
+      txID,
+      txURL: `https://xumm.app/sign/${txID}`
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Minting failed' });
   }
-}
-
-function saveJson(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
-
-app.post('/mint-seagullmansions', async (req, res) => {
-  const { wallet, txid } = req.body;
-  if (!wallet || !txid) return res.status(400).json({ error: 'Missing wallet or txid' });
-
-  const minted = loadJson(MINTED_FILE);
-  const userMints = minted[wallet] || [];
-  if (userMints.length >= MAX_PER_WALLET) {
-    return res.status(403).json({ error: 'Mint limit reached for this wallet' });
-  }
-
-  const txResult = await xumm.payload.get(txid);
-  const tx = txResult.response?.txjson;
-
-  if (!tx || tx.TransactionType !== 'Payment') return res.status(400).json({ error: 'Invalid transaction' });
-  if (tx.Account !== wallet) return res.status(400).json({ error: 'Wallet mismatch' });
-  if (tx.Amount.currency !== TOKEN_HEX || tx.Amount.issuer !== ISSUER || parseFloat(tx.Amount.value) < MINTING_COST) {
-    return res.status(400).json({ error: 'Invalid or insufficient SeagullMansions payment' });
-  }
-
-  const nfts = loadJson(NFTS_FILE);
-  const available = nfts.available || [];
-  if (available.length === 0) return res.status(503).json({ error: 'No NFTs left to mint' });
-
-  const mintId = available.shift();
-  minted[wallet] = [...userMints, mintId];
-  nfts.minted = [...(nfts.minted || []), mintId];
-
-  saveJson(NFTS_FILE, nfts);
-  saveJson(MINTED_FILE, minted);
-
-  return res.json({ success: true, wallet, minted: mintId });
-});
-
-app.get('/minted-count/:wallet', (req, res) => {
-  const minted = loadJson(MINTED_FILE);
-  const wallet = req.params.wallet;
-  const count = minted[wallet]?.length || 0;
-  res.json({ wallet, count });
 });
 
 

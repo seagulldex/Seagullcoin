@@ -3179,6 +3179,10 @@ const nftokens = [
 const REQUIRED_PAYMENT_AMOUNT = 1;
 const SEAGULL_MANSIONS_ISSUER = 'rEXAMPLESeagullMansionsIssuerAddress';
 const SEAGULL_MANSIONS_CURRENCY = 'SeagullMansions'; // Must match XRPL trustline format
+const TOKEN_ISSUER = 'rHr4mUQjRusoNNYnzCp5BFumyWjycgVHJS';
+const TOKEN_HEX = '53656167756C6C4D616E73696F6E730000000000';
+const REQUIRED_AMOUNT = '0.18';
+
 
 // Endpoint to mint and send NFTs
 app.post('/mints', async (req, res) => {

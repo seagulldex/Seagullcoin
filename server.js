@@ -3175,8 +3175,38 @@ const nftokens = [
 '00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C734AE7F1A0405C67F',
 ];
 
+// Endpoint to mint and send NFTs
+app.post('/mints', async (req, res) => {
+  const { userAddress, nfTokenId } = req.body;
 
+  // Ensure that the NFTokenID exists in the list of valid NFTs
+  if (!nfTokenId || !nftokens.includes(nfTokenId)) {
+    return res.status(400).json({ error: 'Invalid or missing NFTokenID' });
+  }
+try {
+    // Prepare the transaction for XUMM
+    const transaction = {
+      "TransactionType": "NFTokenSend",
+      "Account": "your-service-wallet-address", // Your service wallet address
+      "Destination": userAddress,              // The recipient wallet address
+      "NFTokenID": nfTokenId,                  // The NFTokenID from the request
+      "Fee": "12"                              // Set a transaction fee (12 drops is standard)
+    };
 
+    // Send the transaction to XUMM for signing
+    const xummPayload = await xumm.payload.create(transaction);
+
+   // Return the signed transaction URL to the user
+    return res.status(200).json({
+      success: true,
+      message: 'NFT transaction created. Please sign the transaction using XUMM.',
+      payload_url: xummPayload?.next_url // URL to sign the transaction via XUMM app
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

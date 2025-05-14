@@ -3076,29 +3076,39 @@ app.post('/burn-nft', async (req, res) => {
 
 
 async function getUserBalance(walletAddress) {
-  const accountLines = await client.request({
-    command: "account_lines",
-    account: walletAddress
-  });
+  try {
+    await client.connect(); // Ensure you're connected to the ledger
 
-  console.log(`[DEBUG] account_lines response:`, accountLines);
+    const accountLines = await client.request({
+      command: "account_lines",
+      account: walletAddress
+    });
 
-  if (!accountLines || !accountLines.result || !accountLines.result.lines) {
-    console.log(`[DEBUG] No account lines found for ${walletAddress}`);
+    console.log(`[DEBUG] account_lines response:`, accountLines);
+
+    if (!accountLines || !accountLines.result || !accountLines.result.lines) {
+      console.log(`[DEBUG] No account lines found for ${walletAddress}`);
+      return 0;
+    }
+
+    const line = accountLines.result.lines.find(
+      (l) => l.currency === '53656167756C6C436F696E000000000000000000' && l.account === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+    );
+
+    if (!line) {
+      console.log(`[DEBUG] SeagullCoin not found for ${walletAddress}`);
+      return 0;
+    }
+
+    return parseFloat(line.balance);
+  } catch (error) {
+    console.error(`[ERROR] Failed to fetch balance for ${walletAddress}:`, error);
     return 0;
+  } finally {
+    await client.disconnect(); // Disconnect after the operation
   }
-
-  const line = accountLines.result.lines.find(
-    (l) => l.currency === SEAGULLCOIN_HEX && l.account === SEAGULLCOIN_ISSUER
-  );
-
-  if (!line) {
-    console.log(`[DEBUG] SeagullCoin not found for ${walletAddress}`);
-    return 0;
-  }
-
-  return parseFloat(line.balance);
 }
+
 
 
 

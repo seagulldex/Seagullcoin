@@ -2475,8 +2475,8 @@ app.post('/sell-nft', async (req, res) => {
       Account: walletAddress,
       NFTokenID: nftId,
       Amount: {
-        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (Hex code)
-        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer
+        currency: '53656167756C6C43617368000000000000000000', // SeagullCoin (Hex code)
+        issuer: 'rNHeGnj4kqGSVyFzDcoyi3gsp1bdPuGeNK', // SeagullCoin issuer
         value: price.toString(), // Convert price to a string
       },
       Flags: 1, // Ensure you're setting the correct flag for selling

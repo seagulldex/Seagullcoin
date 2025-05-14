@@ -66,7 +66,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { fetchSeagullCoinBalance } from './xrplClient.js';
 import { promisify } from 'util'; // 
 import { RippleAPI } from 'ripple-lib';
-import { Client, NFTokenMint } from 'xrpl';
+import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 
 
@@ -3075,6 +3075,64 @@ app.post('/burn-nft', async (req, res) => {
 });
 
 
+const TOKEN_HEX = '53656167756C6C4D616E73696F6E730000000000';
+const ISSUER = 'rHr4mUQjRusoNNYnzCp5BFumyWjycgVHJS';
+const MINTING_COST = 0.18;
+const MAX_PER_WALLET = 10;
+const NFTS_FILE = './nfts-seagullmansions.json';
+const MINTED_FILE = './minted.json';
+
+function loadJson(file) {
+  try {
+    return JSON.parse(fs.readFileSync(file));
+  } catch {
+    return {};
+  }
+}
+
+function saveJson(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+app.post('/mint-seagullmansions', async (req, res) => {
+  const { wallet, txid } = req.body;
+  if (!wallet || !txid) return res.status(400).json({ error: 'Missing wallet or txid' });
+
+  const minted = loadJson(MINTED_FILE);
+  const userMints = minted[wallet] || [];
+  if (userMints.length >= MAX_PER_WALLET) {
+    return res.status(403).json({ error: 'Mint limit reached for this wallet' });
+  }
+
+  const txResult = await xumm.payload.get(txid);
+  const tx = txResult.response?.txjson;
+
+  if (!tx || tx.TransactionType !== 'Payment') return res.status(400).json({ error: 'Invalid transaction' });
+  if (tx.Account !== wallet) return res.status(400).json({ error: 'Wallet mismatch' });
+  if (tx.Amount.currency !== TOKEN_HEX || tx.Amount.issuer !== ISSUER || parseFloat(tx.Amount.value) < MINTING_COST) {
+    return res.status(400).json({ error: 'Invalid or insufficient SeagullMansions payment' });
+  }
+
+  const nfts = loadJson(NFTS_FILE);
+  const available = nfts.available || [];
+  if (available.length === 0) return res.status(503).json({ error: 'No NFTs left to mint' });
+
+  const mintId = available.shift();
+  minted[wallet] = [...userMints, mintId];
+  nfts.minted = [...(nfts.minted || []), mintId];
+
+  saveJson(NFTS_FILE, nfts);
+  saveJson(MINTED_FILE, minted);
+
+  return res.json({ success: true, wallet, minted: mintId });
+});
+
+app.get('/minted-count/:wallet', (req, res) => {
+  const minted = loadJson(MINTED_FILE);
+  const wallet = req.params.wallet;
+  const count = minted[wallet]?.length || 0;
+  res.json({ wallet, count });
+});
 
 
 

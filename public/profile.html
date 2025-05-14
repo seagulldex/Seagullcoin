@@ -38,6 +38,11 @@
       text-align: left;
       margin: 2px 0;
     }
+    .active-tab {
+  background: #00bfa5;
+  color: white;
+  font-weight: bold;
+}
     button {
       margin: 5px;
       padding: 6px 10px;
@@ -300,7 +305,70 @@ function displayNFTs() {
     container.appendChild(card);
   }
 }
+      // Buying button logic  
+    if (nft.sellOffer && nft.sellOffer.owner !== localStorage.getItem('xumm_wallet_address')) {
+  const buyButton = document.createElement('button');
+  buyButton.textContent = 'Buy with SeagullCoin';
+  buyButton.onclick = async () => {
+    try {
+      const res = await fetch('https://sglcn-x20-api.glitch.me/buy-nft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: localStorage.getItem('xumm_wallet_address'),
+          nftId: nft.NFTokenID
+        })
+      });
 
+      const data = await res.json();
+      if (data.success) {
+        alert("Please approve purchase in your XUMM app.");
+        window.open(data.next.always, "_blank");
+      } else {
+        alert("Purchase failed: " + data.message);
+      }
+    } catch (err) {
+      console.error("Buy error:", err);
+      alert("An error occurred during purchase.");
+    }
+  };
+  card.appendChild(buyButton);
+}
+
+    
+    // Burn Button
+    const burnButton = document.createElement('button');
+    burnButton.textContent = '🔥 Burn NFT';
+    burnButton.style.background = '#ff3b3b';
+    burnButton.onclick = async () => {
+      const confirmBurn = confirm("Are you sure you want to permanently burn this NFT?");
+      if (!confirmBurn) return;
+
+      const sender = localStorage.getItem("xumm_wallet_address");
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/burn-nft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: sender,
+            nftId: nft.NFTokenID
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          alert("Please sign the burn request in your XUMM app.");
+          window.open(data.next.always, "_blank");
+        } else {
+          alert("Burn failed: " + data.message);
+        }
+      } catch (err) {
+        console.error("Burn error:", err);
+        alert("An error occurred while trying to burn the NFT.");
+      }
+    };
+    card.appendChild(burnButton);
 </script>
 </body>
 </html>

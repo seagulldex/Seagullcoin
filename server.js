@@ -3212,36 +3212,61 @@ function calculateRewards(amount, rewardRate, duration) {
 
 
 
-app.post('/stake', async (req, res) => {
-  const { amount, duration, walletAddress } = req.body; // Now, walletAddress is passed in the request body
-
-  if (!amount || !duration || amount <= 0 || !walletAddress) {
-    return res.status(400).json({ status: 'error', message: 'Invalid amount, duration or wallet address.' });
-  }
+app.post('/stake-with-xumm', async (req, res) => {
+  const { amount, duration, walletAddress } = req.body;
 
   try {
-    const balance = await getUserBalance(walletAddress); // Use the passed walletAddress
-    if (balance < amount) {
-      return res.status(400).json({ status: 'error', message: 'Insufficient balance.' });
+    // Step 1: Create transaction payload for staking
+    const transactionPayload = {
+      TransactionType: 'Payment',
+      Account: walletAddress, // User's wallet address
+      Amount: amount,  // Amount to stake (e.g., SeagullCoin)
+      Currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin currency code
+      Destination: 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV', // Your service address or recipient
+    };
+
+    // Create payload via XUMM SDK
+    const payload = await xummSDK.payload.create(transactionPayload);
+    
+    // Log the response from XUMM to check the structure
+    console.log("XUMM Payload Response:", payload);
+
+    // Check if payload contains uri and uuid
+    if (!payload?.uri || !payload?.uuid) {
+      console.error("Error: Payload missing URI or UUID.");
+      return res.status(500).json({
+        status: 'error',
+        message: 'Failed to retrieve valid payload data from XUMM.',
+      });
     }
 
-    await lockSeagullCoinForStaking(walletAddress, amount, duration);
-
-    const rewardRate = 0.05;
-    const estimatedRewards = calculateRewards(amount, rewardRate, duration);
+    // Step 2: Send back the payload URI for the user to approve in their XUMM wallet
+    const { uri, uuid } = payload;
 
     res.json({
       status: 'success',
-      message: `Staked ${amount} SGLCN for ${duration} days.`,
-      staking_balance: amount,
-      reward_rate: `${rewardRate * 100}%`,
-      estimated_rewards: estimatedRewards
+      message: 'Transaction payload created successfully',
+      uri: uri, // Send the XUMM URI to the user for scanning
+      uuid: uuid, // The UUID is important for tracking
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ status: 'error', message: 'Server error during staking.' });
+
+  } catch (error) {
+    console.error('Error creating XUMM payload:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Server error during staking.',
+    });
   }
 });
+
+
+const transactionPayload = {
+  TransactionType: 'Payment',
+  Account: walletAddress, // User's wallet address
+  Amount:  * 1000000,  // Amount to stake (in drops or the smallest unit of SeagullCoin)
+  Currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin currency code
+  Destination: 'rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // Your service address or recipient
+};
 
 
 

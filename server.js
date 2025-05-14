@@ -2462,7 +2462,7 @@ const createUserTrustline = async (walletAddress) => {
     Account: walletAddress, // User wallet address
     LimitAmount: {
       currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (Hex code)
-      issuer: 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV', // Dummy account address
+      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // Dummy account address
       value: '100000000', // Limit amount for user wallet to hold
     },
   };
@@ -2531,7 +2531,7 @@ app.post('/sell-nft', async (req, res) => {
       NFTokenID: nftId,
       Amount: {
         currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (Hex code)
-        issuer: 'rQrd9HrDAwq2ehHe9rNFLQMwoJ1G4puA55', // SeagullCoin issuer
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer
         value: price.toString(), // Convert price to a string
       },
       Flags: 1, // Ensure you're setting the correct flag for selling

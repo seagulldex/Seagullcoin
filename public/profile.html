@@ -276,63 +276,24 @@ function displayNFTs() {
 
     
     // Burn NFT function
-  async function transferNFT(nftId) {
-  const recipient = prompt("Enter the wallet address to transfer this NFT to:");
-  const sender = localStorage.getItem("xumm_wallet_address");
-
-  if (!recipient || !sender) {
-    alert("Transfer cancelled or wallet not connected.");
+  async function burnNFT(nftId) {
+  const wallet = localStorage.getItem("xumm_wallet_address");
+  if (!wallet) {
+    alert("Please connect your wallet first.");
     return;
   }
 
-  try {
-    const res = await fetch('https://sglcn-x20-api.glitch.me/transfer-nft', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        walletAddress: sender,
-        nftId,
-        recipientAddress: recipient
-      })
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      alert("Please sign the transfer in your XUMM app.");
-      window.open(data.next.always, "_blank");
-    } else {
-      alert("Transfer failed: " + data.message);
-    }
-  } catch (err) {
-    console.error("Transfer error:", err);
-    alert("An error occurred during transfer.");
-  }
-}
-
-async function burnNFT(nftId) {
-  const sender = localStorage.getItem("xumm_wallet_address");
-
-  if (!sender) {
-    alert("Wallet not connected.");
-    return;
-  }
-
-  const confirmBurn = confirm("Are you sure you want to burn this NFT? This action is permanent.");
+  const confirmBurn = confirm("Are you sure you want to burn this NFT? This action cannot be undone.");
   if (!confirmBurn) return;
 
   try {
     const res = await fetch('https://sglcn-x20-api.glitch.me/burn-nft', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        walletAddress: sender,
-        nftId
-      })
+      body: JSON.stringify({ walletAddress: wallet, nftId })
     });
 
     const data = await res.json();
-
     if (data.success) {
       alert("Please sign the burn transaction in your XUMM app.");
       window.open(data.next.always, "_blank");
@@ -344,7 +305,6 @@ async function burnNFT(nftId) {
     alert("An error occurred during burn.");
   }
 }
-
 
 
     // Sell Button

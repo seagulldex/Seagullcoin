@@ -3165,54 +3165,36 @@ function calculateRewards(amount, rewardRate, duration) {
 
 // Simplified staking endpoint
 app.post('/stake', async (req, res) => {
-  const { amount, duration } = req.body;
-  const userWallet = req.session.walletAddress;
+  const { amount, duration, walletAddress } = req.body; // Now, walletAddress is passed in the request body
 
-  if (!amount || !duration || amount <= 0) {
-    return res.status(400).json({ status: 'error', message: 'Invalid amount or duration.' });
+  if (!amount || !duration || amount <= 0 || !walletAddress) {
+    return res.status(400).json({ status: 'error', message: 'Invalid amount, duration or wallet address.' });
   }
 
   try {
-    // Instead of checking lines, just get the balance of SeagullCoin directly in the user's wallet
-    const balance = await getUserBalance(userWallet);
+    const balance = await getUserBalance(walletAddress); // Use the passed walletAddress
     if (balance < amount) {
       return res.status(400).json({ status: 'error', message: 'Insufficient balance.' });
     }
 
-    // You can directly send the staking amount to your staking wallet (simple logic)
-    const stakingWallet = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';  // Replace with your actual staking wallet address
-    const stakingTransaction = {
-      "TransactionType": "Payment",
-      "Account": userWallet,
-      "Destination": stakingWallet,
-      "Amount": xrpl.xrpToDrops(amount),  // Use correct format for SeagullCoin here
-      "Fee": "12",  // Standard XRP fee (adjust as needed for your token)
-    };
+    await lockSeagullCoinForStaking(walletAddress, amount, duration);
 
-    const signedTx = await client.autofill(stakingTransaction);
-    const txBlob = await client.sign(signedTx, userWallet);
+    const rewardRate = 0.02;
+    const estimatedRewards = calculateRewards(amount, rewardRate, duration);
 
-    const txResponse = await client.submit(txBlob.tx_blob);
-    
-    if (txResponse.result && txResponse.result.status === 'tesSUCCESS') {
-      // Reward calculation (simple formula)
-      const rewardRate = 0.05;  // 5% reward
-      const rewards = (amount * rewardRate * (duration / 365)).toFixed(2);
-
-      return res.json({
-        status: 'success',
-        message: `Staked ${amount} SeagullCoin for ${duration} days.`,
-        estimated_rewards: rewards
-      });
-    } else {
-      return res.status(500).json({ status: 'error', message: 'Staking transaction failed.' });
-    }
-
+    res.json({
+      status: 'success',
+      message: `Staked ${amount} SGLCN for ${duration} days.`,
+      staking_balance: amount,
+      reward_rate: `${rewardRate * 100}%`,
+      estimated_rewards: estimatedRewards
+    });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ status: 'error', message: 'Server error during staking.' });
+    res.status(500).json({ status: 'error', message: 'Server error during staking.' });
   }
 });
+
 
 
 

@@ -2456,51 +2456,8 @@ app.post('/transfer-nft', async (req, res) => {
   }
 });
 
-const createUserTrustline = async (walletAddress) => {
-  const trustlineTx = {
-    TransactionType: 'TrustSet',
-    Account: walletAddress, // User wallet address
-    LimitAmount: {
-      currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (Hex code)
-      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // Dummy account address
-      value: '100000000', // Limit amount for user wallet to hold
-    },
-  };
-
-  const payload = {
-    txjson: trustlineTx,
-    options: {
-      submit: true, // Automatically submit after signing
-      expire: 60, // Expiration time in seconds
-    },
-  };
-
-  try {
-    const { uuid, next } = await xumm.payload.create(payload);
-    console.log('User Trustline Payload Created:', next);
-    return { uuid, next };
-  } catch (err) {
-    console.error('Error creating user trustline:', err);
-    return { error: 'Failed to create user trustline' };
-  }
-};
 
 
-const getTrustlines = async (walletAddress) => {
-  try {
-    const response = await client.request({
-      method: 'account_lines',
-      params: [{
-        account: walletAddress,
-      }],
-    });
-
-    return response.result.lines.filter(line => line.currency === '53656167756C6C436F696E000000000000000000'); // SeagullCoin currency code
-  } catch (err) {
-    console.error("Error checking trustlines:", err);
-    return null;
-  }
-};
 
 
 app.post('/sell-nft', async (req, res) => {
@@ -2511,18 +2468,6 @@ app.post('/sell-nft', async (req, res) => {
   }
 
   try {
-    // First, check if the user has a trustline to the SeagullCoin issuer
-    const trustlines = await getTrustlines(walletAddress);
-
-    if (!trustlines || trustlines.length === 0) {
-      // If no trustline exists, ask the user to create it
-      const { uuid, next } = await createUserTrustline(walletAddress);
-      return res.status(400).json({
-        error: 'Missing trustline to SeagullCoin issuer. Please create a trustline.',
-        uuid,
-        next,
-      });
-    }
 
     // The transaction object for the NFT sell offer
     const tx = {

@@ -2528,8 +2528,7 @@ app.post('/sell-nft', async (req, res) => {
 
       return res.json({
         requiresTrustline: true,
-        message: "Seller wallet missing SeagullCoin trustline",
-        next: trustP
+        message: "Seller wallet missing S
 
 
 

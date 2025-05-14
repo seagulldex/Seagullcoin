@@ -2960,6 +2960,46 @@ app.get('/verify-trustline/:wallet', async (req, res) => {
   }
 });
 
+app.post('/create-sell-offer', async (req, res) => {
+  const { wallet, tokenId, amount } = req.body;
+  if (!wallet || !tokenId || !amount) {
+    return res.status(400).json({ error: 'Missing wallet, tokenId, or amount' });
+  }
+
+  try {
+    const payload = {
+      TransactionType: 'NFTokenCreateOffer',
+      Account: wallet,
+      NFTokenID: tokenId,
+      Amount: {
+        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (hex)
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',         // Issuer
+        value: amount.toString()
+      },
+      Flags: 1
+    };
+
+    const sellOffer = await xumm.payload.createAndSubscribe(
+      {
+        txjson: payload,
+        options: { submit: true },
+      },
+      event => {
+        return event.data.signed === true;
+      }
+    );
+
+    if (sellOffer.signed) {
+      res.json({ success: true, uuid: sellOffer.uuid, next: sellOffer.next.always });
+    } else {
+      res.status(400).json({ error: 'User declined the offer.' });
+    }
+  } catch (err) {
+    console.error('Sell offer error:', err?.data || err);
+    res.status(500).json({ error: 'Sell offer creation failed.' });
+  }
+});
+
 
 
 

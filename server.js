@@ -3005,6 +3005,39 @@ app.post('/create-sell-offer', async (req, res) => {
   }
 });
 
+app.post('/make-offer', async (req, res) => {
+  const { wallet, nftId, amount } = req.body;
+
+  if (!wallet || !nftId || !amount) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+
+  const payload = {
+  txjson: {
+    TransactionType: 'NFTokenCreateOffer',
+    Account: wallet,
+    NFTokenID: nftId,
+    Amount: {
+      currency: '53656167756C6C436F696E000000000000000000',
+      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+      value: amount  // string, e.g., "0.5"
+    },
+    Flags: 1 // 1 = Buy offer
+  }
+};
+
+
+  try {
+    const { created } = await xumm.payload.createAndSubscribe(payload);
+    res.json({
+      uuid: created.uuid,
+      next: created.next.always
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to create offer', details: e.message });
+  }
+});
+
 
 
 

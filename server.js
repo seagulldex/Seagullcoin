@@ -1953,7 +1953,7 @@ app.get('/confirm-payment', async (req, res) => {
     console.error('Error confirming payment:', err);
     res.status(500).send('Failed to confirm payment');
   }
-});
+})
 
 // Endpoint to initiate the authentication
 app.get('/authenticate', async (req, res) => {

@@ -3108,71 +3108,7 @@ app.post('/mint-check', async (req, res) => {
     });
 
     // Find SeagullMansions balance (assuming it's stored as a currency)
-    const seagullMansionsBalance = accountInfo.result.account_data.Balance / 1000000; // Convert from drops to SeagullMansions
-
-    if (seagullMansionsBalance >= 0.18) {
-      res.json({ message: 'You can mint an NFT!' });
-    } else {
-      res.status(400).json({ error: 'Insufficient SeagullMansions balance. You need at least 0.18' });
-    }
-
-    // Disconnect the client after the request
-    client.disconnect();
-  } catch (error) {
-    console.error('Error in /mint-check:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-
-// Mint Endpoint
-app.post('/mint', async (req, res) => {
-  const { walletAddress } = req.body;
-
-  if (!walletAddress) {
-    return res.status(400).json({ error: 'Wallet address is required' });
-  }
-
-  // Step 1: Check balance and trustline in mint-check (reuse function)
-  const checkResponse = await axios.post('/mint-check', { walletAddress });
-
-  if (checkResponse.data.error) {
-    return res.status(400).json({ error: checkResponse.data.error });
-  }
-
-  // Step 2: Create the NFT with basic parameters
-  const nftData = {
-    "TransactionType": "NFTokenMint",
-    "Account": walletAddress,
-    "URI": "", // No metadata or placeholder URI
-    "Flags": 8, // Transferable
-    "Fee": "12", // Set fee to prevent dust transaction
-    "NFTokenTaxon": 0, // Taxon, default 0
-    "Issuer": SERVICED_WALLET, // NFT issuer
-  };
-
-  try {
-    const txResponse = await xumm.createPayload({
-      TransactionType: 'NFTokenMint',
-      Account: walletAddress,
-      URI: "", // Empty metadata or placeholder URI
-      Flags: 8, // Transferable flag
-      Fee: "12", // Standard fee for NFT mint
-      NFTokenTaxon: 0, // Default taxon
-      Issuer: SERVICED_WALLET
-    });
-
-    const txID = txResponse.data.payload.uuid;
-    res.json({
-      message: 'Minting in progress',
-      txID,
-      txURL: `https://xumm.app/sign/${txID}`
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Minting failed' });
-  }
-});
-
+    const seagu
 
 
 

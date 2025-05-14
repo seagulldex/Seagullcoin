@@ -3074,11 +3074,33 @@ app.post('/burn-nft', async (req, res) => {
   res.json({ success: true, next: created.next });
 });
 
+
 async function getUserBalance(walletAddress) {
-  // Fetch balance of SeagullCoin for the user (use your XUMM API or XRPL integration)
-  const balance = await xrplClient.getBalance(walletAddress, 'SeagullCoin');
-  return balance;
+  const accountLines = await client.request({
+    command: "account_lines",
+    account: walletAddress
+  });
+
+  console.log(`[DEBUG] account_lines response:`, accountLines);
+
+  if (!accountLines || !accountLines.result || !accountLines.result.lines) {
+    console.log(`[DEBUG] No account lines found for ${walletAddress}`);
+    return 0;
+  }
+
+  const line = accountLines.result.lines.find(
+    (l) => l.currency === SEAGULLCOIN_HEX && l.account === SEAGULLCOIN_ISSUER
+  );
+
+  if (!line) {
+    console.log(`[DEBUG] SeagullCoin not found for ${walletAddress}`);
+    return 0;
+  }
+
+  return parseFloat(line.balance);
 }
+
+
 
 function lockSeagullCoinForStaking(walletAddress, amount, duration) {
   return new Promise((resolve, reject) => {

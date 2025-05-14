@@ -2457,78 +2457,46 @@ app.post('/transfer-nft', async (req, res) => {
 });
 
 
-async function checkTrustline(client, walletAddress) {
-  const accountLines = await client.request({
-    command: "account_lines",
-    account: walletAddress,
-  });
-
-  const foundLine = accountLines.result.lines.find(
-    line =>
-      line.currency === "53656167756C6C436F696E000000000000000000" &&
-      line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-  );
-
-  return !!foundLine;
-}
-
-async function waitForTransactionValidation(client, txid, retries = 10) {
-  for (let i = 0; i < retries; i++) {
-    const result = await client.request({ command: "tx", transaction: txid });
-    if (result.result.validated) return true;
-    console.log(`Waiting for trustline TX to validate... (${i + 1}/10)`);
-    await new Promise(resolve => setTimeout(resolve, 3000));
-  }
-  return false;
-}
-
 app.post('/sell-nft', async (req, res) => {
-  const { walletAddress, nftId, price, lastTrustPayloadUuid } = req.body;
+  const { walletAddress, nftId } = req.body;
 
-  if (!walletAddress || !nftId || !price) {
-    return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
+  if (!walletAddress || !nftId) {
+    return res.status(400).json({ error: 'Missing walletAddress or nftId' });
   }
 
   const client = new xrpl.Client("wss://xrplcluster.com");
+  await client.connect();
 
   try {
-    await client.connect();
+    // Create a sell offer WITHOUT Amount to prevent forced pricing
+    const tx = {
+      TransactionType: 'NFTokenCreateOffer',
+      Account: walletAddress,
+      NFTokenID: nftId,
+      Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken,
+    };
 
-    let hasTrustline = await checkTrustline(client, walletAddress);
+    const payload = await xumm.payload.create({
+      txjson: tx,
+      options: {
+        submit: true,
+        expire: 60,
+      },
+    });
 
-    if (!hasTrustline && lastTrustPayloadUuid) {
-      const trustStatus = await xumm.payload.get(lastTrustPayloadUuid);
-      const txid = trustStatus.response?.txid;
+    return res.json({
+      sellOffer: payload,
+      next: payload.next,
+      uuid: payload.uuid,
+    });
 
-      if (trustStatus.meta.signed && trustStatus.meta.resolved && txid) {
-        const validated = await waitForTransactionValidation(client, txid);
-        if (validated) {
-          console.log("Trustline TX validated.");
-          hasTrustline = await checkTrustline(client, walletAddress);
-        }
-      }
-    }
+  } catch (err) {
+    return res.status(500).json({ error: 'Error creating sell offer', details: err.message });
+  } finally {
+    await client.disconnect();
+  }
+});
 
-    if (!hasTrustline) {
-      const trustPayload = await xumm.payload.create({
-        txjson: {
-          TransactionType: "TrustSet",
-          Account: walletAddress,
-          LimitAmount: {
-            currency: "53656167756C6C436F696E000000000000000000",
-            issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-            value: "1000000",
-          },
-        },
-        options: {
-          submit: true,
-          expire: 60,
-        },
-      });
-
-      return res.json({
-        requiresTrustline: true,
-        message: "Seller wallet missing S
 
 
 

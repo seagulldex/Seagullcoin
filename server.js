@@ -66,7 +66,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { fetchSeagullCoinBalance } from './xrplClient.js';
 import { promisify } from 'util'; // 
 import { RippleAPI } from 'ripple-lib';
-import { Client } from 'xrpl';
+import { Client, NFTokenMint } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 
 
@@ -3176,32 +3176,7 @@ async function lockSeagullCoinForStaking(walletAddress, amount, duration) {
           console.error('Error saving staking data:', err);
         }
       }
-    );
-
-    await api.disconnect(); // Disconnect from the network
-
-    return result; // Return the result of the transaction (including txId)
-
-  } catch (error) {
-    console.error('[ERROR] Staking Error:', error);
-    throw new Error('Staking failed.');
-  }
-}
-
-
-
-function getStakingInfo(walletAddress) {
-  return new Promise((resolve, reject) => {
-    db.get(
-      `SELECT * FROM staking WHERE walletAddress = ? AND status = 'active'`,
-      [walletAddress],
-      (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      }
-    );
-  });
-}
+    )
 
 
 

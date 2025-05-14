@@ -3163,23 +3163,27 @@ function calculateRewards(amount, rewardRate, duration) {
 }
 
 
-// Simplified staking endpoint
-app.post('/stake', async (req, res) => {
-  const { amount, duration, walletAddress } = req.body; // Now, walletAddress is passed in the request body
 
-  if (!amount || !duration || amount <= 0 || !walletAddress) {
-    return res.status(400).json({ status: 'error', message: 'Invalid amount, duration or wallet address.' });
+app.post('/stake', async (req, res) => {
+  const { amount, duration, walletAddress } = req.body;
+
+  // Validate input
+  if (!amount || !duration || amount <= 0 || !walletAddress || !isValidXRPAddress(walletAddress)) {
+    return res.status(400).json({ status: 'error', message: 'Invalid amount, duration, or wallet address.' });
   }
 
   try {
-    const balance = await getUserBalance(walletAddress); // Use the passed walletAddress
+    // Get user balance
+    const balance = await getUserBalance(walletAddress);
     if (balance < amount) {
       return res.status(400).json({ status: 'error', message: 'Insufficient balance.' });
     }
 
+    // Lock SeagullCoin for staking
     await lockSeagullCoinForStaking(walletAddress, amount, duration);
 
-    const rewardRate = 0.02;
+    // Calculate rewards
+    const rewardRate = 0.02; // Example reward rate of 5%
     const estimatedRewards = calculateRewards(amount, rewardRate, duration);
 
     res.json({
@@ -3190,10 +3194,12 @@ app.post('/stake', async (req, res) => {
       estimated_rewards: estimatedRewards
     });
   } catch (err) {
-    console.error(err);
+    console.error('[ERROR] Staking error:', err);
     res.status(500).json({ status: 'error', message: 'Server error during staking.' });
   }
 });
+
+
 
 
 

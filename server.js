@@ -3079,6 +3079,7 @@ async function getUserBalance(walletAddress) {
   try {
     await client.connect(); // Ensure you're connected to the ledger
 
+    // Fetch account lines
     const accountLines = await client.request({
       command: "account_lines",
       account: walletAddress
@@ -3086,21 +3087,32 @@ async function getUserBalance(walletAddress) {
 
     console.log(`[DEBUG] account_lines response:`, accountLines);
 
-    if (!accountLines || !accountLines.result || !accountLines.result.lines) {
+    // Ensure account lines are found
+    if (!accountLines.result || !accountLines.result.lines || accountLines.result.lines.length === 0) {
       console.log(`[DEBUG] No account lines found for ${walletAddress}`);
       return 0;
     }
 
-    const line = accountLines.result.lines.find(
-      (l) => l.currency === '53656167756C6C436F696E000000000000000000' && l.account === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
-    );
+    // Check all account lines to see if SeagullCoin exists
+    const lines = accountLines.result.lines;
+    let seagullCoinBalance = 0;
 
-    if (!line) {
+    lines.forEach(line => {
+      console.log(`[DEBUG] Found line: Currency: ${line.currency}, Account: ${line.account}, Balance: ${line.balance}`);
+      
+      if (line.currency === '53656167756C6C436F696E000000000000000000' && line.account === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno') {
+        seagullCoinBalance = parseFloat(line.balance);
+        console.log(`[DEBUG] SeagullCoin balance found for ${walletAddress}: ${seagullCoinBalance}`);
+      }
+    });
+
+    // If balance was found, return it; otherwise, return 0
+    if (seagullCoinBalance > 0) {
+      return seagullCoinBalance;
+    } else {
       console.log(`[DEBUG] SeagullCoin not found for ${walletAddress}`);
       return 0;
     }
-
-    return parseFloat(line.balance);
   } catch (error) {
     console.error(`[ERROR] Failed to fetch balance for ${walletAddress}:`, error);
     return 0;
@@ -3108,6 +3120,7 @@ async function getUserBalance(walletAddress) {
     await client.disconnect(); // Disconnect after the operation
   }
 }
+
 
 
 

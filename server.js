@@ -3039,6 +3039,21 @@ app.post('/make-offer', async (req, res) => {
 });
 
 
+app.post('/burn-nft', async (req, res) => {
+  const { walletAddress, nftId } = req.body;
+
+  const payload = {
+    TransactionType: "NFTokenBurn",
+    Account: walletAddress,
+    NFTokenID: nftId
+  };
+
+  const { created } = await xumm.payload.createAndSubscribe(payload, e => {
+    return e.data.signed === true;
+  });
+
+  res.json({ success: true, next: created.next });
+});
 
 
 

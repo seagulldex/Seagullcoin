@@ -244,6 +244,20 @@ db.serialize(() => {
   `);
 });
 
+// Create the staking table if it doesn't exist
+db.run(`
+  CREATE TABLE IF NOT EXISTS staking (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    walletAddress TEXT NOT NULL,
+    amount REAL NOT NULL,
+    duration INTEGER NOT NULL,
+    startTime INTEGER NOT NULL,
+    endTime INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    rewards REAL DEFAULT 0
+  )
+`);
+
 // Create the user_profiles table if it doesn't exist
   db.run(`
     CREATE TABLE IF NOT EXISTS user_profiles (
@@ -3059,6 +3073,84 @@ app.post('/burn-nft', async (req, res) => {
 
   res.json({ success: true, next: created.next });
 });
+
+async function getUserBalance(walletAddress) {
+  // Fetch balance of SeagullCoin for the user (use your XUMM API or XRPL integration)
+  const balance = await xrplClient.getBalance(walletAddress, 'SeagullCoin');
+  return balance;
+}
+
+function lockSeagullCoinForStaking(walletAddress, amount, duration) {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    const endTime = startTime + duration * 24 * 60 * 60 * 1000;
+
+    db.run(
+      `INSERT INTO staking (walletAddress, amount, duration, startTime, endTime, status, rewards)
+       VALUES (?, ?, ?, ?, ?, 'active', 0)`,
+      [walletAddress, amount, duration, startTime, endTime],
+      function (err) {
+        if (err) reject(err);
+        else resolve(this.lastID);
+      }
+    );
+  });
+}
+
+function getStakingInfo(walletAddress) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT * FROM staking WHERE walletAddress = ? AND status = 'active'`,
+      [walletAddress],
+      (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      }
+    );
+  });
+}
+
+
+function calculateRewards(amount, rewardRate, duration) {
+  // Example calculation: Simple interest formula
+  const rewards = (amount * rewardRate * (duration / 365)); // Duration in days
+  return rewards.toFixed(2); // Return rewards with 2 decimal places
+}
+
+
+// Staking Endpoint
+app.post('/stake', async (req, res) => {
+  const { amount, duration } = req.body;
+  const userWallet = req.session.walletAddress;
+
+  if (!amount || !duration || amount <= 0) {
+    return res.status(400).json({ status: 'error', message: 'Invalid amount or duration.' });
+  }
+
+  try {
+    const balance = await getUserBalance(userWallet);
+    if (balance < amount) {
+      return res.status(400).json({ status: 'error', message: 'Insufficient balance.' });
+    }
+
+    await lockSeagullCoinForStaking(userWallet, amount, duration);
+
+    const rewardRate = 0.05;
+    const estimatedRewards = calculateRewards(amount, rewardRate, duration);
+
+    res.json({
+      status: 'success',
+      message: `Staked ${amount} SGLCN for ${duration} days.`,
+      staking_balance: amount,
+      reward_rate: `${rewardRate * 100}%`,
+      estimated_rewards: estimatedRewards
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: 'error', message: 'Server error during staking.' });
+  }
+});
+
 
 
 

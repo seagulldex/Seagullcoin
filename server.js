@@ -2974,31 +2974,16 @@ app.post('/create-sell-offer', async (req, res) => {
       Amount: {
         currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (hex)
         issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',         // Issuer
-        value: amount.toString()
+        value: amount.toString()                               // Price in SeagullCoin
       },
       Flags: 1
     };
 
+    // Create the offer payload with XUMM
     const sellOffer = await xumm.payload.createAndSubscribe(
       {
         txjson: payload,
-        options: { submit: true },
-      },
-      event => {
-        return event.data.signed === true;
-      }
-    );
-
-    if (sellOffer.signed) {
-      res.json({ success: true, uuid: sellOffer.uuid, next: sellOffer.next.always });
-    } else {
-      res.status(400).json({ error: 'User declined the offer.' });
-    }
-  } catch (err) {
-    console.error('Sell offer error:', err?.data || err);
-    res.status(500).json({ error: 'Sell offer creation failed.' });
-  }
-});
+        options: { submi
 
 
 

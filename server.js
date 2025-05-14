@@ -2458,47 +2458,46 @@ app.post('/transfer-nft', async (req, res) => {
 
 
 app.post('/sell-nft', async (req, res) => {
-  const { walletAddress, nftId } = req.body;
+  const { walletAddress, nftId, price } = req.body;
 
-  if (!walletAddress || !nftId) {
-    return res.status(400).json({ error: 'Missing walletAddress or nftId' });
+  if (!walletAddress || !nftId || !price) {
+    return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
   }
 
-  const client = new xrpl.Client("wss://xrplcluster.com");
-  await client.connect();
-
   try {
-    // Create a sell offer WITHOUT Amount to prevent forced pricing
+    // The transaction object for the NFT sell offer
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
       NFTokenID: nftId,
-      Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken,
+      Amount: {
+        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (Hex code)
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer
+        value: price.toString(), // Make sure to convert price to a string
+      },
+      Flags: 1, // Ensure you're setting the correct flag for selling
     };
 
-    const payload = await xumm.payload.create({
+    // XUMM payload creation
+    const payload = {
       txjson: tx,
       options: {
-        submit: true,
-        expire: 60,
+        submit: true, // Automatically submit the transaction after signing
+        expire: 60, // Expiration time for the offer (in seconds)
       },
-    });
+    };
 
-    return res.json({
-      sellOffer: payload,
-      next: payload.next,
-      uuid: payload.uuid,
-    });
+    // Create the payload with XUMM API
+    const { uuid, next } = await xumm.payload.create(payload);
+
+    // Return the payload URL and UUID to the client for signing
+    return res.json({ next, uuid });
 
   } catch (err) {
-    return res.status(500).json({ error: 'Error creating sell offer', details: err.message });
-  } finally {
-    await client.disconnect();
+    console.error('Sell NFT error:', err?.data ?? err);
+    return res.status(500).json({ error: 'Failed to create sell offer', details: err.message });
   }
 });
-
-
-
 
 
 
@@ -2979,11 +2978,33 @@ app.post('/create-sell-offer', async (req, res) => {
       Flags: 1
     };
 
-    // Create the offer payload with XUMM
+    // Create and push the offer payload with XUMM
     const sellOffer = await xumm.payload.createAndSubscribe(
       {
         txjson: payload,
-        options: { submi
+        options: { submit: true }, // Submit the transaction immediately to get the signing link
+      },
+      event => {
+        return event.data.signed === true; // Check if the user signed the payload
+      }
+    );
+
+    // Check if the payload was signed or not
+    if (sellOffer?.next?.always) {
+      res.json({ 
+        success: true, 
+        uuid: sellOffer.uuid, 
+        next: sellOffer.next.always // The URL to sign the transaction
+      });
+    } else {
+      res.status(400).json({ error: 'User declined the offer.' });
+    }
+  } catch (err) {
+    console.error('Sell offer error:', err?.data || err);
+    res.status(500).json({ error: 'Sell offer creation failed.' });
+  }
+});
+
 
 
 

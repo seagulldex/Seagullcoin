@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="header.css" />
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+  <script src="https://unpkg.com/xrpl@2.12.0/dist/xrpl.js"></script>
   <style>
     #top-bar {
       position: fixed;
@@ -115,7 +116,9 @@ button:hover {
     </nav>
   </header>
 <input type="text" id="search-bar" placeholder="Search for NFTs..." oninput="handleSearchInput(event)" />
-<button onclick="searchNFTs()">Search</button>
+<button onclick="searchXRPL()">Search</button>
+  <div id="search-status" style="margin-top:10px;font-weight:bold;"></div>
+  <div id="search-results" style="margin-top:15px;"></div>
 
   <!-- Main Content -->
   <main>
@@ -258,6 +261,106 @@ document.getElementById('add-trustline-btn').onclick = async () => {
     socket.onclose = () => console.log('WebSocket connection closed');
   </script>
 
+<script>
+/* ---------- XRPL Search (wallets + NFTs) ---------- */
+
+const XRPL_ENDPOINT = "wss://s2.ripple.com";   // mainnet; swap for testnet/devnet as needed
+let xrplClient;                                // lazy-connect so we don’t open a socket until the first search
+
+// handy regexes
+const WALLET_REGEX = /^r[1-9A-HJ-NP-Za-km-z]{25,34}$/;          // classic address
+const NFT_ID_REGEX = /^[A-F0-9]{64}$/i;                         // 64-char hex NFTokenID
+
+/** keystroke UX: hit <Enter> to trigger the search */
+function handleSearchInput (ev) {
+  if (ev.key === "Enter") searchXRPL();
+}
+
+/** top-level function the button also calls */
+async function searchXRPL () {
+  const q = document.getElementById("search-bar").value.trim();
+  const statusEl  = document.getElementById("search-status");
+  const resultEl  = document.getElementById("search-results");
+  resultEl.innerHTML = "";           // clear old results
+
+  if (!q) { statusEl.textContent = "Type something to search…"; return; }
+  statusEl.textContent = "Connecting to XRPL …";
+
+  try {
+    // lazy socket
+    if (!xrplClient) {
+      xrplClient = new xrpl.Client(XRPL_ENDPOINT);
+      await xrplClient.connect();
+    }
+
+    // branch by query type
+    if (WALLET_REGEX.test(q)) {
+      statusEl.textContent = "Fetching wallet info…";
+      await showWallet(q);
+    } else if (NFT_ID_REGEX.test(q)) {
+      statusEl.textContent = "Fetching NFTokenID info…";
+      await showNFTbyID(q);
+    } else {
+      statusEl.textContent = "Searching for NFTs by metadata…";
+      await showNFTbyMetadata(q);
+    }
+    statusEl.textContent = "";   // done
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "⚠️ " + (err.data?.error_message || err.message);
+  }
+}
+
+/* ---------- helpers ---------- */
+
+async function showWallet (address) {
+  const acct = await xrplClient.request({ command:"account_info", account: address });
+  const nfts = await xrplClient.request({ command:"account_nfts", account: address, limit: 50 });
+
+  document.getElementById("search-results").innerHTML = `
+    <h3>Account ${address}</h3>
+    <p> XRP balance: <b>${xrpl.xrpToDrops(acct.result.account_data.Balance)/1_000_000}</b></p>
+    <p> #NFTs held: <b>${nfts.result.account_nfts.length}</b></p>
+    <ul>
+      ${nfts.result.account_nfts.slice(0,10).map(nft => `<li>${nft.NFTokenID}</li>`).join("")}
+    </ul>
+    ${nfts.result.account_nfts.length > 10 ? "…showing first 10" : ""}
+  `;
+}
+
+async function showNFTbyID (tokenID) {
+  /* nft_info requires rippled v1.12+.  Many public hubs support it already. */
+  const resp = await xrplClient.request({ command:"nft_info", nft_id: tokenID });
+  const nft  = resp.result.nft_id;           // field names differ by rippled version
+
+  document.getElementById("search-results").innerHTML = `
+    <h3>NFTokenID: ${tokenID}</h3>
+    <p> Issuer: ${nft.Issuer}</p>
+    <p> Owner : ${nft.Owner}</p>
+    <p> URI   : <a href="${xrpl.convertHexToString(nft.URI)}" target="_blank">${xrpl.convertHexToString(nft.URI)}</a></p>
+  `;
+}
+
+async function showNFTbyMetadata (text) {
+  /* Ledger itself can’t text-search, so call your own backend index.
+     You already have a Glitch API—add a /search?q= endpoint server-side that
+     looks through the metadata stored on NFT.Storage and returns matches.
+
+     Example response:
+       [ { id:"<NFTokenID>", name:"Sea-gull #42", owner:"r...", uri:"ipfs://…" }, … ]
+  */
+  const resp = await fetch(`https://sglcn-x20-api.glitch.me/search?q=${encodeURIComponent(text)}`);
+  const hits = await resp.json();
+
+  document.getElementById("search-results").innerHTML =
+    hits.length
+      ? `<h3>Results for “${text}”</h3><ul>${hits.map(row =>
+           `<li><b>${row.name}</b> – NFTokenID: ${row.id.slice(0,10)}…</li>`
+         ).join("")}</ul>`
+      : `<p>No matches for “${text}”.</p>`;
+}
+
+/* --------------------------------------------------- */
   <script src="main.js"></script>
 </body>
 </html>

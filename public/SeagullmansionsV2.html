@@ -80,13 +80,15 @@
     </nav>
   </header>
    <main>
-    <h1>SeagullMansions NFT swap token</h1>
-    <div style="text-align: center; margin: 20px;">
-      <button onclick="addTrustline()">Add SeagullMansions Trustline</button>
-    </div>
-
-  
-  </main>
+    <main>
+  <h1>SeagullMansions NFT swap token</h1>
+  <div style="text-align: center; margin: 20px;">
+    <button onclick="addTrustline()">Add SeagullMansions Trustline</button>
+  </div>
+  <div style="text-align: center; margin: 20px;">
+    <button onclick="initiatePayment()">Mint pay 0.18 SeagullMansions</button>
+  </div>
+     </main>
 
   <script>
     async function loginWithXumm() {
@@ -125,6 +127,35 @@
         document.getElementById("logout-btn").style.display = "inline-block";
       }
     });
+    
+  async function initiatePayment() {
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) {
+    alert("Please log in with your XUMM wallet first.");
+    return;
+  }
+
+  try {
+    const res = await fetch("https://sglcn-x20-api.glitch.me/pays", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet })  // <-- key is 'wallet' now
+    });
+
+    const data = await res.json();
+
+    if (data.uuid && data.next) {
+      alert("Please approve the payment in your XUMM app.");
+      window.open(data.next, "_blank");  // or data.next.always if your backend returns nested
+    } else {
+      alert("Payment initiation failed: " + JSON.stringify(data));
+    }
+  } catch (err) {
+    console.error("Payment error:", err);
+    alert("Failed to initiate payment.");
+  }
+}
+
 
     async function addTrustline() {
   const wallet = localStorage.getItem('xumm_wallet_address');

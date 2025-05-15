@@ -3074,6 +3074,95 @@ app.post('/burn-nft', async (req, res) => {
   res.json({ success: true, next: created.next });
 });
 
+const SERVICE_WALLET_ADDRESS = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
+
+app.post('/pays', async (req, res) => {
+  const { wallet } = req.body;
+
+  const payload = {
+    txjson: {
+      TransactionType: "Payment",
+      Destination: SERVICE_WALLET_ADDRESS,
+      Amount: {
+        currency: "53656167756C6C4D616E73696F6E730000000000",
+        issuer: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
+        value: "0.18"
+      }
+    },
+    options: {
+      submit: true,
+      expire: 300
+    }
+  };
+
+  const response = await xumm.payload.create(payload);
+  res.json({
+    uuid: response.uuid,
+    next: response.next.always
+  });
+});
+
+app.post('/mint-after-payment', async (req, res) => {
+  const { uuid, metadataUrl, userWallet } = req.body;
+
+  const { payload } = await xumm.payload.get(uuid);
+  const txid = payload.response.txid;
+
+  if (!txid) return res.status(400).send("Payment not signed.");
+
+  const tx = await client.request({
+    command: "tx",
+    transaction: txid
+  });
+
+  const txn = tx.result;
+
+  const valid =
+    txn.TransactionType === "Payment" &&
+    txn.Destination === SERVICE_WALLET_ADDRESS &&
+    txn.Amount?.currency === "53656167756C6C4D616E73696F6E730000000000" &&
+    txn.Amount?.issuer === "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" &&
+    parseFloat(txn.Amount?.value) === 0.18;
+
+  if (!valid) return res.status(403).send("Invalid payment");
+
+  // Step 1: Mint NFT from service wallet
+  const mintTx = {
+    TransactionType: "NFTokenMint",
+    Account: SERVICE_WALLET_ADDRESS,
+    URI: xrpl.convertStringToHex(metadataUrl),
+    Flags: 8,
+    TransferFee: 0,
+    NFTokenTaxon: 0
+  };
+
+  const prepared = await client.autofill(mintTx);
+  const signed = SERVICE_WALLET.sign(prepared);
+  const result = await client.submitAndWait(signed.tx_blob);
+
+  const mintedNFT = result.result.meta?.nftoken_id || extractNFTokenID(result.result); // fallback
+
+  if (!mintedNFT) return res.status(500).send("NFT minting failed");
+
+  // Step 2: Transfer NFT to user
+  const offerTx = {
+    TransactionType: "NFTokenCreateOffer",
+    Account: SERVICE_WALLET_ADDRESS,
+    NFTokenID: mintedNFT,
+    Amount: "0",
+    Destination: userWallet,
+    Flags: 1
+  };
+
+  const offerPrepared = await client.autofill(offerTx);
+  const offerSigned = SERVICE_WALLET.sign(offerPrepared);
+  const offerResult = await client.submitAndWait(offerSigned.tx_blob);
+
+  res.json({ success: true, tokenId: mintedNFT });
+});
+
+
+
 
 const usedNFTs = new Set();
 

@@ -3185,33 +3185,94 @@ const REQUIRED_AMOUNT = '0.18';
 const sERVICE_WALLET = "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV";
 
 // Endpoint to mint and send NFTs
-app.post('/mints', async (req, res) => {
-  const { userAddress, nfTokenId } = req.body;
+// 1. Create payment payload endpoint
+app.post('/create-payment', async (req, res) => {
+  const { userAddress } = req.body;
 
-  // Ensure that the NFTokenID exists in the list of valid NFTs
+  // Create XUMM payment payload for 0.18 SeagullMansions from user to your service wallet
+  const paymentTx = {
+    TransactionType: "Payment",
+    Account: userAddress, // From user's wallet (for XUMM, it's implicit)
+    Destination: sERVICE_WALLET,
+    Amount: {
+      currency: SEAGULLMANSIONS_CURRENCY,
+      issuer: SEAGULLMANSIONS_ISSUER,
+      value: "0.18"
+    }
+  };
+
+  try {
+    const payload = await xumm.payload.create({
+      txjson: paymentTx,
+      options: {
+        submit: true,
+        expire: 300,  // expires in 5 minutes
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Please sign the payment in XUMM app',
+      payload_uuid: payload.uuid,
+      payload_url: payload.next.always
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to create payment payload' });
+  }
+});
+
+// 2. Endpoint to check payload status and then send NFT
+app.post('/verify-and-send-nft', async (req, res) => {
+  const { payload_uuid, userAddress, nfTokenId } = req.body;
+
+  // Check valid nfTokenId
   if (!nfTokenId || !nftokens.includes(nfTokenId)) {
     return res.status(400).json({ error: 'Invalid or missing NFTokenID' });
   }
-try {
-    // Prepare the transaction for XUMM
-    const transaction = {
-      "TransactionType": "NFTokenSend",
-      "Account": "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV", // Your service wallet address
-      "Destination": userAddress,              // The recipient wallet address
-      "NFTokenID": nfTokenId,                  // The NFTokenID from the request
-      "Fee": "12"                              // Set a transaction fee (12 drops is standard)
+
+  try {
+    const payload = await xumm.payload.get(payload_uuid);
+
+    if (!payload.response || !payload.response.signed) {
+      return res.status(400).json({ error: 'Payment not signed or rejected' });
+    }
+
+    // Check transaction result & details
+    const tx = payload.response.tx;
+    if (tx.TransactionType !== 'Payment' ||
+        tx.Destination !== SERVICE_WALLET ||
+        tx.Amount.currency !== SEAGULLMANSIONS_CURRENCY ||
+        tx.Amount.issuer !== SEAGULLMANSIONS_ISSUER ||
+        parseFloat(tx.Amount.value) < 0.18) {
+      return res.status(400).json({ error: 'Payment details invalid or insufficient' });
+    }
+
+    // Payment valid and completed -> prepare NFT send transaction
+    const nftSendTx = {
+      TransactionType: "NFTokenSend",
+      Account: SERVICE_WALLET,
+      Destination: userAddress,
+      NFTokenID: nfTokenId,
+      Fee: "12"
     };
 
-    // Send the transaction to XUMM for signing
-    const xummPayload = await xumm.payload.create(transaction);
-
-   // Return the signed transaction URL to the user
-    return res.status(200).json({
-      success: true,
-      message: 'NFT transaction created. Please sign the transaction using XUMM.',
-      payload_url: xummPayload?.next_url // URL to sign the transaction via XUMM app
+    const nftPayload = await xumm.payload.create({
+      txjson: nftSendTx,
+      options: { submit: true, expire: 300 }
     });
-  } ca
+
+    res.json({
+      success: true,
+      message: 'Payment verified! Please sign NFT send transaction in XUMM app.',
+      payload_url: nftPayload.next.always
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

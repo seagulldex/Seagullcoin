@@ -76,7 +76,7 @@ dotenv.config();
 const xummSDK = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const SEAGULL_COIN_ISSUER = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"; // Issuer address
 const SEAGULL_COIN_CODE = "SeagullCoin"; // Currency code
-const MINT_COST = 0.5; // Cost for minting in SeagullCoin
+
 const SEAGULL_COIN_LABEL = "SGLCN"; // Token identifier (SeagullCoin trustline)
 const XUMM_API_KEY = process.env.XUMM_API_KEY;
 const XUMM_API_SECRET = process.env.XUMM_API_SECRET;
@@ -1386,9 +1386,7 @@ app.post('/pay', async (req, res) => {
     console.error("Payment check failed:", err.message);
     res.status(500).json({ error: "Payment verification failed" });
   } finally {
-    if (client.isConnected()) await client.disconnect();
-  }
-});
+    if 
 
 // Update profile picture
 app.post('/update-profile-picture', async (req, res) => {
@@ -2764,75 +2762,6 @@ async function hasSeagullCoinTrustline(walletAddress) {
 }
 
 
-
-// Payment route
-app.post('/pay', async (req, res) => {
-  const { wallet } = req.body;
-  if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
-
-  const trustline = await hasSeagullCoinTrustline(wallet, client);
-  if (!trustline) {
-    return res.status(400).json({ error: 'Missing SeagullCoin trustline' });
-  }
-
-  const payload = {
-    txjson: {
-      TransactionType: 'Payment',
-      Destination: SERVICE_WALLET,
-      Amount: {
-        currency: SEAGULLCOIN_HEX,
-        issuer: SEAGULLCOIN_ISSUER,
-        value: "0.5"
-      }
-    },
-    options: {
-      submit: true,
-      return_url: {
-        web: "https://outgoing-destiny-bladder.glitch.me/success.html",
-        app: "https://outgoing-destiny-bladder.glitch.me/success.html"
-      }
-    }
-  };
-
-  try {
-    const created = await xumm.payload.createAndSubscribe(payload, event => {
-      if (event.data.signed === true) {
-        console.log("Payment signed by", wallet);
-        return true;
-      }
-      if (event.data.signed === false) {
-        console.log("Payment declined by", wallet);
-        return false;
-      }
-    });
-
-    // Track status
-    payments[created.uuid] = {
-      wallet,
-      paid: false
-    };
-
-    created.resolved.then(resolved => {
-      if (resolved.signed) {
-        payments[created.uuid].paid = true;
-      } else {
-        delete payments[created.uuid];
-      }
-    });
-
-    res.json({
-      uuid: created.uuid,
-      next: created.next
-    });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Failed to create payment' });
-  }
-});
-
-
-
-
 // Function to fetch offers from XRPL for a given wallet address
 async function fetchOffersFromXRPL(walletAddress) {
   try {
@@ -3024,38 +2953,6 @@ app.post('/create-sell-offer', async (req, res) => {
   }
 });
 
-app.post('/make-offer', async (req, res) => {
-  const { wallet, nftId, amount } = req.body;
-
-  if (!wallet || !nftId || !amount) {
-    return res.status(400).json({ error: 'Missing fields' });
-  }
-
-  const payload = {
-  txjson: {
-    TransactionType: 'NFTokenCreateOffer',
-    Account: wallet,
-    NFTokenID: nftId,
-    Amount: {
-      currency: '53656167756C6C436F696E000000000000000000',
-      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-      value: amount  // string, e.g., "0.5"
-    },
-    Flags: 1 // 1 = Buy offer
-  }
-};
-
-
-  try {
-    const { created } = await xumm.payload.createAndSubscribe(payload);
-    res.json({
-      uuid: created.uuid,
-      next: created.next.always
-    });
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to create offer', details: e.message });
-  }
-});
 
 
 app.post('/burn-nft', async (req, res) => {
@@ -3125,11 +3022,53 @@ app.post('/mint-after-payment', async (req, res) => {
     const paymentPayload = await xumm.payload.get(paymentUUID);
     console.log("Full Payload:", paymentPayload);
 
-    if (!paymentPayload.exists) {
+    // Fixed the check to use meta.exists instead of paymentPayload.exists
+    if (!paymentPayload || !paymentPayload.meta || !paymentPayload.meta.exists) {
       return res.status(400).json({ error: "Payment payload not found" });
     }
 
-    txid = paymentPayload.response?.t
+    txid = paymentPayload.response?.txid || paymentPayload.meta?.resolved?.txid;
+    if (!txid) {
+      return res.status(400).json({ error: "Transaction ID not available yet. Please try again shortly." });
+    }
+
+  } catch (e) {
+    console.error("Error retrieving payment payload:", e);
+    return res.status(500).json({ error: "Failed to retrieve payment payload" });
+  }
+
+  // XRPL transaction lookup
+  try {
+    await client.connect();
+    const tx = await client.request({
+      command: "tx",
+      transaction: txid
+    });
+    await client.disconnect();
+
+    const txn = tx.result;
+    console.log("Ledger TX:", JSON.stringify(txn, null, 2));
+
+
+    // Check if the payment matches 0.18 SGLMSN
+    if (
+      txn.TransactionType !== "Payment" ||
+      typeof txn.Amount !== "object" ||
+      txn.Amount.currency !== "53656167756C6C4D616E73696F6E730000000000" ||
+      txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
+      parseFloat(txn.Amount.value) < 0.18
+    ) {
+      return res.status(400).json({ error: "Invalid or insufficient payment" });
+    }
+
+  } catch (err) {
+    console.error("Error verifying transaction on ledger:", err);
+    return res.status(500).json({ error: "Failed to verify payment transaction" });
+  }
+
+  // Proceed with minting...
+});
+
 
 
 

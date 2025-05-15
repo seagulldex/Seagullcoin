@@ -3188,38 +3188,40 @@ const sERVICE_WALLET = "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV";
 const ISSUER = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 const CURRENCY = '53656167756C6C4D616E73696F6E730000000000'; // Hex for "SeagullMansions..."
 
-export async function createTrustlinePayload(userAddress) {
-  try {
-    const trustlineTx = {
-      TransactionType: 'TrustSet',
-      Account: userAddress, // User wallet address (for XUMM, optional)
-      LimitAmount: {
-        currency: CURRENCY,
-        issuer: ISSUER,
-        value: '1000' // max trustline limit amount user can hold
-      },
-      Flags: 131072 // tfSetNoRipple flag (optional, you can adjust flags)
-    };
+// Trustline details
+const currencyHex = '53656167756C6C4D616E73696F6E730000000000';
+const issuer = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 
+export async function createTrustline(userAddress) {
+  const txJson = {
+    TransactionType: 'TrustSet',
+    Account: userAddress,
+    LimitAmount: {
+      currency: currencyHex,
+      issuer: issuer,
+      value: '1000000'
+    }
+  };
+
+  try {
     const payload = await xumm.payload.create({
-      txjson: trustlineTx,
+      txjson: txJson,
       options: {
-        submit: false, // don't auto-submit, user signs manually
-        expire: 300,   // expire after 5 mins
+        submit: true,
+        expire: 300
       }
     });
 
+    console.log('Payload UUID:', payload.uuid);
+    console.log('Open in XUMM:', payload.next.always);
+
     return {
-      success: true,
       uuid: payload.uuid,
-      url: payload.next.always,
+      url: payload.next.always
     };
   } catch (error) {
-    console.error('Error creating trustline payload:', error);
-    return {
-      success: false,
-      error: error.message || 'Unknown error',
-    };
+    console.error('Failed to create trustline payload:', error.message);
+    return null;
   }
 }
 
@@ -3229,17 +3231,38 @@ export async function createTrustlinePayload(userAddress) {
 
 // Endpoint to mint and send NFTs
 // 1. Create payment payload endpoint
+//POST /create-trustline
 app.post('/create-trustline', async (req, res) => {
   const { userAddress } = req.body;
-  const result = await createTrustlinePayload(userAddress);
-  if (result.success) {
+  if (!userAddress) return res.status(400).json({ error: 'Missing user address' });
+
+  const txJson = {
+    TransactionType: 'TrustSet',
+    Account: userAddress,
+    LimitAmount: {
+      currency: CURRENCY_HEX,
+      issuer: ISSUER,
+      value: '1000000000'
+    }
+  };
+
+  try {
+    const payload = await xumm.payload.create({
+      txjson: txJson,
+      options: {
+        submit: true,
+        expire: 300
+      }
+    });
+
     res.json({
       message: 'Sign the trustline in XUMM',
-      payload_uuid: result.uuid,
-      payload_url: result.url,
+      payload_uuid: payload.uuid,
+      payload_url: payload.next.always
     });
-  } else {
-    res.status(500).json({ error: result.error });
+  } catch (e) {
+    console.error('Error creating trustline payload:', e?.message || e);
+    res.status(500).json({ error: 'Failed to create trustline payload' });
   }
 });
 

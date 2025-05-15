@@ -2,72 +2,150 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SeagullMansions Trustline - Login Required</title>
-  <script type="module" src="https://unpkg.com/xrpl-trustline-button"></script>
+  <title>SeagullCoin Trustline Creator</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #fafafa; padding: 2rem; text-align: center; }
-    button, xrpl-trustline-button { font-size: 1.2rem; padding: 12px 24px; cursor: pointer; }
-    #trustline-container { margin-top: 2rem; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 480px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+      user-select: none;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    #wallet-container {
+      background: #e1f0ff;
+      border: 1px solid #99ccff;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      font-weight: bold;
+      color: #0366d6;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 2.5em;
+      user-select: text;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #0366d6;
+      color: white;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+    button:disabled {
+      background-color: #a0a0a0;
+      cursor: not-allowed;
+    }
+    button:hover:not(:disabled) {
+      background-color: #024e9c;
+    }
   </style>
 </head>
 <body>
-  <h1>SeagullMansions Trustline</h1>
-  
-  <div id="login-container">
-    <button id="login-btn">Sign In with XUMM</button>
+
+  <h2>SeagullCoin Trustline Creator</h2>
+
+  <div id="wallet-container" title="Click to connect wallet or show address">
+    No wallet connected - Click to connect
   </div>
 
-  <div id="trustline-container" style="display:none;">
-    <xrpl-trustline-button
-      destination="rNwEBX7bZcCwYMvqvK2WLRuKkx9YZKXPBk"
-      currency="MANSION"
-      issuer="rNwEBX7bZcCwYMvqvK2WLRuKkx9YZKXPBk"
-      button-label="Add SeagullMansions Trustline"
-      mode="xumm"
-    ></xrpl-trustline-button>
-  </div>
+  <button id="trustlineBtn" disabled>Create Trustline</button>
 
+  <script src="https://unpkg.com/xumm-sdk/dist/xumm-sdk.min.js"></script>
   <script>
-    // Simple XUMM sign-in integration using the XUMM SDK
-    import { XummSdk } from "https://unpkg.com/xumm-sdk@1.9.5/dist/xumm-sdk.esm.min.js";
+    const walletContainer = document.getElementById('wallet-container');
+    const trustlineBtn = document.getElementById('trustlineBtn');
 
-    const sdk = new XummSdk("YOUR_XUMM_API_KEY", "YOUR_XUMM_API_SECRET");
-    const loginBtn = document.getElementById("login-btn");
-    const loginContainer = document.getElementById("login-container");
-    const trustlineContainer = document.getElementById("trustline-container");
+    // Use your actual XUMM API keys here
+    const sdk = new XummSdk('YOUR_XUMM_API_KEY', 'YOUR_XUMM_API_SECRET');
 
-    loginBtn.onclick = async () => {
+    function updateWalletUI(address) {
+      if (address) {
+        walletContainer.textContent = 'Connected wallet: ' + address;
+        trustlineBtn.disabled = false;
+      } else {
+        walletContainer.textContent = 'No wallet connected - Click to connect';
+        trustlineBtn.disabled = true;
+      }
+    }
+
+    // Load wallet address from localStorage on page load
+    let walletAddress = localStorage.getItem('walletAddress');
+    updateWalletUI(walletAddress);
+
+    // On wallet container click: if not connected, trigger login; else show wallet address alert
+    walletContainer.onclick = async () => {
+      if (walletAddress) {
+        alert('Connected wallet address:\n' + walletAddress);
+        return;
+      }
       try {
-        // Create a sign-in payload
-        const signInPayload = await sdk.payload.create({
-          type: "signIn",
-          options: {
-            submit: true,
-            expire: 300, // 5 min expiration
+        const payload = await sdk.payload.createAndSubscribe({
+          txjson: {
+            TransactionType: 'SignIn',
+          }
+        }, event => {
+          if (event.data.signed) {
+            sdk.payload.get(event.data.payload_uuidv4).then(payload => {
+              walletAddress = payload.response.account;
+              localStorage.setItem('walletAddress', walletAddress);
+              updateWalletUI(walletAddress);
+              alert('Login successful: ' + walletAddress);
+            });
+          } else if (event.data.signed === false) {
+            alert('Login canceled by user');
           }
         });
 
-        // Open XUMM sign-in QR or deeplink
-        window.open(signInPayload.next.always, "_blank");
+        // Open XUMM app to sign login
+        window.open(payload.next.always, '_blank');
+      } catch (err) {
+        alert('Login error: ' + err.message);
+      }
+    };
 
-        // Poll for sign-in result
-        const result = await sdk.payload.get(signInPayload.uuid);
+    // Trustline button click handler: POST to your API with wallet address
+    trustlineBtn.onclick = async () => {
+      if (!walletAddress) {
+        alert('Please connect your wallet first by clicking the wallet container above.');
+        return;
+      }
 
-        if (result.signed === true) {
-          // Save wallet address or token if needed
-          const userAccount = result.response.account;
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/create-trustline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ account: walletAddress })
+        });
+        const data = await res.json();
 
-          // Hide login, show trustline button
-          loginContainer.style.display = "none";
-          trustlineContainer.style.display = "block";
+        if (data.payloadURL) {
+          window.open(data.payloadURL, '_blank');
+        } else if (data.error) {
+          alert('Server error: ' + data.error);
         } else {
-          alert("Sign-in cancelled or failed.");
+          alert('Unexpected server response');
         }
       } catch (err) {
-        alert("Sign-in error: " + err.message);
+        alert('Network error: ' + err.message);
       }
     };
   </script>
+
 </body>
 </html>

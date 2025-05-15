@@ -84,7 +84,7 @@
     <nav>
       <ul>
         <li>
-          <button id="trustlineBtn">Add Trustline</button>
+          <button id="trustline-button" style="background-color:#007bff; color:white;">Add SeagullMansions Trustline</button>
         </li>
         <li><a href="index.html">Home</a></li>
         <li><a href="nfts.html">NFTs</a></li>
@@ -125,77 +125,55 @@
     // Initialize state
     let wallet = null;
     
-    
-  const btn = document.getElementById('trustlineBtn');
-  // Replace this with actual connected wallet address from your app
-  const wallet = 'rExampleWalletAddressHere'; 
+    function setupTrustlineButton() {
+  const btn = document.getElementById('trustline-button');
+  btn.disabled = !wallet; // disable if no wallet connected
 
   btn.onclick = async () => {
     if (!wallet) {
-      alert('Please login or connect your wallet first.');
+      alert('Please login first to add trustline.');
       return;
     }
 
     try {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/create-trustline', {
+      // Build the trustline transaction JSON
+      const trustlinePayload = {
+        TransactionType: "TrustSet",
+        Account: wallet, // user's wallet
+        LimitAmount: {
+          currency: "SseagullMansions", // replace with your token code exactly
+          issuer: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV", // replace with your actual issuer address
+          value: "2"
+        }
+      };
+
+      // Call XUMM API to create a payload (you need to replace with your backend or do it here with your XUMM API key)
+      // Since you currently call your backend, update backend to accept raw txjson OR do it here:
+
+      // For example, call your backend that creates the payload:
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/create-trustline`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ account: wallet }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txjson: trustlinePayload })
       });
 
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        const text = await res.text();
-        alert('Unexpected response from server:\n' + text);
-        return;
-      }
+      if (!res.ok) throw new Error('Failed to create trustline payload');
 
       const data = await res.json();
 
       if (data.payloadURL) {
+        // Open XUMM to sign trustline tx
         window.open(data.payloadURL, '_blank');
-      } else if (data.error) {
-        alert('Error from server: ' + data.error);
       } else {
-        alert('Unknown server response.');
+        alert('Failed to create trustline transaction.');
       }
+
     } catch (err) {
-      alert('Network or server error: ' + err.message);
+      alert('Error adding trustline: ' + err.message);
     }
   };
+}
 
-
-
-    // Setup the trustline button and its click handler
-    function setupTrustlineButton() {
-      const btn = document.getElementById('trustline-button');
-      btn.disabled = !wallet; // disable if no wallet connected
-
-      btn.onclick = async () => {
-        if (!wallet) {
-          alert('Please login first to add trustline.');
-          return;
-        }
-
-        try {
-          // Call backend API to create trustline payload for this account
-          const res = await fetch(`https://sglcn-x20-api.glitch.me/create-trustline?account=${wallet}`);
-          if(!res.ok) throw new Error('Failed to create trustline payload');
-          const trustlineData = await res.json();
-
-          if(trustlineData.payloadURL){
-            // Redirect user to XUMM to sign trustline tx
-            window.location.href = trustlineData.payloadURL;
-          } else {
-            alert('Failed to create trustline transaction.');
-          }
-        } catch (err) {
-          alert('Error adding trustline: ' + err.message);
-        }
-      };
-    }
 
     // On page load, check login
     window.addEventListener('DOMContentLoaded', () => {
@@ -270,6 +248,33 @@
       }
     }
 
+    function setupTrustlineButton() {
+      const btn = document.getElementById('trustline-button');
+      btn.disabled = !wallet; // disable if no wallet connected
+
+      btn.onclick = async () => {
+        if (!wallet) {
+          alert('Please login first to add trustline.');
+          return;
+        }
+
+        try {
+          // Call backend API to create trustline payload for this account
+          const res = await fetch(`https://sglcn-x20-api.glitch.me/add-trustline?account=${wallet}`);
+          const trustlineData = await res.json();
+
+          if(trustlineData.payloadURL){
+            // Redirect user to XUMM to sign trustline tx
+            window.location.href = trustlineData.payloadURL;
+          } else {
+            alert('Failed to create trustline transaction.');
+          }
+        } catch (err) {
+          alert('Error adding trustline: ' + err.message);
+        }
+      };
+    }
+
     /* ---------- XRPL Search (wallets + NFTs) ---------- */
 
     const XRPL_ENDPOINT = "wss://s2.ripple.com";
@@ -297,35 +302,30 @@
       resultsDiv.innerHTML = '';
 
       if (WALLET_REGEX.test(query)) {
-        // Search wallet NFTs and info
+        // Wallet address
         try {
           await connectXRPL();
-
+          // Fetch NFTs owned by wallet
           const nfts = await xrplClient.request({
-            command: "account_nfts",
+            method: 'account_nfts',
             account: query
           });
+          status.textContent = `Found ${nfts.result.account_nfts.length} NFTs for ${query}:`;
 
-          if (nfts.result && nfts.result.account_nfts.length) {
-            resultsDiv.innerHTML = `<h3>NFTs owned by ${query}:</h3><ul>`;
-            nfts.result.account_nfts.forEach(nft => {
-              resultsDiv.innerHTML += `<li><b>ID:</b> ${nft.NFTokenID}<br/>Issuer: ${nft.Issuer}<br/>URI: ${nft.URI || 'N/A'}</li><br/>`;
-            });
-            resultsDiv.innerHTML += '</ul>';
-          } else {
-            resultsDiv.textContent = 'No NFTs found for this wallet.';
-          }
+          nfts.result.account_nfts.forEach(nft => {
+            const el = document.createElement('div');
+            el.textContent = `NFTokenID: ${nft.NFTokenID}`;
+            resultsDiv.appendChild(el);
+          });
 
-          status.textContent = 'Search complete.';
+          await xrplClient.disconnect();
         } catch (err) {
-          status.textContent = 'Error searching XRPL: ' + err.message;
+          status.textContent = `Error fetching NFTs for ${query}: ${err.message}`;
         }
       } else {
-        resultsDiv.textContent = 'Please enter a valid XRP Ledger wallet address.';
-        status.textContent = '';
+        status.textContent = 'Invalid XRPL wallet address.';
       }
     }
   </script>
-
 </body>
 </html>

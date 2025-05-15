@@ -3206,43 +3206,44 @@ const nftokens = [
 '00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C734AE7F1A0405C67F',
 ];
 
-async function transferNFT(destination, nftTokenID) {
+// XUMM-based NFT transfer via NFTokenCreateOffer (direct offer to recipient)
+async function transferNFT(userAddress, destination, nftTokenID) {
   try {
-    const tx = {
-      TransactionType: "NFTokenTransfer",
-      Account: SERVICE_WALLET_ADDRESS,
-      Destination: destination,
+    // Create a direct NFToken offer (zero amount, destination = recipient)
+    const payload = {
+      TransactionType: 'NFTokenCreateOffer',
+      Account: userAddress,
       NFTokenID: nftTokenID,
-      Fee: "12", // XRP fee in drops
+      Amount: '0', // 0 for gift
+      Destination: destination,
+      Flags: 1, // Indicates it's a sell offer (but Amount 0 makes it a gift)
     };
 
-    const prepared = await client.autofill(tx);
-    const signedResult = serviceWallet.sign(prepared);
-
-    if (signedResult.signed) {
-      const submitResult = await client.submitAndWait(signedResult.tx_blob);
-
-      if (submitResult.result.meta.TransactionResult === "tesSUCCESS") {
-        usedNFTs.add(nftTokenID); // Mark it used
-        console.log('Transaction successful:', signedResult.id);
-        return { success: true, txHash: signedResult.id };
-      } else {
-        pendingNFTs.delete(nftTokenID);
-        console.error("Transfer failed:", submitResult.result.meta.TransactionResult);
-        return { success: false, error: submitResult.result.meta.TransactionResult };
+    const created = await xumm.payload.createAndSubscribe(
+      { txjson: payload },
+      event => {
+        if (event.data.signed === false) {
+          return { signed: false };
+        }
+        return event.data;
       }
+    );
+
+    if (created.resolved?.signed === true) {
+      const txid = created.resolved.txid;
+      console.log('NFT Transfer successful. TX hash:', txid);
+      return { success: true, txHash: txid };
     } else {
-      pendingNFTs.delete(nftTokenID); // Unlock the NFT if user rejected
-      console.log('Transaction was not signed.');
-      return { success: false, error: 'User rejected' };
+      console.log('User rejected NFT transfer.');
+      return { success: false, error: 'User rejected transaction' };
     }
 
   } catch (err) {
-    pendingNFTs.delete(nftTokenID);
-    console.error('Transfer error:', err);
+    console.error('XUMM NFT transfer error:', err.message);
     return { success: false, error: err.message };
   }
 }
+
 
 
 async function doNFTTransfer(buyerWalletAddress) {

@@ -144,31 +144,33 @@
     });
 
     async function addTrustline() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet) {
-        alert("Please log in with your XUMM wallet first.");
-        return;
-      }
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) {
+    alert("Please log in with your XUMM wallet first.");
+    return;
+  }
 
-      try {
-        const res = await fetch("https://sglcn-x20-api.glitch.me/create-trustline", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ walletAddress: wallet })
-        });
+  try {
+    const res = await fetch("https://sglcn-x20-api.glitch.me/create-trustline", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userAddress: wallet }) // <-- fix here
+    });
 
-        const data = await res.json();
-        if (data.success) {
-          alert("Please sign the trustline request in your XUMM app.");
-          window.open(data.next.always, "_blank");
-        } else {
-          alert("Error: " + data.message);
-        }
-      } catch (err) {
-        console.error("Trustline error:", err);
-        alert("Failed to create trustline.");
-      }
+    const data = await res.json();
+
+    if (data.payload_url) {
+      alert("Please sign the trustline request in your XUMM app.");
+      window.open(data.payload_url, "_blank");
+    } else {
+      alert("Unexpected response: " + JSON.stringify(data));
     }
+  } catch (err) {
+    console.error("Trustline creation failed:", err);
+    alert("Failed to create trustline.");
+  }
+}
+
   </script>
 
   <script src="your-nft-loading-code.js"></script>

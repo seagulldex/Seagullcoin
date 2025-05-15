@@ -3133,21 +3133,28 @@ app.post('/mint-after-payment', async (req, res) => {
       return res.status(400).json({ error: "Payment not completed or payload not signed" });
     }
 
-    // Optional: Check payment details for correct amount, currency, issuer, sender address etc here
+    // Optional: Validate payment details
+    const tx = paymentPayload.response?.txjson;
+    if (
+      tx?.TransactionType !== "Payment" ||
+      tx?.Amount !== "500000" || // 0.5 SGLCN assuming drops
+      tx?.Amount?.currency !== "SeagullCoin" || // If it's issued
+      tx?.Amount?.issuer !== "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+    ) {
+      return res.status(400).json({ error: "Invalid payment details" });
+    }
 
   } catch (e) {
     console.error("Error verifying payment payload:", e);
     return res.status(500).json({ error: "Failed to verify payment" });
   }
 
-  // 2. Proceed with NFT minting as you have it:
-
+  // 2. Proceed with NFT minting
   const nftTokenID = getNextAvailableNFT();
   if (!nftTokenID) {
     return res.status(400).json({ error: "No NFTs available at the moment" });
   }
 
-  // Build XUMM payload to send NFT from service wallet to user
   const nftTransferPayload = {
     txjson: {
       TransactionType: "NFTokenTransfer",
@@ -3164,10 +3171,13 @@ app.post('/mint-after-payment', async (req, res) => {
   try {
     const { uuid, next } = await xumm.payload.create(nftTransferPayload);
 
-    // Update DB status if needed
-    db.run(`UPDATE minted_nfts SET status='minting' WHERE nft_token_id = ?`, [nftTokenID], err => {
-      if (err) console.error("DB update error:", err);
-    });
+    db.run(
+      `UPDATE minted_nfts SET status='minting' WHERE nft_token_id = ?`,
+      [nftTokenID],
+      err => {
+        if (err) console.error("DB update error:", err);
+      }
+    );
 
     res.json({ success: true, uuid, next, nftTokenID });
   } catch (err) {
@@ -3175,6 +3185,7 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(500).json({ error: "Failed to create XUMM payload for NFT transfer" });
   }
 });
+
 
 
 

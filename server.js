@@ -3192,10 +3192,11 @@ app.post('/create-payment', async (req, res) => {
       TransactionType: "Payment",
       Destination: SERVICE_WALLET,
       Amount: {
-        currency: '53656167756C6C4D616E73696F6E730000000000' ,
-        issuer: SEAGULLMANSIONS_ISSUER,
-        value: "0.18"
-      }
+  currency: "53656167756C6C4D616E73696F6E730000000000", // 160-bit hex for 'SeagullMansions'
+  issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",          // Trustline issuer
+  value: "0.18"                                          // Amount as string
+}
+
     };
 
     const payload = await xumm.payload.create({

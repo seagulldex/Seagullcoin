@@ -3074,7 +3074,7 @@ app.post('/burn-nft', async (req, res) => {
   res.json({ success: true, next: created.next });
 });
 
-
+const serviceWallet = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 
 const SERVICE_WALLET_ADDRESS = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 
@@ -3217,43 +3217,33 @@ async function transferNFT(destination, nftTokenID) {
     };
 
     const prepared = await client.autofill(tx);
-    const signed = serviceWallet.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
-
-    if (result.result.meta.TransactionResult === "tesSUCCESS") {
-      console.log("NFT transferred successfully:", nftTokenID);
-      return result.result.hash;
-    } else {
-      throw new Error("NFT transfer failed: " + result.result.meta.TransactionResult);
-    }
-
-  } catch (error) {
-    console.error("Error transferring NFT:", error);
-    throw error; // rethrow if needed upstream
-  } finally {
-    // optional cleanup or logging
-  }
-}
-
-
-    console.log('Sign this URL:', payload.next.always);
-
+    const signedResult = serviceWallet.sign(prepared);
 
     if (signedResult.signed) {
-      usedNFTs.add(nftTokenID); // Mark it used
-      console.log('Transaction signed:', signedResult.response.txid);
-      return { success: true, txHash: signedResult.response.txid };
+      const submitResult = await client.submitAndWait(signedResult.tx_blob);
+
+      if (submitResult.result.meta.TransactionResult === "tesSUCCESS") {
+        usedNFTs.add(nftTokenID); // Mark it used
+        console.log('Transaction successful:', signedResult.id);
+        return { success: true, txHash: signedResult.id };
+      } else {
+        pendingNFTs.delete(nftTokenID);
+        console.error("Transfer failed:", submitResult.result.meta.TransactionResult);
+        return { success: false, error: submitResult.result.meta.TransactionResult };
+      }
     } else {
-  pendingNFTs.delete(nftTokenID);  // Unlock the NFT if user rejected
-  console.log('Transaction was not signed.');
-  return { success: false, error: 'User rejected' };
-}
+      pendingNFTs.delete(nftTokenID); // Unlock the NFT if user rejected
+      console.log('Transaction was not signed.');
+      return { success: false, error: 'User rejected' };
     }
+
   } catch (err) {
+    pendingNFTs.delete(nftTokenID);
     console.error('Transfer error:', err);
     return { success: false, error: err.message };
   }
 }
+
 
 async function doNFTTransfer(buyerWalletAddress) {
   if (!isValidAddress(buyerWalletAddress)) {
@@ -3273,19 +3263,6 @@ async function doNFTTransfer(buyerWalletAddress) {
   }
 }
 
-async function doNFTTransfer(buyerWalletAddress) {
-  if (!isValidAddress(buyerWalletAddress)) {
-    throw new Error('Invalid destination wallet address.');
-  }
-
-  const nftTokenID = getNextAvailableNFT();
-  if (!nftTokenID) {
-    throw new Error('No NFTs available for transfer.');
-  }
-
-  const result = await transferNFT(buyerWalletAddress, nftTokenID);
-  return result;
-}
 
 
 

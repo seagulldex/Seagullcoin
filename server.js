@@ -3125,21 +3125,27 @@ app.post('/mint-after-payment', async (req, res) => {
     const paymentPayload = await xumm.payload.get(paymentUUID);
     console.log("Payment Payload:", paymentPayload);
 
-    if (
-      !paymentPayload.exists ||
-      !paymentPayload.signed ||
-      paymentPayload.payload?.meta?.published !== true
-    ) {
+    // Log important parts for debugging
+    console.log("Signed:", paymentPayload.signed);
+    console.log("Payload meta:", paymentPayload.payload?.meta);
+    console.log("Response TX:", paymentPayload.response?.txjson);
+
+    if (!paymentPayload.exists || !paymentPayload.signed) {
       return res.status(400).json({ error: "Payment not completed or payload not signed" });
     }
 
-    // Optional: Validate payment details
+    // 2. Validate payment details (issued currency)
     const tx = paymentPayload.response?.txjson;
+    const expectedIssuer = "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV";
+    const expectedCurrency = "SeagullMansions";
+    const expectedAmount = "0.18";
+
     if (
       tx?.TransactionType !== "Payment" ||
-      tx?.Amount !== "500000" || // 0.5 SGLCN assuming drops
-      tx?.Amount?.currency !== "SeagullCoin" || // If it's issued
-      tx?.Amount?.issuer !== "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+      typeof tx?.Amount !== "object" ||
+      tx?.Amount?.currency !== expectedCurrency ||
+      tx?.Amount?.issuer !== expectedIssuer ||
+      parseFloat(tx?.Amount?.value) < parseFloat(expectedAmount)
     ) {
       return res.status(400).json({ error: "Invalid payment details" });
     }
@@ -3149,7 +3155,7 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(500).json({ error: "Failed to verify payment" });
   }
 
-  // 2. Proceed with NFT minting
+  // 3. Proceed with NFT minting
   const nftTokenID = getNextAvailableNFT();
   if (!nftTokenID) {
     return res.status(400).json({ error: "No NFTs available at the moment" });
@@ -3185,6 +3191,7 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(500).json({ error: "Failed to create XUMM payload for NFT transfer" });
   }
 });
+
 
 
 

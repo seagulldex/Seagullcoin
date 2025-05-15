@@ -3129,67 +3129,7 @@ app.post('/mint-after-payment', async (req, res) => {
       return res.status(400).json({ error: "Payment payload not found" });
     }
 
-    txid = paymentPayload.response?.txid || paymentPayload.meta?.resolved?.txid;
-    if (!txid) {
-      return res.status(400).json({ error: "Transaction ID not available yet. Please try again shortly." });
-    }
-
-  } catch (e) {
-    console.error("Error retrieving payment payload:", e);
-    return res.status(500).json({ error: "Failed to retrieve payment payload" });
-  }
-
-  // Retry logic to wait for transaction to finalize on the XRPL
-  const maxRetries = 5;
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-  let txn;
-  try {
-    await client.connect();
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      console.log(`Attempt ${attempt}: Fetching TX from ledger...`);
-
-      try {
-        const tx = await client.request({
-          command: "tx",
-          transaction: txid
-        });
-        txn = tx.result;
-
-        // If found and has metadata, break early
-        if (txn && txn.meta) break;
-      } catch (innerErr) {
-        console.log(`Attempt ${attempt} failed, retrying in 1.5s...`);
-        await delay(1500);
-      }
-    }
-    await client.disconnect();
-
-    if (!txn || !txn.meta) {
-      return res.status(400).json({ error: "Transaction not confirmed yet. Please try again later." });
-    }
-
-    console.log("Verified TXN:", txn);
-
-    // Validate the token payment
-    if (
-      txn.TransactionType !== "Payment" ||
-      typeof txn.Amount !== "object" ||
-      txn.Amount.currency !== "53656167756C6C4D616E73696F6E730000000000" ||  // hex for SeagullMansions
-      txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
-      parseFloat(txn.Amount.value) < 0.18
-    ) {
-      return res.status(400).json({ error: "Invalid or insufficient payment" });
-    }
-
-  } catch (err) {
-    console.error("Error verifying transaction on ledger:", err);
-    return res.status(500).json({ error: "Failed to verify payment transaction" });
-  }
-
-  // If it passes validation, proceed with minting here...
-  return res.json({ success: true, message: "Payment verified. Proceed with minting." });
-});
+    txid = paymentPayload.response?.t
 
 
 

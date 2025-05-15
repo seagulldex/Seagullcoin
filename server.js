@@ -3401,7 +3401,47 @@ app.post('/create-trustline', async (req, res) => {
   }
 });
 
+// Issuer wallet and token details
+const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
+const TOKEN_CURRENCY = '53656167756C6C4D616E73696F6E730000000000'; // SeagullMansions hex
 
+app.post('/issue-tokens', async (req, res) => {
+  const { destination, amount } = req.body;
+
+  if (!destination || !amount) {
+    return res.status(400).json({ error: 'Destination address and amount are required' });
+  }
+
+  try {
+    const tx = {
+      TransactionType: 'Payment',
+      Account: ISSUER_ACCOUNT,
+      Destination: destination,
+      Amount: {
+        currency: TOKEN_CURRENCY,
+        issuer: ISSUER_ACCOUNT,
+        value: amount.toString(),
+      },
+    };
+
+    const payload = await xumm.payload.create({
+      txjson: tx,
+      options: {
+        submit: true,
+        expire: 300, // expires in 5 minutes
+      },
+    });
+
+    res.json({
+      message: 'Sign the issuance in XUMM',
+      payload_uuid: payload.uuid,
+      payload_url: payload.next.always,
+    });
+  } catch (error) {
+    console.error('Failed to create issuance payload:', error);
+    res.status(500).json({ error: 'Failed to create issuance payload' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

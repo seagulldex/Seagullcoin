@@ -2,150 +2,175 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SeagullCoin Trustline Creator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>User NFTs - SGLCN-X20</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="header.css" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 480px;
-      margin: 2rem auto;
-      padding: 1rem;
-      background: #f9f9f9;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
-      user-select: none;
+    .nft-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      padding: 20px;
     }
-    h2 {
+    .nft-card {
+      border: 1px solid #444;
+      border-radius: 12px;
+      padding: 14px;
+      background: #1e1e1e;
+      color: #fff;
       text-align: center;
-      margin-bottom: 1.5rem;
     }
-    #wallet-container {
-      background: #e1f0ff;
-      border: 1px solid #99ccff;
-      border-radius: 6px;
-      padding: 1rem;
-      margin-bottom: 1.5rem;
+    .nft-card img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    #logout-btn {
+      display: none;
+    }
+    .green { color: green; }
+    .red { color: red; }
+    .trait {
+      font-size: 0.9em;
+      text-align: left;
+      margin: 2px 0;
+    }
+    .active-tab {
+      background: #00bfa5;
+      color: white;
       font-weight: bold;
-      color: #0366d6;
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 2.5em;
-      user-select: text;
     }
     button {
-      width: 100%;
-      padding: 12px;
-      font-size: 1.1rem;
-      margin-bottom: 1rem;
+      margin: 5px;
+      padding: 6px 10px;
       border: none;
       border-radius: 6px;
-      cursor: pointer;
-      background-color: #0366d6;
+      background: #00bfa5;
       color: white;
-      transition: background-color 0.3s ease;
-      user-select: none;
+      cursor: pointer;
     }
-    button:disabled {
-      background-color: #a0a0a0;
-      cursor: not-allowed;
-    }
-    button:hover:not(:disabled) {
-      background-color: #024e9c;
+    .seagull-spinner {
+      width: 50px;
     }
   </style>
 </head>
 <body>
-
-  <h2>SeagullCoin Trustline Creator</h2>
-
-  <div id="wallet-container" title="Click to connect wallet or show address">
-    No wallet connected - Click to connect
+  <div id="top-bar">
+    <div style="flex:1;">
+      <button id="logout-btn" onclick="logout()">Logout</button>
+    </div>
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <button id="wallet-indicator" class="red" onclick="loginWithXumm()">🔴 Login</button>
+      </div>
+    </div>
   </div>
 
-  <button id="trustlineBtn" disabled>Create Trustline</button>
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="nfts.html">NFTs</a></li>
+        <li><a href="mint.html">Mint NFT</a></li>
+        <li><a href="messages.html">Messages</a></li>
+      </ul>
+    </nav>
+  </header>
 
-  <script src="https://unpkg.com/xumm-sdk/dist/xumm-sdk.min.js"></script>
+  <main>
+    <h1>Your NFTs</h1>
+
+    <div style="text-align: center; margin: 20px;">
+      <button onclick="addTrustline()">Add SeagullMansions Trustline</button>
+    </div>
+
+    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+      <button id="tab-single" class="active-tab">Single NFTs</button>
+      <button id="tab-collections">Collections</button>
+    </div>
+
+    <div id="loading-spinner">
+      <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading Seagull" class="seagull-spinner">
+      <p>Loading your NFTs...</p>
+    </div>
+
+    <div style="text-align: center; margin: 20px;">
+      <button id="prev-page">Previous</button>
+      <button id="next-page">Next</button>
+    </div>
+
+    <div id="nft-container" class="nft-grid" style="display:none;"></div>
+  </main>
+
   <script>
-    const walletContainer = document.getElementById('wallet-container');
-    const trustlineBtn = document.getElementById('trustlineBtn');
-
-    // Use your actual XUMM API keys here
-    const sdk = new XummSdk('YOUR_XUMM_API_KEY', 'YOUR_XUMM_API_SECRET');
-
-    function updateWalletUI(address) {
-      if (address) {
-        walletContainer.textContent = 'Connected wallet: ' + address;
-        trustlineBtn.disabled = false;
-      } else {
-        walletContainer.textContent = 'No wallet connected - Click to connect';
-        trustlineBtn.disabled = true;
+    async function loginWithXumm() {
+      try {
+        const res = await fetch("https://sglcn-x20-api.glitch.me/connect");
+        const data = await res.json();
+        if (data.success) {
+          window.open(data.next.always, "_blank");
+        } else {
+          alert("Login failed.");
+        }
+      } catch (err) {
+        console.error("Login error:", err);
+        alert("Failed to initiate XUMM login.");
       }
     }
 
-    // Load wallet address from localStorage on page load
-    let walletAddress = localStorage.getItem('walletAddress');
-    updateWalletUI(walletAddress);
+    function logout() {
+      localStorage.removeItem("xumm_wallet_address");
+      const indicator = document.getElementById("wallet-indicator");
+      indicator.textContent = "🔴 Login";
+      indicator.classList.remove("green");
+      indicator.classList.add("red");
+      indicator.onclick = loginWithXumm;
+      document.getElementById("logout-btn").style.display = "none";
+    }
 
-    // On wallet container click: if not connected, trigger login; else show wallet address alert
-    walletContainer.onclick = async () => {
-      if (walletAddress) {
-        alert('Connected wallet address:\n' + walletAddress);
-        return;
+    document.addEventListener("DOMContentLoaded", () => {
+      const wallet = localStorage.getItem("xumm_wallet_address");
+      if (wallet) {
+        const indicator = document.getElementById("wallet-indicator");
+        indicator.textContent = "🟢 " + wallet.slice(0, 6) + "..." + wallet.slice(-4);
+        indicator.classList.remove("red");
+        indicator.classList.add("green");
+        indicator.onclick = null;
+        document.getElementById("logout-btn").style.display = "inline-block";
       }
-      try {
-        const payload = await sdk.payload.createAndSubscribe({
-          txjson: {
-            TransactionType: 'SignIn',
-          }
-        }, event => {
-          if (event.data.signed) {
-            sdk.payload.get(event.data.payload_uuidv4).then(payload => {
-              walletAddress = payload.response.account;
-              localStorage.setItem('walletAddress', walletAddress);
-              updateWalletUI(walletAddress);
-              alert('Login successful: ' + walletAddress);
-            });
-          } else if (event.data.signed === false) {
-            alert('Login canceled by user');
-          }
-        });
+    });
 
-        // Open XUMM app to sign login
-        window.open(payload.next.always, '_blank');
-      } catch (err) {
-        alert('Login error: ' + err.message);
-      }
-    };
-
-    // Trustline button click handler: POST to your API with wallet address
-    trustlineBtn.onclick = async () => {
-      if (!walletAddress) {
-        alert('Please connect your wallet first by clicking the wallet container above.');
+    async function addTrustline() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      if (!wallet) {
+        alert("Please log in with your XUMM wallet first.");
         return;
       }
 
       try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/create-trustline', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ account: walletAddress })
+        const res = await fetch("https://sglcn-x20-api.glitch.me/create-trustline", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ walletAddress: wallet })
         });
+
         const data = await res.json();
-
-        if (data.payloadURL) {
-          window.open(data.payloadURL, '_blank');
-        } else if (data.error) {
-          alert('Server error: ' + data.error);
+        if (data.success) {
+          alert("Please sign the trustline request in your XUMM app.");
+          window.open(data.next.always, "_blank");
         } else {
-          alert('Unexpected server response');
+          alert("Error: " + data.message);
         }
       } catch (err) {
-        alert('Network error: ' + err.message);
+        console.error("Trustline error:", err);
+        alert("Failed to create trustline.");
       }
-    };
+    }
   </script>
 
+  <script src="your-nft-loading-code.js"></script>
 </body>
 </html>

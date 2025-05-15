@@ -3176,13 +3176,13 @@ const nftokens = [
 ];
 
 // SeagullMansions token setup
-const REQUIRED_PAYMENT_AMOUNT = 1;
-const SEAGULL_MANSIONS_ISSUER = 'rEXAMPLESeagullMansionsIssuerAddress';
-const SEAGULL_MANSIONS_CURRENCY = 'SeagullMansions'; // Must match XRPL trustline format
+const REQUIRED_PAYMENT_AMOUNT = 0.18;
+const SEAGULLMANSIONS_ISSUER = 'rHr4mUQjRusoNNYnzCp5BFumyWjycgVHJS';
+const SEAGULLMANSIONS_CURRENCY = 'SeagullMansions'; // Must match XRPL trustline format
 const TOKEN_ISSUER = 'rHr4mUQjRusoNNYnzCp5BFumyWjycgVHJS';
 const TOKEN_HEX = '53656167756C6C4D616E73696F6E730000000000';
 const REQUIRED_AMOUNT = '0.18';
-
+const sERVICE_WALLET = "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV";
 
 // Endpoint to mint and send NFTs
 app.post('/mints', async (req, res) => {
@@ -3196,7 +3196,7 @@ try {
     // Prepare the transaction for XUMM
     const transaction = {
       "TransactionType": "NFTokenSend",
-      "Account": "your-service-wallet-address", // Your service wallet address
+      "Account": "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV", // Your service wallet address
       "Destination": userAddress,              // The recipient wallet address
       "NFTokenID": nfTokenId,                  // The NFTokenID from the request
       "Fee": "12"                              // Set a transaction fee (12 drops is standard)
@@ -3211,11 +3211,7 @@ try {
       message: 'NFT transaction created. Please sign the transaction using XUMM.',
       payload_url: xummPayload?.next_url // URL to sign the transaction via XUMM app
     });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Internal server error.' });
-  }
-});
+  } ca
 
 
 // Call the XRPL ping when the server starts

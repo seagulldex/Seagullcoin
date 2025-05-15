@@ -2874,7 +2874,6 @@ app.post('/mint-after-payment', async (req, res) => {
     const paymentPayload = await xumm.payload.get(paymentUUID);
     console.log("Full Payload:", paymentPayload);
 
-    // Fixed the check to use meta.exists instead of paymentPayload.exists
     if (!paymentPayload || !paymentPayload.meta || !paymentPayload.meta.exists) {
       return res.status(400).json({ error: "Payment payload not found" });
     }
@@ -2889,7 +2888,6 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(500).json({ error: "Failed to retrieve payment payload" });
   }
 
-  // XRPL transaction lookup
   try {
     await client.connect();
     const tx = await client.request({
@@ -2901,26 +2899,31 @@ app.post('/mint-after-payment', async (req, res) => {
     const txn = tx.result;
     console.log("Ledger TX:", JSON.stringify(txn, null, 2));
 
+    const acceptedCurrencies = [
+      "SeagullMansions",
+      "53656167756C6C4D616E73696F6E730000000000"
+    ];
 
-    // Check if the payment matches 0.18 SGLMSN
     if (
       txn.TransactionType !== "Payment" ||
       typeof txn.Amount !== "object" ||
-      txn.Amount.currency !== "SeagullMansions" ||
+      !acceptedCurrencies.includes(txn.Amount.currency) ||
       txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
       parseFloat(txn.Amount.value) < 0.18
     ) {
       return res.status(400).json({ error: "Invalid or insufficient payment" });
     }
 
-    console.log("txn.Amount:", txn.Amount);
+    console.log("Payment confirmed:", txn.Amount);
+
+    // Proceed with minting...
+
   } catch (err) {
     console.error("Error verifying transaction on ledger:", err);
     return res.status(500).json({ error: "Failed to verify payment transaction" });
   }
-
-  // Proceed with minting...
 });
+
 
 
 

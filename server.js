@@ -3206,64 +3206,6 @@ const nftokens = [
 '00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C734AE7F1A0405C67F',
 ];
 
-// XUMM-based NFT transfer via NFTokenCreateOffer (direct offer to recipient)
-async function transferNFT(userAddress, destination, nftTokenID) {
-  try {
-    // Create a direct NFToken offer (zero amount, destination = recipient)
-    const payload = {
-      TransactionType: 'NFTokenCreateOffer',
-      Account: userAddress,
-      NFTokenID: nftTokenID,
-      Amount: '0', // 0 for gift
-      Destination: destination,
-      Flags: 1, // Indicates it's a sell offer (but Amount 0 makes it a gift)
-    };
-
-    const created = await xumm.payload.createAndSubscribe(
-      { txjson: payload },
-      event => {
-        if (event.data.signed === false) {
-          return { signed: false };
-        }
-        return event.data;
-      }
-    );
-
-    if (created.resolved?.signed === true) {
-      const txid = created.resolved.txid;
-      console.log('NFT Transfer successful. TX hash:', txid);
-      return { success: true, txHash: txid };
-    } else {
-      console.log('User rejected NFT transfer.');
-      return { success: false, error: 'User rejected transaction' };
-    }
-
-  } catch (err) {
-    console.error('XUMM NFT transfer error:', err.message);
-    return { success: false, error: err.message };
-  }
-}
-
-
-
-async function doNFTTransfer(buyerWalletAddress) {
-  if (!isValidAddress(buyerWalletAddress)) {
-    throw new Error('Invalid buyer wallet address');
-  }
-
-  const nftToSend = getNextAvailableNFT();
-  if (!nftToSend) {
-    throw new Error('No NFTs available');
-  }
-
-  const result = await transferNFT(buyerWalletAddress, nftToSend);
-  if (result.success) {
-    console.log(`NFT ${nftToSend} transferred to ${buyerWalletAddress}`);
-  } else {
-    console.error('Transfer failed:', result.error);
-  }
-}
-
 
 
 

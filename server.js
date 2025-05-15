@@ -3116,7 +3116,6 @@ function extractNFTokenID(txResult) {
   return null;
 }
 
-
 app.post('/mint-after-payment', async (req, res) => {
   const { userAddress, paymentUUID } = req.body;
   if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
@@ -3124,7 +3123,13 @@ app.post('/mint-after-payment', async (req, res) => {
   // 1. Check payment payload status
   try {
     const paymentPayload = await xumm.payload.get(paymentUUID);
-    if (!paymentPayload.exists || !paymentPayload.signed || !paymentPayload.payload?.meta?.published === true) {
+    console.log("Payment Payload:", paymentPayload);
+
+    if (
+      !paymentPayload.exists ||
+      !paymentPayload.signed ||
+      paymentPayload.payload?.meta?.published !== true
+    ) {
       return res.status(400).json({ error: "Payment not completed or payload not signed" });
     }
 
@@ -3170,6 +3175,7 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(500).json({ error: "Failed to create XUMM payload for NFT transfer" });
   }
 });
+
 
 
 

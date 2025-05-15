@@ -3118,63 +3118,39 @@ function extractNFTokenID(txResult) {
 
 
 app.post('/mint-after-payment', async (req, res) => {
-  const { uuid, metadataUrl, userWallet } = req.body;
+  const { userAddress, destination } = req.body; // e.g. from frontend after payment confirmed
 
-  const { payload } = await xumm.payload.get(uuid);
-  const txid = payload.response.txid;
+  // Get next free NFT token
+  const nftTokenID = getNextAvailableNFT();
+  if (!nftTokenID) {
+    return res.status(400).json({ error: "No NFTs available at the moment" });
+  }
 
-  if (!txid) return res.status(400).send("Payment not signed.");
+  // Call transferNFT to create & subscribe to XUMM payload
+  const result = await transferNFT(userAddress, destination, nftTokenID);
+  if (!result) {
+    pendingNFTs.delete(nftTokenID);
+    return res.status(500).json({ error: "Failed to create NFT transfer payload" });
+  }
+  if (!result.success) {
+    // User declined offer, free NFT
+    pendingNFTs.delete(nftTokenID);
+    return res.status(400).json({ error: "User declined NFT transfer" });
+  }
 
-  const tx = await client.request({
-    command: "tx",
-    transaction: txid
+  // User signed NFT offer, mark NFT minted in DB
+  db.run(`UPDATE minted_nfts SET status='minted' WHERE nft_token_id = ?`, [nftTokenID], err => {
+    if (err) console.error("DB update error:", err);
   });
 
-  const txn = tx.result;
+  // Move NFT from pending to used set
+  pendingNFTs.delete(nftTokenID);
+  usedNFTs.add(nftTokenID);
 
-  const valid =
-    txn.TransactionType === "Payment" &&
-    txn.Destination === SERVICE_WALLET_ADDRESS &&
-    txn.Amount?.currency === "53656167756C6C4D616E73696F6E730000000000" &&
-    txn.Amount?.issuer === "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" &&
-    parseFloat(txn.Amount?.value) === 0.18;
-
-  if (!valid) return res.status(403).send("Invalid payment");
-
-  // Step 1: Mint NFT from service wallet
-  const mintTx = {
-    TransactionType: "NFTokenMint",
-    Account: SERVICE_WALLET_ADDRESS,
-    URI: xrpl.convertStringToHex(metadataUrl),
-    Flags: 8,
-    TransferFee: 0,
-    NFTokenTaxon: 0
-  };
-
-  const prepared = await client.autofill(mintTx);
-  const signed = SERVICE_WALLET.sign(prepared);
-  const result = await client.submitAndWait(signed.tx_blob);
-
-  const mintedNFT = result.result.meta?.nftoken_id || extractNFTokenID(result.result); // fallback
-
-  if (!mintedNFT) return res.status(500).send("NFT minting failed");
-
-  // Step 2: Transfer NFT to user
-  const offerTx = {
-    TransactionType: "NFTokenCreateOffer",
-    Account: SERVICE_WALLET_ADDRESS,
-    NFTokenID: mintedNFT,
-    Amount: "0",
-    Destination: userWallet,
-    Flags: 1
-  };
-
-  const offerPrepared = await client.autofill(offerTx);
-  const offerSigned = SERVICE_WALLET.sign(offerPrepared);
-  const offerResult = await client.submitAndWait(offerSigned.tx_blob);
-
-  res.json({ success: true, tokenId: mintedNFT });
+  // Respond with NFT Token and payload UUID for frontend
+  res.json({ nftTokenID, uuid: result.uuid });
 });
+
 
 
 

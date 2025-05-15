@@ -3229,36 +3229,17 @@ export async function createTrustlinePayload(userAddress) {
 
 // Endpoint to mint and send NFTs
 // 1. Create payment payload endpoint
-app.post('/create-payment', async (req, res) => {
-  try {
-    const paymentTx = {
-      TransactionType: "Payment",
-      Destination: SERVICE_WALLET,
-      Amount: {
-  currency: "53656167756C6C4D616E73696F6E730000000000", // 160-bit hex for 'SeagullMansions'
-  issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",          // Trustline issuer
-  value: "0.18"                                          // Amount as string
-}
-
-    };
-
-    const payload = await xumm.payload.create({
-      txjson: paymentTx,
-      options: {
-        submit: true,
-        expire: 300
-      }
-    });
-
+app.post('/create-trustline', async (req, res) => {
+  const { userAddress } = req.body;
+  const result = await createTrustlinePayload(userAddress);
+  if (result.success) {
     res.json({
-      success: true,
-      message: 'Please sign the payment in XUMM app',
-      payload_uuid: payload.uuid,
-      payload_url: payload.next.always
+      message: 'Sign the trustline in XUMM',
+      payload_uuid: result.uuid,
+      payload_url: result.url,
     });
-  } catch (e) {
-    console.error('Error creating XUMM payload:', e?.response?.data || e.message || e);
-    res.status(500).json({ error: 'Failed to create payment payload' });
+  } else {
+    res.status(500).json({ error: result.error });
   }
 });
 

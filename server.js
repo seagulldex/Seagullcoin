@@ -3154,9 +3154,9 @@ app.post('/mint-after-payment', async (req, res) => {
     if (
       txn.TransactionType !== "Payment" ||
       typeof txn.Amount !== "object" ||
-      txn.Amount.currency !== "SeagullCoin" ||
-      txn.Amount.issuer !== "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno" ||
-      parseFloat(txn.Amount.value) < 0.5
+      txn.Amount.currency !== "SeagullMansions" ||
+      txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
+      parseFloat(txn.Amount.value) < 0.18
     ) {
       return res.status(400).json({ error: "Invalid or insufficient payment" });
     }

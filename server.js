@@ -3184,6 +3184,49 @@ const TOKEN_HEX = '53656167756C6C4D616E73696F6E730000000000';
 const REQUIRED_AMOUNT = '0.18';
 const sERVICE_WALLET = "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV";
 
+// Constants for token and issuer
+const ISSUER = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
+const CURRENCY = '53656167756C6C4D616E73696F6E730000000000'; // Hex for "SeagullMansions..."
+
+export async function createTrustlinePayload(userAddress) {
+  try {
+    const trustlineTx = {
+      TransactionType: 'TrustSet',
+      Account: userAddress, // User wallet address (for XUMM, optional)
+      LimitAmount: {
+        currency: CURRENCY,
+        issuer: ISSUER,
+        value: '1000' // max trustline limit amount user can hold
+      },
+      Flags: 131072 // tfSetNoRipple flag (optional, you can adjust flags)
+    };
+
+    const payload = await xumm.payload.create({
+      txjson: trustlineTx,
+      options: {
+        submit: false, // don't auto-submit, user signs manually
+        expire: 300,   // expire after 5 mins
+      }
+    });
+
+    return {
+      success: true,
+      uuid: payload.uuid,
+      url: payload.next.always,
+    };
+  } catch (error) {
+    console.error('Error creating trustline payload:', error);
+    return {
+      success: false,
+      error: error.message || 'Unknown error',
+    };
+  }
+}
+
+
+
+
+
 // Endpoint to mint and send NFTs
 // 1. Create payment payload endpoint
 app.post('/create-payment', async (req, res) => {

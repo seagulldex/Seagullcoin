@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SeagullMansions Trustline - Login Required</title>
+  <script type="module" src="https://unpkg.com/xrpl-trustline-button"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #fafafa; padding: 2rem; text-align: center; }
+    button, xrpl-trustline-button { font-size: 1.2rem; padding: 12px 24px; cursor: pointer; }
+    #trustline-container { margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>SeagullMansions Trustline</h1>
+  
+  <div id="login-container">
+    <button id="login-btn">Sign In with XUMM</button>
+  </div>
+
+  <div id="trustline-container" style="display:none;">
+    <xrpl-trustline-button
+      destination="rNwEBX7bZcCwYMvqvK2WLRuKkx9YZKXPBk"
+      currency="MANSION"
+      issuer="rNwEBX7bZcCwYMvqvK2WLRuKkx9YZKXPBk"
+      button-label="Add SeagullMansions Trustline"
+      mode="xumm"
+    ></xrpl-trustline-button>
+  </div>
+
+  <script>
+    // Simple XUMM sign-in integration using the XUMM SDK
+    import { XummSdk } from "https://unpkg.com/xumm-sdk@1.9.5/dist/xumm-sdk.esm.min.js";
+
+    const sdk = new XummSdk("YOUR_XUMM_API_KEY", "YOUR_XUMM_API_SECRET");
+    const loginBtn = document.getElementById("login-btn");
+    const loginContainer = document.getElementById("login-container");
+    const trustlineContainer = document.getElementById("trustline-container");
+
+    loginBtn.onclick = async () => {
+      try {
+        // Create a sign-in payload
+        const signInPayload = await sdk.payload.create({
+          type: "signIn",
+          options: {
+            submit: true,
+            expire: 300, // 5 min expiration
+          }
+        });
+
+        // Open XUMM sign-in QR or deeplink
+        window.open(signInPayload.next.always, "_blank");
+
+        // Poll for sign-in result
+        const result = await sdk.payload.get(signInPayload.uuid);
+
+        if (result.signed === true) {
+          // Save wallet address or token if needed
+          const userAccount = result.response.account;
+
+          // Hide login, show trustline button
+          loginContainer.style.display = "none";
+          trustlineContainer.style.display = "block";
+        } else {
+          alert("Sign-in cancelled or failed.");
+        }
+      } catch (err) {
+        alert("Sign-in error: " + err.message);
+      }
+    };
+  </script>
+</body>
+</html>

@@ -9,11 +9,10 @@
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <script src="https://unpkg.com/xrpl@2.12.0/dist/xrpl.js"></script>
   <style>
+    /* Your existing styles here ... */
     #top-bar {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       height: 40px;
       background-color: #2e2e2e;
       display: flex;
@@ -22,7 +21,6 @@
       padding: 0 20px;
       z-index: 1000;
     }
-
     #wallet-container {
       border: 2px solid #000;
       border-radius: 10px;
@@ -33,64 +31,42 @@
       justify-content: center;
       max-width: 140px;
     }
-
     #wallet-status {
       font-size: 0.9rem;
       cursor: pointer;
       font-weight: bold;
     }
-
-    #wallet-indicator.red {
-      color: #ff4444;
-    }
-
-    #wallet-indicator.green {
-      color: #44ff44;
-    }
-    
+    #wallet-indicator.red { color: #ff4444; }
+    #wallet-indicator.green { color: #44ff44; }
     #search-bar {
-  padding: 8px;
-  font-size: 16px;
-  width: 340px;
-}
-
-button {
-  padding: 8px 12px;
-  font-size: 16px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #45a049;
-}
-
-
-    body {
-      margin-top: 60px;
+      padding: 8px;
+      font-size: 16px;
+      width: 340px;
     }
-
-    header {
-      margin-top: 10px;
+    button {
+      padding: 8px 12px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
     }
-
+    button:hover {
+      background-color: #45a049;
+    }
+    body { margin-top: 60px; }
+    header { margin-top: 10px; }
     nav ul {
       display: flex;
       list-style-type: none;
       margin: 0;
       padding: 0;
     }
-
     nav ul li {
       margin: 0 15px;
     }
-
-    #data-display {
-      margin-top: 20px;
-      font-weight: bold;
-    }
+    #data-display { margin-top: 20px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -106,21 +82,20 @@ button:hover {
 
   <header>
     <nav>
-  <ul>
-    <li>
-      <form action="/create-trustline" method="POST" style="display:inline;">
-        <button type="submit" style="background-color:#007bff; margin-right: 15px;">Add SeagullMansions Trustline</button>
-      </form>
-    </li>
-    <li><a href="index.html">Home</a></li>
-    <li><a href="nfts.html">NFTs</a></li>
-    <li><a href="mint.html">Mint NFT</a></li>
-    <li><a href="messages.html">Messages</a></li>
-  </ul>
-</nav>
+      <ul>
+        <li>
+          <button id="trustline-button" style="background-color:#007bff; color:white;">Add SeagullMansions Trustline</button>
+        </li>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="nfts.html">NFTs</a></li>
+        <li><a href="mint.html">Mint NFT</a></li>
+        <li><a href="messages.html">Messages</a></li>
+      </ul>
+    </nav>
   </header>
-<input type="text" id="search-bar" placeholder="Search the XRPL..." oninput="handleSearchInput(event)" />
-<button onclick="searchXRPL()">Search</button>
+
+  <input type="text" id="search-bar" placeholder="Search the XRPL..." onkeydown="if(event.key==='Enter'){searchXRPL();}" />
+  <button onclick="searchXRPL()">Search</button>
   <div id="search-status" style="margin-top:10px;font-weight:bold;"></div>
   <div id="search-results" style="margin-top:15px;"></div>
 
@@ -129,10 +104,9 @@ button:hover {
     <section class="hero">
       <h1>Welcome to SeagullCoin NFT Marketplace</h1>
       <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
-      <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span>
-      <br/>
-<button id="add-trustline-btn" style="margin-top: 10px; display: none;">Add SeagullCoin Trustline</button>
-</div>
+      <div id="wallet-info" style="display:none;">
+        Connected: <span id="wallet-address"></span>
+      </div>
     </section>
 
     <div id="user-info">
@@ -147,27 +121,38 @@ button:hover {
     <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
   </footer>
 
-  <!-- Wallet & WebSocket Logic -->
   <script>
+    // Initialize state
+    let wallet = null;
+
+    // On page load, check login
     window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
+      loadWalletFromStorage();
+      updateWalletUI();
+      setupTrustlineButton();
     });
 
-    async function updateWalletStatus() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
+    function loadWalletFromStorage() {
+      wallet = localStorage.getItem('xumm_wallet_address');
+      if(wallet) {
+        document.getElementById('wallet-address').textContent = wallet;
+      }
+    }
+
+    function updateWalletUI() {
       const indicator = document.getElementById('wallet-indicator');
-
-      if (!indicator) return;
-
-      if (wallet) {
+      if(wallet) {
         document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wallet-address').innerText = wallet;
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
-        unlockCollections();
+        indicator.onclick = () => {
+          const user = JSON.parse(localStorage.getItem('xumm_user'));
+          if(user && user.uuid) {
+            window.location.href = `/profile.html?uuid=${user.uuid}`;
+          }
+        };
         fetchSeagullCoinBalance(wallet);
       } else {
         document.getElementById('wallet-info').style.display = 'none';
@@ -176,196 +161,121 @@ button:hover {
         indicator.classList.add('red');
         indicator.title = 'Click to login';
         indicator.onclick = () => startLoginFlow();
-        lockCollections();
       }
     }
 
     async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-      const data = await res.json();
-      const payloadUUID = data.payloadUUID;
-
-      window.location.href = data.payloadURL;
-
-
-      const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
-        const loginStatus = await check.json();
-
-        if (loginStatus.loggedIn) {
-          clearInterval(interval);
-
-          localStorage.setItem('xumm_wallet_address', loginStatus.account);
-          localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
-
-          const indicator = document.getElementById('wallet-indicator');
-          document.getElementById('wallet-info').style.display = 'block';
-          document.getElementById('wallet-address').innerText = loginStatus.account;
-
-          indicator.textContent = '🟢 Profile';
-          indicator.classList.remove('red');
-          indicator.classList.add('green');
-          indicator.title = 'Go to profile';
-          indicator.onclick = () => window.location.href = `/profile.html?uuid=${payloadUUID}`;
-          unlockCollections();
-
-          fetchSeagullCoinBalance(loginStatus.account);
-        }
-      }, 3000);
-    }
-
-    function unlockCollections() {
-      // Enable any gated features after login
-    }
-
-    function lockCollections() {
-      // Hide restricted features before login
-    }
-
-    const fetchSeagullCoinBalance = async (walletAddress) => {
       try {
-        const response = await fetch(`/balance/${walletAddress}`);
-        const { balance } = await response.json();
-        document.getElementById('user-balance').textContent = `Balance: ${balance} SeagullCoin`;
+        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+        const data = await res.json();
+        window.location.href = data.payloadURL;
+
+        const interval = setInterval(async () => {
+          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+          const loginStatus = await check.json();
+          if (loginStatus.loggedIn) {
+            clearInterval(interval);
+            wallet = loginStatus.account;
+            localStorage.setItem('xumm_wallet_address', wallet);
+            localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+            document.getElementById('wallet-address').textContent = wallet;
+            updateWalletUI();
+          }
+        }, 3000);
+      } catch (e) {
+        alert('Login failed: ' + e.message);
+      }
+    }
+
+    async function fetchSeagullCoinBalance(account) {
+      try {
+        const response = await fetch(`/balance/${account}`);
+        const data = await response.json();
+        document.getElementById('user-balance').textContent = `Balance: ${data.balance} SeagullCoin`;
       } catch (error) {
-        console.error('Error fetching SeagullCoin balance:', error);
+        console.error('Error fetching balance:', error);
+        document.getElementById('user-balance').textContent = 'Failed to load balance';
       }
-    };
-    
-    document.getElementById('add-trustline-btn').style.display = 'inline-block';
-document.getElementById('add-trustline-btn').onclick = async () => {
-  const trustlineRes = await fetch(`https://sglcn-x20-api.glitch.me/add-trustline?account=${wallet}`);
-  const trustlineData = await trustlineRes.json();
-  window.location.href = trustlineData.payloadURL;
-};
+    }
 
+    function setupTrustlineButton() {
+      const btn = document.getElementById('trustline-button');
+      btn.disabled = !wallet; // disable if no wallet connected
 
-    // WebSocket to fetch live token price
-    const socket = new WebSocket("wss://api.onthedex.live/public/v1/ticker/SeagullCoin.rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno");
+      btn.onclick = async () => {
+        if (!wallet) {
+          alert('Please login first to add trustline.');
+          return;
+        }
 
-    const dataDisplayElement = document.getElementById('data-display');
+        try {
+          // Call backend API to create trustline payload for this account
+          const res = await fetch(`https://sglcn-x20-api.glitch.me/add-trustline?account=${wallet}`);
+          const trustlineData = await res.json();
 
-    socket.onmessage = function(event) {
-      const tokenData = JSON.parse(event.data);
+          if(trustlineData.payloadURL){
+            // Redirect user to XUMM to sign trustline tx
+            window.location.href = trustlineData.payloadURL;
+          } else {
+            alert('Failed to create trustline transaction.');
+          }
+        } catch (err) {
+          alert('Error adding trustline: ' + err.message);
+        }
+      };
+    }
 
-      if (tokenData.pairs && tokenData.pairs.length > 0) {
-        tokenData.pairs.forEach(pair => {
-          const base = pair.b.c || pair.b;
-          const quote = pair.q.c || pair.q;
-          const price = pair.l;
-          dataDisplayElement.innerHTML = `Token pair ${base}/${quote} was last traded at ${price} ${quote}`;
-        });
+    /* ---------- XRPL Search (wallets + NFTs) ---------- */
+
+    const XRPL_ENDPOINT = "wss://s2.ripple.com";
+    let xrplClient;
+
+    const WALLET_REGEX = /^r[1-9A-HJ-NP-Za-km-z]{25,34}$/;
+
+    async function connectXRPL() {
+      if (!xrplClient || !xrplClient.isConnected()) {
+        xrplClient = new xrpl.Client(XRPL_ENDPOINT);
+        await xrplClient.connect();
+      }
+    }
+
+    async function searchXRPL() {
+      const query = document.getElementById('search-bar').value.trim();
+      if (!query) {
+        alert('Please enter a wallet address or NFT ID.');
+        return;
+      }
+
+      const status = document.getElementById('search-status');
+      status.textContent = 'Searching...';
+      const resultsDiv = document.getElementById('search-results');
+      resultsDiv.innerHTML = '';
+
+      if (WALLET_REGEX.test(query)) {
+        // Wallet address
+        try {
+          await connectXRPL();
+          // Fetch NFTs owned by wallet
+          const nfts = await xrplClient.request({
+            method: 'account_nfts',
+            account: query
+          });
+          status.textContent = `Found ${nfts.result.account_nfts.length} NFTs for ${query}:`;
+
+          nfts.result.account_nfts.forEach(nft => {
+            const el = document.createElement('div');
+            el.textContent = `NFTokenID: ${nft.NFTokenID}`;
+            resultsDiv.appendChild(el);
+          });
+
+          await xrplClient.disconnect();
+        } catch (err) {
+          status.textContent = `Error fetching NFTs for ${query}: ${err.message}`;
+        }
       } else {
-        dataDisplayElement.innerHTML = 'No trading data available for SeagullCoin at the moment.';
+        status.textContent = 'Invalid XRPL wallet address.';
       }
-    };
-
-    socket.onopen = () => console.log('WebSocket connection established');
-    socket.onerror = (error) => console.log('WebSocket error:', error);
-    socket.onclose = () => console.log('WebSocket connection closed');
+    }
   </script>
-
-<script>
-/* ---------- XRPL Search (wallets + NFTs) ---------- */
-
-const XRPL_ENDPOINT = "wss://s2.ripple.com";   // mainnet; swap for testnet/devnet as needed
-let xrplClient;                                // lazy-connect so we don’t open a socket until the first search
-
-// handy regexes
-const WALLET_REGEX = /^r[1-9A-HJ-NP-Za-km-z]{25,34}$/;          // classic address
-const NFT_ID_REGEX = /^[A-F0-9]{64}$/i;                         // 64-char hex NFTokenID
-
-/** keystroke UX: hit <Enter> to trigger the search */
-function handleSearchInput (ev) {
-  if (ev.key === "Enter") searchXRPL();
-}
-
-/** top-level function the button also calls */
-async function searchXRPL () {
-  const q = document.getElementById("search-bar").value.trim();
-  const statusEl  = document.getElementById("search-status");
-  const resultEl  = document.getElementById("search-results");
-  resultEl.innerHTML = "";           // clear old results
-
-  if (!q) { statusEl.textContent = "Type something to search…"; return; }
-  statusEl.textContent = "Connecting to XRPL …";
-
-  try {
-    // lazy socket
-    if (!xrplClient) {
-      xrplClient = new xrpl.Client(XRPL_ENDPOINT);
-      await xrplClient.connect();
-    }
-
-    // branch by query type
-    if (WALLET_REGEX.test(q)) {
-      statusEl.textContent = "Fetching wallet info…";
-      await showWallet(q);
-    } else if (NFT_ID_REGEX.test(q)) {
-      statusEl.textContent = "Fetching NFTokenID info…";
-      await showNFTbyID(q);
-    } else {
-      statusEl.textContent = "Searching for NFTs by metadata…";
-      await showNFTbyMetadata(q);
-    }
-    statusEl.textContent = "";   // done
-  } catch (err) {
-    console.error(err);
-    statusEl.textContent = "⚠️ " + (err.data?.error_message || err.message);
-  }
-}
-
-/* ---------- helpers ---------- */
-
-async function showWallet (address) {
-  const acct = await xrplClient.request({ command:"account_info", account: address });
-  const nfts = await xrplClient.request({ command:"account_nfts", account: address, limit: 50 });
-
-  document.getElementById("search-results").innerHTML = `
-    <h3>Account ${address}</h3>
-    <p> XRP balance: <b>${xrpl.xrpToDrops(acct.result.account_data.Balance)/1_000_000}</b></p>
-    <p> #NFTs held: <b>${nfts.result.account_nfts.length}</b></p>
-    <ul>
-      ${nfts.result.account_nfts.slice(0,10).map(nft => `<li>${nft.NFTokenID}</li>`).join("")}
-    </ul>
-    ${nfts.result.account_nfts.length > 10 ? "…showing first 10" : ""}
-  `;
-}
-
-async function showNFTbyID (tokenID) {
-  /* nft_info requires rippled v1.12+.  Many public hubs support it already. */
-  const resp = await xrplClient.request({ command:"nft_info", nft_id: tokenID });
-  const nft  = resp.result.nft_id;           // field names differ by rippled version
-
-  document.getElementById("search-results").innerHTML = `
-    <h3>NFTokenID: ${tokenID}</h3>
-    <p> Issuer: ${nft.Issuer}</p>
-    <p> Owner : ${nft.Owner}</p>
-    <p> URI   : <a href="${xrpl.convertHexToString(nft.URI)}" target="_blank">${xrpl.convertHexToString(nft.URI)}</a></p>
-  `;
-}
-
-async function showNFTbyMetadata (text) {
-  /* Ledger itself can’t text-search, so call your own backend index.
-     You already have a Glitch API—add a /search?q= endpoint server-side that
-     looks through the metadata stored on NFT.Storage and returns matches.
-
-     Example response:
-       [ { id:"<NFTokenID>", name:"Sea-gull #42", owner:"r...", uri:"ipfs://…" }, … ]
-  */
-  const resp = await fetch(`https://sglcn-x20-api.glitch.me/search?q=${encodeURIComponent(text)}`);
-  const hits = await resp.json();
-
-  document.getElementById("search-results").innerHTML =
-    hits.length
-      ? `<h3>Results for “${text}”</h3><ul>${hits.map(row =>
-           `<li><b>${row.name}</b> – NFTokenID: ${row.id.slice(0,10)}…</li>`
-         ).join("")}</ul>`
-      : `<p>No matches for “${text}”.</p>`;
-}
-
-/* --------------------------------------------------- */
-  <script src="main.js">
-</script>
 </body>
 </html>

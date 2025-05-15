@@ -3139,22 +3139,43 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(500).json({ error: "Failed to retrieve payment payload" });
   }
 
-  // XRPL transaction lookup
+  // Retry logic to wait for transaction to finalize on the XRPL
+  const maxRetries = 5;
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  let txn;
   try {
     await client.connect();
-    const tx = await client.request({
-      command: "tx",
-      transaction: txid
-    });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(`Attempt ${attempt}: Fetching TX from ledger...`);
+
+      try {
+        const tx = await client.request({
+          command: "tx",
+          transaction: txid
+        });
+        txn = tx.result;
+
+        // If found and has metadata, break early
+        if (txn && txn.meta) break;
+      } catch (innerErr) {
+        console.log(`Attempt ${attempt} failed, retrying in 1.5s...`);
+        await delay(1500);
+      }
+    }
     await client.disconnect();
 
-    const txn = tx.result;
+    if (!txn || !txn.meta) {
+      return res.status(400).json({ error: "Transaction not confirmed yet. Please try again later." });
+    }
 
-    // Check if the payment matches 0.5 SGLCN
+    console.log("Verified TXN:", txn);
+
+    // Validate the token payment
     if (
       txn.TransactionType !== "Payment" ||
       typeof txn.Amount !== "object" ||
-      txn.Amount.currency !== "SeagullMansions" ||
+      txn.Amount.currency !== "53656167756C6C4D616E73696F6E730000000000" ||  // hex for SeagullMansions
       txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
       parseFloat(txn.Amount.value) < 0.18
     ) {
@@ -3166,8 +3187,10 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(500).json({ error: "Failed to verify payment transaction" });
   }
 
-  // Proceed with minting...
+  // If it passes validation, proceed with minting here...
+  return res.json({ success: true, message: "Payment verified. Proceed with minting." });
 });
+
 
 
 

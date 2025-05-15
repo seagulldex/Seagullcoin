@@ -3075,6 +3075,37 @@ app.post('/burn-nft', async (req, res) => {
 });
 
 
+
+const SERVICE_WALLET_ADDRESS = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
+
+// On startup, load used NFTs
+db.all("SELECT nft_token_id FROM minted_nfts WHERE status = 'minted'", [], (err, rows) => {
+  if (err) throw err;
+  rows.forEach(row => usedNFTs.add(row.nft_token_id));
+});
+
+// Load pending NFTs
+db.all("SELECT nft_token_id FROM minted_nfts WHERE status = 'pending'", [], (err, rows) => {
+  if (err) throw err;
+  rows.forEach(row => pendingNFTs.add(row.nft_token_id));
+});
+
+const pendingNFTs = new Set();
+
+function getNextAvailableNFT() {
+  for (const nft of nftokens) {
+    if (!usedNFTs.has(nft) && !pendingNFTs.has(nft)) {
+      pendingNFTs.add(nft); // Lock it during processing
+      return nft;
+    }
+  }
+  return null;
+}
+
+
+
+const usedNFTs = new Set();
+
 const nftokens = [
 '00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C7B7ABA7F30405C658',
 
@@ -3174,6 +3205,89 @@ const nftokens = [
 
 '00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C734AE7F1A0405C67F',
 ];
+
+async function transferNFT(destination, nftTokenID) {
+  try {
+    const tx = {
+      TransactionType: "NFTokenTransfer",
+      Account: SERVICE_WALLET_ADDRESS,
+      Destination: destination,
+      NFTokenID: nftTokenID,
+      Fee: "12", // XRP fee in drops
+    };
+
+    const prepared = await client.autofill(tx);
+    const signed = serviceWallet.sign(prepared);
+    const result = await client.submitAndWait(signed.tx_blob);
+
+    if (result.result.meta.TransactionResult === "tesSUCCESS") {
+      console.log("NFT transferred successfully:", nftTokenID);
+      return result.result.hash;
+    } else {
+      throw new Error("NFT transfer failed: " + result.result.meta.TransactionResult);
+    }
+
+  } catch (error) {
+    console.error("Error transferring NFT:", error);
+    throw error; // rethrow if needed upstream
+  } finally {
+    // optional cleanup or logging
+  }
+}
+
+
+    console.log('Sign this URL:', payload.next.always);
+
+
+    if (signedResult.signed) {
+      usedNFTs.add(nftTokenID); // Mark it used
+      console.log('Transaction signed:', signedResult.response.txid);
+      return { success: true, txHash: signedResult.response.txid };
+    } else {
+  pendingNFTs.delete(nftTokenID);  // Unlock the NFT if user rejected
+  console.log('Transaction was not signed.');
+  return { success: false, error: 'User rejected' };
+}
+    }
+  } catch (err) {
+    console.error('Transfer error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+async function doNFTTransfer(buyerWalletAddress) {
+  if (!isValidAddress(buyerWalletAddress)) {
+    throw new Error('Invalid buyer wallet address');
+  }
+
+  const nftToSend = getNextAvailableNFT();
+  if (!nftToSend) {
+    throw new Error('No NFTs available');
+  }
+
+  const result = await transferNFT(buyerWalletAddress, nftToSend);
+  if (result.success) {
+    console.log(`NFT ${nftToSend} transferred to ${buyerWalletAddress}`);
+  } else {
+    console.error('Transfer failed:', result.error);
+  }
+}
+
+async function doNFTTransfer(buyerWalletAddress) {
+  if (!isValidAddress(buyerWalletAddress)) {
+    throw new Error('Invalid destination wallet address.');
+  }
+
+  const nftTokenID = getNextAvailableNFT();
+  if (!nftTokenID) {
+    throw new Error('No NFTs available for transfer.');
+  }
+
+  const result = await transferNFT(buyerWalletAddress, nftTokenID);
+  return result;
+}
+
+
 
 // SeagullMansions token setup
 const REQUIRED_PAYMENT_AMOUNT = 0.18;

@@ -2832,7 +2832,7 @@ app.post('/pays', async (req, res) => {
       TransactionType: "Payment",
       Destination: SERVICE_WALLET_ADDRESS,
       Amount: {
-        currency: "53656167756C6C4D616E73696F6E730000000000",
+        currency: "SeagullMansions",
         issuer: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
         value: "0.18"
       }
@@ -2863,6 +2863,7 @@ function extractNFTokenID(txResult) {
   }
   return null;
 }
+
 
 app.post('/mint-after-payment', async (req, res) => {
   const { userAddress, paymentUUID } = req.body;
@@ -2905,7 +2906,7 @@ app.post('/mint-after-payment', async (req, res) => {
     if (
       txn.TransactionType !== "Payment" ||
       typeof txn.Amount !== "object" ||
-      txn.Amount.currency !== "53656167756C6C4D616E73696F6E730000000000" ||
+      txn.Amount.currency !== "SeagullMansions" ||
       txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
       parseFloat(txn.Amount.value) < 0.18
     ) {

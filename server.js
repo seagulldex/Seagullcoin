@@ -3187,26 +3187,22 @@ const sERVICE_WALLET = "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV";
 // Endpoint to mint and send NFTs
 // 1. Create payment payload endpoint
 app.post('/create-payment', async (req, res) => {
-  const { userAddress } = req.body;
-
-  // Create XUMM payment payload for 0.18 SeagullMansions from user to your service wallet
-  const paymentTx = {
-    TransactionType: "Payment",
-    Account: userAddress, // From user's wallet (for XUMM, it's implicit)
-    Destination: sERVICE_WALLET,
-    Amount: {
-      currency: SEAGULLMANSIONS_CURRENCY,
-      issuer: SEAGULLMANSIONS_ISSUER,
-      value: "0.18"
-    }
-  };
-
   try {
+    const paymentTx = {
+      TransactionType: "Payment",
+      Destination: SERVICE_WALLET,
+      Amount: {
+        currency: '53656167756C6C4D616E73696F6E730000000000' ,
+        issuer: SEAGULLMANSIONS_ISSUER,
+        value: "0.18"
+      }
+    };
+
     const payload = await xumm.payload.create({
       txjson: paymentTx,
       options: {
         submit: true,
-        expire: 300,  // expires in 5 minutes
+        expire: 300
       }
     });
 
@@ -3217,10 +3213,12 @@ app.post('/create-payment', async (req, res) => {
       payload_url: payload.next.always
     });
   } catch (e) {
-    console.error(e);
+    console.error('Error creating XUMM payload:', e?.response?.data || e.message || e);
     res.status(500).json({ error: 'Failed to create payment payload' });
   }
 });
+
+
 
 // 2. Endpoint to check payload status and then send NFT
 app.post('/verify-and-send-nft', async (req, res) => {

@@ -104,16 +104,20 @@ button:hover {
     </div>
   </div>
 
-  <!-- Navigation -->
   <header>
     <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="nfts.html">NFTs</a></li>
-        <li><a href="mint.html">Mint NFT</a></li>
-        <li><a href="messages.html">Messages</a></li>
-      </ul>
-    </nav>
+  <ul>
+    <li>
+      <form action="/create-trustline" method="POST" style="display:inline;">
+        <button type="submit" style="background-color:#007bff; margin-right: 15px;">Add SeagullMansions Trustline</button>
+      </form>
+    </li>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="nfts.html">NFTs</a></li>
+    <li><a href="mint.html">Mint NFT</a></li>
+    <li><a href="messages.html">Messages</a></li>
+  </ul>
+</nav>
   </header>
 <input type="text" id="search-bar" placeholder="Search the XRPL..." oninput="handleSearchInput(event)" />
 <button onclick="searchXRPL()">Search</button>

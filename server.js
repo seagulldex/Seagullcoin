@@ -3074,37 +3074,10 @@ app.post('/burn-nft', async (req, res) => {
   res.json({ success: true, next: created.next });
 });
 
-const serviceWallet = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-
-const SERVICE_WALLET_ADDRESS = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-
-// On startup, load used NFTs
-db.all("SELECT nft_token_id FROM minted_nfts WHERE status = 'minted'", [], (err, rows) => {
-  if (err) throw err;
-  rows.forEach(row => usedNFTs.add(row.nft_token_id));
-});
-
-// Load pending NFTs
-db.all("SELECT nft_token_id FROM minted_nfts WHERE status = 'pending'", [], (err, rows) => {
-  if (err) throw err;
-  rows.forEach(row => pendingNFTs.add(row.nft_token_id));
-});
-
-const pendingNFTs = new Set();
-
-function getNextAvailableNFT() {
-  for (const nft of nftokens) {
-    if (!usedNFTs.has(nft) && !pendingNFTs.has(nft)) {
-      pendingNFTs.add(nft); // Lock it during processing
-      return nft;
-    }
-  }
-  return null;
-}
-
-
 
 const usedNFTs = new Set();
+
+const pendingNFTs = new Set();
 
 const nftokens = [
 '00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C7B7ABA7F30405C658',
@@ -3207,7 +3180,65 @@ const nftokens = [
 ];
 
 
+// Load used NFTs
+db.all("SELECT nft_token_id FROM minted_nfts WHERE status = 'minted'", [], (err, rows) => {
+  if (err) throw err;
+  rows.forEach(row => usedNFTs.add(row.nft_token_id));
+});
 
+// Load pending NFTs
+db.all("SELECT nft_token_id FROM minted_nfts WHERE status = 'pending'", [], (err, rows) => {
+  if (err) throw err;
+  rows.forEach(row => pendingNFTs.add(row.nft_token_id));
+});
+
+// Get next available NFT
+function getNextAvailableNFT() {
+  for (const nft of nftokens) {
+    if (!usedNFTs.has(nft) && !pendingNFTs.has(nft)) {
+      pendingNFTs.add(nft); // Temporarily lock it
+      return nft;
+    }
+  }
+  return null;
+}
+
+// Transfer NFT using XUMM payload
+async function transferNFT(userAddress, destination, nftTokenID) {
+  try {
+    const payload = {
+      txjson: {
+        TransactionType: 'NFTokenCreateOffer',
+        Account: userAddress,
+        NFTokenID: nftTokenID,
+        Amount: '0',
+        Destination: destination,
+        Flags: 1 // Sell offer, Amount=0 = gift
+      }
+    };
+
+    const { created, resolved } = await xumm.payload.createAndSubscribe(payload, event => {
+      return event.data.signed === true || event.data.signed === false;
+    });
+
+    if (!created || !created.uuid) {
+      console.error("Payload creation failed");
+      return null;
+    }
+
+    if (resolved.signed) {
+      console.log("NFT offer signed.");
+      return { success: true, nftTokenID, uuid: created.uuid };
+    } else {
+      console.log("User declined the offer.");
+      pendingNFTs.delete(nftTokenID); // Free up token if rejected
+      return { success: false };
+    }
+  } catch (e) {
+    console.error("Error creating NFT offer via XUMM:", e);
+    return null;
+  }
+}
 
 // SeagullMansions token setup
 const REQUIRED_PAYMENT_AMOUNT = 0.18;

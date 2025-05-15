@@ -3120,77 +3120,55 @@ app.post('/mint-after-payment', async (req, res) => {
   const { userAddress, paymentUUID } = req.body;
   if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
 
-  // 1. Check payment payload status
+  let txid;
   try {
     const paymentPayload = await xumm.payload.get(paymentUUID);
-    console.log("Payment Payload:", paymentPayload);
+    console.log("Full Payload:", paymentPayload);
 
-    // Log important parts for debugging
-    console.log("Signed:", paymentPayload.signed);
-    console.log("Payload meta:", paymentPayload.payload?.meta);
-    console.log("Response TX:", paymentPayload.response?.txjson);
-
-    if (!paymentPayload.exists || !paymentPayload.signed) {
-      return res.status(400).json({ error: "Payment not completed or payload not signed" });
+    if (!paymentPayload.exists) {
+      return res.status(400).json({ error: "Payment payload not found" });
     }
 
-    // 2. Validate payment details (issued currency)
-    const tx = paymentPayload.response?.txjson;
-    const expectedIssuer = "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV";
-    const expectedCurrency = "SeagullMansions";
-    const expectedAmount = "0.18";
-
-    if (
-      tx?.TransactionType !== "Payment" ||
-      typeof tx?.Amount !== "object" ||
-      tx?.Amount?.currency !== expectedCurrency ||
-      tx?.Amount?.issuer !== expectedIssuer ||
-      parseFloat(tx?.Amount?.value) < parseFloat(expectedAmount)
-    ) {
-      return res.status(400).json({ error: "Invalid payment details" });
+    txid = paymentPayload.response?.txid || paymentPayload.meta?.resolved?.txid;
+    if (!txid) {
+      return res.status(400).json({ error: "Transaction ID not available yet. Please try again shortly." });
     }
 
   } catch (e) {
-    console.error("Error verifying payment payload:", e);
-    return res.status(500).json({ error: "Failed to verify payment" });
+    console.error("Error retrieving payment payload:", e);
+    return res.status(500).json({ error: "Failed to retrieve payment payload" });
   }
 
-  // 3. Proceed with NFT minting
-  const nftTokenID = getNextAvailableNFT();
-  if (!nftTokenID) {
-    return res.status(400).json({ error: "No NFTs available at the moment" });
-  }
-
-  const nftTransferPayload = {
-    txjson: {
-      TransactionType: "NFTokenTransfer",
-      Account: SERVICE_WALLET_ADDRESS,
-      Destination: userAddress,
-      NFTokenID: nftTokenID
-    },
-    options: {
-      submit: true,
-      expire: 120,
-    }
-  };
-
+  // XRPL transaction lookup
   try {
-    const { uuid, next } = await xumm.payload.create(nftTransferPayload);
+    await client.connect();
+    const tx = await client.request({
+      command: "tx",
+      transaction: txid
+    });
+    await client.disconnect();
 
-    db.run(
-      `UPDATE minted_nfts SET status='minting' WHERE nft_token_id = ?`,
-      [nftTokenID],
-      err => {
-        if (err) console.error("DB update error:", err);
-      }
-    );
+    const txn = tx.result;
 
-    res.json({ success: true, uuid, next, nftTokenID });
+    // Check if the payment matches 0.5 SGLCN
+    if (
+      txn.TransactionType !== "Payment" ||
+      typeof txn.Amount !== "object" ||
+      txn.Amount.currency !== "SeagullCoin" ||
+      txn.Amount.issuer !== "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno" ||
+      parseFloat(txn.Amount.value) < 0.5
+    ) {
+      return res.status(400).json({ error: "Invalid or insufficient payment" });
+    }
+
   } catch (err) {
-    console.error("XUMM payload error:", err);
-    return res.status(500).json({ error: "Failed to create XUMM payload for NFT transfer" });
+    console.error("Error verifying transaction on ledger:", err);
+    return res.status(500).json({ error: "Failed to verify payment transaction" });
   }
+
+  // Proceed with minting...
 });
+
 
 
 

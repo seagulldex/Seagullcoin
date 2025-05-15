@@ -3118,38 +3118,45 @@ function extractNFTokenID(txResult) {
 
 
 app.post('/mint-after-payment', async (req, res) => {
-  const { userAddress, destination } = req.body; // e.g. from frontend after payment confirmed
+  const { userAddress } = req.body;
 
-  // Get next free NFT token
+  // Get next available NFT
   const nftTokenID = getNextAvailableNFT();
   if (!nftTokenID) {
     return res.status(400).json({ error: "No NFTs available at the moment" });
   }
 
-  // Call transferNFT to create & subscribe to XUMM payload
-  const result = await transferNFT(userAddress, destination, nftTokenID);
-  if (!result) {
+  // Build XUMM payload to send NFT from service wallet to user
+  const payload = {
+    txjson: {
+      TransactionType: "NFTokenTransfer",
+      Account: SERVICE_WALLET_ADDRESS,
+      Destination: userAddress,
+      NFTokenID: nftTokenID
+    },
+    options: {
+      submit: true,
+      expire: 120, // optional, in seconds
+    }
+  };
+
+  try {
+    const { uuid, next } = await xumm.payload.create(payload);
+
+    // Store NFT status in DB (optional)
+    db.run(`UPDATE minted_nfts SET status='minting' WHERE nft_token_id = ?`, [nftTokenID], err => {
+      if (err) console.error("DB update error:", err);
+    });
+
+    // Respond with XUMM payload info to frontend
+    res.json({ success: true, uuid, next, nftTokenID });
+  } catch (err) {
+    console.error("XUMM payload error:", err);
     pendingNFTs.delete(nftTokenID);
-    return res.status(500).json({ error: "Failed to create NFT transfer payload" });
+    return res.status(500).json({ error: "Failed to create XUMM payload for transfer" });
   }
-  if (!result.success) {
-    // User declined offer, free NFT
-    pendingNFTs.delete(nftTokenID);
-    return res.status(400).json({ error: "User declined NFT transfer" });
-  }
-
-  // User signed NFT offer, mark NFT minted in DB
-  db.run(`UPDATE minted_nfts SET status='minted' WHERE nft_token_id = ?`, [nftTokenID], err => {
-    if (err) console.error("DB update error:", err);
-  });
-
-  // Move NFT from pending to used set
-  pendingNFTs.delete(nftTokenID);
-  usedNFTs.add(nftTokenID);
-
-  // Respond with NFT Token and payload UUID for frontend
-  res.json({ nftTokenID, uuid: result.uuid });
 });
+
 
 
 

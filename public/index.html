@@ -124,6 +124,56 @@
   <script>
     // Initialize state
     let wallet = null;
+    
+    function setupTrustlineButton() {
+  const btn = document.getElementById('trustline-button');
+  btn.disabled = !wallet; // disable if no wallet connected
+
+  btn.onclick = async () => {
+    if (!wallet) {
+      alert('Please login first to add trustline.');
+      return;
+    }
+
+    try {
+      // Build the trustline transaction JSON
+      const trustlinePayload = {
+        TransactionType: "TrustSet",
+        Account: wallet, // user's wallet
+        LimitAmount: {
+          currency: "SseagullMansions", // replace with your token code exactly
+          issuer: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV", // replace with your actual issuer address
+          value: "2"
+        }
+      };
+
+      // Call XUMM API to create a payload (you need to replace with your backend or do it here with your XUMM API key)
+      // Since you currently call your backend, update backend to accept raw txjson OR do it here:
+
+      // For example, call your backend that creates the payload:
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/create-trustline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txjson: trustlinePayload })
+      });
+
+      if (!res.ok) throw new Error('Failed to create trustline payload');
+
+      const data = await res.json();
+
+      if (data.payloadURL) {
+        // Open XUMM to sign trustline tx
+        window.open(data.payloadURL, '_blank');
+      } else {
+        alert('Failed to create trustline transaction.');
+      }
+
+    } catch (err) {
+      alert('Error adding trustline: ' + err.message);
+    }
+  };
+}
+
 
     // On page load, check login
     window.addEventListener('DOMContentLoaded', () => {

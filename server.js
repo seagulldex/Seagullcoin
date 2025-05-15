@@ -3102,6 +3102,21 @@ app.post('/pays', async (req, res) => {
   });
 });
 
+function extractNFTokenID(txResult) {
+  const affected = txResult.meta?.AffectedNodes || [];
+  for (const node of affected) {
+    const created = node.CreatedNode;
+    if (created && created.LedgerEntryType === "NFTokenPage") {
+      const nfts = created.NewFields?.NFTokens;
+      if (nfts && nfts.length > 0) {
+        return nfts[0].NFToken.NFTokenID;
+      }
+    }
+  }
+  return null;
+}
+
+
 app.post('/mint-after-payment', async (req, res) => {
   const { uuid, metadataUrl, userWallet } = req.body;
 

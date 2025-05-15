@@ -3118,13 +3118,58 @@ function extractNFTokenID(txResult) {
 
 
 app.post('/mint-after-payment', async (req, res) => {
-  const { userAddress } = req.body;
+  const { userAddress, paymentUUID } = req.body;
+  if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
 
-  // Get next available NFT
+  // 1. Check payment payload status
+  try {
+    const paymentPayload = await xumm.payload.get(paymentUUID);
+    if (!paymentPayload.exists || !paymentPayload.signed || !paymentPayload.payload?.meta?.published === true) {
+      return res.status(400).json({ error: "Payment not completed or payload not signed" });
+    }
+
+    // Optional: Check payment details for correct amount, currency, issuer, sender address etc here
+
+  } catch (e) {
+    console.error("Error verifying payment payload:", e);
+    return res.status(500).json({ error: "Failed to verify payment" });
+  }
+
+  // 2. Proceed with NFT minting as you have it:
+
   const nftTokenID = getNextAvailableNFT();
   if (!nftTokenID) {
-    return res.status(400).json({ error: "No NFTs available at the moment" 
+    return res.status(400).json({ error: "No NFTs available at the moment" });
+  }
 
+  // Build XUMM payload to send NFT from service wallet to user
+  const nftTransferPayload = {
+    txjson: {
+      TransactionType: "NFTokenTransfer",
+      Account: SERVICE_WALLET_ADDRESS,
+      Destination: userAddress,
+      NFTokenID: nftTokenID
+    },
+    options: {
+      submit: true,
+      expire: 120,
+    }
+  };
+
+  try {
+    const { uuid, next } = await xumm.payload.create(nftTransferPayload);
+
+    // Update DB status if needed
+    db.run(`UPDATE minted_nfts SET status='minting' WHERE nft_token_id = ?`, [nftTokenID], err => {
+      if (err) console.error("DB update error:", err);
+    });
+
+    res.json({ success: true, uuid, next, nftTokenID });
+  } catch (err) {
+    console.error("XUMM payload error:", err);
+    return res.status(500).json({ error: "Failed to create XUMM payload for NFT transfer" });
+  }
+});
 
 
 

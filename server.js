@@ -2912,6 +2912,7 @@ app.post('/mint-after-payment', async (req, res) => {
       return res.status(400).json({ error: "Invalid or insufficient payment" });
     }
 
+    console.log("txn.Amount:", txn.Amount);
   } catch (err) {
     console.error("Error verifying transaction on ledger:", err);
     return res.status(500).json({ error: "Failed to verify payment transaction" });
@@ -2919,6 +2920,7 @@ app.post('/mint-after-payment', async (req, res) => {
 
   // Proceed with minting...
 });
+
 
 
 

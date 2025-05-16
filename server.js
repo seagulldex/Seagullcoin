@@ -33,15 +33,6 @@ import swaggerJSDoc from 'swagger-jsdoc';
 import { processXummMinting } from './confirmPaymentXumm.js';
 import { confirmPayment } from './confirmPaymentXumm.js';
 import mime from 'mime';
-import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the path is correct
-
-import checkSeagullCoinBalance from './checkSeagullCoinBalance.js'; // Import the checkSeagullCoinBalance function
-import FormData from 'form-data'; // For handling file uploads
-import { verifyXummSignature, createXummPayment } from './xummApi.js'; // Import XUMM functions
-import mintRouter from './mint-endpoint.js'; // Your mint endpoint router
-import swaggerJSDoc from 'swagger-jsdoc';
-import { processXummMinting } from './confirmPaymentXumm.js';
-import { confirmPayment } from './confirmPaymentXumm.js';
 import { xummApi } from './xrplClient.js';
 import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the path is correct
 import { requireLogin } from './xummLogin.js';  // Adjust the path if needed

@@ -2864,7 +2864,6 @@ function extractNFTokenID(txResult) {
   return null;
 }
 
-
 app.post('/mint-after-payment', async (req, res) => {
   const { userAddress, paymentUUID } = req.body;
   if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
@@ -2903,15 +2902,45 @@ app.post('/mint-after-payment', async (req, res) => {
 
   // Pick a free NFTokenID
   const availableNFT = nftokens.find(id => !usedNFTs.has(id) && !pendingNFTs.has(id));
-  if (!availableNFT) return res.status(503).json({ error: "No NFTs available" });
+if (!availableNFT) return res.status(503).json({ error: "No NFTs available" });
+usedNFTs.add(availableNFT); // Reserve it now to prevent double use
 
-  usedNFTs.add(availableNFT); // Mark as assigned
-  return res.json({
-    success: true,
-    message: "Payment verified. NFT assigned.",
-    nftoken_id: availableNFT
-  });
+
+  // Create zero-value offer to send NFT to user
+  try {
+    const txCreateOffer = {
+      TransactionType: "NFTokenCreateOffer",
+      Account: serviceWallet.classicAddress,
+      NFTokenID: availableNFT,
+      Amount: "0",
+      Destination: userAddress
+    };
+
+    const prepared = await client.autofill(txCreateOffer);
+    const signed = wallet.sign(prepared);
+    const txResult = await client.submitAndWait(signed.tx_blob);
+
+    
+
+    if (txResult.result.meta.TransactionResult !== "tesSUCCESS") {
+      return res.status(500).json({ error: "Offer creation failed", txResult });
+    }
+
+    return res.json({
+      success: true,
+      message: "Payment verified. NFT assigned and offer created.",
+      nftoken_id: availableNFT,
+      offer_transaction_hash: txResult.result.hash
+    });
+
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to create NFT offer", details: err.message });
+  }
 });
+
+
+const serviceWallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED); // Your service wallet
+
 
 const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED); // Your service wallet
 

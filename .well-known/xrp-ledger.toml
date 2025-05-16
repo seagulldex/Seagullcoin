@@ -7,6 +7,7 @@ SeagullCoin acts as the plumbing of our Ecosystem, with pairing to XRP, and high
 SeagullCoin is the perfect long-term hedge asset with future collateral loan utility."""
 icon = "https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH_400x400.jpg"
 symbol = "SGLCN"
+token_hex = "53656167756C6C436F696E000000000000000000"
 
 [[CURRENCIES]]
 code = "SeagullMansions"
@@ -15,3 +16,4 @@ network = "main"
 desc = "SeagullMansions are tokens redeemable for NFTs of luxurious properties in the Bored SeagullClub Metaverse."
 icon = "https://www.gravatar.com/psychicpeanut6bcb9b1a78"
 symbol = "SGLMSN"
+token_hex = "53656167756C6C4D616E73696F6E730000000000"

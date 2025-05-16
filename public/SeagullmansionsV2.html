@@ -139,14 +139,14 @@
     const res = await fetch("https://sglcn-x20-api.glitch.me/pays", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wallet })  // <-- key is 'wallet' now
+      body: JSON.stringify({ userAddress: wallet })  // FIXED key
     });
 
     const data = await res.json();
 
     if (data.uuid && data.next) {
       alert("Please approve the payment in your XUMM app.");
-      window.open(data.next, "_blank");  // or data.next.always if your backend returns nested
+      window.open(data.next.always || data.next, "_blank");  // Safe fallback
     } else {
       alert("Payment initiation failed: " + JSON.stringify(data));
     }
@@ -155,6 +155,7 @@
     alert("Failed to initiate payment.");
   }
 }
+
 
 
     async function addTrustline() {

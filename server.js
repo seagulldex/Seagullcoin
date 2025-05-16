@@ -2493,7 +2493,6 @@ async function getMetadataFromStorage(token_id) {
   }
 }
 
-const walletAddress = 'rEXAMPLEOWNER'; // Replace with an actual wallet address
 
 
 

@@ -2915,117 +2915,51 @@ app.post('/mint-after-payment', async (req, res) => {
 
 const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED); // Your service wallet
 
-{
+ // Find available token
+  const selectedTokenId = nftokens.find(id => !usedNFTs.has(id) && !pendingNFTs.has(id));
+  if (!selectedTokenId) return res.status(503).json({ error: "No NFTs available" });
+
   try {
-    // Find an unused NFTokenID
-    let selectedTokenId;
-    for (const tokenId of nftokens) {
-      if (!usedNFTs.has(tokenId) && !pendingNFTs.has(tokenId)) {
-        selectedTokenId = tokenId;
-        pendingNFTs.add(tokenId);
-        break;
-      }
+    await client.connect();
+
+    const offerTx = {
+      TransactionType: "NFTokenCreateOffer",
+      Account: SERVICE_WALLET_ADDRESS,
+      NFTokenID: selectedTokenId,
+      Destination: userAddress,
+      Flags: 1,
+      Amount: "0"
+    };
+
+    const prepared = await client.autofill(offerTx);
+    const signed = wallet.sign(prepared);
+    const result = await client.submitAndWait(signed.tx_blob);
+
+    const offerIndex = result.result?.meta?.AffectedNodes?.find(n =>
+      n.CreatedNode?.LedgerEntryType === "NFTokenOffer"
+    )?.CreatedNode?.LedgerIndex;
+
+    if (!offerIndex) {
+      throw new Error("No offer index found");
     }
 
-    if (!selectedTokenId) {
-      await client.disconnect().catch((e) => {
-        console.error("Error disconnecting client:", e);
-      });
-      return res.status(400).json({ error: "No available NFTs left to transfer" });
-    }
+    usedNFTs.add(selectedTokenId);
+    pendingNFTs.delete(selectedTokenId);
 
-    // Continue processing...
-    // e.g., transferNFT(selectedTokenId)...
+    console.log(`Transferred ${selectedTokenId} to ${userAddress}`);
+    await client.disconnect();
+
+    return res.json({
+      success: true,
+      NFTokenID: selectedTokenId
+    });
 
   } catch (err) {
     console.error("Transfer error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    await client.disconnect();
+    return res.status(500).json({ error: "NFT transfer failed" });
   }
 });
-
-  try {
-    // Find an unused NFTokenID
-    let selectedTokenId;
-    for (const tokenId of nftokens) {
-      if (!usedNFTs.has(tokenId) && !pendingNFTs.has(tokenId)) {
-        selectedTokenId = tokenId;
-        pendingNFTs.add(tokenId);
-        break;
-      }
-    }
-
-    if (!selectedTokenId) {
-      await client.disconnect().catch((e) => {
-        console.error("Error disconnecting client:", e);
-      });
-      return res.status(400).json({ error: "No available NFTs left to transfer" });
-    }
-
-    // Continue processing...
-    // e.g., transferNFT(selectedTokenId)...
-
-  } catch (err) {
-    console.error("Transfer error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-
-
-
-  
-  // Create an NFTokenCreateOffer (service wallet to userAddress)
-  const offerTx = {
-    TransactionType: "NFTokenCreateOffer",
-    Account: SERVICE_WALLET_ADDRESS,
-    NFTokenID: selectedTokenId,
-    Destination: userAddress,
-    Flags: 1, // Sell offer, set to 0 for non-sell offer
-    Amount: "0"
-  };
-  
-  const prepared = await client.autofill(offerTx);
-  const signed = wallet.sign(prepared);
-  const result = await client.submitAndWait(signed.tx_blob);
-
-  const offerIndex = result.result?.meta?.AffectedNodes?.find(n =>
-    n.CreatedNode?.LedgerEntryType === "NFTokenOffer"
-  )?.CreatedNode?.LedgerIndex;
-
-  if (!offerIndex) {
-    throw new Error("Failed to find offer index");
-  }
-  
-  // Accept the offer from the user's side (simulated here)
-  // In practice, the user should do this from their wallet
-  // Optionally, if you're authorized to submit on user's behalf:
-  /*
-  const userWallet = xrpl.Wallet.fromSeed(USER_WALLET_SEED);
-  const acceptTx = {
-    TransactionType: "NFTokenAcceptOffer",
-    Account: userAddress,
-    NFTokenBuyOffer: offerIndex
-  };
-  const signedAccept = userWallet.sign(await client.autofill(acceptTx));
-  await client.submitAndWait(signedAccept.tx_blob);
-  */
-  
-  usedNFTs.add(selectedTokenId);
-  pendingNFTs.delete(selectedTokenId);
-  console.log(`Transferred NFTokenID: ${selectedTokenId} to ${userAddress}`);
-
-  await client.disconnect();
-  return res.json({
-    success: true,
-    message: "NFT transferred to user after valid payment",
-    NFTokenID: selectedTokenId
-  });
-
-} catch (e) {
-  console.error("Error during NFT transfer:", e);
-  await client.disconnect();
-  return res.status(500).json({ error: "Failed to transfer NFT" });
-}
 
 const usedNFTs = new Set();
 

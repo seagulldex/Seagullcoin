@@ -2909,7 +2909,7 @@ app.post('/mint-after-payment', async (req, res) => {
       txn.Amount.currency !== "53656167756C6C4D616E73696F6E730000000000" ||
       txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
       parseFloat(txn.Amount.value) < 0.18
-    ) {
+    ) { console.log("Amount:", txn.Amount);
       return res.status(400).json({ error: "Invalid or insufficient payment" });
     }
 

@@ -2824,37 +2824,101 @@ app.post('/burn-nft', async (req, res) => {
 
 const SERVICE_WALLET_ADDRESS = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 
-app.post('/pays', async (req, res) => {
-  const { wallet } = req.body;
+app.post("/pays", async (req, res) => {
+  const { userAddress } = req.body;
 
-  const payload = {
-    txjson: {
+  if (!userAddress) {
+    return res.status(400).json({ success: false, message: "Missing user address" });
+  }
+
+  try {
+    const payload = {
       TransactionType: "Payment",
       Destination: SERVICE_WALLET_ADDRESS,
       Amount: {
-        currency: "SeagullMansions",
-        issuer: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
-        value: "0.18"
+        currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin hex
+        value: "0.5",
+        issuer: SEAGULLCOIN_ISSUER
       }
-    },
-    options: {
-      submit: true,
-      expire: 300
-    }
-  };
+    };
 
-  const response = await xumm.payload.create(payload);
-  res.json({
-    uuid: response.uuid,
-    next: response.next.always
-  });
+    const result = await xumm.payload.createAndSubscribe({ txjson: payload });
+
+    if (!result || !result.created || !result.created.uuid || !result.created.next) {
+      console.error("Invalid XUMM response:", result);
+      return res.status(500).json({ success: false, message: "Failed to create XUMM payload." });
+    }
+
+    res.json({
+      success: true,
+      uuid: result.created.uuid,
+      next: result.created.next
+    });
+
+  } catch (err) {
+    console.error("Error creating payment payload:", err);
+    res.status(500).json({ success: false, message: "XUMM payload error." });
+  }
 });
 
-function extractNFTokenID(txResult) {
-  const affected = txResult.meta?.AffectedNodes || [];
-  for (const node of affected) {
-    const created = node.CreatedNode;
-    if (created && crea
+
+app.post('/mint-after-payment', async (req, res) => {
+  const { userAddress, paymentUUID } = req.body;
+  if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
+
+  let txid;
+  try {
+    const paymentPayload = await xumm.payload.get(paymentUUID);
+    console.log("Full Payload:", paymentPayload);
+
+    // Fixed the check to use meta.exists instead of paymentPayload.exists
+    if (!paymentPayload || !paymentPayload.meta || !paymentPayload.meta.exists) {
+      return res.status(400).json({ error: "Payment payload not found" });
+    }
+
+    txid = paymentPayload.response?.txid || paymentPayload.meta?.resolved?.txid;
+    if (!txid) {
+      return res.status(400).json({ error: "Transaction ID not available yet. Please try again shortly." });
+    }
+
+  } catch (e) {
+    console.error("Error retrieving payment payload:", e);
+    return res.status(500).json({ error: "Failed to retrieve payment payload" });
+  }
+
+  // XRPL transaction lookup
+  try {
+    await client.connect();
+    const tx = await client.request({
+      command: "tx",
+      transaction: txid
+    });
+    await client.disconnect();
+
+    const txn = tx.result;
+    console.log("Ledger TX:", JSON.stringify(txn, null, 2));
+
+
+    // Check if the payment matches 0.18 SGLMSN
+    if (
+      txn.TransactionType !== "Payment" ||
+      typeof txn.Amount !== "object" ||
+      txn.Amount.currency !== "SeagullMansions" ||
+      txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
+      parseFloat(txn.Amount.value) < 0.18
+    ) {
+      return res.status(400).json({ error: "Invalid or insufficient payment" });
+    }
+
+    console.log("txn.Amount:", txn.Amount);
+  } catch (err) {
+    console.error("Error verifying transaction on ledger:", err);
+    return res.status(500).json({ error: "Failed to verify payment transaction" });
+  }
+
+  // Proceed with minting...
+});
+
 
 
 app.post('/mint-after-payment', async (req, res) => {

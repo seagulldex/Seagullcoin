@@ -93,7 +93,7 @@
   <script>
     async function loginWithXumm() {
       try {
-        const res = await fetch("https://sglcn-x20-api.glitch.me/connect");
+        const res = await fetch("https://sglcn-x20-api.glitch.me/login");
         const data = await res.json();
         if (data.success) {
           window.open(data.next.always, "_blank");

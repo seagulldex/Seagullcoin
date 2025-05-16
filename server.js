@@ -21,7 +21,42 @@ import axios from 'axios';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
 import { XummSdk } from 'xumm-sdk';
+import { verifyXum// ===== Imports =====
+import express from 'express';
+import session from 'express-session';
+import cors from 'cors';
+import fetch from 'node-fetch';
+import path from 'path';
+import multer from 'multer';
+import dotenv from 'dotenv';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import { NFTStorage, File } from 'nft.storage';
+import xrpl from 'xrpl';
+import NodeCache from 'node-cache';
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
+import axios from 'axios';
+import { acceptOffer, rejectOffer } from './mintingLogic.js';
+import { body, query, validationResult } from 'express-validator';
+import { XummSdk } from 'xumm-sdk';
 import { verifyXummPayload, createNftOfferPayload, getUserInfo } from './xumm-utils.js';
+import { createNftOffer } from './xrpl-utils.js'
+import pkg from 'xumm-sdk';
+import { mintNFT } from './nftminting.js';
+import checkSeagullCoinBalance from './checkSeagullCoinBalance.js'; // Import the checkSeagullCoinBalance function
+import FormData from 'form-data'; // For handling file uploads
+import { verifyXummSignature, createXummPayment } from './xummApi.js'; // Import XUMM functions
+import mintRouter from './mint-endpoint.js'; // Your mint endpoint router
+import swaggerJSDoc from 'swagger-jsdoc';
+import { processXummMinting } from './confirmPaymentXumm.js';
+import { confirmPayment } from './confirmPaymentXumm.js';
+import { xummApi } from './xrplClient.js';
+import mime from 'mime';mPayload, createNftOfferPayload, getUserInfo } from './xumm-utils.js';
 import { createNftOffer } from './xrpl-utils.js'
 import pkg from 'xumm-sdk';
 import { mintNFT } from './nftminting.js';

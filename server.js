@@ -2927,10 +2927,16 @@ try {
   }
 
 if (!selectedTokenId) {
-  client.disconnect().then(() => {
-    return res.status(400).json({ error: "No available NFTs left to transfer" });
-  }).catch((e) => {
-    co
+  client.disconnect()
+    .catch((e) => {
+      console.error("Error disconnecting client:", e);
+    })
+    .finally(() => {
+      res.status(400).json({ error: "No available NFTs left to transfer" });
+    });
+  return;
+}
+
 
 
   

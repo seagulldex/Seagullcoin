@@ -2,11 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>User NFTs - SGLCN-X20</title>
-  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="header.css" />
   <style>
+    body {
+      background-color: #121212;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
     .nft-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -18,7 +23,6 @@
       border-radius: 12px;
       padding: 14px;
       background: #1e1e1e;
-      color: #fff;
       text-align: center;
     }
     .nft-card img {
@@ -30,9 +34,22 @@
     }
     #logout-btn {
       display: none;
+      margin-left: 10px;
+      padding: 6px 12px;
+      background-color: #00bfa5;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
     }
-    .green { color: green; }
-    .red { color: red; }
+    .green {
+      color: green;
+      cursor: default;
+    }
+    .red {
+      color: red;
+      cursor: pointer;
+    }
     .trait {
       font-size: 0.9em;
       text-align: left;
@@ -55,57 +72,90 @@
     .seagull-spinner {
       width: 50px;
     }
+    #loading-spinner {
+      text-align: center;
+      margin: 20px;
+      display: none;
+    }
+    /* Mint modal styles */
+    #mintStatusModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+    #mintStatusModal > div {
+      background: #222;
+      padding: 20px;
+      max-width: 400px;
+      border-radius: 10px;
+      text-align: center;
+      color: white;
+    }
+    #mintSpinner {
+      font-size: 2em;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <div id="top-bar">
+  <div id="top-bar" style="display:flex; align-items:center; padding:10px; background:#181818;">
     <div style="flex:1;">
       <button id="logout-btn" onclick="logout()">Logout</button>
     </div>
     <div id="wallet-container">
-      <div id="wallet-status">
-        <button id="wallet-indicator" class="red">🔴 Login</button>
-      </div>
+      <button id="wallet-indicator" class="red">🔴 Login</button>
     </div>
   </div>
 
   <header>
     <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="nfts.html">NFTs</a></li>
-        <li><a href="mint.html">Mint NFT</a></li>
-        <li><a href="messages.html">Messages</a></li>
+      <ul style="display:flex; gap:20px; list-style:none; padding:10px; background:#202020; margin:0;">
+        <li><a href="index.html" style="color:#00bfa5; text-decoration:none;">Home</a></li>
+        <li><a href="nfts.html" style="color:#00bfa5; text-decoration:none;">NFTs</a></li>
+        <li><a href="mint.html" style="color:#00bfa5; text-decoration:none;">Mint NFT</a></li>
+        <li><a href="messages.html" style="color:#00bfa5; text-decoration:none;">Messages</a></li>
       </ul>
     </nav>
   </header>
 
   <main>
-    <h1>SeagullMansions NFT swap token</h1>
-    <div style="text-align: center; margin: 20px;">
+    <h1 style="text-align:center; margin-top:20px;">SeagullMansions NFT Swap Token</h1>
+
+    <div style="text-align:center; margin: 20px;">
       <button onclick="addTrustline()">Add SeagullMansions Trustline</button>
     </div>
-    <div style="text-align: center; margin: 20px;">
+
+    <div style="text-align:center; margin: 20px;">
       <button onclick="initiatePayment()">Mint pay 0.18 SeagullMansions</button>
     </div>
-    <div id="loading-spinner" style="text-align:center; margin: 20px; display:none;">
-  <img src="https://i.imgur.com/llF5iyg.gif" alt="Loading..." width="50" />
-  <p>Loading NFTs...</p>
-</div>
-    <div id="user-nfts" class="nft-grid"></div>
-<!-- Mint Status Modal -->
-<div id="mintStatusModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
-  <div style="background:#fff; padding:20px; max-width:400px; margin:100px auto; border-radius:10px; text-align:center;">
-    <h2>Minting NFT</h2>
-    <p id="mintStatusText">Waiting for payment confirmation...</p>
-    <div id="mintSpinner" style="margin-top:20px;">⏳</div>
-    <button id="closeMintModal" style="display:none; margin-top:20px;">Close</button>
-  </div>
-</div>
 
+    <div id="loading-spinner">
+      <img src="https://i.imgur.com/llF5iyg.gif" alt="Loading..." width="50" />
+      <p>Loading NFTs...</p>
+    </div>
+
+    <div id="user-nfts" class="nft-grid"></div>
+
+    <!-- Mint Status Modal -->
+    <div id="mintStatusModal" style="display:flex;">
+      <div>
+        <h2>Minting NFT</h2>
+        <p id="mintStatusText">Waiting for payment confirmation...</p>
+        <div id="mintSpinner">⏳</div>
+        <button id="closeMintModal" style="display:none; margin-top:20px; padding:8px 16px; background:#00bfa5; border:none; border-radius:6px; color:#fff; cursor:pointer;">Close</button>
+      </div>
+    </div>
   </main>
 
   <script>
+    // Hide modal by default
+    document.getElementById('mintStatusModal').style.display = 'none';
+
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
     });
@@ -113,44 +163,55 @@
     function updateWalletStatus() {
       const wallet = localStorage.getItem('xumm_wallet_address');
       const indicator = document.getElementById('wallet-indicator');
+      const logoutBtn = document.getElementById('logout-btn');
+
       if (wallet) {
         indicator.textContent = '🟢 Connected';
         indicator.classList.replace('red', 'green');
-        indicator.title = 'Logged in';
-        document.getElementById('logout-btn').style.display = 'inline-block';
+        indicator.title = 'Logged in as ' + wallet;
+        indicator.onclick = null;
+        logoutBtn.style.display = 'inline-block';
         fetchNFTs(wallet);
       } else {
         indicator.textContent = '🔴 Login';
         indicator.classList.replace('green', 'red');
         indicator.title = 'Click to login';
         indicator.onclick = startLoginFlow;
+        logoutBtn.style.display = 'none';
+        document.getElementById('user-nfts').innerHTML = '';
       }
     }
 
     async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-      const data = await res.json();
-      window.open(data.payloadURL, "_blank");
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+        if (!res.ok) throw new Error('Login initiation failed');
+        const data = await res.json();
+        if (!data.payloadURL || !data.payloadUUID) throw new Error('Invalid login response');
+        window.open(data.payloadURL, "_blank");
 
-      const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-        const loginStatus = await check.json();
-        if (loginStatus.loggedIn) {
-          clearInterval(interval);
-          localStorage.setItem('xumm_wallet_address', loginStatus.account);
-          updateWalletStatus();
-        }
-      }, 3000);
+        const interval = setInterval(async () => {
+          try {
+            const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+            if (!check.ok) throw new Error('Login check failed');
+            const loginStatus = await check.json();
+            if (loginStatus.loggedIn && loginStatus.account) {
+              clearInterval(interval);
+              localStorage.setItem('xumm_wallet_address', loginStatus.account);
+              updateWalletStatus();
+            }
+          } catch(e) {
+            console.error('Login check error:', e);
+          }
+        }, 3000);
+      } catch (e) {
+        alert('Login failed: ' + e.message);
+      }
     }
 
     function logout() {
-      localStorage.removeItem("xumm_wallet_address");
-      const indicator = document.getElementById("wallet-indicator");
-      indicator.textContent = "🔴 Login";
-      indicator.classList.remove("green");
-      indicator.classList.add("red");
-      indicator.onclick = startLoginFlow;
-      document.getElementById("logout-btn").style.display = "none";
+      localStorage.removeItem('xumm_wallet_address');
+      updateWalletStatus();
     }
 
     async function initiatePayment() {
@@ -167,65 +228,81 @@
           body: JSON.stringify({ userAddress: wallet })
         });
 
+        if (!res.ok) throw new Error('Payment initiation failed');
         const data = await res.json();
 
         if (data.uuid && data.next) {
           alert("Please approve the payment in your XUMM app.");
           window.open(data.next.always || data.next, "_blank");
+          // Start checking payment confirmation
+          waitForPayment(data.uuid);
         } else {
           alert("Payment initiation failed: " + JSON.stringify(data));
         }
       } catch (err) {
         console.error("Payment error:", err);
-        alert("Failed to initiate payment.");
+        alert("Failed to initiate payment: " + err.message);
       }
     }
-    
-function showMintModal() {
-  document.getElementById("mintStatusModal").style.display = "block";
-  document.getElementById("mintStatusText").innerText = "Waiting for payment confirmation...";
-  document.getElementById("mintSpinner").style.display = "block";
-  document.getElementById("closeMintModal").style.display = "none";
-}
 
-function updateMintModalStatus(text, done = false) {
-  document.getElementById("mintStatusText").innerText = text;
-  if (done) {
-    document.getElementById("mintSpinner").style.display = "none";
-    document.getElementById("closeMintModal").style.display = "inline-block";
-  }
-}
+    // Poll for payment approval, then mint
+    function waitForPayment(payloadUUID) {
+      showMintModal();
 
-document.getElementById("closeMintModal").onclick = function () {
-  document.getElementById("mintStatusModal").style.display = "none";
-};
+      const checkSigned = async () => {
+        try {
+          const res = await fetch(`https://sglcn-x20-api.glitch.me/payload/${payloadUUID}`);
+          if (!res.ok) throw new Error('Failed to check payment status');
+          const json = await res.json();
 
-// Example flow after payment payload signed:
-async function handleMintAfterPayment(payloadUUID) {
-  showMintModal();
+          if (json.signed) {
+            updateMintModalStatus("Payment confirmed. Minting NFT...");
+            // Call mint endpoint after payment
+            const mintRes = await fetch('https://sglcn-x20-api.glitch.me/mint-after-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
 
-  const checkSigned = async () => {
-    const res = await fetch(`/payload/${payloadUUID}`);
-    const json = await res.json();
+            if (!mintRes.ok) throw new Error('Minting failed');
+            const mintJson = await mintRes.json();
 
-    if (json.signed) {
-      updateMintModalStatus("Payment confirmed. Minting NFT...");
+            if (mintJson.success) {
+              updateMintModalStatus(`Minted successfully! NFTokenID: ${mintJson.nftoken_id}`, true);
+              // Refresh NFT list
+              fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+            } else {
+              updateMintModalStatus(`Minting failed: ${mintJson.error || 'Unknown error'}`, true);
+            }
+          } else {
+            setTimeout(checkSigned, 3000);
+          }
+        } catch (e) {
+          updateMintModalStatus('Error during mint process: ' + e.message, true);
+        }
+      };
 
-      const mintRes = await fetch('/mint-after-payment', { method: 'POST' });
-      const mintJson = await mintRes.json();
-
-      if (mintJson.success) {
-        updateMintModalStatus(`Minted successfully! NFTokenID: ${mintJson.nftoken_id}`, true);
-      } else {
-        updateMintModalStatus(`Minting failed: ${mintJson.error}`, true);
-      }
-    } else {
-      setTimeout(checkSigned, 3000);
+      checkSigned();
     }
-  };
 
-  checkSigned();
-}
+    function showMintModal() {
+      const modal = document.getElementById("mintStatusModal");
+      modal.style.display = "flex";
+      document.getElementById("mintStatusText").innerText = "Waiting for payment confirmation...";
+      document.getElementById("mintSpinner").style.display = "block";
+      document.getElementById("closeMintModal").style.display = "none";
+    }
+
+    function updateMintModalStatus(text, done = false) {
+      document.getElementById("mintStatusText").innerText = text;
+      if (done) {
+        document.getElementById("mintSpinner").style.display = "none";
+        document.getElementById("closeMintModal").style.display = "inline-block";
+      }
+    }
+
+    document.getElementById("closeMintModal").onclick = function () {
+      document.getElementById("mintStatusModal").style.display = "none";
+    };
 
     async function addTrustline() {
       const wallet = localStorage.getItem('xumm_wallet_address');
@@ -241,6 +318,7 @@ async function handleMintAfterPayment(payloadUUID) {
           body: JSON.stringify({ userAddress: wallet })
         });
 
+        if (!res.ok) throw new Error('Trustline creation failed');
         const data = await res.json();
 
         if (data.payload_url) {
@@ -254,8 +332,39 @@ async function handleMintAfterPayment(payloadUUID) {
         alert("Failed to create trustline.");
       }
     }
-  </script>
 
-  <script src="your-nft-loading-code.js"></script>
+
+    function createNFTCard(nft) {
+      // Extract image URL from metadata JSON
+      let imageURL = '';
+      try {
+        const meta = JSON.parse(nft.nft_metadata);
+        imageURL = meta.image || '';
+      } catch { imageURL = ''; }
+
+      // Handle IPFS link to https://ipfs.io/ipfs/... if needed
+      if (imageURL.startsWith("ipfs://")) {
+        imageURL = "https://ipfs.io/ipfs/" + imageURL.slice(7);
+      }
+
+      // Traits display
+      let traitsHTML = '';
+      try {
+        const meta = JSON.parse(nft.nft_metadata);
+        if (meta.attributes && Array.isArray(meta.attributes)) {
+          traitsHTML = meta.attributes.map(attr => `<div class="trait">${attr.trait_type || ''}: ${attr.value || ''}</div>`).join('');
+        }
+      } catch {}
+
+      return `
+      <div class="nft-card">
+        <img src="${imageURL}" alt="${nft.nft_name || 'NFT Image'}" loading="lazy" />
+        <h3>${nft.nft_name || 'Unnamed NFT'}</h3>
+        <p><strong>Domain:</strong> ${nft.nft_domain || 'N/A'}</p>
+        ${traitsHTML}
+        <p><small>Token ID: ${nft.nftoken_id}</small></p>
+      </div>`;
+    }
+  </script>
 </body>
 </html>

@@ -6,3 +6,12 @@ desc = """The Gold Standard of the Bored Seagull Club ecosystem.
 SeagullCoin acts as the plumbing of our Ecosystem, with pairing to XRP, and highly liquid to XAU.
 SeagullCoin is the perfect long-term hedge asset with future collateral loan utility."""
 icon = "https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH_400x400.jpg"
+symbol = "SGLCN"
+
+[[CURRENCIES]]
+code = "SeagullMansions"
+issuer = "rHr4mUQjRusoNNYnzCp5BFumyWjycgVHJS"
+network = "main"
+desc = "SeagullMansions are tokens redeemable for NFTs of luxurious properties in the Bored SeagullClub Metaverse."
+icon = "https://www.gravatar.com/psychicpeanut6bcb9b1a78"
+symbol = "SGLMSN"

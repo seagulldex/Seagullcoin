@@ -2865,7 +2865,61 @@ function extractNFTokenID(txResult) {
 }
 
 
+app.post('/mint-after-payment', async (req, res) => {
+  const { userAddress, paymentUUID } = req.body;
+  if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
 
+  let txid;
+  try {
+    const paymentPayload = await xumm.payload.get(paymentUUID);
+    console.log("Full Payload:", paymentPayload);
+
+    // Fixed the check to use meta.exists instead of paymentPayload.exists
+    if (!paymentPayload || !paymentPayload.meta || !paymentPayload.meta.exists) {
+      return res.status(400).json({ error: "Payment payload not found" });
+    }
+
+    txid = paymentPayload.response?.txid || paymentPayload.meta?.resolved?.txid;
+    if (!txid) {
+      return res.status(400).json({ error: "Transaction ID not available yet. Please try again shortly." });
+    }
+
+  } catch (e) {
+    console.error("Error retrieving payment payload:", e);
+    return res.status(500).json({ error: "Failed to retrieve payment payload" });
+  }
+
+  // XRPL transaction lookup
+  try {
+    await client.connect();
+    const tx = await client.request({
+      command: "tx",
+      transaction: txid
+    });
+    await client.disconnect();
+
+    const txn = tx.result;
+    console.log("Ledger TX:", JSON.stringify(txn, null, 2));
+
+
+    // Check if the payment matches 0.18 SGLMSN
+    if (
+      txn.TransactionType !== "Payment" ||
+      typeof txn.Amount !== "object" ||
+      txn.Amount.currency !== "53656167756C6C4D616E73696F6E730000000000" ||
+      txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
+      parseFloat(txn.Amount.value) < 0.18
+    ) {
+      return res.status(400).json({ error: "Invalid or insufficient payment" });
+    }
+
+  } catch (err) {
+    console.error("Error verifying transaction on ledger:", err);
+    return res.status(500).json({ error: "Failed to verify payment transaction" });
+  }
+
+  // Proceed with minting...
+});
 
 const usedNFTs = new Set();
 

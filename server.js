@@ -2917,13 +2917,7 @@ console.log("Value:", txn.Amount.value);
       return res.status(400).json({ error: "Invalid or insufficient payment" });
     }
 
-  } catch (err) {
-    console.error("Error verifying transaction on ledger:", err);
-    return res.status(500).json({ error: "Failed to verify payment transaction" });
-  }
 
-  // Proceed with minting...
-});
 
 const usedNFTs = new Set();
 

@@ -2869,19 +2869,13 @@ app.post('/mint-after-payment', async (req, res) => {
   const { userAddress, paymentUUID } = req.body;
   if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
 
-  let txid;
+  let paymentPayload;
   try {
-    const paymentPayload = await xumm.payload.get(paymentUUID);
+    paymentPayload = await xumm.payload.get(paymentUUID);
     console.log("Full Payload:", paymentPayload);
 
-    // Fixed the check to use meta.exists instead of paymentPayload.exists
-    if (!paymentPayload || !paymentPayload.meta || !paymentPayload.meta.exists) {
+    if (!paymentPayload?.meta?.exists) {
       return res.status(400).json({ error: "Payment payload not found" });
-    }
-
-    txid = paymentPayload.response?.txid || paymentPayload.meta?.resolved?.txid;
-    if (!txid) {
-      return res.status(400).json({ error: "Transaction ID not available yet. Please try again shortly." });
     }
 
   } catch (e) {
@@ -2889,33 +2883,40 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(500).json({ error: "Failed to retrieve payment payload" });
   }
 
-  // XRPL transaction lookup
+  // Decode the transaction hex from XUMM
+  const txnHex = paymentPayload.response?.hex;
+  if (!txnHex) {
+    return res.status(400).json({ error: "Transaction hex not available yet. Please try again shortly." });
+  }
+
+  let txn;
   try {
-    await client.connect();
-    const tx = await client.request({
-      command: "tx",
-      transaction: txid
-    });
-    await client.disconnect();
+    txn = xrpl.decode(txnHex);
+    console.log("Decoded TXN:", txn);
+  } catch (e) {
+    console.error("Failed to decode transaction hex:", e);
+    return res.status(500).json({ error: "Failed to decode transaction" });
+  }
 
-    const txn = tx.result;
-    console.log("Ledger TX:", JSON.stringify(txn, null, 2));
-console.log("TXN Amount:", txn.Amount);
-console.log("Currency:", txn.Amount.currency);
-console.log("Issuer:", txn.Amount.issuer);
-console.log("Value:", txn.Amount.value);
+  // Validate payment
+  if (
+    txn.TransactionType !== "Payment" ||
+    typeof txn.Amount !== "object" ||
+    (txn.Amount.currency !== "53656167756C6C4D616E73696F6E730000000000" && txn.Amount.currency !== "SGLMSN") ||
+    txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
+    parseFloat(txn.Amount.value) < 0.18
+  ) {
+    console.log("Rejected payment with Amount:", txn.Amount);
+    return res.status(400).json({ error: "Invalid or insufficient payment" });
+  }
 
+  // PASSED: Valid SeagullMansions payment
+  console.log("Payment validated. Proceeding with minting...");
+  // TODO: Add your minting logic here (e.g., NFT.Storage + XRPL mint)
 
-    // Check if the payment matches 0.18 SGLMSN
-    if (
-      txn.TransactionType !== "Payment" ||
-      typeof txn.Amount !== "object" ||
-      txn.Amount.currency !== "53656167756C6C4D616E73696F6E730000000000" ||
-      txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
-      parseFloat(txn.Amount.value) < 0.18
-    ) { console.log("Amount:", txn.Amount);
-      return res.status(400).json({ error: "Invalid or insufficient payment" });
-    }
+  return res.json({ success: true, message: "Payment verified. Ready to mint." });
+});
+
 
 
 

@@ -2918,7 +2918,6 @@ function extractNFTokenID(txResult) {
   return null;
 }
 
-
 app.post('/mint-after-payment', async (req, res) => {
   const { userAddress, paymentUUID } = req.body;
   if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
@@ -2946,7 +2945,10 @@ app.post('/mint-after-payment', async (req, res) => {
   const validPayment = (
     txn.TransactionType === "Payment" &&
     typeof txn.Amount === "object" &&
-    (txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" || txn.Amount.currency === "SGLMSN") &&
+    (
+      txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" || 
+      txn.Amount.currency === "SGLMSN"
+    ) &&
     txn.Amount.issuer === SERVICE_WALLET_ADDRESS &&
     parseFloat(txn.Amount.value) >= 0.18
   );
@@ -2955,17 +2957,21 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(400).json({ error: "Invalid or insufficient payment" });
   }
 
-  // Pick a free NFTokenID
   const availableNFT = nftokens.find(id => !usedNFTs.has(id) && !pendingNFTs.has(id));
   if (!availableNFT) return res.status(503).json({ error: "No NFTs available" });
 
-  usedNFTs.add(availableNFT); // Mark as assigned
+  usedNFTs.add(availableNFT);
+  pendingNFTs.add(availableNFT);
+
+  console.log(`Assigned NFT: ${availableNFT} to wallet: ${userAddress}`);
   return res.json({
     success: true,
     message: "Payment verified. NFT assigned.",
     nftoken_id: availableNFT
   });
 });
+
+
 
 const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED); // Your service wallet
 

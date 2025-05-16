@@ -88,6 +88,8 @@
     <div style="text-align: center; margin: 20px;">
       <button onclick="initiatePayment()">Mint pay 0.18 SeagullMansions</button>
     </div>
+    <div id="user-nfts" class="nft-grid"></div>
+
   </main>
 
   <script>
@@ -165,6 +167,46 @@
         alert("Failed to initiate payment.");
       }
     }
+    
+  async function fetchNFTs(wallet) {
+    const res = await fetch(`https://sglcn-x20-api.glitch.me/user-nfts?address=${wallet}`);
+    const { nfts } = await res.json();
+
+    const container = document.getElementById("user-nfts");
+    container.innerHTML = '';
+
+    for (const nft of nfts) {
+      let metadata = {};
+      let imgSrc = '';
+      try {
+        const uriHex = nft.URI;
+        const decodedUri = hexToString(uriHex);
+        const ipfsUrl = decodedUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
+        const metadataRes = await fetch(ipfsUrl);
+        metadata = await metadataRes.json();
+        imgSrc = metadata.image?.replace('ipfs://', 'https://ipfs.io/ipfs/') || '';
+      } catch (e) {
+        console.warn('Failed to fetch metadata for NFT:', e);
+      }
+
+      const card = document.createElement("div");
+      card.className = "nft-card";
+      card.innerHTML = `
+        ${imgSrc ? `<img src="${imgSrc}" alt="NFT Image"/>` : ''}
+        <h3>${metadata.name || 'Unnamed NFT'}</h3>
+        <p>${metadata.description || 'No description available.'}</p>
+        ${metadata.properties ? Object.entries(metadata.properties).map(
+          ([key, value]) => `<div class="trait"><strong>${key}:</strong> ${value}</div>`
+        ).join('') : ''}
+      `;
+      container.appendChild(card);
+    }
+  }
+
+  function hexToString(hex) {
+    if (!hex) return '';
+    return decodeURIComponent(hex.replace(/^0x/, '').replace(/(..)/g, '%$1'));
+  }
 
     async function addTrustline() {
       const wallet = localStorage.getItem('xumm_wallet_address');

@@ -2915,51 +2915,7 @@ app.post('/mint-after-payment', async (req, res) => {
 
 const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED); // Your service wallet
 
- // Find available token
-  const selectedTokenId = nftokens.find(id => !usedNFTs.has(id) && !pendingNFTs.has(id));
-  if (!selectedTokenId) return res.status(503).json({ error: "No NFTs available" });
-
-  try {
-    await client.connect();
-
-    const offerTx = {
-      TransactionType: "NFTokenCreateOffer",
-      Account: SERVICE_WALLET_ADDRESS,
-      NFTokenID: selectedTokenId,
-      Destination: userAddress,
-      Flags: 1,
-      Amount: "0"
-    };
-
-    const prepared = await client.autofill(offerTx);
-    const signed = wallet.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
-
-    const offerIndex = result.result?.meta?.AffectedNodes?.find(n =>
-      n.CreatedNode?.LedgerEntryType === "NFTokenOffer"
-    )?.CreatedNode?.LedgerIndex;
-
-    if (!offerIndex) {
-      throw new Error("No offer index found");
-    }
-
-    usedNFTs.add(selectedTokenId);
-    pendingNFTs.delete(selectedTokenId);
-
-    console.log(`Transferred ${selectedTokenId} to ${userAddress}`);
-    await client.disconnect();
-
-    return res.json({
-      success: true,
-      NFTokenID: selectedTokenId
-    });
-
-  } catch (err) {
-    console.error("Transfer error:", err);
-    await client.disconnect();
-    return res.status(500).json({ error: "NFT transfer failed" });
-  }
-});
+ 
 
 const usedNFTs = new Set();
 

@@ -2854,15 +2854,7 @@ function extractNFTokenID(txResult) {
   const affected = txResult.meta?.AffectedNodes || [];
   for (const node of affected) {
     const created = node.CreatedNode;
-    if (created && created.LedgerEntryType === "NFTokenPage") {
-      const nfts = created.NewFields?.NFTokens;
-      if (nfts && nfts.length > 0) {
-        return nfts[0].NFToken.NFTokenID;
-      }
-    }
-  }
-  return null;
-}
+    if (created && crea
 
 
 app.post('/mint-after-payment', async (req, res) => {

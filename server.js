@@ -2838,7 +2838,7 @@ app.post("/pays", async (req, res) => {
       Amount: {
         currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin hex
         value: "0.5",
-        issuer: SEAGULLCOIN_ISSUER
+        issuer: SEAGULLMANSIONS_ISSUER
       }
     };
 

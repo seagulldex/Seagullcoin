@@ -2877,6 +2877,8 @@ app.post('/burn-nft', async (req, res) => {
 });
 
 const SERVICE_WALLET_ADDRESS = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
+const SERVICE_WALLET_SEED = process.env.SERVICE_WALLET_SEED;
+
 
 app.post('/pays', async (req, res) => {
   const { wallet } = req.body;
@@ -2960,16 +2962,46 @@ app.post('/mint-after-payment', async (req, res) => {
   const availableNFT = nftokens.find(id => !usedNFTs.has(id) && !pendingNFTs.has(id));
   if (!availableNFT) return res.status(503).json({ error: "No NFTs available" });
 
-  usedNFTs.add(availableNFT);
   pendingNFTs.add(availableNFT);
 
-  console.log(`Assigned NFT: ${availableNFT} to wallet: ${userAddress}`);
-  return res.json({
-    success: true,
-    message: "Payment verified. NFT assigned.",
-    nftoken_id: availableNFT
-  });
+  try {
+    const client = new xrpl.Client("wss://xrplcluster.com");
+    await client.connect();
+
+    const wallet = xrpl.Wallet.fromSeed(SERVICE_WALLET_SEED);
+    const tx = {
+      TransactionType: "NFTokenCreateOffer",
+      Account: wallet.classicAddress,
+      NFTokenID: availableNFT,
+      Destination: userAddress,
+      Amount: "0",
+      Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
+    };
+
+    const prepared = await client.autofill(tx);
+    const signed = wallet.sign(prepared);
+    const result = await client.submitAndWait(signed.tx_blob);
+    await client.disconnect();
+
+    if (result.result.meta.TransactionResult !== "tesSUCCESS") {
+      pendingNFTs.delete(availableNFT);
+      return res.status(500).json({ error: "NFT offer creation failed" });
+    }
+
+    usedNFTs.add(availableNFT);
+    pendingNFTs.delete(availableNFT);
+
+    return res.json({
+      success: true,
+      message: "Payment verified. NFT assigned and offer created.",
+      nftoken_id: availableNFT
+    });
+  } catch (err) {
+    pendingNFTs.delete(availableNFT);
+    return res.status(500).json({ error: "Minting failed", details: err.message });
+  }
 });
+
 
 
 

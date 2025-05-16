@@ -407,6 +407,8 @@ app.use(cors({ origin: 'https://sglcn-x20-api.glitch.me', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+app.use('/.well-known', express.static(path.join(__dirname, '.well-known')));
+
 
 const mintLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes

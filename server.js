@@ -2900,6 +2900,10 @@ app.post('/mint-after-payment', async (req, res) => {
 
     const txn = tx.result;
     console.log("Ledger TX:", JSON.stringify(txn, null, 2));
+console.log("TXN Amount:", txn.Amount);
+console.log("Currency:", txn.Amount.currency);
+console.log("Issuer:", txn.Amount.issuer);
+console.log("Value:", txn.Amount.value);
 
 
     // Check if the payment matches 0.18 SGLMSN

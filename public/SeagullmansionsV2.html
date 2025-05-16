@@ -79,59 +79,56 @@
       </ul>
     </nav>
   </header>
-   <main>
-    <main>
-  <h1>SeagullMansions NFT swap token</h1>
-  <div style="text-align: center; margin: 20px;">
-    <button onclick="addTrustline()">Add SeagullMansions Trustline</button>
-  </div>
-  <div style="text-align: center; margin: 20px;">
-    <button onclick="initiatePayment()">Mint pay 0.18 SeagullMansions</button>
-  </div>
-     </main>
+
+  <main>
+    <h1>SeagullMansions NFT swap token</h1>
+    <div style="text-align: center; margin: 20px;">
+      <button onclick="addTrustline()">Add SeagullMansions Trustline</button>
+    </div>
+    <div style="text-align: center; margin: 20px;">
+      <button onclick="initiatePayment()">Mint pay 0.18 SeagullMansions</button>
+    </div>
+  </main>
 
   <script>
-    
     async function loginWithXumm() {
-  try {
-    const res = await fetch("https://sglcn-x20-api.glitch.me/login");
-    const data = await res.json();
+      try {
+        const res = await fetch("https://sglcn-x20-api.glitch.me/login");
+        const data = await res.json();
 
-    if (!data.success || !data.uuid || !data.next.always) {
-      alert("Failed to start login.");
-      return;
-    }
+        if (!data.success || !data.uuid || !data.next.always) {
+          alert("Failed to start login.");
+          return;
+        }
 
-    // Open the XUMM login popup
-    window.open(data.next.always, "_blank");
+        // Open XUMM login
+        window.open(data.next.always, "_blank");
+        const uuid = data.uuid;
 
-    // Poll the backend for login status
-    const uuid = data.uuid;
-    const checkLogin = async () => {
-      const statusRes = await fetch(`https://sglcn-x20-api.glitch.me/login`);
-      const statusData = await statusRes.json();
+        // Poll for login confirmation
+        const pollLogin = async () => {
+          const statusRes = await fetch(`https://sglcn-x20-api.glitch.me/login/${uuid}`);
+          const statusData = await statusRes.json();
 
-      if (statusData.logged_in && statusData.wallet) {
-        localStorage.setItem("xumm_wallet_address", statusData.wallet);
-        const indicator = document.getElementById("wallet-indicator");
-        indicator.textContent = "🟢 " + statusData.wallet.slice(0, 6) + "..." + statusData.wallet.slice(-4);
-        indicator.classList.remove("red");
-        indicator.classList.add("green");
-        indicator.onclick = null;
-        document.getElementById("logout-btn").style.display = "inline-block";
-      } else {
-        // Not yet logged in, check again in 2 seconds
-        setTimeout(checkLogin, 2000);
+          if (statusData.logged_in && statusData.wallet) {
+            localStorage.setItem("xumm_wallet_address", statusData.wallet);
+            const indicator = document.getElementById("wallet-indicator");
+            indicator.textContent = "🟢 " + statusData.wallet.slice(0, 6) + "..." + statusData.wallet.slice(-4);
+            indicator.classList.remove("red");
+            indicator.classList.add("green");
+            indicator.onclick = null;
+            document.getElementById("logout-btn").style.display = "inline-block";
+          } else {
+            setTimeout(pollLogin, 2000);
+          }
+        };
+
+        pollLogin();
+      } catch (err) {
+        console.error("Login error:", err);
+        alert("Failed to initiate XUMM login.");
       }
-    };
-
-    checkLogin();
-  } catch (err) {
-    console.error("Login error:", err);
-    alert("Failed to initiate XUMM login.");
-  }
-}
-
+    }
 
     function logout() {
       localStorage.removeItem("xumm_wallet_address");
@@ -154,65 +151,62 @@
         document.getElementById("logout-btn").style.display = "inline-block";
       }
     });
-    
-  async function initiatePayment() {
-  const wallet = localStorage.getItem('xumm_wallet_address');
-  if (!wallet) {
-    alert("Please log in with your XUMM wallet first.");
-    return;
-  }
 
-  try {
-    const res = await fetch("https://sglcn-x20-api.glitch.me/pays", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userAddress: wallet })  // FIXED key
-    });
+    async function initiatePayment() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      if (!wallet) {
+        alert("Please log in with your XUMM wallet first.");
+        return;
+      }
 
-    const data = await res.json();
+      try {
+        const res = await fetch("https://sglcn-x20-api.glitch.me/pays", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userAddress: wallet })
+        });
 
-    if (data.uuid && data.next) {
-      alert("Please approve the payment in your XUMM app.");
-      window.open(data.next.always || data.next, "_blank");  // Safe fallback
-    } else {
-      alert("Payment initiation failed: " + JSON.stringify(data));
+        const data = await res.json();
+
+        if (data.uuid && data.next) {
+          alert("Please approve the payment in your XUMM app.");
+          window.open(data.next.always || data.next, "_blank");
+        } else {
+          alert("Payment initiation failed: " + JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error("Payment error:", err);
+        alert("Failed to initiate payment.");
+      }
     }
-  } catch (err) {
-    console.error("Payment error:", err);
-    alert("Failed to initiate payment.");
-  }
-}
-
-
 
     async function addTrustline() {
-  const wallet = localStorage.getItem('xumm_wallet_address');
-  if (!wallet) {
-    alert("Please log in with your XUMM wallet first.");
-    return;
-  }
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      if (!wallet) {
+        alert("Please log in with your XUMM wallet first.");
+        return;
+      }
 
-  try {
-    const res = await fetch("https://sglcn-x20-api.glitch.me/create-trustline", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userAddress: wallet }) // <-- fix here
-    });
+      try {
+        const res = await fetch("https://sglcn-x20-api.glitch.me/create-trustline", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userAddress: wallet })
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    if (data.payload_url) {
-      alert("Please sign the trustline request in your XUMM app.");
-      window.open(data.payload_url, "_blank");
-    } else {
-      alert("Unexpected response: " + JSON.stringify(data));
+        if (data.payload_url) {
+          alert("Please sign the trustline request in your XUMM app.");
+          window.open(data.payload_url, "_blank");
+        } else {
+          alert("Unexpected response: " + JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error("Trustline creation failed:", err);
+        alert("Failed to create trustline.");
+      }
     }
-  } catch (err) {
-    console.error("Trustline creation failed:", err);
-    alert("Failed to create trustline.");
-  }
-}
-
   </script>
 
   <script src="your-nft-loading-code.js"></script>

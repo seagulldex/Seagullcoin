@@ -2921,7 +2921,7 @@ function extractNFTokenID(txResult) {
 }
 
 app.post('/mint-after-payment', async (req, res) => {
-  const { userAddress, paymentUUID } = req.body;
+  const { paymentUUID } = req.body;
   if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
 
   let paymentPayload;
@@ -2935,7 +2935,12 @@ app.post('/mint-after-payment', async (req, res) => {
   }
 
   const txnHex = paymentPayload.response?.hex;
+  const userAddress = paymentPayload.response?.account;
+
   if (!txnHex) return res.status(400).json({ error: "Transaction not submitted yet." });
+  if (!userAddress || userAddress.length !== 34) {
+    return res.status(400).json({ error: "Invalid wallet address in signed payload" });
+  }
 
   let txn;
   try {
@@ -3001,6 +3006,7 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(500).json({ error: "Minting failed", details: err.message });
   }
 });
+
 
 
 

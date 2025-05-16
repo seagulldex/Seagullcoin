@@ -2871,71 +2871,49 @@ app.post('/mint-after-payment', async (req, res) => {
   let paymentPayload;
   try {
     paymentPayload = await xumm.payload.get(paymentUUID);
+    console.log("Full Payload:", paymentPayload);
+
     if (!paymentPayload?.meta?.exists) {
       return res.status(400).json({ error: "Payment payload not found" });
     }
+
   } catch (e) {
+    console.error("Error retrieving payment payload:", e);
     return res.status(500).json({ error: "Failed to retrieve payment payload" });
   }
 
+  // Decode the transaction hex from XUMM
   const txnHex = paymentPayload.response?.hex;
-  if (!txnHex) return res.status(400).json({ error: "Transaction not submitted yet." });
+  if (!txnHex) {
+    return res.status(400).json({ error: "Transaction hex not available yet. Please try again shortly." });
+  }
 
   let txn;
   try {
     txn = xrpl.decode(txnHex);
+    console.log("Decoded TXN:", txn);
   } catch (e) {
+    console.error("Failed to decode transaction hex:", e);
     return res.status(500).json({ error: "Failed to decode transaction" });
   }
 
-  const validPayment = (
-    txn.TransactionType === "Payment" &&
-    typeof txn.Amount === "object" &&
-    (txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" || txn.Amount.currency === "SGLMSN") &&
-    txn.Amount.issuer === SERVICE_WALLET_ADDRESS &&
-    parseFloat(txn.Amount.value) >= 0.18
-  );
-
-  if (!validPayment) {
+  // Validate payment
+  if (
+    txn.TransactionType !== "Payment" ||
+    typeof txn.Amount !== "object" ||
+    (txn.Amount.currency !== "53656167756C6C4D616E73696F6E730000000000" && txn.Amount.currency !== "SGLMSN") ||
+    txn.Amount.issuer !== "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" ||
+    parseFloat(txn.Amount.value) < 0.18
+  ) {
+    console.log("Rejected payment with Amount:", txn.Amount);
     return res.status(400).json({ error: "Invalid or insufficient payment" });
   }
 
-  // Pick a free NFTokenID
-  const availableNFT = nftokens.find(id => !usedNFTs.has(id) && !pendingNFTs.has(id));
-if (!availableNFT) return res.status(503).json({ error: "No NFTs available" });
-usedNFTs.add(availableNFT); // Reserve it now to prevent double use
+  // PASSED: Valid SeagullMansions payment
+  console.log("Payment validated. Proceeding with minting...");
+  // TODO: Add your minting logic here (e.g., NFT.Storage + XRPL mint)
 
-
-  // Create zero-value offer to send NFT to user
-  try {
-    const txCreateOffer = {
-      TransactionType: "NFTokenCreateOffer",
-      Account: serviceWallet.classicAddress,
-      NFTokenID: availableNFT,
-      Amount: "0",
-      Destination: userAddress
-    };
-
-    const prepared = await client.autofill(txCreateOffer);
-    const signed = wallet.sign(prepared);
-    const txResult = await client.submitAndWait(signed.tx_blob);
-
-    
-
-    if (txResult.result.meta.TransactionResult !== "tesSUCCESS") {
-      return res.status(500).json({ error: "Offer creation failed", txResult });
-    }
-
-    return res.json({
-      success: true,
-      message: "Payment verified. NFT assigned and offer created.",
-      nftoken_id: availableNFT,
-      offer_transaction_hash: txResult.result.hash
-    });
-
-  } catch (err) {
-    return res.status(500).json({ error: "Failed to create NFT offer", details: err.message });
-  }
+  return res.json({ success: true, message: "Payment verified. Ready to mint." });
 });
 
 

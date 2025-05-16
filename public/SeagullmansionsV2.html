@@ -93,6 +93,15 @@
   <p>Loading NFTs...</p>
 </div>
     <div id="user-nfts" class="nft-grid"></div>
+<!-- Mint Status Modal -->
+<div id="mintStatusModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
+  <div style="background:#fff; padding:20px; max-width:400px; margin:100px auto; border-radius:10px; text-align:center;">
+    <h2>Minting NFT</h2>
+    <p id="mintStatusText">Waiting for payment confirmation...</p>
+    <div id="mintSpinner" style="margin-top:20px;">⏳</div>
+    <button id="closeMintModal" style="display:none; margin-top:20px;">Close</button>
+  </div>
+</div>
 
   </main>
 
@@ -172,7 +181,51 @@
       }
     }
     
+function showMintModal() {
+  document.getElementById("mintStatusModal").style.display = "block";
+  document.getElementById("mintStatusText").innerText = "Waiting for payment confirmation...";
+  document.getElementById("mintSpinner").style.display = "block";
+  document.getElementById("closeMintModal").style.display = "none";
+}
 
+function updateMintModalStatus(text, done = false) {
+  document.getElementById("mintStatusText").innerText = text;
+  if (done) {
+    document.getElementById("mintSpinner").style.display = "none";
+    document.getElementById("closeMintModal").style.display = "inline-block";
+  }
+}
+
+document.getElementById("closeMintModal").onclick = function () {
+  document.getElementById("mintStatusModal").style.display = "none";
+};
+
+// Example flow after payment payload signed:
+async function handleMintAfterPayment(payloadUUID) {
+  showMintModal();
+
+  const checkSigned = async () => {
+    const res = await fetch(`/payload/${payloadUUID}`);
+    const json = await res.json();
+
+    if (json.signed) {
+      updateMintModalStatus("Payment confirmed. Minting NFT...");
+
+      const mintRes = await fetch('/mint-after-payment', { method: 'POST' });
+      const mintJson = await mintRes.json();
+
+      if (mintJson.success) {
+        updateMintModalStatus(`Minted successfully! NFTokenID: ${mintJson.nftoken_id}`, true);
+      } else {
+        updateMintModalStatus(`Minting failed: ${mintJson.error}`, true);
+      }
+    } else {
+      setTimeout(checkSigned, 3000);
+    }
+  };
+
+  checkSigned();
+}
 
     async function addTrustline() {
       const wallet = localStorage.getItem('xumm_wallet_address');

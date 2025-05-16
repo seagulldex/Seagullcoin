@@ -419,6 +419,50 @@ const mintLimiter = rateLimit({
   }
 });
 
+
+const tokens = [
+  {
+    code: "SeagullCoin",
+    issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+    network: "main",
+    desc: "The Gold Standard of the Bored Seagull Club ecosystem. SeagullCoin acts as the plumbing of our Ecosystem, with pairing to XRP, and highly liquid to XAU. SeagullCoin is the perfect long-term hedge asset with future collateral loan utility.",
+    icon: "https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH_400x400.jpg",
+    symbol: "SGLCN",
+    token_hex: "53656167756C6C436F696E000000000000000000"
+  },
+  {
+    code: "SeagullMansions",
+    issuer: "rHr4mUQjRusoNNYnzCp5BFumyWjycgVHJS",
+    network: "main",
+    desc: "SeagullMansions are tokens redeemable for NFTs of luxurious properties in the Bored Seagull Club Metaverse.",
+    icon: "https://www.gravatar.com/psychicpeanut6bcb9b1a78",
+    symbol: "SGLMSN",
+    token_hex: "53656167756C6C4D616E73696F6E730000000000"
+  },
+  {
+    code: "SeagullCash",
+    issuer: "rNHeGnj4kqGSVyFzDcoyi3gsp1bdPuGeNK",
+    network: "main",
+    desc: "SeagullCash is a payment system for Person to Person payments with future UBI and NFC integration.",
+    icon: "https://www.gravatar.com/avatar/f00a8c2ebf24897e0de7a2d0028ac06e",
+    symbol: "SGLCSH",
+    token_hex: "53656167756C6C43617368000000000000000000"
+  },
+  {
+    code: "SeagullApartments",
+    issuer: "rKjevbXgCs6sP8XTLz6SgcE5RKCLuiS1r3",
+    network: "main",
+    desc: "SeagullApartments are tokens redeemable for Apartment NFTs in the Bored Seagull Club Metaverse.",
+    icon: "https://cdn.xrp.cafe/689b2eca1128-4387-9abf-8f03693f75f4.webp",
+    symbol: "SGLAPRT",
+    token_hex: "53454147554C4C41504152544D454E5453000000"
+  }
+];
+
+app.get("/tokens", (req, res) => {
+  res.json(tokens);
+});
+
 // ===== Swagger Docs =====
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -1005,6 +1049,27 @@ app.get('/check-login', async (req, res) => {
 
 app.use('/fallback.png', express.static(path.join(__dirname, 'public/fallback.png')));
 
+app.get('/.well-known/xrp-ledger.toml', (req, res) => {
+
+  const tomlPath = path.join(__dirname, '.well-known', 'xrp-ledger.toml');
+
+  fs.readFile(tomlPath, 'utf8', (err, data) => {
+
+    if (err) {
+
+      res.status(500).send('TOML file not found');
+
+      return;
+
+    }
+
+    res.set('Content-Type', 'text/plain');
+
+    res.send(data);
+
+  });
+
+});
 
 app.post('/list', async (req, res) => {
   const { nftokenId, price, duration } = req.body;

@@ -92,43 +92,43 @@
 
   <script>
     async function loginWithXumm() {
-      try {
-        const res = await fetch("https://sglcn-x20-api.glitch.me/login");
-        const data = await res.json();
+  try {
+    const res = await fetch("https://sglcn-x20-api.glitch.me/login");
+    const data = await res.json();
 
-        if (!data.success || !data.uuid || !data.next.always) {
-          alert("Failed to start login.");
-          return;
-        }
+    const uuid = data.payloadUUID;
+    const signUrl = data.payloadURL;
 
-        // Open XUMM login
-        window.open(data.next.always, "_blank");
-        const uuid = data.uuid;
-
-        // Poll for login confirmation
-        const pollLogin = async () => {
-          const statusRes = await fetch(`https://sglcn-x20-api.glitch.me/login/${uuid}`);
-          const statusData = await statusRes.json();
-
-          if (statusData.logged_in && statusData.wallet) {
-            localStorage.setItem("xumm_wallet_address", statusData.wallet);
-            const indicator = document.getElementById("wallet-indicator");
-            indicator.textContent = "🟢 " + statusData.wallet.slice(0, 6) + "..." + statusData.wallet.slice(-4);
-            indicator.classList.remove("red");
-            indicator.classList.add("green");
-            indicator.onclick = null;
-            document.getElementById("logout-btn").style.display = "inline-block";
-          } else {
-            setTimeout(pollLogin, 2000);
-          }
-        };
-
-        pollLogin();
-      } catch (err) {
-        console.error("Login error:", err);
-        alert("Failed to initiate XUMM login.");
-      }
+    if (!uuid || !signUrl) {
+      alert("Failed to start login.");
+      return;
     }
+
+    // Open XUMM login
+    const popup = window.open(signUrl, "xummLogin", "width=400,height=700");
+
+
+    // Poll for login confirmation
+    // Poll for login confirmation
+const pollLogin = async () => {
+  const statusRes = await fetch(`https://sglcn-x20-api.glitch.me/login/${uuid}`);
+  const statusData = await statusRes.json();
+
+  if (statusData.logged_in && statusData.wallet) {
+    localStorage.setItem("xumm_wallet_address", statusData.wallet);
+    location.reload(); // Force UI to reflect login
+  } else {
+    setTimeout(pollLogin, 2000);
+  }
+};
+
+
+    pollLogin();
+  } catch (err) {
+    console.error("Login error:", err);
+    alert("Failed to initiate XUMM login.");
+  }
+}
 
     function logout() {
       localStorage.removeItem("xumm_wallet_address");

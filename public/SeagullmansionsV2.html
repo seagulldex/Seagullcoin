@@ -64,7 +64,7 @@
     </div>
     <div id="wallet-container">
       <div id="wallet-status">
-        <button id="wallet-indicator" class="red" onclick="loginWithXumm()">🔴 Login</button>
+        <button id="wallet-indicator" class="red">🔴 Login</button>
       </div>
     </div>
   </div>
@@ -91,44 +91,42 @@
   </main>
 
   <script>
-    async function loginWithXumm() {
-  try {
-    const res = await fetch("https://sglcn-x20-api.glitch.me/login");
-    const data = await res.json();
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
+    });
 
-    const uuid = data.payloadUUID;
-    const signUrl = data.payloadURL;
-
-    if (!uuid || !signUrl) {
-      alert("Failed to start login.");
-      return;
+    function updateWalletStatus() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      const indicator = document.getElementById('wallet-indicator');
+      if (wallet) {
+        indicator.textContent = '🟢 Connected';
+        indicator.classList.replace('red', 'green');
+        indicator.title = 'Logged in';
+        document.getElementById('logout-btn').style.display = 'inline-block';
+        fetchNFTs(wallet);
+      } else {
+        indicator.textContent = '🔴 Login';
+        indicator.classList.replace('green', 'red');
+        indicator.title = 'Click to login';
+        indicator.onclick = startLoginFlow;
+      }
     }
 
-    // Open XUMM login
-    const popup = window.open(signUrl, "xummLogin", "width=400,height=700");
+    async function startLoginFlow() {
+      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+      const data = await res.json();
+      window.open(data.payloadURL, "_blank");
 
-
-    // Poll for login confirmation
-    // Poll for login confirmation
-const pollLogin = async () => {
-  const statusRes = await fetch(`https://sglcn-x20-api.glitch.me/login/${uuid}`);
-  const statusData = await statusRes.json();
-
-  if (statusData.logged_in && statusData.wallet) {
-    localStorage.setItem("xumm_wallet_address", statusData.wallet);
-    location.reload(); // Force UI to reflect login
-  } else {
-    setTimeout(pollLogin, 2000);
-  }
-};
-
-
-    pollLogin();
-  } catch (err) {
-    console.error("Login error:", err);
-    alert("Failed to initiate XUMM login.");
-  }
-}
+      const interval = setInterval(async () => {
+        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+        const loginStatus = await check.json();
+        if (loginStatus.loggedIn) {
+          clearInterval(interval);
+          localStorage.setItem('xumm_wallet_address', loginStatus.account);
+          updateWalletStatus();
+        }
+      }, 3000);
+    }
 
     function logout() {
       localStorage.removeItem("xumm_wallet_address");
@@ -136,21 +134,9 @@ const pollLogin = async () => {
       indicator.textContent = "🔴 Login";
       indicator.classList.remove("green");
       indicator.classList.add("red");
-      indicator.onclick = loginWithXumm;
+      indicator.onclick = startLoginFlow;
       document.getElementById("logout-btn").style.display = "none";
     }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const wallet = localStorage.getItem("xumm_wallet_address");
-      if (wallet) {
-        const indicator = document.getElementById("wallet-indicator");
-        indicator.textContent = "🟢 " + wallet.slice(0, 6) + "..." + wallet.slice(-4);
-        indicator.classList.remove("red");
-        indicator.classList.add("green");
-        indicator.onclick = null;
-        document.getElementById("logout-btn").style.display = "inline-block";
-      }
-    });
 
     async function initiatePayment() {
       const wallet = localStorage.getItem('xumm_wallet_address');

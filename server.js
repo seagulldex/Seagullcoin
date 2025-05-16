@@ -2915,27 +2915,61 @@ app.post('/mint-after-payment', async (req, res) => {
 
 const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED); // Your service wallet
 
-try {
-  // Find an unused NFTokenID
-  let selectedTokenId;
-  for (const tokenId of nftokens) {
-    if (!usedNFTs.has(tokenId) && !pendingNFTs.has(tokenId)) {
-      selectedTokenId = tokenId;
-      pendingNFTs.add(tokenId);
-      break;
+{
+  try {
+    // Find an unused NFTokenID
+    let selectedTokenId;
+    for (const tokenId of nftokens) {
+      if (!usedNFTs.has(tokenId) && !pendingNFTs.has(tokenId)) {
+        selectedTokenId = tokenId;
+        pendingNFTs.add(tokenId);
+        break;
+      }
     }
-  }
 
-if (!selectedTokenId) {
-  client.disconnect()
-    .catch((e) => {
-      console.error("Error disconnecting client:", e);
-    })
-    .finally(() => {
-      res.status(400).json({ error: "No available NFTs left to transfer" });
-    });
-  return;
-}
+    if (!selectedTokenId) {
+      await client.disconnect().catch((e) => {
+        console.error("Error disconnecting client:", e);
+      });
+      return res.status(400).json({ error: "No available NFTs left to transfer" });
+    }
+
+    // Continue processing...
+    // e.g., transferNFT(selectedTokenId)...
+
+  } catch (err) {
+    console.error("Transfer error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+  try {
+    // Find an unused NFTokenID
+    let selectedTokenId;
+    for (const tokenId of nftokens) {
+      if (!usedNFTs.has(tokenId) && !pendingNFTs.has(tokenId)) {
+        selectedTokenId = tokenId;
+        pendingNFTs.add(tokenId);
+        break;
+      }
+    }
+
+    if (!selectedTokenId) {
+      await client.disconnect().catch((e) => {
+        console.error("Error disconnecting client:", e);
+      });
+      return res.status(400).json({ error: "No available NFTs left to transfer" });
+    }
+
+    // Continue processing...
+    // e.g., transferNFT(selectedTokenId)...
+
+  } catch (err) {
+    console.error("Transfer error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 
 
 

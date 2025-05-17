@@ -2953,47 +2953,7 @@ app.post('/mint-after-payment', async (req, res) => {
     parseFloat(txn.Amount.value) >= 0.18
   );
 
-  if (!validPayment) {
-    return res.status(400).json({ error: "Invalid or insufficient payment" });
-  }
 
-  const availableNFT = nftokens.find(id => !usedNFTs.has(id) && !pendingNFTs.has(id));
-  if (!availableNFT) return res.status(503).json({ error: "No NFTs available" });
-
-  pendingNFTs.add(availableNFT);
-
-  try {
-    const offerPayload = {
-      txjson: {
-        TransactionType: "NFTokenCreateOffer",
-        Account: userAddress,
-        NFTokenID: availableNFT,
-        Destination: SERVICE_WALLET_ADDRESS,
-        Amount: "0",
-        Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
-      },
-      options: {
-        submit: true,
-        expire: 10
-      }
-    };
-
-    const payload = await xumm.payload.create(offerPayload);
-
-    return res.json({
-      success: true,
-      message: "NFT payment verified. Sign offer via XUMM.",
-      nftoken_id: availableNFT,
-      offer_payload_uuid: payload.uuid,
-      xumm_sign_url: payload.next.always
-    });
-
-  } catch (err) {
-    console.error("XUMM signing error:", err.message);
-    pendingNFTs.delete(availableNFT);
-    return res.status(500).json({ error: "Failed to prepare NFT offer", details: err.message });
-  }
-});
 
 
 

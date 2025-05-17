@@ -266,93 +266,82 @@
             if (!mintRes.ok) throw new Error('Minting failed');
             const mintJson = await mintRes.json();
 
-                     if (mintJson.success) {
-              updateMintModalStatus("NFT minted successfully!");
-              setTimeout(() => {
-                hideMintModal();
-                fetchNFTs(localStorage.getItem('xumm_wallet_address'));
-              }, 3000);
+                               if (mintJson.success) {
+              updateMintModalStatus("NFT Minted Successfully!");
+              document.getElementById('closeMintModal').style.display = 'inline-block';
+              fetchNFTs(localStorage.getItem('xumm_wallet_address'));
             } else {
-              throw new Error(mintJson.message || "Unknown minting error");
+              throw new Error("Minting failed: " + JSON.stringify(mintJson));
             }
           } else if (json.expired) {
-            updateMintModalStatus("Payment request expired.");
-            document.getElementById('closeMintModal').style.display = 'block';
-            clearInterval(intervalId);
+            updateMintModalStatus("Payment expired or cancelled.");
+            document.getElementById('closeMintModal').style.display = 'inline-block';
+          } else {
+            setTimeout(checkSigned, 3000);
           }
         } catch (err) {
-          console.error("Error checking payment:", err);
-          updateMintModalStatus("An error occurred during minting.");
-          document.getElementById('closeMintModal').style.display = 'block';
-          clearInterval(intervalId);
+          console.error("Minting error:", err);
+          updateMintModalStatus("Error during minting: " + err.message);
+          document.getElementById('closeMintModal').style.display = 'inline-block';
         }
       };
 
-      const intervalId = setInterval(checkSigned, 3500);
-
-      document.getElementById('closeMintModal').onclick = () => {
-        clearInterval(intervalId);
-        hideMintModal();
-      };
+      checkSigned();
     }
 
     function showMintModal() {
       document.getElementById('mintStatusModal').style.display = 'flex';
-      document.getElementById('mintStatusText').textContent = 'Waiting for payment confirmation...';
-      document.getElementById('mintSpinner').textContent = '⏳';
+      document.getElementById('mintStatusText').innerText = 'Waiting for payment confirmation...';
+      document.getElementById('mintSpinner').innerText = '⏳';
       document.getElementById('closeMintModal').style.display = 'none';
     }
 
     function updateMintModalStatus(message) {
-      document.getElementById('mintStatusText').textContent = message;
+      document.getElementById('mintStatusText').innerText = message;
+      document.getElementById('mintSpinner').innerText = '';
     }
-    
-    function showMintSuccess(nft) {
-    document.getElementById('mintStatusText').innerHTML = `✅ NFT Minted!<br><strong>${nft.name}</strong>`;
-    document.getElementById('mintSpinner').innerHTML = `<img src="${nft.image}" alt="NFT Image" style="width:100%;border-radius:10px;margin-top:10px;" />`;
-    document.getElementById('closeMintModal').style.display = 'inline-block';
-  }
 
-  document.getElementById('closeMintModal').onclick = () => {
-    document.getElementById('mintStatusModal').style.display = 'none';
-    location.reload(); // reload to update NFT list
-  };
-
-    function hideMintModal() {
+    document.getElementById('closeMintModal').addEventListener('click', () => {
       document.getElementById('mintStatusModal').style.display = 'none';
-    }
+    });
 
-    async function fetchNFTs(walletAddress) {
+    async function fetchNFTs(wallet) {
+      document.getElementById('loading-spinner').style.display = 'block';
       try {
-        document.getElementById('loading-spinner').style.display = 'block';
-        const res = await fetch(`https://sglcn-x20-api.glitch.me/user-nfts?address=${walletAddress}`);
+        const res = await fetch(`https://sglcn-x20-api.glitch.me/user-nfts?wallet=${wallet}`);
         if (!res.ok) throw new Error('Failed to fetch NFTs');
+        const data = await res.json();
 
-        const nfts = await res.json();
         const container = document.getElementById('user-nfts');
         container.innerHTML = '';
 
-        if (!nfts.length) {
-          container.innerHTML = '<p style="text-align:center;">No NFTs found in this wallet.</p>';
-        }
-
-        for (const nft of nfts) {
+        data.nfts.forEach(nft => {
           const card = document.createElement('div');
           card.className = 'nft-card';
           card.innerHTML = `
-            <img src="${nft.image}" alt="NFT image">
+            <img src="${nft.image}" alt="${nft.name}" />
             <h3>${nft.name}</h3>
-            <p>${nft.description}</p>
-            ${(nft.properties || []).map(p => `<div class="trait"><b>${p.key}:</b> ${p.value}</div>`).join('')}
+            <p>${nft.description || ''}</p>
+            ${nft.properties ? Object.entries(nft.properties).map(([k, v]) => `<div class="trait"><strong>${k}:</strong> ${v}</div>`).join('') : ''}
           `;
           container.appendChild(card);
-        }
+        });
       } catch (e) {
-        console.error("NFT fetch error:", e);
-        document.getElementById('user-nfts').innerHTML = '<p style="text-align:center; color:red;">Error loading NFTs.</p>';
+        console.error('Error loading NFTs:', e);
+        alert('Failed to load NFTs: ' + e.message);
       } finally {
         document.getElementById('loading-spinner').style.display = 'none';
       }
+    }
+
+    function addTrustline() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      if (!wallet) {
+        alert("Please log in with your XUMM wallet first.");
+        return;
+      }
+
+      window.open('https://xumm.app/detect/request?txjson={"TransactionType":"TrustSet","LimitAmount":{"currency":"SeagullMansions","issuer":"rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno","value":"1000000"}}', "_blank");
     }
   </script>
 </body>

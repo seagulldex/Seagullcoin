@@ -2875,9 +2875,8 @@ app.post('/burn-nft', async (req, res) => {
   res.json({ success: true, next: created.next });
 });
 
-const SERVICE_WALLET_ADDRESS = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 const SERVICE_WALLET_SEED = process.env.SERVICE_WALLET_SEED;
-
+const SERVICE_WALLET_ADDRESS = process.env.SERVICE_WALLET_ADDRESS;
 
 app.post('/pays', async (req, res) => {
   const { wallet } = req.body;

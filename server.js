@@ -54,7 +54,6 @@ import('rippled-ws-client').then(({ default: RippledWsClient }) => {
 createTables();
 
 
-console.log("Derived address from seed:", xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED).classicAddress);
 
 
 // Import your business logic modules
@@ -2914,7 +2913,6 @@ function extractNFTokenID(txResult) {
 }
 
 
-
 app.post('/mint-after-payment', async (req, res) => {
   const { paymentUUID } = req.body;
   if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
@@ -2931,9 +2929,7 @@ app.post('/mint-after-payment', async (req, res) => {
 
   const txnHex = paymentPayload.response?.hex;
   const userAddress = paymentPayload.response?.account;
-const offerPayload = await xumm.payload.create(...);
 
-  
   if (!txnHex) return res.status(400).json({ error: "Transaction not submitted yet." });
   if (!userAddress || userAddress.length !== 34) {
     return res.status(400).json({ error: "Invalid wallet address in signed payload" });
@@ -2950,8 +2946,8 @@ const offerPayload = await xumm.payload.create(...);
     txn.TransactionType === "Payment" &&
     typeof txn.Amount === "object" &&
     (
-      txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" ||
-      txn.Amount.currency === "SGLMSN"
+      txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" || // Hex for "SeagullCoin"
+      txn.Amount.currency === "SGLMSN" // Short alias if used
     ) &&
     txn.Amount.issuer === SERVICE_WALLET_ADDRESS.trim() &&
     parseFloat(txn.Amount.value) >= 0.18
@@ -2976,19 +2972,20 @@ const offerPayload = await xumm.payload.create(...);
         Amount: "0",
         Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
       },
-      options: { submit: true, expire: 10 }
+      options: {
+        submit: true,
+        expire: 10
+      }
     };
 
-    const { uuid, next } = await xumm.payload.create(offerPayload);
-
-    offerPayloads.set(uuid, { nftoken_id: availableNFT, userAddress });
+    const payload = await xumm.payload.create(offerPayload);
 
     return res.json({
       success: true,
       message: "NFT payment verified. Sign offer via XUMM.",
       nftoken_id: availableNFT,
-      offer_payload_uuid: uuid,
-      xumm_sign_url: next.always
+      offer_payload_uuid: payload.uuid,
+      xumm_sign_url: payload.next.always
     });
 
   } catch (err) {
@@ -2998,9 +2995,6 @@ const offerPayload = await xumm.payload.create(...);
   }
 });
 
-app.get('/check-offer/:uuid', async (req, res) => {
-  const uuid = req.params.uuid;
-  
 
 
 

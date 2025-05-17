@@ -2912,6 +2912,9 @@ function extractNFTokenID(txResult) {
   }
   return null;
 }
+
+const xummService = new xumm(process.env.XUMM_API_KEY_SERVICE, process.env.XUMM_API_SECRET_SERVICE);
+
 app.post('/mint-after-payment', async (req, res) => {
   const { paymentUUID } = req.body;
   if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
@@ -2961,50 +2964,61 @@ app.post('/mint-after-payment', async (req, res) => {
 
   pendingNFTs.add(availableNFT);
 
-  let client;
   try {
-    client = new xrpl.Client("wss://s1.ripple.com"); // stable XRPL endpoint
-    await client.connect();
-     const wallet = xrpl.Wallet.fromSeed(SERVICE_WALLET_SEED);
-
-    // Logging for debugging whitespace issues
-    console.log("Seed-derived address:", `"${wallet.classicAddress}"`);
-    console.log(".env SERVICE_WALLET_ADDRESS:", `"${SERVICE_WALLET_ADDRESS}"`);
-
-    // Trim both for comparison to avoid invisible whitespace issues
-    if (wallet.classicAddress.trim() !== SERVICE_WALLET_ADDRESS.trim()) {
-      throw new Error("SERVICE_WALLET_SEED does not match SERVICE_WALLET_ADDRESS");
-    }
-
-    // Check account XRP balance
-    const accountInfo = await client.request({
-      command: "account_info",
-      account: wallet.classicAddress
+    // STEP 1: Create a gift offer from service wallet to user via XUMM
+    const createOfferPayload = await xummService.payload.create({
+      txjson: {
+        TransactionType: "NFTokenCreateOffer",
+        Account: SERVICE_WALLET_ADDRESS,
+        NFTokenID: availableNFT,
+        Amount: "0",
+        Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken,
+        Destination: userAddress
+      },
+      options: {
+        submit: true,
+        expire: 300
+      }
     });
 
-    const balanceDrops = parseInt(accountInfo.result.account_data.Balance, 10);
-    if (balanceDrops < 10000000) { // 10 XRP reserve minimum
-      throw new Error("Service wallet has insufficient XRP to submit transactions");
+    if (!createOfferPayload?.response?.dispatched) {
+      pendingNFTs.delete(availableNFT);
+      return res.status(500).json({ error: "Offer payload dispatch failed" });
     }
 
-    const tx = {
-      TransactionType: "NFTokenCreateOffer",
-      Account: wallet.classicAddress,
-      NFTokenID: availableNFT,
-      Destination: userAddress,
-      Amount: "0",
-      Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
-    };
+    // Wait a few seconds to ensure the offer is written to ledger
+    await new Promise(resolve => setTimeout(resolve, 4000));
 
-    const prepared = await client.autofill(tx);
-    const signed = wallet.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
+    // STEP 2: Look up the offer index from ledger
+    const offerQuery = await client.request({
+      command: "nft_sell_offers",
+      nft_id: availableNFT
+    });
 
-    const txResult = result.result.meta?.TransactionResult;
-    console.log("Transaction result:", txResult);
+    const offerIndex = offerQuery.result?.offers?.find(
+      o => o.owner === SERVICE_WALLET_ADDRESS && o.destination === userAddress
+    )?.nft_offer_index;
 
-    if (txResult !== "tesSUCCESS") {
-      throw new Error(`XRPL transaction failed: ${txResult}`);
+    if (!offerIndex) {
+      pendingNFTs.delete(availableNFT);
+      return res.status(500).json({ error: "Offer not found on ledger" });
+    }
+
+    // STEP 3: Accept the offer (service wallet accepting its own offer)
+    const acceptOfferPayload = await xummService.payload.create({
+      txjson: {
+        TransactionType: "NFTokenAcceptOffer",
+        Account: SERVICE_WALLET_ADDRESS,
+        NFTokenSellOffer: offerIndex
+      },
+      options: {
+        submit: true
+      }
+    });
+
+    if (!acceptOfferPayload?.response?.dispatched) {
+      pendingNFTs.delete(availableNFT);
+      return res.status(500).json({ error: "Failed to accept offer via XUMM" });
     }
 
     usedNFTs.add(availableNFT);
@@ -3012,15 +3026,17 @@ app.post('/mint-after-payment', async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Payment verified. NFT assigned and offer created.",
+      message: "NFT gifted successfully!",
       nftoken_id: availableNFT
     });
+
   } catch (err) {
-    console.error("Mint error:", err);
+    console.error("Gift transfer error:", err.message);
     pendingNFTs.delete(availableNFT);
-    return res.status(500).json({ error: "Minting failed", details: err.message });
-  } finally {
-    if (client && client.isCon
+    return res.status(500).json({ error: "Gift transfer failed", details: err.message });
+  }
+});
+
 
 
 

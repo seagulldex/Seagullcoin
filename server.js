@@ -3038,10 +3038,6 @@ app.post('/mint-after-payment', async (req, res) => {
 
 
 
-
-
-const wallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED); // Your service wallet
-
  
 
 const usedNFTs = new Set();
@@ -3217,13 +3213,11 @@ const TOKEN_HEX = '53656167756C6C4D616E73696F6E730000000000';
 const REQUIRED_AMOUNT = '0.18';
 const sERVICE_WALLET = "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV";
 
-// Constants for token and issuer
-const ISSUER = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-const CURRENCY = '53656167756C6C4D616E73696F6E730000000000'; // Hex for "SeagullMansions..."
 
-// Trustline details
+
+//Trustline details
 const CURRENCY_HEX = '53656167756C6C4D616E73696F6E730000000000';
-const issuer = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
+const ISSUER = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 
 
 

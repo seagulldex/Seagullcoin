@@ -266,104 +266,93 @@
             if (!mintRes.ok) throw new Error('Minting failed');
             const mintJson = await mintRes.json();
 
-            if (mintJson.success) {
-              updateMintModalStatus(`Minted successfully! NFTokenID: ${mintJson.nftoken_id}`, true);
-              // Refresh NFT list
-              fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+                     if (mintJson.success) {
+              updateMintModalStatus("NFT minted successfully!");
+              setTimeout(() => {
+                hideMintModal();
+                fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+              }, 3000);
             } else {
-              updateMintModalStatus(`Minting failed: ${mintJson.error || 'Unknown error'}`, true);
+              throw new Error(mintJson.message || "Unknown minting error");
             }
-          } else {
-            setTimeout(checkSigned, 3000);
+          } else if (json.expired) {
+            updateMintModalStatus("Payment request expired.");
+            document.getElementById('closeMintModal').style.display = 'block';
+            clearInterval(intervalId);
           }
-        } catch (e) {
-          updateMintModalStatus('Error during mint process: ' + e.message, true);
+        } catch (err) {
+          console.error("Error checking payment:", err);
+          updateMintModalStatus("An error occurred during minting.");
+          document.getElementById('closeMintModal').style.display = 'block';
+          clearInterval(intervalId);
         }
       };
 
-      checkSigned();
+      const intervalId = setInterval(checkSigned, 3500);
+
+      document.getElementById('closeMintModal').onclick = () => {
+        clearInterval(intervalId);
+        hideMintModal();
+      };
     }
 
     function showMintModal() {
-      const modal = document.getElementById("mintStatusModal");
-      modal.style.display = "flex";
-      document.getElementById("mintStatusText").innerText = "Waiting for payment confirmation...";
-      document.getElementById("mintSpinner").style.display = "block";
-      document.getElementById("closeMintModal").style.display = "none";
+      document.getElementById('mintStatusModal').style.display = 'flex';
+      document.getElementById('mintStatusText').textContent = 'Waiting for payment confirmation...';
+      document.getElementById('mintSpinner').textContent = '⏳';
+      document.getElementById('closeMintModal').style.display = 'none';
     }
 
-    function updateMintModalStatus(text, done = false) {
-      document.getElementById("mintStatusText").innerText = text;
-      if (done) {
-        document.getElementById("mintSpinner").style.display = "none";
-        document.getElementById("closeMintModal").style.display = "inline-block";
-      }
+    function updateMintModalStatus(message) {
+      document.getElementById('mintStatusText').textContent = message;
+    }
+    
+    function showMintSuccess(nft) {
+    document.getElementById('mintStatusText').innerHTML = `✅ NFT Minted!<br><strong>${nft.name}</strong>`;
+    document.getElementById('mintSpinner').innerHTML = `<img src="${nft.image}" alt="NFT Image" style="width:100%;border-radius:10px;margin-top:10px;" />`;
+    document.getElementById('closeMintModal').style.display = 'inline-block';
+  }
+
+  document.getElementById('closeMintModal').onclick = () => {
+    document.getElementById('mintStatusModal').style.display = 'none';
+    location.reload(); // reload to update NFT list
+  };
+
+    function hideMintModal() {
+      document.getElementById('mintStatusModal').style.display = 'none';
     }
 
-    document.getElementById("closeMintModal").onclick = function () {
-      document.getElementById("mintStatusModal").style.display = "none";
-    };
-
-    async function addTrustline() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet) {
-        alert("Please log in with your XUMM wallet first.");
-        return;
-      }
-
+    async function fetchNFTs(walletAddress) {
       try {
-        const res = await fetch("https://sglcn-x20-api.glitch.me/create-trustline", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userAddress: wallet })
-        });
+        document.getElementById('loading-spinner').style.display = 'block';
+        const res = await fetch(`https://sglcn-x20-api.glitch.me/user-nfts?address=${walletAddress}`);
+        if (!res.ok) throw new Error('Failed to fetch NFTs');
 
-        if (!res.ok) throw new Error('Trustline creation failed');
-        const data = await res.json();
+        const nfts = await res.json();
+        const container = document.getElementById('user-nfts');
+        container.innerHTML = '';
 
-        if (data.payload_url) {
-          alert("Please sign the trustline request in your XUMM app.");
-          window.open(data.payload_url, "_blank");
-        } else {
-          alert("Unexpected response: " + JSON.stringify(data));
+        if (!nfts.length) {
+          container.innerHTML = '<p style="text-align:center;">No NFTs found in this wallet.</p>';
         }
-      } catch (err) {
-        console.error("Trustline creation failed:", err);
-        alert("Failed to create trustline.");
-      }
-    }
 
-
-    function createNFTCard(nft) {
-      // Extract image URL from metadata JSON
-      let imageURL = '';
-      try {
-        const meta = JSON.parse(nft.nft_metadata);
-        imageURL = meta.image || '';
-      } catch { imageURL = ''; }
-
-      // Handle IPFS link to https://ipfs.io/ipfs/... if needed
-      if (imageURL.startsWith("ipfs://")) {
-        imageURL = "https://ipfs.io/ipfs/" + imageURL.slice(7);
-      }
-
-      // Traits display
-      let traitsHTML = '';
-      try {
-        const meta = JSON.parse(nft.nft_metadata);
-        if (meta.attributes && Array.isArray(meta.attributes)) {
-          traitsHTML = meta.attributes.map(attr => `<div class="trait">${attr.trait_type || ''}: ${attr.value || ''}</div>`).join('');
+        for (const nft of nfts) {
+          const card = document.createElement('div');
+          card.className = 'nft-card';
+          card.innerHTML = `
+            <img src="${nft.image}" alt="NFT image">
+            <h3>${nft.name}</h3>
+            <p>${nft.description}</p>
+            ${(nft.properties || []).map(p => `<div class="trait"><b>${p.key}:</b> ${p.value}</div>`).join('')}
+          `;
+          container.appendChild(card);
         }
-      } catch {}
-
-      return `
-      <div class="nft-card">
-        <img src="${imageURL}" alt="${nft.nft_name || 'NFT Image'}" loading="lazy" />
-        <h3>${nft.nft_name || 'Unnamed NFT'}</h3>
-        <p><strong>Domain:</strong> ${nft.nft_domain || 'N/A'}</p>
-        ${traitsHTML}
-        <p><small>Token ID: ${nft.nftoken_id}</small></p>
-      </div>`;
+      } catch (e) {
+        console.error("NFT fetch error:", e);
+        document.getElementById('user-nfts').innerHTML = '<p style="text-align:center; color:red;">Error loading NFTs.</p>';
+      } finally {
+        document.getElementById('loading-spinner').style.display = 'none';
+      }
     }
   </script>
 </body>

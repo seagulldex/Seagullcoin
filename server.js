@@ -2920,7 +2920,6 @@ function extractNFTokenID(txResult) {
 }
 
 
-
 app.post('/mint-after-payment', async (req, res) => {
   const { paymentUUID } = req.body;
   if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
@@ -2954,11 +2953,11 @@ app.post('/mint-after-payment', async (req, res) => {
     txn.TransactionType === "Payment" &&
     typeof txn.Amount === "object" &&
     (
-      txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" ||
-      txn.Amount.currency === "SGLMSN"
+      txn.Amount.currency === "53656167756C6C436F696E000000000000000000" || // Hex for "SeagullCoin"
+      txn.Amount.currency === "SGLCN" // Short alias if used
     ) &&
     txn.Amount.issuer === SERVICE_WALLET_ADDRESS.trim() &&
-    parseFloat(txn.Amount.value) >= 0.18
+    parseFloat(txn.Amount.value) >= 0.5
   );
 
   if (!validPayment) {
@@ -2970,73 +2969,42 @@ app.post('/mint-after-payment', async (req, res) => {
 
   pendingNFTs.add(availableNFT);
 
-  let client;
   try {
-    client = new xrpl.Client("wss://s1.ripple.com"); // stable XRPL endpoint
-    await client.connect();
-     const wallet = xrpl.Wallet.fromSeed(SERVICE_WALLET_SEED);
-
-    // Logging for debugging whitespace issues
-    console.log("Seed-derived address:", `"${wallet.classicAddress}"`);
-    console.log(".env SERVICE_WALLET_ADDRESS:", `"${SERVICE_WALLET_ADDRESS}"`);
-
-    // Trim both for comparison to avoid invisible whitespace issues
-    if (wallet.classicAddress.trim() !== SERVICE_WALLET_ADDRESS.trim()) {
-      throw new Error("SERVICE_WALLET_SEED does not match SERVICE_WALLET_ADDRESS");
-    }
-
-    // Check account XRP balance
-    const accountInfo = await client.request({
-      command: "account_info",
-      account: wallet.classicAddress
-    });
-
-    const balanceDrops = parseInt(accountInfo.result.account_data.Balance, 10);
-    if (balanceDrops < 10000000) { // 10 XRP reserve minimum
-      throw new Error("Service wallet has insufficient XRP to submit transactions");
-    }
-
     const offerPayload = {
-  txjson: {
-    TransactionType: "NFTokenCreateOffer",
-    Account: userAddress,
-    NFTokenID: availableNFT,
-    Destination: SERVICE_WALLET_ADDRESS, // Offer returns to minting service
-    Amount: "0",
-    Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
-  },
-  options: {
-    submit: true,
-    expire: 10,
-  }
-};
+      txjson: {
+        TransactionType: "NFTokenCreateOffer",
+        Account: userAddress,
+        NFTokenID: availableNFT,
+        Destination: SERVICE_WALLET_ADDRESS,
+        Amount: "0",
+        Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
+      },
+      options: {
+        submit: true,
+        expire: 10,
+      }
+    };
 
-const { uuid, next } = await xumm.payload.createAn
-
-
-    const txResult = result.result.meta?.TransactionResult;
-    console.log("Transaction result:", txResult);
-
-    if (txResult !== "tesSUCCESS") {
-      throw new Error(`XRPL transaction failed: ${txResult}`);
-    }
-
-    usedNFTs.add(availableNFT);
-    pendingNFTs.delete(availableNFT);
+    const { uuid, next } = await xumm.payload.createAndSubscribe(offerPayload, event => {
+      if (event.data.signed === true) {
+        return event.data;
+      } else if (event.data.signed === false) {
+        throw new Error("User declined to sign offer");
+      }
+    });
 
     return res.json({
       success: true,
-      message: "Payment verified. NFT assigned and offer created.",
-      nftoken_id: availableNFT
+      message: "NFT payment verified. Sign offer via XUMM.",
+      nftoken_id: availableNFT,
+      offer_payload_uuid: uuid,
+      xumm_sign_url: next.always
     });
+
   } catch (err) {
-    console.error("Mint error:", err);
+    console.error("XUMM signing error:", err.message);
     pendingNFTs.delete(availableNFT);
-    return res.status(500).json({ error: "Minting failed", details: err.message });
-  } finally {
-    if (client && client.isConnected()) {
-      await client.disconnect();
-    }
+    return res.status(500).json({ error: "Failed to prepare NFT offer", details: err.message });
   }
 });
 

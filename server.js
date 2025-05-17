@@ -3187,17 +3187,6 @@ const nftokens = [
 '00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C734AE7F1A0405C67F',
 ];
 
-// Load used NFTs
-db.all("SELECT nft_token_id FROM minted_nfts WHERE status = 'minted'", [], (err, rows) => {
-  if (err) throw err;
-  rows.forEach(row => usedNFTs.add(row.nft_token_id));
-});
-
-// Load pending NFTs
-db.all("SELECT nft_token_id FROM minted_nfts WHERE status = 'pending'", [], (err, rows) => {
-  if (err) throw err;
-  rows.forEach(row => pendingNFTs.add(row.nft_token_id));
-});
 
 // Get next available NFT
 function getNextAvailableNFT() {

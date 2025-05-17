@@ -2978,7 +2978,9 @@ app.post('/mint-after-payment', async (req, res) => {
     };
 
     const payload = await xumm.payload.create(offerPayload);
+    console.log('Offer Payload:', JSON.stringify(payload, null, 2));
 
+    
     return res.json({
       success: true,
       message: "NFT payment verified. Sign offer via XUMM.",

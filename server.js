@@ -2913,45 +2913,51 @@ function extractNFTokenID(txResult) {
 }
 
 
-app.post('/mint-after-payment', async (req, res) => {
-  const { paymentUUID } = req.body;
-  if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
+app.post('/mint-complete', async (req, res) => {
+  const { offerPayloadUUID } = req.body;
+  if (!offerPayloadUUID) return res.status(400).json({ error: "Missing offerPayloadUUID" });
 
-  let paymentPayload;
   try {
-    paymentPayload = await xumm.payload.get(paymentUUID);
-    if (!paymentPayload?.meta?.exists) {
-      return res.status(400).json({ error: "Payment payload not found" });
+    const offerPayload = await xumm.payload.get(offerPayloadUUID);
+
+    if (offerPayload.meta?.resolved !== true || offerPayload.response?.signed !== true) {
+      return res.status(400).json({ error: "Offer not signed yet" });
     }
+
+    const offerTx = xrpl.decode(offerPayload.response.hex);
+    const offerID = offerTx.hash || offerPayload.response.txid;
+
+    if (!offerID) return res.status(400).json({ error: "Offer ID not found" });
+
+    // Accept the offer via backend (service wallet)
+    const client = new xrpl.Client("wss://xrplcluster.com");
+    await client.connect();
+
+    const serviceWallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SECRET);
+    const acceptTx = {
+      TransactionType: "NFTokenAcceptOffer",
+      Account: serviceWallet.classicAddress,
+      NFTokenSellOffer: offerID
+    };
+
+    const prepared = await client.autofill(acceptTx);
+    const signed = serviceWallet.sign(prepared);
+    const submitResult = await client.submitAndWait(signed.tx_blob);
+
+    await client.disconnect();
+
+    return res.json({
+      success: true,
+      message: "NFT successfully transferred.",
+      offer_id: offerID,
+      result: submitResult.result
+    });
+
   } catch (e) {
-    return res.status(500).json({ error: "Failed to retrieve payment payload" });
+    console.error("Mint-complete error:", e.message);
+    return res.status(500).json({ error: "Failed to complete mint", details: e.message });
   }
-
-  const txnHex = paymentPayload.response?.hex;
-  const userAddress = paymentPayload.response?.account;
-
-  if (!txnHex) return res.status(400).json({ error: "Transaction not submitted yet." });
-  if (!userAddress || userAddress.length !== 34) {
-    return res.status(400).json({ error: "Invalid wallet address in signed payload" });
-  }
-
-  let txn;
-  try {
-    txn = xrpl.decode(txnHex);
-  } catch (e) {
-    return res.status(500).json({ error: "Failed to decode transaction" });
-  }
-
-  const validPayment = (
-    txn.TransactionType === "Payment" &&
-    typeof txn.Amount === "object" &&
-    (
-      txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" || // Hex for "SeagullCoin"
-      txn.Amount.currency === "SGLMSN" // Short alias if used
-    ) &&
-    txn.Amount.issuer === SERVICE_WALLET_ADDRESS.trim() &&
-    parseFloat(txn.Amount.value) >= 0.18
-  );
+});
 
 
 

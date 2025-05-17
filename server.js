@@ -2974,8 +2974,7 @@ app.post('/mint-after-payment', async (req, res) => {
   try {
     client = new xrpl.Client("wss://s1.ripple.com"); // stable XRPL endpoint
     await client.connect();
-
-    const wallet = xrpl.Wallet.fromSeed(SERVICE_WALLET_SEED);
+     const wallet = xrpl.Wallet.fromSeed(SERVICE_WALLET_SEED);
 
     // Logging for debugging whitespace issues
     console.log("Seed-derived address:", `"${wallet.classicAddress}"`);

@@ -2921,6 +2921,7 @@ function extractNFTokenID(txResult) {
 
 
 const offerPayloads = new Map(); // uuid => { nftoken_id, userAddress }
+const xummService = new xumm(process.env.XUMM_API_KEY_SERVICE, process.env.XUMM_API_SECRET_SERVICE);
 
 app.post('/mint-after-payment', async (req, res) => {
   const { paymentUUID } = req.body;
@@ -2977,7 +2978,73 @@ app.post('/mint-after-payment', async (req, res) => {
       txjson: {
         TransactionType: "NFTokenCreateOffer",
         Account: SERVICE_WALLET_ADDRESS,
-        NFTokenID: availableNFT
+        NFTokenID: availableNFT,
+        Amount: "0",
+        Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken,
+        Destination: userAddress
+      },
+      options: {
+        submit: true,
+        expire: 300
+      }
+    });
+
+    if (!createOfferPayload?.response?.dispatched) {
+      pendingNFTs.delete(availableNFT);
+      return res.status(500).json({ error: "Offer payload dispatch failed" });
+    }
+
+    // Wait a few seconds to ensure the offer is written to ledger
+    await new Promise(resolve => setTimeout(resolve, 4000));
+
+    // STEP 2: Look up the offer index from ledger
+    const offerQuery = await client.request({
+      command: "nft_sell_offers",
+      nft_id: availableNFT
+    });
+
+    const offerIndex = offerQuery.result?.offers?.find(
+      o => o.owner === SERVICE_WALLET_ADDRESS && o.destination === userAddress
+    )?.nft_offer_index;
+
+    if (!offerIndex) {
+      pendingNFTs.delete(availableNFT);
+      return res.status(500).json({ error: "Offer not found on ledger" });
+    }
+
+    // STEP 3: Accept the offer (service wallet accepting its own offer)
+    const acceptOfferPayload = await xummService.payload.create({
+      txjson: {
+        TransactionType: "NFTokenAcceptOffer",
+        Account: SERVICE_WALLET_ADDRESS,
+        NFTokenSellOffer: offerIndex
+      },
+      options: {
+        submit: true
+      }
+    });
+
+    if (!acceptOfferPayload?.response?.dispatched) {
+      pendingNFTs.delete(availableNFT);
+      return res.status(500).json({ error: "Failed to accept offer via XUMM" });
+    }
+
+    usedNFTs.add(availableNFT);
+    pendingNFTs.delete(availableNFT);
+
+    return res.json({
+      success: true,
+      message: "NFT gifted successfully!",
+      nftoken_id: availableNFT
+    });
+
+  } catch (err) {
+    console.error("Gift transfer error:", err.message);
+    pendingNFTs.delete(availableNFT);
+    return res.status(500).json({ error: "Gift transfer failed", details: err.message });
+  }
+});
+
 
 
 

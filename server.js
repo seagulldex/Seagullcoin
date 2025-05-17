@@ -2972,19 +2972,49 @@ app.post('/mint-after-payment', async (req, res) => {
   pendingNFTs.add(availableNFT);
 
   try {
-    const offerPayload = {
-      txjson: {
-        TransactionType: "NFTokenCreateOffer",
-        Account: userAddress,
-        NFTokenID: availableNFT,
-        Destination: SERVICE_WALLET_ADDRESS,
-        Amount: "0",
-        Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
-      },
-      options: { submit: true, expire: 10 }
+    // 1. Create a zero-cost gift offer to user
+    const createOfferTx = {
+      TransactionType: "NFTokenCreateOffer",
+      Account: SERVICE_WALLET_ADDRESS,
+      NFTokenID: availableNFT,
+      Amount: "0",
+      Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken,
+      Destination: userAddress
     };
 
-    const { uuid, next } = await xumm.payload.create(offerPayload);
+    const createResult = await client.submitAndWait(createOfferTx, { wallet: SERVICE_WALLET_ADDRESS });
+    const offerIndex = createResult.result?.NFTokenOfferIndex;
+
+    if (!offerIndex) {
+      pendingNFTs.delete(availableNFT);
+      return res.status(500).json({ error: "Failed to create gift offer" });
+    }
+
+    // 2. Accept the offer to complete transfer
+    const acceptTx = {
+      TransactionType: "NFTokenAcceptOffer",
+      Account: SERVICE_WALLET_ADDRESS,
+      NFTokenSellOffer: offerIndex
+    };
+
+    await client.submitAndWait(acceptTx, { wallet: SERVICE_WALLET_ADDRESS });
+
+    // Success
+    usedNFTs.add(availableNFT);
+    pendingNFTs.delete(availableNFT);
+
+    return res.json({
+      success: true,
+      message: "NFT gifted successfully!",
+      nftoken_id: availableNFT
+    });
+
+  } catch (err) {
+    console.error("Gift transfer error:", err.message);
+    pendingNFTs.delete(availableNFT);
+    return res.status(500).json({ error: "Gift transfer failed", details: err.message });
+  }
+});
 
 
 app.get('/check-offer/:uuid', async (req, res) => {

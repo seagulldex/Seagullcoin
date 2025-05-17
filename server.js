@@ -2920,6 +2920,8 @@ function extractNFTokenID(txResult) {
 }
 
 
+const offerPayloads = new Map(); // uuid => { nftoken_id, userAddress }
+
 app.post('/mint-after-payment', async (req, res) => {
   const { paymentUUID } = req.body;
   if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
@@ -2953,8 +2955,8 @@ app.post('/mint-after-payment', async (req, res) => {
     txn.TransactionType === "Payment" &&
     typeof txn.Amount === "object" &&
     (
-      txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" || // Hex for "SeagullCoin"
-      txn.Amount.currency === "SGLMSN" // Short alias if used
+      txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" ||
+      txn.Amount.currency === "SGLMSN"
     ) &&
     txn.Amount.issuer === SERVICE_WALLET_ADDRESS.trim() &&
     parseFloat(txn.Amount.value) >= 0.18
@@ -2979,20 +2981,19 @@ app.post('/mint-after-payment', async (req, res) => {
         Amount: "0",
         Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
       },
-      options: {
-        submit: true,
-        expire: 10
-      }
+      options: { submit: true, expire: 10 }
     };
 
-    const payload = await xumm.payload.create(offerPayload);
+    const { uuid, next } = await xumm.payload.create(offerPayload);
+
+    offerPayloads.set(uuid, { nftoken_id: availableNFT, userAddress });
 
     return res.json({
       success: true,
       message: "NFT payment verified. Sign offer via XUMM.",
       nftoken_id: availableNFT,
-      offer_payload_uuid: payload.uuid,
-      xumm_sign_url: payload.next.always
+      offer_payload_uuid: uuid,
+      xumm_sign_url: next.always
     });
 
   } catch (err) {
@@ -3001,6 +3002,37 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(500).json({ error: "Failed to prepare NFT offer", details: err.message });
   }
 });
+
+app.get('/check-offer/:uuid', async (req, res) => {
+  const uuid = req.params.uuid;
+  if (!uuid || !offerPayloads.has(uuid)) {
+    return res.status(404).json({ error: "No matching offer payload" });
+  }
+
+  try {
+    const payload = await xumm.payload.get(uuid);
+    const signed = payload.meta.signed;
+
+    if (signed) {
+      const { nftoken_id } = offerPayloads.get(uuid);
+      offerPayloads.delete(uuid);
+      pendingNFTs.delete(nftoken_id);
+      usedNFTs.add(nftoken_id);
+      return res.json({ signed: true, nftoken_id });
+    } else if (signed === false) {
+      const { nftoken_id } = offerPayloads.get(uuid);
+      offerPayloads.delete(uuid);
+      pendingNFTs.delete(nftoken_id);
+      return res.json({ signed: false });
+    } else {
+      return res.json({ signed: null });
+    }
+
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to check offer status" });
+  }
+});
+
 
 
 

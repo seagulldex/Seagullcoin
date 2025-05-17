@@ -2997,6 +2997,57 @@ app.post('/mint-after-payment', async (req, res) => {
   }
 });
 
+app.post('/accept-offer', async (req, res) => {
+  const { offerPayloadUUID } = req.body;
+  if (!offerPayloadUUID) return res.status(400).json({ error: "Missing offerPayloadUUID" });
+
+  try {
+    const offerStatus = await xumm.payload.get(offerPayloadUUID);
+    const offerTxid = offerStatus.response?.txid;
+
+    if (!offerTxid) return res.status(400).json({ error: "Offer not signed yet or missing txid." });
+
+    const client = new xrpl.Client("wss://xrplcluster.com");
+    await client.connect();
+    const tx = await client.request({
+      command: "tx",
+      transaction: offerTxid
+    });
+    await client.disconnect();
+
+    const offerIndex = tx.result?.meta?.AffectedNodes?.find(n =>
+      n.CreatedNode?.LedgerEntryType === "NFTokenOffer"
+    )?.CreatedNode?.LedgerIndex;
+
+    if (!offerIndex) return res.status(400).json({ error: "Offer index not found on-chain." });
+
+    const acceptPayload = {
+      txjson: {
+        TransactionType: "NFTokenAcceptOffer",
+        NFTokenSellOffer: offerIndex
+      },
+      options: {
+        submit: true,
+        expire: 600
+      }
+    };
+
+    const acceptPayloadResult = await xumm.payload.create(acceptPayload);
+    console.log("Accept Payload:", acceptPayloadResult.uuid);
+
+    return res.json({
+      success: true,
+      accept_payload_uuid: acceptPayloadResult.uuid,
+      xumm_sign_url: acceptPayloadResult.next.always
+    });
+
+  } catch (err) {
+    console.error("Error preparing accept-offer:", err.message);
+    return res.status(500).json({ error: "Failed to prepare accept-offer", details: err.message });
+  }
+});
+
+
 app.get('/payload-status/:uuid', async (req, res) => {
   try {
     const { uuid } = req.params;
@@ -3021,50 +3072,34 @@ app.get('/payload-status/:uuid', async (req, res) => {
 
 
 app.post('/mint-complete', async (req, res) => {
-  const { offerPayloadUUID } = req.body;
-  if (!offerPayloadUUID) return res.status(400).json({ error: "Missing offerPayloadUUID" });
+  const { offerPayloadUUID, acceptPayloadUUID } = req.body;
+  if (!offerPayloadUUID || !acceptPayloadUUID) {
+    return res.status(400).json({ error: "Missing offerPayloadUUID or acceptPayloadUUID" });
+  }
 
   try {
-    const offerPayload = await xumm.payload.get(offerPayloadUUID);
+    const offerStatus = await xumm.payload.get(offerPayloadUUID);
+    const acceptStatus = await xumm.payload.get(acceptPayloadUUID);
 
-    if (offerPayload.meta?.resolved !== true || offerPayload.response?.signed !== true) {
+    if (offerStatus.meta.signed !== true) {
       return res.status(400).json({ error: "Offer not signed yet" });
     }
 
-    const offerTx = xrpl.decode(offerPayload.response.hex);
-    const offerID = offerTx.hash || offerPayload.response.txid;
-
-    if (!offerID) return res.status(400).json({ error: "Offer ID not found" });
-
-    // Accept the offer via backend (service wallet)
-    const client = new xrpl.Client("wss://xrplcluster.com");
-    await client.connect();
-
-    const serviceWallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SECRET);
-    const acceptTx = {
-      TransactionType: "NFTokenAcceptOffer",
-      Account: serviceWallet.classicAddress,
-      NFTokenSellOffer: offerID
-    };
-
-    const prepared = await client.autofill(acceptTx);
-    const signed = serviceWallet.sign(prepared);
-    const submitResult = await client.submitAndWait(signed.tx_blob);
-
-    await client.disconnect();
+    if (acceptStatus.meta.signed !== true) {
+      return res.status(400).json({ error: "Accept offer not signed yet" });
+    }
 
     return res.json({
       success: true,
-      message: "NFT successfully transferred.",
-      offer_id: offerID,
-      result: submitResult.result
+      message: "NFT offer signed and accepted. Mint complete.",
+      txid: acceptStatus.response.txid
     });
 
-  } catch (e) {
-    console.error("Mint-complete error:", e.message);
-    return res.status(500).json({ error: "Failed to complete mint", details: e.message });
+  } catch (err) {
+    return res.status(500).json({ error: "Error verifying payloads", details: err.message });
   }
 });
+
 
 
 

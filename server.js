@@ -2912,6 +2912,88 @@ function extractNFTokenID(txResult) {
   return null;
 }
 
+app.post('/mint-after-payment', async (req, res) => {
+  const { paymentUUID } = req.body;
+  if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
+
+  let paymentPayload;
+  try {
+    paymentPayload = await xumm.payload.get(paymentUUID);
+    if (!paymentPayload?.meta?.exists) {
+      return res.status(400).json({ error: "Payment payload not found" });
+    }
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to retrieve payment payload" });
+  }
+
+  const txnHex = paymentPayload.response?.hex;
+  const userAddress = paymentPayload.response?.account;
+
+  if (!txnHex) return res.status(400).json({ error: "Transaction not submitted yet." });
+  if (!userAddress || userAddress.length !== 34) {
+    return res.status(400).json({ error: "Invalid wallet address in signed payload" });
+  }
+
+  let txn;
+  try {
+    txn = xrpl.decode(txnHex);
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to decode transaction" });
+  }
+
+  const validPayment = (
+    txn.TransactionType === "Payment" &&
+    typeof txn.Amount === "object" &&
+    (
+      txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" || // Hex for "SeagullCoin"
+      txn.Amount.currency === "SGLMSN" // Short alias if used
+    ) &&
+    txn.Amount.issuer === SERVICE_WALLET_ADDRESS.trim() &&
+    parseFloat(txn.Amount.value) >= 0.18
+  );
+
+  if (!validPayment) {
+    return res.status(400).json({ error: "Invalid or insufficient payment" });
+  }
+
+  const availableNFT = nftokens.find(id => !usedNFTs.has(id) && !pendingNFTs.has(id));
+  if (!availableNFT) return res.status(503).json({ error: "No NFTs available" });
+
+  pendingNFTs.add(availableNFT);
+
+  try {
+    const offerPayload = {
+      txjson: {
+        TransactionType: "NFTokenCreateOffer",
+        Account: userAddress,
+        NFTokenID: availableNFT,
+        Destination: SERVICE_WALLET_ADDRESS,
+        Amount: "0",
+        Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
+      },
+      options: {
+        submit: true,
+        expire: 10
+      }
+    };
+
+    const payload = await xumm.payload.create(offerPayload);
+
+    return res.json({
+      success: true,
+      message: "NFT payment verified. Sign offer via XUMM.",
+      nftoken_id: availableNFT,
+      offer_payload_uuid: payload.uuid,
+      xumm_sign_url: payload.next.always
+    });
+
+  } catch (err) {
+    console.error("XUMM signing error:", err.message);
+    pendingNFTs.delete(availableNFT);
+    return res.status(500).json({ error: "Failed to prepare NFT offer", details: err.message });
+  }
+});
+
 
 app.post('/mint-complete', async (req, res) => {
   const { offerPayloadUUID } = req.body;
@@ -2956,77 +3038,6 @@ app.post('/mint-complete', async (req, res) => {
   } catch (e) {
     console.error("Mint-complete error:", e.message);
     return res.status(500).json({ error: "Failed to complete mint", details: e.message });
-  }
-});
-
-
-
-
-
-app.post('/mint-complete', async (req, res) => {
-  const { offerPayloadUUID, nftoken_id } = req.body;
-  if (!offerPayloadUUID || !nftoken_id) {
-    return res.status(400).json({ error: "Missing offerPayloadUUID or nftoken_id" });
-  }
-
-  // Get signed payload
-  let offerPayload;
-  try {
-    offerPayload = await xumm.payload.get(offerPayloadUUID);
-  } catch (err) {
-    return res.status(500).json({ error: "Failed to fetch signed offer payload" });
-  }
-
-  if (!offerPayload?.meta?.signed) {
-    return res.status(400).json({ error: "Offer not signed yet" });
-  }
-
-  // Wait for ledger to settle
-  await new Promise(resolve => setTimeout(resolve, 3000));
-
-  // Get offer index from ledger
-  let offerIndex;
-  try {
-    const offerQuery = await client.request({
-      command: "nft_sell_offers",
-      nft_id: nftoken_id
-    });
-
-    const matching = offerQuery.result.offers.find(
-      o => o.destination === SERVICE_WALLET_ADDRESS
-    );
-    offerIndex = matching?.nft_offer_index;
-  } catch (err) {
-    return res.status(500).json({ error: "Failed to fetch offer index", details: err.message });
-  }
-
-  if (!offerIndex) {
-    return res.status(404).json({ error: "Offer not found on ledger" });
-  }
-
-  // Accept offer from service wallet
-  try {
-    const tx = {
-      TransactionType: "NFTokenAcceptOffer",
-      Account: SERVICE_WALLET_ADDRESS,
-      NFTokenBuyOffer: offerIndex
-    };
-
-    const acceptPayload = await xumm.payload.create({
-      txjson: tx,
-      options: { submit: true }
-    });
-
-    usedNFTs.add(nftoken_id);
-    pendingNFTs.delete(nftoken_id);
-
-    return res.json({
-      success: true,
-      message: "NFT transferred successfully!",
-      txid: acceptPayload.response.txid
-    });
-  } catch (err) {
-    return res.status(500).json({ error: "Failed to accept NFT offer", details: err.message });
   }
 });
 

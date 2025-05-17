@@ -2913,12 +2913,129 @@ function extractNFTokenID(txResult) {
   return null;
 }
 
+app.post('/mint-after-payment', async (req, res) => {
+  const { paymentUUID } = req.body;
+  if (!paymentUUID) return res.status(400).json({ error: "Missing paymentUUID" });
+
+  let paymentPayload;
+  try {
+    paymentPayload = await xumm.payload.get(paymentUUID);
+    if (!paymentPayload?.meta?.exists) {
+      return res.status(400).json({ error: "Payment payload not found" });
+    }
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to retrieve payment payload" });
+  }
+
+  const txnHex = paymentPayload.response?.hex;
+  const userAddress = paymentPayload.response?.account;
+
+  if (!txnHex) return res.status(400).json({ error: "Transaction not submitted yet." });
+  if (!userAddress || userAddress.length !== 34) {
+    return res.status(400).json({ error: "Invalid wallet address in signed payload" });
+  }
+
+  let txn;
+  try {
+    txn = xrpl.decode(txnHex);
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to decode transaction" });
+  }
+
+  const validPayment = (
+    txn.TransactionType === "Payment" &&
+    typeof txn.Amount === "object" &&
+    (
+      txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" ||
+      txn.Amount.currency === "SGLMSN"
+    ) &&
+    txn.Amount.issuer === SERVICE_WALLET_ADDRESS.trim() &&
+    parseFloat(txn.Amount.value) >= 0.18
+  );
+
+  if (!validPayment) {
+    return res.status(400).json({ error: "Invalid or insufficient payment" });
+  }
+
+  const availableNFT = nftokens.find(id => !usedNFTs.has(id) && !pendingNFTs.has(id));
+  if (!availableNFT) return res.status(503).json({ error: "No NFTs available" });
+
+  pendingNFTs.add(availableNFT);
+
+  try {
+    // STEP 1: Create a gift offer from service wallet to user via XUMM
+    const createOfferPayload = await xumm.payload.create({
+      txjson: {
+        TransactionType: "NFTokenCreateOffer",
+        Account: SERVICE_WALLET_ADDRESS,
+        NFTokenID: availableNFT,
+        Amount: "0",
+        Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken,
+        Destination: userAddress
+      },
+      options: {
+        submit: true,
+        expire: 300
+      }
+    });
+
+    if (!createOfferPayload?.response?.dispatched) {
+      pendingNFTs.delete(availableNFT);
+      return res.status(500).json({ error: "Offer payload dispatch failed" });
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 4000)); // Wait to ensure ledger update
+
+    // STEP 2: Find offer index
+    const offerQuery = await client.request({
+      command: "nft_sell_offers",
+      nft_id: availableNFT
+    });
+
+    const offerIndex = offerQuery.result?.offers?.find(
+      o => o.owner === SERVICE_WALLET_ADDRESS && o.destination === userAddress
+    )?.nft_offer_index;
+
+    if (!offerIndex) {
+      pendingNFTs.delete(availableNFT);
+      return res.status(500).json({ error: "Offer not found on ledger" });
+    }
+
+    // STEP 3: Accept the offer (service wallet accepting its own offer)
+    const acceptOfferPayload = await xumm.payload.create({
+      txjson: {
+        TransactionType: "NFTokenAcceptOffer",
+        Account: SERVICE_WALLET_ADDRESS,
+        NFTokenSellOffer: offerIndex
+      },
+      options: {
+        submit: true
+      }
+    });
+
+    if (!acceptOfferPayload?.response?.dispatched) {
+      pendingNFTs.delete(availableNFT);
+      return res.status(500).json({ error: "Failed to accept offer via XUMM" });
+    }
+
+    usedNFTs.add(availableNFT);
+    pendingNFTs.delete(availableNFT);
+
+    return res.json({
+      success: true,
+      message: "NFT gifted successfully!",
+      nftoken_id: availableNFT
+    });
+
+  } catch (err) {
+    console.error("Gift transfer error:", err.message);
+    pendingNFTs.delete(availableNFT);
+    return res.status(500).json({ error: "Gift transfer failed", details: err.message });
+  }
+});
 
 
 
-
-
- 
 
 const usedNFTs = new Set();
 

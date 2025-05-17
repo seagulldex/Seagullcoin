@@ -2953,11 +2953,11 @@ app.post('/mint-after-payment', async (req, res) => {
     txn.TransactionType === "Payment" &&
     typeof txn.Amount === "object" &&
     (
-      txn.Amount.currency === "53656167756C6C436F696E000000000000000000" || // Hex for "SeagullCoin"
-      txn.Amount.currency === "SGLCN" // Short alias if used
+      txn.Amount.currency === "53656167756C6C4D616E73696F6E730000000000" || // Hex for "SeagullCoin"
+      txn.Amount.currency === "SGLMSN" // Short alias if used
     ) &&
     txn.Amount.issuer === SERVICE_WALLET_ADDRESS.trim() &&
-    parseFloat(txn.Amount.value) >= 0.5
+    parseFloat(txn.Amount.value) >= 0.18
   );
 
   if (!validPayment) {

@@ -3073,37 +3073,66 @@ app.get('/payload-status/:uuid', async (req, res) => {
 
 app.post('/mint-complete', async (req, res) => {
   const { offerPayloadUUID, acceptPayloadUUID } = req.body;
-  if (!offerPayloadUUID || !acceptPayloadUUID) {
+
+  if (!offerPayloadUUID && !acceptPayloadUUID) {
     return res.status(400).json({ error: "Missing offerPayloadUUID or acceptPayloadUUID" });
   }
 
   try {
-    const offerStatus = await xumm.payload.get(offerPayloadUUID);
-    const acceptStatus = await xumm.payload.get(acceptPayloadUUID);
+    const payloadUUID = acceptPayloadUUID || offerPayloadUUID;
+    const offerStatus = await xumm.payload.get(payloadUUID);
 
-    if (offerStatus.meta.signed !== true) {
+    if (!offerStatus.meta.signed) {
       return res.status(400).json({ error: "Offer not signed yet" });
     }
 
-    if (acceptStatus.meta.signed !== true) {
-      return res.status(400).json({ error: "Accept offer not signed yet" });
+    const txid = offerStatus.response.txid;
+
+    if (!txid) {
+      return res.status(400).json({ error: "Transaction was signed but txid missing" });
     }
+
+    const txResult = await client.request({
+      command: "tx",
+      transaction: txid
+    });
+
+    const tx = txResult.result;
+    const nftID = tx?.NFTokenID || tx?.meta?.AffectedNodes?.find(n =>
+      n.ModifiedNode?.LedgerEntryType === "NFTokenOffer"
+    )?.ModifiedNode?.FinalFields?.NFTokenID;
+
+    if (!nftID) {
+      return res.status(400).json({ error: "Could not extract NFTokenID from transaction" });
+    }
+
+    // Final cleanup
+    usedNFTs.add(nftID);
+    pendingNFTs.delete(nftID);
+    nftokens = nftokens.filter(id => id !== nftID);
 
     return res.json({
       success: true,
-      message: "NFT offer signed and accepted. Mint complete.",
-      txid: acceptStatus.response.txid
+      message: "NFT successfully transferred.",
+      txid,
+      nftoken_id: nftID
     });
 
   } catch (err) {
-    return res.status(500).json({ error: "Error verifying payloads", details: err.message });
+    console.error("mint-complete error:", err);
+    return res.status(500).json({ error: "Failed to finalize NFT minting", details: err.message });
   }
 });
 
 
 
 
-const usedNFTs = new Set();
+
+const usedNFTs = new Set(
+'00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C7B7ABA7F30405C658',
+  
+'00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C7CE9178F40405C659',
+);
 
 const pendingNFTs = new Set();
 

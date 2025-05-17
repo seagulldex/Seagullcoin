@@ -2996,6 +2996,28 @@ app.post('/mint-after-payment', async (req, res) => {
   }
 });
 
+app.get('/payload-status/:uuid', async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const result = await xumm.payload.get(uuid);
+
+    if (result.meta?.resolved === false) {
+      return res.json({ status: "pending" });
+    }
+
+    if (result.meta?.signed === true) {
+      console.log("Payload signed:", result.response.txid);
+      return res.json({ status: "signed", txid: result.response.txid });
+    } else {
+      return res.json({ status: "rejected" });
+    }
+  } catch (err) {
+    console.error("Error checking payload status:", err);
+    res.status(500).json({ error: "Could not check payload status" });
+  }
+});
+
+
 
 app.post('/mint-complete', async (req, res) => {
   const { offerPayloadUUID } = req.body;

@@ -3011,11 +3011,7 @@ app.post('/mint-after-payment', async (req, res) => {
   }
 };
 
-const { uuid, next } = await xumm.payload.createAndSubscribe(offerPayload, event => {
-  if (event.data.signed === true) {
-    return event.data;
-  }
-});
+const { uuid, next } = await xumm.payload.createAn
 
 
     const txResult = result.result.meta?.TransactionResult;

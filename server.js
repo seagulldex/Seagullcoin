@@ -54,6 +54,7 @@ import('rippled-ws-client').then(({ default: RippledWsClient }) => {
 createTables();
 
 
+console.log("Derived address from seed:", xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED).classicAddress);
 
 
 // Import your business logic modules

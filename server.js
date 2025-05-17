@@ -2996,18 +2996,27 @@ app.post('/mint-after-payment', async (req, res) => {
       throw new Error("Service wallet has insufficient XRP to submit transactions");
     }
 
-    const tx = {
-      TransactionType: "NFTokenCreateOffer",
-      Account: wallet.classicAddress,
-      NFTokenID: availableNFT,
-      Destination: userAddress,
-      Amount: "0",
-      Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
-    };
+    const offerPayload = {
+  txjson: {
+    TransactionType: "NFTokenCreateOffer",
+    Account: userAddress,
+    NFTokenID: availableNFT,
+    Destination: SERVICE_WALLET_ADDRESS, // Offer returns to minting service
+    Amount: "0",
+    Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
+  },
+  options: {
+    submit: true,
+    expire: 10,
+  }
+};
 
-    const prepared = await client.autofill(tx);
-    const signed = wallet.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
+const { uuid, next } = await xumm.payload.createAndSubscribe(offerPayload, event => {
+  if (event.data.signed === true) {
+    return event.data;
+  }
+});
+
 
     const txResult = result.result.meta?.TransactionResult;
     console.log("Transaction result:", txResult);

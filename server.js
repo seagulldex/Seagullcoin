@@ -2973,7 +2973,7 @@ app.post('/mint-after-payment', async (req, res) => {
       },
       options: {
         submit: true,
-        expire: 10
+        expire: 600
       }
     };
 

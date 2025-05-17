@@ -3310,6 +3310,21 @@ const CURRENCY_HEX = '53656167756C6C4D616E73696F6E730000000000';
 const ISSUER = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 
 
+app.get('/check-payment', async (req, res) => {
+  const { uuid } = req.query;
+  try {
+    const status = await xumm.payload.get(uuid);
+    const txid = status?.response?.txid;
+
+    if (status?.meta?.resolved && status.meta.signed && txid) {
+      res.json({ confirmed: true, txid });
+    } else {
+      res.json({ confirmed: false });
+    }
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to check payment' });
+  }
+});
 
 
 

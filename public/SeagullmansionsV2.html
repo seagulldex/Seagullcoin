@@ -215,35 +215,62 @@
     }
 
     async function initiatePayment() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet) {
-        alert("Please log in with your XUMM wallet first.");
-        return;
-      }
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) {
+    alert("Please log in with your XUMM wallet first.");
+    return;
+  }
 
-      try {
-        const res = await fetch("https://sglcn-x20-api.glitch.me/pays", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userAddress: wallet })
-        });
+  try {
+    const res = await fetch("https://sglcn-x20-api.glitch.me/pays", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet })
+    });
 
-        if (!res.ok) throw new Error('Payment initiation failed');
-        const data = await res.json();
+    if (!res.ok) throw new Error('Payment initiation failed');
+    const data = await res.json();
 
-        if (data.uuid && data.next) {
-          alert("Please approve the payment in your XUMM app.");
-          window.open(data.next.always || data.next, "_blank");
-          // Start checking payment confirmation
-          waitForPayment(data.uuid);
-        } else {
-          alert("Payment initiation failed: " + JSON.stringify(data));
+    if (data.uuid && data.next) {
+      document.getElementById('mintStatusModal').style.display = 'flex';
+      document.getElementById('mintStatusText').textContent = 'Waiting for payment confirmation...';
+      window.open(data.next, '_blank');
+
+      // Poll for payment success
+      const interval = setInterval(async () => {
+        try {
+          const checkRes = await fetch(`https://sglcn-x20-api.glitch.me/check-payment?uuid=${data.uuid}`);
+          if (!checkRes.ok) throw new Error('Check failed');
+          const result = await checkRes.json();
+
+          if (result.confirmed) {
+            clearInterval(interval);
+            document.getElementById('mintStatusText').textContent = 'Payment confirmed! Minting NFT...';
+
+            // Trigger minting (assumes you have a /mint endpoint)
+            const mintRes = await fetch("https://sglcn-x20-api.glitch.me/mint", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ wallet })
+            });
+
+            const mintData = await mintRes.json();
+            document.getElementById('mintStatusText').textContent = mintData.success
+              ? `Minted! NFT ID: ${mintData.tokenId}`
+              : `Mint failed: ${mintData.error || 'Unknown error'}`;
+
+            document.getElementById('closeMintModal').style.display = 'inline-block';
+          }
+        } catch (e) {
+          console.error('Payment polling error:', e);
         }
-      } catch (err) {
-        console.error("Payment error:", err);
-        alert("Failed to initiate payment: " + err.message);
-      }
+      }, 4000);
     }
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
 
     // Poll for payment approval, then mint
     function waitForPayment(payloadUUID) {

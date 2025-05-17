@@ -2964,73 +2964,7 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(400).json({ error: "Invalid or insufficient payment" });
   }
 
-  const availableNFT = nftokens.find(id => !usedNFTs.has(id) && !pendingNFTs.has(id));
-  if (!availableNFT) return res.status(503).json({ error: "No NFTs available" });
-
-  pendingNFTs.add(availableNFT);
-
-  let client;
-  try {
-    client = new xrpl.Client("wss://s1.ripple.com"); // more stable than xrplcluster
-    await client.connect();
-
-    const wallet = xrpl.Wallet.fromSeed(SERVICE_WALLET_SEED);
-    console.log("Service wallet address:", wallet.classicAddress);
-
-    // Confirm it matches your expected address
-    if (wallet.classicAddress !== SERVICE_WALLET_ADDRESS) {
-      throw new Error("SERVICE_WALLET_SEED does not match SERVICE_WALLET_ADDRESS");
-    }
-
-    // Check account exists and has sufficient XRP
-    const accountInfo = await client.request({
-      command: "account_info",
-      account: wallet.classicAddress
-    });
-
-    const balanceDrops = parseInt(accountInfo.result.account_data.Balance, 10);
-    if (balanceDrops < 10000000) { // 10 XRP minimum reserve
-      throw new Error("Service wallet has insufficient XRP to submit transactions");
-    }
-
-    const tx = {
-      TransactionType: "NFTokenCreateOffer",
-      Account: wallet.classicAddress,
-      NFTokenID: availableNFT,
-      Destination: userAddress,
-      Amount: "0",
-      Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
-    };
-
-    const prepared = await client.autofill(tx);
-    const signed = wallet.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
-
-    const txResult = result.result.meta?.TransactionResult;
-    console.log("Transaction result:", txResult);
-
-    if (txResult !== "tesSUCCESS") {
-      throw new Error(`XRPL transaction failed: ${txResult}`);
-    }
-
-    usedNFTs.add(availableNFT);
-    pendingNFTs.delete(availableNFT);
-
-    return res.json({
-      success: true,
-      message: "Payment verified. NFT assigned and offer created.",
-      nftoken_id: availableNFT
-    });
-  } catch (err) {
-    console.error("Mint error:", err);
-    pendingNFTs.delete(availableNFT);
-    return res.status(500).json({ error: "Minting failed", details: err.message });
-  } finally {
-    if (client && client.isConnected()) {
-      await client.disconnect();
-    }
-  }
-});
+  const availableNFT = nftokens.find(id => !usedNF
 
 
 

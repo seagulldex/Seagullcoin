@@ -2963,19 +2963,20 @@ app.post('/mint-after-payment', async (req, res) => {
 
   try {
     const offerPayload = {
-      txjson: {
-        TransactionType: "NFTokenCreateOffer",
-        Account: userAddress,
-        NFTokenID: availableNFT,
-        Destination: SERVICE_WALLET_ADDRESS,
-        Amount: "0",
-        Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
-      },
-      options: {
-        submit: true,
-        expire: 600
-      }
-    };
+  txjson: {
+    TransactionType: "NFTokenCreateOffer",
+    Account: SERVICE_WALLET_ADDRESS,  // MUST be service wallet (the current NFT owner)
+    NFTokenID: availableNFT,
+    Destination: userAddress,        // buyer wallet
+    Amount: "0",
+    Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken
+  },
+  options: {
+    submit: true,
+    expire: 600
+  }
+};
+
 
     const payload = await xumm.payload.create(offerPayload);
     console.log('Offer Payload:', JSON.stringify(payload, null, 2));

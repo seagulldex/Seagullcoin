@@ -2997,6 +2997,72 @@ app.post('/mint-after-payment', async (req, res) => {
 
 
 
+app.post('/mint-complete', async (req, res) => {
+  const { offerPayloadUUID, nftoken_id } = req.body;
+  if (!offerPayloadUUID || !nftoken_id) {
+    return res.status(400).json({ error: "Missing offerPayloadUUID or nftoken_id" });
+  }
+
+  // Get signed payload
+  let offerPayload;
+  try {
+    offerPayload = await xumm.payload.get(offerPayloadUUID);
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to fetch signed offer payload" });
+  }
+
+  if (!offerPayload?.meta?.signed) {
+    return res.status(400).json({ error: "Offer not signed yet" });
+  }
+
+  // Wait for ledger to settle
+  await new Promise(resolve => setTimeout(resolve, 3000));
+
+  // Get offer index from ledger
+  let offerIndex;
+  try {
+    const offerQuery = await client.request({
+      command: "nft_sell_offers",
+      nft_id: nftoken_id
+    });
+
+    const matching = offerQuery.result.offers.find(
+      o => o.destination === SERVICE_WALLET_ADDRESS
+    );
+    offerIndex = matching?.nft_offer_index;
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to fetch offer index", details: err.message });
+  }
+
+  if (!offerIndex) {
+    return res.status(404).json({ error: "Offer not found on ledger" });
+  }
+
+  // Accept offer from service wallet
+  try {
+    const tx = {
+      TransactionType: "NFTokenAcceptOffer",
+      Account: SERVICE_WALLET_ADDRESS,
+      NFTokenBuyOffer: offerIndex
+    };
+
+    const acceptPayload = await xumm.payload.create({
+      txjson: tx,
+      options: { submit: true }
+    });
+
+    usedNFTs.add(nftoken_id);
+    pendingNFTs.delete(nftoken_id);
+
+    return res.json({
+      success: true,
+      message: "NFT transferred successfully!",
+      txid: acceptPayload.response.txid
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to accept NFT offer", details: err.message });
+  }
+});
 
 
 

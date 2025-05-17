@@ -258,7 +258,6 @@
             document.getElementById('mintStatusText').textContent = mintData.success
               ? `Minted! NFT ID: ${mintData.tokenId}`
               : `Mint failed: ${mintData.error || 'Unknown error'}`;
-
             document.getElementById('closeMintModal').style.display = 'inline-block';
           }
         } catch (e) {

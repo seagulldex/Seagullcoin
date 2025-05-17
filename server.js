@@ -2986,22 +2986,6 @@ app.post('/mint-after-payment', async (req, res) => {
 
     const { uuid, next } = await xumm.payload.create(offerPayload);
 
-    offerPayloads.set(uuid, { nftoken_id: availableNFT, userAddress });
-
-    return res.json({
-      success: true,
-      message: "NFT payment verified. Sign offer via XUMM.",
-      nftoken_id: availableNFT,
-      offer_payload_uuid: uuid,
-      xumm_sign_url: next.always
-    });
-
-  } catch (err) {
-    console.error("XUMM signing error:", err.message);
-    pendingNFTs.delete(availableNFT);
-    return res.status(500).json({ error: "Failed to prepare NFT offer", details: err.message });
-  }
-});
 
 app.get('/check-offer/:uuid', async (req, res) => {
   const uuid = req.params.uuid;

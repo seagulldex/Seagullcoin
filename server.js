@@ -100,6 +100,7 @@ const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking ser
 
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
+const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
 
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
@@ -652,37 +653,82 @@ app.get('/login-status', async (req, res) => {
   }
 });
 
+app.get('/stake-payload/:walletAddress', async (req, res) => {
+  const wallet = req.params.walletAddress;
 
-app.get("/stake-payload", async (req, res) => {
   const payload = {
     txjson: {
       TransactionType: "Payment",
-      Destination: "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U", // Your staking wallet
+      Destination: SERVICE_WALLET, // Your platform's stake wallet
       Amount: {
         currency: "53656167756C6C436F696E000000000000000000",
-        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+        issuer: SEAGULLCOIN_ISSUER,
         value: "100"
       },
-      Memos: [
-        {
-          Memo: {
-            MemoType: Buffer.from("stake").toString("hex"),
-            MemoData: Buffer.from("30d").toString("hex")
-          }
-        }
-      ]
+      DestinationTag: 99001,
     },
     options: {
       submit: true,
-      expire: 60
+      return_url: {
+        app: "https://sglcn-x20-api.glitch.me/stake-success",
+      }
     }
   };
 
-  const response = await xumm.payload.create(payload);
-  res.json(response);
+  const { created } = await xumm.payload.create(payload);
+  const uuid = created.uuid;
+
+  // Track the stake attempt
+  stakes[wallet] = { uuid, amount: "100", status: "pending" };
+
+  res.json(created);
 });
 
 
+
+app.get('/stake-status/:walletAddress', (req, res) => {
+  const wallet = req.params.walletAddress;
+  const stake = stakes[wallet];
+
+  if (stake) {
+    res.json({ wallet, ...stake });
+  } else {
+    res.json({ wallet, status: 'not_staked' });
+  }
+});
+
+app.get('/unstake-payload/:walletAddress', async (req, res) => {
+  const wallet = req.params.walletAddress;
+
+  const payload = {
+    txjson: {
+      TransactionType: "Payment",
+      Destination: wallet,
+      Amount: {
+        currency: "53656167756C6C436F696E000000000000000000",
+        issuer: SEAGULLCOIN_ISSUER,
+        value: "100"
+      },
+    },
+    options: {
+      submit: true,
+      return_url: {
+        app: "https://sglcn-x20-api.glitch.me/unstake-success",
+      }
+    }
+  };
+
+  const { created } = await xumm.payload.create(payload);
+  const uuid = created.uuid;
+
+  // Update stake status
+  if (stakes[wallet]) {
+    stakes[wallet].status = "unstaking";
+    stakes[wallet].unstake_uuid = uuid;
+  }
+
+  res.json(created);
+});
 
 
 app.get('/user', async (req, res) => {

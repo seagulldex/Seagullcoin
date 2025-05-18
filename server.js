@@ -2959,14 +2959,14 @@ app.post('/mint-after-payment', async (req, res) => {
   const availableNFT = nftokens.find(n => !usedNFTs.has(n.id) && !pendingNFTs.has(n.id))
   if (!availableNFT) return res.status(503).json({ error: "No NFTs available" });
 
-  pendingNFTs.add(availableNFT);
+  pendingNFTs.add(availableNFT.id);
 
   try {
     const offerPayload = {
   txjson: {
     TransactionType: "NFTokenCreateOffer",
     Account: SERVICE_WALLET_ADDRESS,  // MUST be service wallet (the current NFT owner)
-    NFTokenID: availableNFT,
+    NFTokenID: availableNFT.id, // CORRECT
     Destination: userAddress,        // buyer wallet
     Amount: "0",
     Flags: xrpl.NFTokenCreateOfferFlags.tfSellNFToken

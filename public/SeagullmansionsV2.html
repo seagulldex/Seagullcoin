@@ -42,14 +42,8 @@
       cursor: pointer;
       color: white;
     }
-    .green {
-      color: green;
-      cursor: default;
-    }
-    .red {
-      color: red;
-      cursor: pointer;
-    }
+    .green { color: green; cursor: default; }
+    .red { color: red; cursor: pointer; }
     .trait {
       font-size: 0.9em;
       text-align: left;
@@ -69,15 +63,11 @@
       color: white;
       cursor: pointer;
     }
-    .seagull-spinner {
-      width: 50px;
-    }
     #loading-spinner {
       text-align: center;
       margin: 20px;
       display: none;
     }
-    /* Mint modal styles */
     #mintStatusModal {
       display: none;
       position: fixed;
@@ -131,7 +121,7 @@
     </div>
 
     <div style="text-align:center; margin: 20px;">
-      <button onclick="initiatePayment()">Pay 0.18 SeagullMansions to Mint NFT</button>
+      <button onclick="initiatePayment()">Mint pay 0.18 SeagullMansions</button>
     </div>
 
     <div id="loading-spinner">
@@ -147,15 +137,12 @@
         <h2>Minting NFT</h2>
         <p id="mintStatusText">Waiting for payment confirmation...</p>
         <div id="mintSpinner">⏳</div>
-        <button id="closeMintModal" style="display:none; margin-top:20px; padding:8px 16px; background:#00bfa5; border:none; border-radius:6px; color:#fff; cursor:pointer;">Close</button>
+        <button id="closeMintModal" style="display:none;" onclick="hideMintModal()">Close</button>
       </div>
     </div>
   </main>
 
   <script>
-    // Hide modal by default
-    document.getElementById('mintStatusModal').style.display = 'none';
-
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
     });
@@ -185,27 +172,19 @@
     async function startLoginFlow() {
       try {
         const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-        if (!res.ok) throw new Error('Login initiation failed');
         const data = await res.json();
-        if (!data.payloadURL || !data.payloadUUID) throw new Error('Invalid login response');
         window.open(data.payloadURL, "_blank");
-
         const interval = setInterval(async () => {
-          try {
-            const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-            if (!check.ok) throw new Error('Login check failed');
-            const loginStatus = await check.json();
-            if (loginStatus.loggedIn && loginStatus.account) {
-              clearInterval(interval);
-              localStorage.setItem('xumm_wallet_address', loginStatus.account);
-              updateWalletStatus();
-            }
-          } catch(e) {
-            console.error('Login check error:', e);
+          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+          const loginStatus = await check.json();
+          if (loginStatus.loggedIn) {
+            clearInterval(interval);
+            localStorage.setItem('xumm_wallet_address', loginStatus.account);
+            updateWalletStatus();
           }
         }, 3000);
       } catch (e) {
-        alert('Login failed: ' + e.message);
+        alert("Login failed: " + e.message);
       }
     }
 
@@ -214,181 +193,107 @@
       updateWalletStatus();
     }
 
+    function showMintModal() {
+      document.getElementById("mintStatusModal").style.display = "flex";
+      document.getElementById("mintStatusText").textContent = "Waiting for payment confirmation...";
+      document.getElementById("mintSpinner").textContent = "⏳";
+      document.getElementById("closeMintModal").style.display = "none";
+    }
+
+    function updateMintModalStatus(message) {
+      document.getElementById("mintStatusText").textContent = message;
+    }
+
+    function hideMintModal() {
+      document.getElementById("mintStatusModal").style.display = "none";
+    }
+
     async function initiatePayment() {
-  const wallet = localStorage.getItem('xumm_wallet_address');
-  if (!wallet) {
-    alert("Please log in with your XUMM wallet first.");
-    return;
-  }
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      if (!wallet) return alert("Please log in first.");
 
-  try {
-    const res = await fetch("https://sglcn-x20-api.glitch.me/pays", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wallet })
-    });
+      try {
+        const res = await fetch("https://sglcn-x20-api.glitch.me/pays", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userAddress: wallet })
+        });
+        const data = await res.json();
 
-    if (!res.ok) throw new Error('Payment initiation failed');
-    const data = await res.json();
+        if (data.uuid && data.next) {
+          showMintModal();
+          window.open(data.next.always || data.next, "_blank");
+          waitForPayment(data.uuid);
+        } else {
+          alert("Payment initiation failed.");
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
 
-    if (data.uuid && data.next) {
-      document.getElementById('mintStatusModal').style.display = 'flex';
-      document.getElementById('mintStatusText').textContent = 'Waiting for payment confirmation...';
-      window.open(data.next, '_blank');
-
-      // Poll for payment success
+    function waitForPayment(payloadUUID) {
       const interval = setInterval(async () => {
         try {
-          const checkRes = await fetch(`https://sglcn-x20-api.glitch.me/payload-status?uuid=${data.uuid}`);
-          if (!checkRes.ok) throw new Error('Check failed');
-          const result = await checkRes.json();
-
-          if (result.confirmed) {
-            clearInterval(interval);
-            document.getElementById('mintStatusText').textContent = 'Payment confirmed! Minting NFT...';
-
-            // Trigger minting (assumes you have a /mint endpoint)
-            const mintRes = await fetch("https://sglcn-x20-api.glitch.me/mint", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ wallet })
-            });
-
-            const mintData = await mintRes.json();
-            document.getElementById('mintStatusText').textContent = mintData.success
-              ? `Minted! NFT ID: ${mintData.tokenId}`
-              : `Mint failed: ${mintData.error || 'Unknown error'}`;
-            document.getElementById('closeMintModal').style.display = 'inline-block';
-          }
-        } catch (e) {
-          console.error('Payment polling error:', e);
-        }
-      }, 4000);
-    }
-  } catch (e) {
-    alert('Error: ' + e.message);
-  }
-}
-
-
-    // Poll for payment approval, then mint
-    function waitForPayment(payloadUUID) {
-      showMintModal();
-
-      const checkSigned = async () => {
-        try {
           const res = await fetch(`https://sglcn-x20-api.glitch.me/payload/${payloadUUID}`);
-          if (!res.ok) throw new Error('Failed to check payment status');
           const json = await res.json();
 
           if (json.signed) {
+            clearInterval(interval);
             updateMintModalStatus("Payment confirmed. Minting NFT...");
-            // Call mint endpoint after payment
+
             const mintRes = await fetch('https://sglcn-x20-api.glitch.me/mint-after-payment', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' }
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ uuid: payloadUUID })
             });
 
-            if (!mintRes.ok) throw new Error('Minting failed');
-            const mintJson = await mintRes.json();
-
-                               if (mintJson.success) {
-              updateMintModalStatus("NFT Minted Successfully!");
-              document.getElementById('closeMintModal').style.display = 'inline-block';
+            if (mintRes.ok) {
+              const result = await mintRes.json();
+              updateMintModalStatus("NFT Minted! Token ID: " + result.nftId);
+              document.getElementById("mintSpinner").textContent = "✅";
+              document.getElementById("closeMintModal").style.display = "inline-block";
               fetchNFTs(localStorage.getItem('xumm_wallet_address'));
             } else {
-              throw new Error("Minting failed: " + JSON.stringify(mintJson));
+              updateMintModalStatus("Minting failed.");
+              document.getElementById("mintSpinner").textContent = "❌";
+              document.getElementById("closeMintModal").style.display = "inline-block";
             }
-          } else if (json.expired) {
-            updateMintModalStatus("Payment expired or cancelled.");
-            document.getElementById('closeMintModal').style.display = 'inline-block';
-          } else {
-            setTimeout(checkSigned, 3000);
           }
-        } catch (err) {
-          console.error("Minting error:", err);
-          updateMintModalStatus("Error during minting: " + err.message);
-          document.getElementById('closeMintModal').style.display = 'inline-block';
+        } catch (e) {
+          console.error(e);
         }
-      };
-
-      checkSigned();
+      }, 4000);
     }
 
-    function showMintModal() {
-      document.getElementById('mintStatusModal').style.display = 'flex';
-      document.getElementById('mintStatusText').innerText = 'Waiting for payment confirmation...';
-      document.getElementById('mintSpinner').innerText = '⏳';
-      document.getElementById('closeMintModal').style.display = 'none';
-      
-                  document.getElementById('closeMintModal').style.display = 'inline-block';
-            document.getElementById('closeMintModal').onclick = () => {
-              document.getElementById('mintStatusModal').style.display = 'none';
-              fetchNFTs(wallet); // Refresh NFTs after mint
-            };
-          }
-        } catch (err) {
-          console.error('Error checking payment status:', err);
-        }
-      }, 3000);
+    async function fetchNFTs(wallet) {
+      document.getElementById("loading-spinner").style.display = "block";
+      try {
+        const res = await fetch(`https://sglcn-x20-api.glitch.me/user-nfts?wallet=${wallet}`);
+        const nfts = await res.json();
+        const container = document.getElementById("user-nfts");
+        container.innerHTML = '';
+
+        nfts.forEach(nft => {
+          const div = document.createElement("div");
+          div.className = "nft-card";
+          div.innerHTML = `
+            <img src="${nft.image}" alt="${nft.name}" />
+            <h3>${nft.name}</h3>
+            <p>${nft.description}</p>
+          `;
+          container.appendChild(div);
+        });
+      } catch (e) {
+        alert("Failed to load NFTs.");
+      } finally {
+        document.getElementById("loading-spinner").style.display = "none";
+      }
     }
-  } catch (err) {
-    alert('Payment error: ' + err.message);
-  }
-}
-
-async function addTrustline() {
-  const wallet = localStorage.getItem('xumm_wallet_address');
-  if (!wallet) {
-    alert("Please log in to add a trustline.");
-    return;
-  }
-  try {
-    const res = await fetch("https://sglcn-x20-api.glitch.me/add-trustline", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wallet })
-    });
-    const data = await res.json();
-    if (data.next) window.open(data.next, "_blank");
-    else alert("Failed to initiate trustline.");
-  } catch (err) {
-    console.error('Trustline error:', err);
-    alert('Error adding trustline: ' + err.message);
-  }
-}
-
-async function fetchNFTs(wallet) {
-  document.getElementById('loading-spinner').style.display = 'block';
-  try {
-    const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts/${wallet}`);
-    const { nfts } = await res.json();
-    const container = document.getElementById('user-nfts');
-    container.innerHTML = '';
-    nfts.forEach(nft => {
-      const card = document.createElement('div');
-      card.className = 'nft-card';
-      card.innerHTML = `
-        <img src="${nft.image || ''}" alt="NFT Image" />
-        <h3>${nft.name || 'Unnamed NFT'}</h3>
-        <p>${nft.description || ''}</p>
-      `;
-      container.appendChild(card);
-    });
-  } catch (err) {
-    console.error('Error fetching NFTs:', err);
-  }
-  document.getElementById('loading-spinner').style.display = 'none';
-}
 
     function addTrustline() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet) {
-        alert("Please log in with your XUMM wallet first.");
-        return;
-      }
-
-      window.open('https://xumm.app/detect/request?txjson={"TransactionType":"TrustSet","LimitAmount":{"currency":"SeagullMansions","issuer":"rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno","value":"1000000"}}', "_blank");
+      const trustlineURL = `https://xumm.app/detect/trust?issuer=rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno&currency=53656167756C6C4D616E73696F6E73`;
+      window.open(trustlineURL, "_blank");
     }
   </script>
 </body>

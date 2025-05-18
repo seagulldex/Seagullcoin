@@ -722,12 +722,7 @@ app.get('/stake-status/:uuid', async (req, res) => {
   }
 });
 
-app.get('/stake-status-wallet/:walletAddress', (req, res) => {
-  const wallet = req.params.walletAddress;
-  const status = stakedWallets[wallet];
-  if (!status) return res.json({ staked: false });
-  res.json({ staked: true, data: status });
-});
+
 
 
 app.get('/stake-status/:walletAddress', (req, res) => {
@@ -741,32 +736,37 @@ app.get('/stake-status/:walletAddress', (req, res) => {
   }
 });
 
-app.get('/unstake-payload/:walletAddress', async (req, res) => {
-  try {
-    const wallet = req.params.walletAddress;
-    if (!stakedWallets[wallet]) {
-      return res.status(400).json({ error: 'Wallet is not currently staked' });
-    }
+app.get('/unstake-payload/:walletAddress', (req, res) => {
+  const wallet = req.params.walletAddress;
+  const stake = stakedWallets[wallet];
 
-    const tx = {
-      TransactionType: "Payment",
-      Destination: wallet,
-      Amount: {
-        currency: "53656167756C6C436F696E000000000000000000",
-        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-        value: "50000"
-      }
-    };
-
-    const payload = await xumm.payload.create(tx);
-    res.json(payload);
-  } catch (error) {
-    console.error('Unstake error:', error);
-    res.status(500).json({ error: 'Failed to create unstake payload' });
+  if (!stake) {
+    return res.status(400).json({ error: 'Wallet is not currently staked' });
   }
+
+  const now = Date.now();
+  const lockPeriodMs = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+  const stakedDuration = now - stake.stakedAt;
+
+  if (stakedDuration < lockPeriodMs) {
+    const unlockDate = new Date(stake.stakedAt + lockPeriodMs);
+    return res.status(403).json({
+      error: 'Tokens are still locked',
+      unlocksAt: unlockDate.toISOString(),
+      message: `Tokens will be unlocked after ${unlockDate.toDateString()}`
+    });
+  }
+
+  // Generate XUMM unstake payload to send 100 SeagullCoin back to the user
+  // Your existing code to create the XUMM payload goes here...
+  
+  // Example:
+  // const unstakePayload = await createUnstakePayload(wallet);
+  // res.json(unstakePayload);
 });
 
-  app.get('/stake-rewards/:walletAddress', (req, res) => {
+
+app.get('/stake-rewards/:walletAddress', (req, res) => {
   const wallet = req.params.walletAddress;
   const stake = stakedWallets[wallet];
 
@@ -774,7 +774,7 @@ app.get('/unstake-payload/:walletAddress', async (req, res) => {
 
   const stakedDurationMs = Date.now() - stake.stakedAt;
   const stakedDays = Math.floor(stakedDurationMs / (1000 * 60 * 60 * 24));
-  const reward = (stakedDays * 80).toFixed(2); // e.g., 2 SGLCN per day
+  const reward = (stakedDays * 2).toFixed(2); // e.g., 2 SGLCN per day
 
   res.json({
     wallet,
@@ -783,6 +783,7 @@ app.get('/unstake-payload/:walletAddress', async (req, res) => {
     reward: `${reward} SeagullCoin`
   });
 });
+
 
 app.post('/claim-rewards/:walletAddress', async (req, res) => {
   const wallet = req.params.walletAddress;

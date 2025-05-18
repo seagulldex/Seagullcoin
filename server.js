@@ -2993,7 +2993,7 @@ app.post('/mint-after-payment', async (req, res) => {
     description: metadata.description || "",
     image: metadata.image || ""
   }
-});
+})
 
 
   } catch (err) {

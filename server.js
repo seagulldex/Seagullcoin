@@ -697,7 +697,37 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
   }
 });
 
+// In-memory staked wallet map
+const stakedWallets = {};
 
+app.get('/stake-status/:uuid', async (req, res) => {
+  try {
+    const uuid = req.params.uuid;
+    const payload = await xumm.payload.get(uuid);
+
+    if (!payload.meta.signed) {
+      return res.json({ staked: false, message: 'Not signed yet' });
+    }
+
+    const walletAddress = payload.response.account;
+    stakedWallets[walletAddress] = {
+      stakedAt: Date.now(),
+      uuid
+    };
+
+    res.json({ staked: true, wallet: walletAddress });
+  } catch (error) {
+    console.error('Stake status check error:', error);
+    res.status(500).json({ error: 'Unable to check stake status' });
+  }
+});
+
+app.get('/stake-status-wallet/:walletAddress', (req, res) => {
+  const wallet = req.params.walletAddress;
+  const status = stakedWallets[wallet];
+  if (!status) return res.json({ staked: false });
+  res.json({ staked: true, data: status });
+});
 
 
 app.get('/stake-status/:walletAddress', (req, res) => {
@@ -712,38 +742,31 @@ app.get('/stake-status/:walletAddress', (req, res) => {
 });
 
 app.get('/unstake-payload/:walletAddress', async (req, res) => {
-  const wallet = req.params.walletAddress;
+  try {
+    const wallet = req.params.walletAddress;
+    if (!stakedWallets[wallet]) {
+      return res.status(400).json({ error: 'Wallet is not currently staked' });
+    }
 
-  const payload = {
-    txjson: {
+    const tx = {
       TransactionType: "Payment",
       Destination: wallet,
       Amount: {
         currency: "53656167756C6C436F696E000000000000000000",
-        issuer: SEAGULLCOIN_ISSUER,
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
         value: "100"
-      },
-    },
-    options: {
-      submit: true,
-      return_url: {
-        app: "https://sglcn-x20-api.glitch.me/unstake-success",
       }
-    }
-  };
+    };
 
-  const { created } = await xumm.payload.create(payload);
-  const uuid = created.uuid;
-
-  // Update stake status
-  if (stakes[wallet]) {
-    stakes[wallet].status = "unstaking";
-    stakes[wallet].unstake_uuid = uuid;
+    const payload = await xumm.payload.create(tx);
+    res.json(payload);
+  } catch (error) {
+    console.error('Unstake error:', error);
+    res.status(500).json({ error: 'Failed to create unstake payload' });
   }
-
-  res.json(created);
 });
 
+  
 
 app.get('/user', async (req, res) => {
   const address = req.query.address;

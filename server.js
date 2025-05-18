@@ -103,6 +103,30 @@ const usedPayloads = new Set(); // In-memory cache to prevent reuse
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 
+async function fetchIPFSMetadata(uri) {
+  if (!uri.startsWith("ipfs://")) return null;
+  const ipfsUrl = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+  try {
+    const res = await fetch(ipfsUrl);
+    if (!res.ok) throw new Error("Failed to fetch metadata from IPFS");
+    const metadata = await res.json();
+    return {
+      name: metadata.name || "Untitled NFT",
+      description: metadata.description || "",
+      image: metadata.image?.startsWith("ipfs://")
+        ? metadata.image.replace("ipfs://", "https://ipfs.io/ipfs/")
+        : metadata.image || ""
+    };
+  } catch (err) {
+    console.error("IPFS metadata fetch error:", err.message);
+    return {
+      name: "Untitled NFT",
+      description: "",
+      image: ""
+    };
+  }
+}
+
 
 // Function to get balance for a single address
 const getBalance = async (address) => {
@@ -2988,13 +3012,8 @@ app.post('/mint-after-payment', async (req, res) => {
   nftoken_id: availableNFT.id,
   offer_payload_uuid: payload.uuid,
   xumm_sign_url: payload.next.always,
-  metadata: {
-  name: availableNFT.name || "Untitled NFT",
-  description: availableNFT.description || "",
-  image: availableNFT.image?.startsWith("ipfs://")
-    ? availableNFT.image.replace("ipfs://", "https://ipfs.io/ipfs/")
-    : availableNFT.image || ""
-}
+  metadata: await fetchIPFSMetadata(availableNFT.metadata_uri || "")
+
 })
 
 

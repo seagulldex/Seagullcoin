@@ -670,6 +670,18 @@ app.get('/login-status', async (req, res) => {
   `);
 })();
 
+(async () => {
+  const rows = await db.all('SELECT wallet, stakedAt, unlocksAt, amount FROM staking');
+  rows.forEach(row => {
+    stakedWallets[row.wallet] = {
+      stakedAt: row.stakedAt,
+      unlocksAt: row.unlocksAt,
+      amount: row.amount
+    };
+  });
+})();
+
+
 // Constants
 const STAKE_AMOUNT = 100;           // 100 SeagullCoin staked
 const LOCK_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;  // 30 days in ms
@@ -775,17 +787,29 @@ app.get('/stake-status/:uuid', async (req, res) => {
     }
 
     const walletAddress = payload.response.account;
+
+    // Check if stake already exists
+    const existingStake = await getStake(walletAddress);
+    if (!existingStake) {
+      // Add stake record to DB now that payment is confirmed
+      await addStake(walletAddress);
+    }
+
+    // Optionally, keep in-memory map updated if you use it elsewhere
     stakedWallets[walletAddress] = {
       stakedAt: Date.now(),
       uuid
     };
 
     res.json({ staked: true, wallet: walletAddress });
+
   } catch (error) {
     console.error('Stake status check error:', error);
     res.status(500).json({ error: 'Unable to check stake status' });
   }
 });
+
+
 
 // Endpoint: Stake rewards calculation
 app.get('/stake-rewards/:wallet', async (req, res) => {

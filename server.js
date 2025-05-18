@@ -2991,7 +2991,9 @@ app.post('/mint-after-payment', async (req, res) => {
   metadata: {
   name: availableNFT.name || "Untitled NFT",
   description: availableNFT.description || "",
-  image: availableNFT.image || ""
+  image: availableNFT.image?.startsWith("ipfs://")
+    ? availableNFT.image.replace("ipfs://", "https://ipfs.io/ipfs/")
+    : availableNFT.image || ""
 }
 })
 

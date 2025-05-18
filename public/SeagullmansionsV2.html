@@ -209,28 +209,43 @@
     }
 
     async function initiatePayment() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet) return alert("Please log in first.");
+  const res = await fetch('/pays', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ wallet: localStorage.getItem("xummWallet") })
+  });
+  const data = await res.json();
 
-      try {
-        const res = await fetch("https://sglcn-x20-api.glitch.me/pays", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userAddress: wallet })
-        });
-        const data = await res.json();
+  const uuid = data.uuid;
+  window.open(data.next, '_blank'); // or use XUMM SDK popup if embedded
 
-        if (data.uuid && data.next) {
-          showMintModal();
-          window.open(data.next.always || data.next, "_blank");
-          waitForPayment(data.uuid);
-        } else {
-          alert("Payment initiation failed.");
-        }
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
+  document.getElementById("mintStatusModal").style.display = "flex";
+
+  // Poll for payment confirmation
+  const interval = setInterval(async () => {
+    const check = await fetch(`/mint-after-payment`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ paymentUUID: uuid })
+    });
+    const result = await check.json();
+
+    if (result.success) {
+      clearInterval(interval);
+      document.getElementById("mintStatusText").innerText = "NFT minted!";
+      document.getElementById("mintSpinner").innerText = "✅";
+      // Optionally show offer to sign here
+      window.open(result.xumm_sign_url, '_blank');
+    } else if (result.error && result.error.includes("not submitted yet")) {
+      // Still waiting, continue polling
+    } else if (result.error) {
+      clearInterval(interval);
+      document.getElementById("mintStatusText").innerText = `Error: ${result.error}`;
+      document.getElementById("mintSpinner").innerText = "❌";
     }
+  }, 5000);
+}
+
 
     function waitForPayment(payloadUUID) {
       const interval = setInterval(async () => {

@@ -697,6 +697,26 @@ async function removeStake(wallet) {
   return db.run(`DELETE FROM staking WHERE wallet = ?`, [wallet]);
 }
 
+// POST /add-stake
+// Body JSON: { "wallet": "rYourWalletAddressHere" }
+app.post('/add-stake', (req, res) => {
+  const wallet = req.body.wallet;
+  if (!wallet) return res.status(400).json({ error: 'Wallet address is required' });
+
+  // Check if already staked
+  if (stakedWallets[wallet]) {
+    return res.status(400).json({ error: 'Wallet already staked' });
+  }
+
+  // Add to in-memory staking store with current timestamp
+  stakedWallets[wallet] = {
+    stakedAt: Date.now()
+  };
+
+  res.json({ message: `Stake added for wallet ${wallet}`, stakedAt: new Date(stakedWallets[wallet].stakedAt).toISOString() });
+});
+
+
 
 app.get('/stake-payload/:walletAddress', async (req, res) => {
   try {
@@ -898,6 +918,39 @@ app.post('/claim-rewards/:walletAddress', async (req, res) => {
     res.status(500).json({ error: 'Failed to create payout payload', details: err.message });
   }
 });
+
+// Endpoint: Unstake payload
+app.get('/unstake-payload/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+  try {
+    const stake = await getStake(wallet);
+    if (!stake) return res.status(400).json({ error: 'Wallet not staked' });
+
+    const now = Date.now();
+    if (now < stake.unlocksAt) {
+      return res.status(400).json({
+        error: 'Tokens are still locked',
+        unlocksAt: new Date(stake.unlocksAt).toISOString(),
+        message: `Tokens will be unlocked after ${new Date(stake.unlocksAt).toDateString()}`
+      });
+    }
+
+    // Build XUMM payload for unstaking here...
+    // For demo, just return success placeholder
+
+    res.json({
+      message: 'Unstake payload ready (implement your XUMM payload here)',
+      wallet
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'DB error', details: err.message });
+  }
+});
+
+// Sample: Call addStake(wallet) when stake succeeds (example usage)
+// await addStake('rSomeWalletAddress');
+
 
 
 app.get('/user', async (req, res) => {

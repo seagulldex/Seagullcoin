@@ -654,35 +654,49 @@ app.get('/login-status', async (req, res) => {
 });
 
 app.get('/stake-payload/:walletAddress', async (req, res) => {
-  const wallet = req.params.walletAddress;
+  try {
+    const walletAddress = req.params.walletAddress;
 
-  const payload = {
-    txjson: {
-      TransactionType: "Payment",
-      Destination: SERVICE_WALLET, // Your platform's stake wallet
-      Amount: {
-        currency: "53656167756C6C436F696E000000000000000000",
-        issuer: SEAGULLCOIN_ISSUER,
-        value: "100"
-      },
-      DestinationTag: 99001,
-    },
-    options: {
-      submit: true,
-      return_url: {
-        app: "https://sglcn-x20-api.glitch.me/stake-success",
-      }
+    if (!walletAddress || !walletAddress.startsWith('r')) {
+      return res.status(400).json({ error: 'Invalid or missing wallet address' });
     }
-  };
 
-  const { created } = await xumm.payload.create(payload);
-  const uuid = created.uuid;
+    const payloadResponse = await xumm.payload.create({
+      txjson: {
+        TransactionType: 'Payment',
+        Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Your staking service wallet
+        Amount: {
+          currency: '53656167756C6C436F696E000000000000000000', // Hex for "SeagullCoin"
+          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+          value: '100'
+        },
+        Memos: [
+          {
+            Memo: {
+              MemoType: Buffer.from('stake', 'utf8').toString('hex').toUpperCase(),
+              MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
+            }
+          }
+        ]
+      },
+      options: {
+        submit: true,
+        expire: 10
+      }
+    });
 
-  // Track the stake attempt
-  stakes[wallet] = { uuid, amount: "100", status: "pending" };
+    if (!payloadResponse?.uuid) {
+      throw new Error('XUMM payload creation failed');
+    }
 
-  res.json(created);
+    res.json(payloadResponse);
+
+  } catch (error) {
+    console.error('Error creating stake payload:', error);
+    res.status(500).json({ error: 'Failed to create stake payload' });
+  }
 });
+
 
 
 

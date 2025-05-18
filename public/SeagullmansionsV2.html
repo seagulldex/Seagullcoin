@@ -321,17 +321,65 @@
       document.getElementById('mintSpinner').innerText = '⏳';
       document.getElementById('closeMintModal').style.display = 'none';
       
-      function updateMintModalStatus(message) {
-  const statusText = document.getElementById('mintStatusText');
-  const spinner = document.getElementById('mintSpinner');
-  const closeBtn = document.getElementById('closeMintModal');
-
-  statusText.textContent = message;
-  spinner.textContent = "✅";
-  closeBtn.style.display = "inline-block";
-      }
+                  document.getElementById('closeMintModal').style.display = 'inline-block';
+            document.getElementById('closeMintModal').onclick = () => {
+              document.getElementById('mintStatusModal').style.display = 'none';
+              fetchNFTs(wallet); // Refresh NFTs after mint
+            };
+          }
+        } catch (err) {
+          console.error('Error checking payment status:', err);
+        }
+      }, 3000);
     }
+  } catch (err) {
+    alert('Payment error: ' + err.message);
+  }
+}
 
+async function addTrustline() {
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) {
+    alert("Please log in to add a trustline.");
+    return;
+  }
+  try {
+    const res = await fetch("https://sglcn-x20-api.glitch.me/add-trustline", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet })
+    });
+    const data = await res.json();
+    if (data.next) window.open(data.next, "_blank");
+    else alert("Failed to initiate trustline.");
+  } catch (err) {
+    console.error('Trustline error:', err);
+    alert('Error adding trustline: ' + err.message);
+  }
+}
+
+async function fetchNFTs(wallet) {
+  document.getElementById('loading-spinner').style.display = 'block';
+  try {
+    const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts/${wallet}`);
+    const { nfts } = await res.json();
+    const container = document.getElementById('user-nfts');
+    container.innerHTML = '';
+    nfts.forEach(nft => {
+      const card = document.createElement('div');
+      card.className = 'nft-card';
+      card.innerHTML = `
+        <img src="${nft.image || ''}" alt="NFT Image" />
+        <h3>${nft.name || 'Unnamed NFT'}</h3>
+        <p>${nft.description || ''}</p>
+      `;
+      container.appendChild(card);
+    });
+  } catch (err) {
+    console.error('Error fetching NFTs:', err);
+  }
+  document.getElementById('loading-spinner').style.display = 'none';
+}
 
     function addTrustline() {
       const wallet = localStorage.getItem('xumm_wallet_address');

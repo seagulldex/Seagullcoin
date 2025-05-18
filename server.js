@@ -2998,7 +2998,7 @@ app.post('/mint-after-payment', async (req, res) => {
 
   } catch (err) {
     console.error("XUMM signing error:", err.message);
-    pendingNFTs.delete(availableNFT);
+    pendingNFTs.delete(availableNFT.id); // CORRECT
     return res.status(500).json({ error: "Failed to prepare NFT offer", details: err.message });
   }
 });

@@ -668,7 +668,7 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
         Amount: {
           currency: '53656167756C6C436F696E000000000000000000', // Hex for "SeagullCoin"
           issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-          value: '100'
+          value: '50000'
         },
         Memos: [
           {
@@ -754,7 +754,7 @@ app.get('/unstake-payload/:walletAddress', async (req, res) => {
       Amount: {
         currency: "53656167756C6C436F696E000000000000000000",
         issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-        value: "100"
+        value: "50000"
       }
     };
 
@@ -766,7 +766,62 @@ app.get('/unstake-payload/:walletAddress', async (req, res) => {
   }
 });
 
-  
+  app.get('/stake-rewards/:walletAddress', (req, res) => {
+  const wallet = req.params.walletAddress;
+  const stake = stakedWallets[wallet];
+
+  if (!stake) return res.json({ eligible: false, message: 'Wallet not staked' });
+
+  const stakedDurationMs = Date.now() - stake.stakedAt;
+  const stakedDays = Math.floor(stakedDurationMs / (1000 * 60 * 60 * 24));
+  const reward = (stakedDays * 80).toFixed(2); // e.g., 2 SGLCN per day
+
+  res.json({
+    wallet,
+    daysStaked: stakedDays,
+    eligible: true,
+    reward: `${reward} SeagullCoin`
+  });
+});
+
+app.post('/claim-rewards/:walletAddress', async (req, res) => {
+  const wallet = req.params.walletAddress;
+  const stake = stakedWallets[wallet];
+  if (!stake) return res.status(400).json({ error: 'Wallet not staked' });
+
+  const stakedDays = Math.floor((Date.now() - stake.stakedAt) / (1000 * 60 * 60 * 24));
+  if (stakedDays < 1) return res.status(400).json({ error: 'No rewards available yet' });
+
+  const rewardAmount = (stakedDays * 80).toFixed(0); // total reward in whole SGLCN
+
+  // Create XUMM payload to send rewardAmount SeagullCoin to wallet
+  try {
+    const payload = await xumm.payload.create({
+      txjson: {
+        TransactionType: "Payment",
+        Destination: wallet,
+        Amount: {
+          currency: "53656167756C6C436F696E000000000000000000",
+          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+          value: rewardAmount
+        }
+      }
+    });
+
+    // Reset staking timer or update stakedAt after payout
+    stakedWallets[wallet].stakedAt = Date.now();
+
+    res.json({
+      message: `Reward payout payload created for ${rewardAmount} SeagullCoin`,
+      uuid: payload.uuid,
+      next: payload.next,
+      refs: payload.refs
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create payout payload', details: err.message });
+  }
+});
+
 
 app.get('/user', async (req, res) => {
   const address = req.query.address;

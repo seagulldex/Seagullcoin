@@ -653,13 +653,27 @@ app.get('/login-status', async (req, res) => {
   }
 });
 
+app.get('/db-test', (req, res) => {
+  db.all('SELECT * FROM staking', (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json(rows);
+  });
+});
+
+
 // Open SQLite DB (async/await friendly)
 (async () => {
   db = await open({
     filename: './staking.db',
     driver: sqlite3.Database
   });
+const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table';");
+console.log(tables);
 
+  
   await db.exec(`
     CREATE TABLE IF NOT EXISTS staking (
       wallet TEXT PRIMARY KEY,
@@ -1195,6 +1209,15 @@ router.post('/mint', async (req, res) => {
       success: false,
       message: 'Error during the minting process. Please try again later.',
     });
+  }
+});
+
+app.get('/db-schema', async (req, res) => {
+  try {
+    const rows = await db.all("PRAGMA table_info(staking);");
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

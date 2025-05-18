@@ -2983,12 +2983,18 @@ app.post('/mint-after-payment', async (req, res) => {
 
     
     return res.json({
-      success: true,
-      message: "NFT payment verified. Sign offer via XUMM.",
-      nftoken_id: availableNFT,
-      offer_payload_uuid: payload.uuid,
-      xumm_sign_url: payload.next.always
-    });
+  success: true,
+  message: "NFT payment verified. Sign offer via XUMM.",
+  nftoken_id: availableNFT.id,
+  offer_payload_uuid: payload.uuid,
+  xumm_sign_url: payload.next.always,
+  metadata: {
+    name: metadata.name || "Untitled NFT",
+    description: metadata.description || "",
+    image: metadata.image || ""
+  }
+});
+
 
   } catch (err) {
     console.error("XUMM signing error:", err.message);

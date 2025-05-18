@@ -168,6 +168,9 @@
         document.getElementById('user-nfts').innerHTML = '';
       }
     }
+    
+    const ipfsUrlToHttp = (ipfsUri) =>
+    ipfsUri.replace("ipfs://", "https://ipfs.io/ipfs/");
 
     async function startLoginFlow() {
       try {
@@ -280,6 +283,56 @@
         }
       }, 4000);
     }
+
+  // Helper to convert IPFS URIs to HTTP
+  const ipfsUrlToHttp = (ipfsUri) =>
+    ipfsUri.replace("ipfs://", "https://ipfs.io/ipfs/");
+
+  async function fetchNFTs(wallet) {
+    document.getElementById("loading-spinner").style.display = "block";
+    const container = document.getElementById("user-nfts");
+    container.innerHTML = "";
+
+    try {
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/user-nfts?wallet=${wallet}`);
+      const data = await res.json();
+
+      data.nfts.forEach((nft) => {
+        const card = document.createElement("div");
+        card.className = "nft-card";
+
+        const img = document.createElement("img");
+        img.src = ipfsUrlToHttp(nft.metadata.image);
+        img.alt = nft.metadata.name || "NFT Image";
+
+        const title = document.createElement("h3");
+        title.textContent = nft.metadata.name || "Untitled NFT";
+
+        const description = document.createElement("p");
+        description.textContent = nft.metadata.description || "No description";
+
+        card.appendChild(img);
+        card.appendChild(title);
+        card.appendChild(description);
+
+        // Optional: show properties/traits
+        if (Array.isArray(nft.metadata.properties)) {
+          nft.metadata.properties.forEach((trait) => {
+            const traitEl = document.createElement("div");
+            traitEl.className = "trait";
+            traitEl.textContent = `${trait.trait_type}: ${trait.value}`;
+            card.appendChild(traitEl);
+          });
+        }
+
+        container.appendChild(card);
+      });
+    } catch (e) {
+      console.error("Failed to load NFTs:", e);
+    } finally {
+      document.getElementById("loading-spinner").style.display = "none";
+    }
+  }
 
     function addTrustline() {
       const trustlineURL = `https://xumm.app/detect/trust?issuer=rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno&currency=53656167756C6C4D616E73696F6E73`;

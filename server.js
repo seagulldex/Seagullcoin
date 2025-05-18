@@ -618,6 +618,35 @@ app.get('/login-status', async (req, res) => {
 });
 
 
+app.get("/stake-payload", async (req, res) => {
+  const payload = {
+    txjson: {
+      TransactionType: "Payment",
+      Destination: "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U", // Your staking wallet
+      Amount: {
+        currency: "53656167756C6C436F696E000000000000000000",
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+        value: "100"
+      },
+      Memos: [
+        {
+          Memo: {
+            MemoType: Buffer.from("stake").toString("hex"),
+            MemoData: Buffer.from("30d").toString("hex")
+          }
+        }
+      ]
+    },
+    options: {
+      submit: true,
+      expire: 60
+    }
+  };
+
+  const response = await xumm.payload.create(payload);
+  res.json(response);
+});
+
 
 
 
@@ -2535,9 +2564,6 @@ export async function getCurrentOwner(nftId) {
 
 let mintedNFTs = [];
 
-
-
-
 app.get('/catalog', async (req, res) => {
   try {
     const client = new xrpl.Client('wss://xrplcluster.com'); // XRPL Mainnet
@@ -3244,7 +3270,7 @@ const nftokens = [
     id: '00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C7410E8DF90405C65E',
     uri: 'ipfs://bafkreiembddxdaxpsg27l7py5f4fixnlat7bfo75piarmgisczf7nzalxi'
   },
- {
+  {
     id: '00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C785C000FC0405C661',
     uri: 'ipfs://bafkreiadth3yqngddj7o33dxtgbdte5xvxvvwppglv2qzckioqblx7kioa'
   },
@@ -3399,7 +3425,7 @@ async function transferNFT(userAddress, destination, nftTokenID) {
       console.error("Payload creation failed");
       return null;
     }
-
+    
     if (resolved.signed) {
       console.log("NFT offer signed.");
       return { success: true, nftTokenID, uuid: created.uuid };

@@ -2956,7 +2956,7 @@ app.post('/mint-after-payment', async (req, res) => {
     return res.status(400).json({ error: "Invalid or insufficient payment" });
   }
 
-  const availableNFT = nftokens.find(id => !usedNFTs.has(id) && !pendingNFTs.has(id));
+  const availableNFT = nftokens.find(n => !usedNFTs.has(n.id) && !pendingNFTs.has(n.id))
   if (!availableNFT) return res.status(503).json({ error: "No NFTs available" });
 
   pendingNFTs.add(availableNFT);
@@ -2989,10 +2989,10 @@ app.post('/mint-after-payment', async (req, res) => {
   offer_payload_uuid: payload.uuid,
   xumm_sign_url: payload.next.always,
   metadata: {
-    name: metadata.name || "Untitled NFT",
-    description: metadata.description || "",
-    image: metadata.image || ""
-  }
+  name: availableNFT.name || "Untitled NFT",
+  description: availableNFT.description || "",
+  image: availableNFT.image || ""
+}
 })
 
 

@@ -653,6 +653,51 @@ app.get('/login-status', async (req, res) => {
   }
 });
 
+// Open SQLite DB (async/await friendly)
+(async () => {
+  db = await open({
+    filename: './staking.db',
+    driver: sqlite3.Database
+  });
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS staking (
+      wallet TEXT PRIMARY KEY,
+      stakedAt INTEGER,
+      unlocksAt INTEGER,
+      amount INTEGER
+    )
+  `);
+})();
+
+// Constants
+const STAKE_AMOUNT = 100;           // 100 SeagullCoin staked
+const LOCK_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;  // 30 days in ms
+const DAILY_REWARD = 80;            // 80 SeagullCoin per day reward
+
+// Add stake (called after successful stake signed)
+async function addStake(wallet) {
+  const stakedAt = Date.now();
+  const unlocksAt = stakedAt + LOCK_PERIOD_MS;
+  const amount = STAKE_AMOUNT;
+
+  await db.run(`
+    INSERT OR REPLACE INTO staking (wallet, stakedAt, unlocksAt, amount)
+    VALUES (?, ?, ?, ?)
+  `, [wallet, stakedAt, unlocksAt, amount]);
+}
+
+// Get stake by wallet
+async function getStake(wallet) {
+  return db.get(`SELECT * FROM staking WHERE wallet = ?`, [wallet]);
+}
+
+// Remove stake on unstake
+async function removeStake(wallet) {
+  return db.run(`DELETE FROM staking WHERE wallet = ?`, [wallet]);
+}
+
+
 app.get('/stake-payload/:walletAddress', async (req, res) => {
   try {
     const walletAddress = req.params.walletAddress;
@@ -722,19 +767,50 @@ app.get('/stake-status/:uuid', async (req, res) => {
   }
 });
 
+// Endpoint: Stake rewards calculation
+app.get('/stake-rewards/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+  try {
+    const stake = await getStake(wallet);
+    if (!stake) return res.json({ eligible: false, message: 'Wallet not staked' });
 
+    const now = Date.now();
+    const stakedDurationMs = now - stake.stakedAt;
+    const stakedDays = Math.floor(stakedDurationMs / (1000 * 60 * 60 * 24));
+    const reward = (stakedDays * DAILY_REWARD).toFixed(2);
 
-
-app.get('/stake-status/:walletAddress', (req, res) => {
-  const wallet = req.params.walletAddress;
-  const stake = stakes[wallet];
-
-  if (stake) {
-    res.json({ wallet, ...stake });
-  } else {
-    res.json({ wallet, status: 'not_staked' });
+    res.json({
+      wallet,
+      daysStaked: stakedDays,
+      eligible: true,
+      reward: `${reward} SeagullCoin`
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'DB error', details: err.message });
   }
 });
+
+
+
+// Endpoint: Stake status by wallet
+app.get('/stake-status/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+  try {
+    const stake = await getStake(wallet);
+    if (!stake) return res.json({ staked: false, wallet });
+
+    res.json({
+      staked: true,
+      wallet: stake.wallet,
+      stakedAt: stake.stakedAt,
+      unlocksAt: stake.unlocksAt,
+      amount: stake.amount
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'DB error', details: err.message });
+  }
+});
+
 
 app.get('/unstake-payload/:walletAddress', (req, res) => {
   const wallet = req.params.walletAddress;

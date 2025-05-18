@@ -96,6 +96,7 @@ const router = express.Router();
 const xrplClient = new Client('wss://xrplcluster.com');
 const nftCache = new Map(); // key: wallet address, value: { data, timestamp }
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking service wallet
 
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
@@ -126,6 +127,40 @@ async function fetchIPFSMetadata(uri) {
     };
   }
 }
+
+
+async function getStakes() {
+  const client = new xrpl.Client("wss://s1.ripple.com");
+  await client.connect();
+
+  const response = await client.request({
+    command: "account_tx",
+    account: STAKING_WALLET,
+    ledger_index_min: -1,
+    ledger_index_max: -1,
+    limit: 50
+  });
+
+  const stakes = response.result.transactions
+    .filter(tx => tx.tx.TransactionType === "Payment")
+    .filter(tx => tx.tx.Amount.currency === "53656167756C6C436F696E000000000000000000") // SeagullCoin
+    .filter(tx => {
+      const memo = tx.tx.Memos?.[0]?.Memo;
+      const type = Buffer.from(memo?.MemoType, 'hex').toString();
+      return type === "stake";
+    })
+    .map(tx => ({
+      from: tx.tx.Account,
+      amount: tx.tx.Amount.value,
+      duration: Buffer.from(tx.tx.Memos[0].Memo.MemoData, 'hex').toString(), // e.g. "30d"
+      txHash: tx.tx.hash,
+      timestamp: tx.tx.date
+    }));
+
+  await client.disconnect();
+  return stakes;
+}
+
 
 
 // Function to get balance for a single address

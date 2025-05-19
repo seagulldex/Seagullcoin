@@ -700,16 +700,6 @@ function calculateDaysStaked(stake) {
 const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table';");
 console.log(tables);
 
-  
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS staking (
-      wallet TEXT PRIMARY KEY,
-      stakedAt INTEGER,
-      unlocksAt INTEGER,
-      amount INTEGER
-    )
-  `);
-})();
 
 (async () => {
   const rows = await db.all('SELECT wallet, stakedAt, unlocksAt, amount FROM staking');
@@ -3023,27 +3013,6 @@ async function getMetadataFromStorage(token_id) {
   }
 }
 
-
-
-
-export async function getCurrentOwner(nftId) {
-  const client = new xrpl.Client('wss://xrplcluster.com'); // XRPL mainnet WebSocket
-  await client.connect();
-
-  try {
-    const response = await client.request({
-      command: 'nft_info',
-      nft_id: nftId
-    });
-
-    return response.result?.nft_object?.owner || null;
-  } catch (err) {
-    console.error('Error fetching NFT info:', err?.data ?? err);
-    return null;
-  } finally {
-    await client.disconnect();
-  }
-}
 
 let mintedNFTs = [];
 

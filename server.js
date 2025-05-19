@@ -710,24 +710,6 @@ async function removeStake(wallet) {
   return db.run(`DELETE FROM staking WHERE wallet = ?`, [wallet]);
 }
 
-// POST /add-stake
-// Body JSON: { "wallet": "rYourWalletAddressHere" }
-app.post('/add-stake', (req, res) => {
-  const wallet = req.body.wallet;
-  if (!wallet) return res.status(400).json({ error: 'Wallet address is required' });
-
-  // Check if already staked
-  if (stakedWallets[wallet]) {
-    return res.status(400).json({ error: 'Wallet already staked' });
-  }
-
-  // Add to in-memory staking store with current timestamp
-  stakedWallets[wallet] = {
-    stakedAt: Date.now()
-  };
-
-  res.json({ message: `Stake added for wallet ${wallet}`, stakedAt: new Date(stakedWallets[wallet].stakedAt).toISOString() });
-});
 
 
 

@@ -809,12 +809,13 @@ app.get('/stake-status/:wallet', async (req, res) => {
     if (!stake) return res.json({ staked: false, wallet });
 
     res.json({
-      staked: true,
-      wallet: stake.wallet,
-      stakedAt: stake.stakedAt,
-      unlocksAt: stake.unlocksAt,
-      amount: stake.amount
-    });
+  staked: true,
+  wallet: stake.wallet,
+  startTime: stake.startTime,
+  endTime: stake.endTime,
+  amount: stake.amount
+  });
+
   } catch (err) {
     res.status(500).json({ error: 'DB error', details: err.message });
   }

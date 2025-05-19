@@ -636,32 +636,6 @@ app.get('/login', async (req, res) => {
 
 const stakedWallets = {};
 
-async function initDB() {
-  if (db) return; // Prevent re-initialization if called multiple times
-
-  db = await open({ filename: './staking.db', driver: sqlite3.Database });
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS staking (
-      wallet TEXT PRIMARY KEY,
-      stakedAt INTEGER,
-      unlocksAt INTEGER,
-      amount INTEGER
-    );
-
-    CREATE TABLE IF NOT EXISTS stakes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      walletAddress TEXT NOT NULL,
-      amount INTEGER NOT NULL,
-      startTime INTEGER NOT NULL,
-      duration INTEGER NOT NULL,
-      status TEXT DEFAULT 'active',
-      rewards INTEGER DEFAULT 0
-    );
-  `);
-
-  const rows = await db.all('SELECT wallet, stakedAt, unlocksAt, amount FROM staking');
-  rows.forEach(row => {
-    stakedWallets[row.wal
 
 async function addStake(wallet) {
   const stakedAt = Date.now();
@@ -725,17 +699,6 @@ const STAKE_AMOUNT = 50000;           // 50000 SeagullCoin staked
 const LOCK_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;  // 30 days in ms
 const DAILY_REWARD = 80;            // 80 SeagullCoin per day reward
 
-// Add stake (called after successful stake signed)
-async function addStake(wallet) {
-  const stakedAt = Date.now();
-  const unlocksAt = stakedAt + LOCK_PERIOD_MS;
-  const amount = STAKE_AMOUNT;
-
-  await db.run(`
-    INSERT OR REPLACE INTO staking (wallet, stakedAt, unlocksAt, amount)
-    VALUES (?, ?, ?, ?)
-  `, [wallet, stakedAt, unlocksAt, amount]);
-}
 
 // Get stake by wallet
 async function getStake(wallet) {
@@ -812,8 +775,6 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
   }
 });
 
-// In-memory staked wallet map
-const stakedWallets = {};
 
 app.get('/stake-status/:uuid', async (req, res) => {
   const { uuid } = req.params;

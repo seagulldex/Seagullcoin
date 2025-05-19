@@ -47,39 +47,33 @@
       <ul>
         <li><a href="index.html">Home</a></li>
         <li><a href="nfts.html">NFTs</a></li>
-        <li><a href="profile .html">Staking</a></li>
+        <li><a href="mint.html">Staking</a></li>
         <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank">SGLMN V2 (mint)</a></li>
       </ul>
     </nav>
   </header>
 
   <main>
-
-    <section class="hero">
-      <h1>SeagullCoin Staking Dashboard </h1>
-      <p>Stake your SeagullCoins and Earn.</p>
+      <section class="hero">
+      <h1>Welcome to SeagullCoin NFT Marketplace</h1>
+      <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
       <div id="wallet-info" style="display:none;">
         Connected: <span id="wallet-address"></span>
       </div>
     </section>
 
     <div id="user-info">
+      <p id="user-balance">Loading balance...</p>
+      <div id="user-nfts">Loading NFTs...</div>
     </div>
 
     <div id="staking-section">
       <h2>Staking Dashboard</h2>
-      <p id="staking-status"></p>
-      <div class="staking-details-top">
-    <p><strong>50,000 SeagullCoin 🔒</strong></p>
-  </div>
+      <p id="staking-status">Loading staking data...</p>
+
       <button id="stake-btn" disabled>Stake SeagullCoin</button>
       <button id="unstake-btn" disabled>Unstake</button>
-      <div class="staking-details-bottom">
-    <p>Earn 80 SeagullCoin per day</p>
-    <p>30 day 🔒 lockup</p>
-    <p><strong>Short-term Stake</strong></p>
-  </div>
-      
+
       <div id="qr-code-container">
         <img id="qr-code" alt="XUMM QR Code" />
       </div>
@@ -95,6 +89,9 @@
     <div id="data-display">Loading token data...</div>
   </main>
 
+  <footer style="text-align:center; margin: 40px 0 20px 0;">
+    <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
+  </footer>
 
   <script>
     let wallet = null;
@@ -112,37 +109,31 @@
     });
 
     function updateWalletUI() {
-  const walletInfo = document.getElementById('wallet-info');
-  const stakeBtn = document.getElementById('stake-btn');
-  const unstakeBtn = document.getElementById('unstake-btn');
-  const walletBtn = document.getElementById('wallet-button');
+      const indicator = document.getElementById('wallet-indicator');
+      const walletInfo = document.getElementById('wallet-info');
+      const container = document.getElementById('wallet-container');
+      const stakeBtn = document.getElementById('stake-btn');
+      const unstakeBtn = document.getElementById('unstake-btn');
 
-  if (wallet) {
-    walletInfo.style.display = 'block';
-    document.getElementById('wallet-address').textContent = wallet;
-    walletBtn.textContent = '🟢 Logout';
-    walletBtn.classList.remove('red');
-    walletBtn.classList.add('green');
-    walletBtn.onclick = () => {
-      localStorage.removeItem('xumm_wallet_address');
-      wallet = null;
-      updateWalletUI();
-    };
+      if (wallet) {
+        walletInfo.style.display = 'block';
+        document.getElementById('wallet-address').textContent = wallet;
+        indicator.textContent = '🟢 Profile';
+        indicator.className = 'green';
+        container.onclick = () => alert('Profile page coming soon.');
 
-    stakeBtn.disabled = false;
-    unstakeBtn.disabled = false;
-  } else {
-    walletInfo.style.display = 'none';
-    walletBtn.textContent = '🔴 Connect Wallet';
-    walletBtn.classList.remove('green');
-    walletBtn.classList.add('red');
-    walletBtn.onclick = () => loginWithXUMM();
+        stakeBtn.disabled = false;
+        unstakeBtn.disabled = false;
+      } else {
+        walletInfo.style.display = 'none';
+        indicator.textContent = '🔴 Login';
+        indicator.className = 'red';
+        container.onclick = () => loginWithXUMM();
 
-    stakeBtn.disabled = true;
-    unstakeBtn.disabled = true;
-  }
-}
-
+        stakeBtn.disabled = true;
+        unstakeBtn.disabled = true;
+      }
+    }
 
     async function loginWithXUMM() {
       const res = await fetch('https://sglcn-x20-api.glitch.me/login');
@@ -172,7 +163,16 @@
         : 'No SeagullCoin balance found.';
     }
 
-  
+    async function loadUserNFTs(account) {
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts/${account}`);
+      const { nfts } = await res.json();
+      const container = document.getElementById('user-nfts');
+      if (!nfts || nfts.length === 0) {
+        container.textContent = 'No NFTs found.';
+      } else {
+        container.innerHTML = nfts.map(n => `<div>${n.URI}</div>`).join('');
+      }
+    }
 
     async function loadStakingData() {
       if (!wallet) {
@@ -305,6 +305,7 @@
         alert('Error initiating unstake transaction.');
       }
     };
+
 
   </script>
 </body>

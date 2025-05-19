@@ -834,6 +834,113 @@ app.get('/stake-status/:uuid', async (req, res) => {
   }
 });
 
+app.get('/stake-rewards', (req, res) => {
+  const { wallet } = req.query;
+  if (!wallet) return res.status(400).json({ error: 'Wallet address is required' });
+
+  db.get('SELECT * FROM stakes WHERE walletAddress = ?', [wallet], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Database error', details: err.message });
+    if (!row) return res.status(404).json({ error: 'No stake found for this wallet' });
+
+    const now = Date.now();
+    const start = row.startTime;
+    const durationMs = row.duration * 24 * 60 * 60 * 1000;
+    const elapsed = now - start;
+    const daysStaked = Math.min(Math.floor(elapsed / (24 * 60 * 60 * 1000)), row.duration);
+    const eligible = elapsed >= durationMs;
+    const reward = eligible ? Math.round(row.amount * 0.05) : 0;
+
+    res.json({
+      wallet: row.walletAddress,
+      daysStaked,
+      eligible,
+      reward: `${reward} SeagullCoin`,
+      unlocksAt: new Date(start + durationMs).toISOString()
+    });
+  });
+});
+
+
+app.get('/unstake-payload', async (req, res) => {
+  const { wallet } = req.query;
+  if (!wallet) return res.status(400).json({ error: 'Wallet address is required' });
+
+  db.get('SELECT * FROM stakes WHERE walletAddress = ?', [wallet], async (err, row) => {
+    if (err) return res.status(500).json({ error: 'Database error', details: err.message });
+    if (!row) return res.status(404).json({ error: 'No stake found for this wallet' });
+
+    const now = Date.now();
+    const unlockTime = row.startTime + (row.duration * 24 * 60 * 60 * 1000);
+
+    if (now < unlockTime) {
+      return res.status(403).json({
+        error: 'Tokens are still locked',
+        unlocksAt: new Date(unlockTime).toISOString(),
+        message: `Tokens will be unlocked after ${new Date(unlockTime).toDateString()}`
+      });
+    }
+
+    // Eligible: Create XUMM payload
+    try {
+      const payload = {
+        txjson: {
+          TransactionType: 'Payment',
+          Destination: row.walletAddress,
+          Amount: (row.amount * 1000000).toString(), // Assuming stake is in XRP
+        },
+        options: {
+          submit: true,
+          expire: 300,
+        }
+      };
+
+      const createRes = await xumm.payload.create(payload);
+      return res.json({
+        uuid: createRes.uuid,
+        next: createRes.next.always,
+        refs: createRes.refs,
+      });
+
+    } catch (xerr) {
+      return res.status(500).json({ error: 'XUMM payload creation failed', details: xerr.message });
+    }
+  });
+});
+
+app.get('/unstake-status/:uuid', async (req, res) => {
+  const { uuid } = req.params;
+
+  if (!uuid) return res.status(400).json({ error: 'UUID is required' });
+
+  try {
+    const payloadStatus = await xumm.payload.get(uuid);
+
+    if (payloadStatus.meta.expired) {
+      return res.json({ status: 'expired', signed: false });
+    }
+
+    if (!payloadStatus.meta.signed) {
+      return res.json({ status: 'pending', signed: false });
+    }
+
+    // Optional: mark as unstaked in DB (only once!)
+    const tx = payloadStatus.response.txid;
+    const wallet = payloadStatus.response.account;
+
+    // Mark as unstaked in DB (optional - only once)
+    db.run('UPDATE stakes SET status = ? WHERE walletAddress = ?', ['unstaked', wallet]);
+
+    return res.json({
+      status: 'signed',
+      signed: true,
+      txid: tx,
+      wallet,
+    });
+
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to fetch payload status', details: err.message });
+  }
+});
 
 
 // Endpoint: Stake rewards calculation

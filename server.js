@@ -733,7 +733,7 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
         Memos: [
           {
             Memo: {
-              MemoType: Buffer.from('stake', 'utf8').toString('hex').toUpperCase(),
+              MemoType: Buffer.from('Monthly Staking', 'utf8').toString('hex').toUpperCase(),
               MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
             }
           }
@@ -758,7 +758,6 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
 });
 
 
-// Check the status of a staking payload and record it in SQLite3
 app.get('/stake-status/:uuid', async (req, res) => {
   try {
     const { uuid } = req.params;
@@ -768,15 +767,23 @@ app.get('/stake-status/:uuid', async (req, res) => {
       return res.json({ success: false, message: 'Payload not signed yet' });
     }
 
-    const memo = result?.response?.txblob ? Buffer.from(
-      result.response.txrefs.Memos?.[0]?.Memo?.MemoData || '',
-      'hex'
-    ).toString('utf8') : null;
-
+    const tx = result.response.txjson;
     const walletAddress = result.response.account;
 
-    if (walletAddress && result.meta.signed === true) {
-      // Insert into the stakers table
+    // Check transaction type and token details
+    const isPayment = tx?.TransactionType === 'Payment';
+    const isCorrectCurrency = tx?.Amount?.currency === '53656167756C6C436F696E000000000000000000';
+    const isCorrectIssuer = tx?.Amount?.issuer === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
+    const isCorrectValue = tx?.Amount?.value === '50000';
+
+    if (
+      walletAddress &&
+      result.meta.signed === true &&
+      isPayment &&
+      isCorrectCurrency &&
+      isCorrectIssuer &&
+      isCorrectValue
+    ) {
       db.run(
         'INSERT OR IGNORE INTO stakers (wallet_address, staked_at) VALUES (?, datetime("now"))',
         [walletAddress],
@@ -790,7 +797,7 @@ app.get('/stake-status/:uuid', async (req, res) => {
         }
       );
     } else {
-      return res.json({ success: false, message: 'Stake not signed' });
+      return res.json({ success: false, message: 'Invalid token or not signed correctly' });
     }
   } catch (error) {
     console.error('Error checking stake status:', error);
@@ -798,47 +805,6 @@ app.get('/stake-status/:uuid', async (req, res) => {
   }
 });
 
-module.exports = app;
-
-
-
-
-
-
-
-app.get('/unstake-status/:uuid', async (req, res) => {
-  const { uuid } = req.params;
-  if (!uuid) return res.status(400).json({ error: 'UUID is required' });
-
-  try {
-    const payloadStatus = await xumm.payload.get(uuid);
-
-    if (payloadStatus.meta.expired) {
-      return res.json({ status: 'expired', signed: false });
-    }
-
-    if (!payloadStatus.meta.signed) {
-      return res.json({ status: 'pending', signed: false });
-    }
-
-    const tx = payloadStatus.response.txid;
-    const wallet = payloadStatus.response.account;
-
-    // Mark as unstaked
-    await db.run(
-      'UPDATE stakes SET walletAddress = ?, status = ? WHERE uuid = ?',
-      [wallet, 'unstaked', uuid]
-    );
-
-    return res.json({
-      status: 'signed',
-      signed: true,
-      txid: tx,
-      wallet,
-    });
-
-  } catch (err) {
-    return res.status(500).json({ error: 'Failed to fetch payload stat
 
 
 

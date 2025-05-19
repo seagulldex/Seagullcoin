@@ -752,45 +752,6 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
 });
 
 
-app.get('/stake-status/:uuid', async (req, res) => {
-  try {
-    const { uuid } = req.params;
-    const result = await xumm.payload.get(uuid);
-
-    if (!result?.meta?.signed) {
-      return res.json({ success: false, message: 'Payload not signed yet' });
-    }
-
-    const tx = result.response.txjson;
-    const walletAddress = result.response.account;
-
-    // Check transaction type and token details
-    const isPayment = tx?.TransactionType === 'Payment';
-    const isCorrectCurrency = tx?.Amount?.currency === '53656167756C6C436F696E000000000000000000';
-    const isCorrectIssuer = tx?.Amount?.issuer === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
-    const isCorrectValue = tx?.Amount?.value === '50000';
-
-    if (walletAddress && isPayment && isCorrectCurrency && isCorrectIssuer && isCorrectValue) {
-      db.run(
-        'INSERT OR IGNORE INTO stakers (wallet_address, staked_at) VALUES (?, datetime("now"))',
-        [walletAddress],
-        (err) => {
-          if (err) {
-            console.error('DB insert error:', err);
-            return res.status(500).json({ error: 'Database error' });
-          }
-
-          return res.json({ success: true, message: 'Stake confirmed', walletAddress });
-        }
-      );
-    } else {
-      return res.json({ success: false, message: 'Invalid token or not signed correctly' });
-    }
-  } catch (error) {
-    console.error('Error checking stake status:', error);
-    res.status(500).json({ error: 'Failed to check stake status' });
-  }
-});
 
 
 

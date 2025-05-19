@@ -275,10 +275,12 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       uuid TEXT,
       txid TEXT,
-      signed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      signed_at TEXT,
+      wallet TEXT
     )
   `);
 });
+
 
 
 
@@ -796,19 +798,19 @@ app.get('/payload-status/:uuid', async (req, res) => {
 
       // Save to SQLite
       db.run(
-        `INSERT OR REPLACE INTO signed_payloads (uuid, txid, account, timestamp)
-         VALUES (?, ?, ?, ?)`,
-        [uuid, txid, account, timestamp],
-        function (err) {
-          if (err) {
-            console.error("SQLite insert error:", err);
-            return res.status(500).json({ error: "DB insert failed" });
-          }
+  `INSERT OR REPLACE INTO signed_payloads (uuid, txid, wallet, signed_at)
+   VALUES (?, ?, ?, ?)`,
+  [uuid, txid, account, timestamp],
+  function (err) {
+    if (err) {
+      console.error("SQLite insert error:", err);
+      return res.status(500).json({ error: "DB insert failed" });
+    }
 
-          console.log("Payload signed & saved:", txid);
-          return res.json({ status: "signed", txid });
-        }
-      );
+    console.log("Payload signed & saved:", txid);
+    return res.json({ status: "signed", txid });
+  }
+);
     } else {
       return res.json({ status: "rejected" });
     }

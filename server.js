@@ -633,6 +633,101 @@ app.get('/login', async (req, res) => {
   }
 });
 
+
+
+
+app.get('/db-test', (req, res) => {
+  db.all('SELECT * FROM staking', (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json(rows);
+  });
+});
+
+const insertStake = (wallet, amount, duration, startTime, endTime) => {
+  return new Promise((resolve, reject) => {
+    db.run(`INSERT INTO stakes (walletAddress, amount, duration, startTime, endTime, status, rewards) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+      [wallet, amount, duration, startTime, endTime, 'active', 0], 
+      function(err) {
+        if (err) {
+          console.error('DB insert error:', err);
+          return reject(err);
+        }
+        console.log('Stake inserted for wallet:', wallet);
+        resolve(this.lastID);
+      });
+  });
+};
+
+
+
+function calculateDaysStaked(stake) {
+  const now = Date.now();
+  const start = stake.startTime;
+  const durationMs = stake.duration * 24 * 60 * 60 * 1000; // duration in ms
+  const elapsed = now - start;
+  const daysStakedSoFar = Math.min(Math.floor(elapsed / (24 * 60 * 60 * 1000)), stake.duration);
+  const eligible = elapsed >= durationMs;
+  return { daysStakedSoFar, eligible };
+}
+
+
+// Open SQLite DB (async/await friendly)
+(async () => {
+  db = await open({
+    filename: './staking.db',
+    driver: sqlite3.Database
+  });
+const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table';");
+console.log(tables);
+
+  
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS staking (
+      wallet TEXT PRIMARY KEY,
+      stakedAt INTEGER,
+      unlocksAt INTEGER,
+      amount INTEGER
+    )
+  `);
+})();
+
+(async () => {
+  const rows = await db.all('SELECT wallet, stakedAt, unlocksAt, amount FROM staking');
+  rows.forEach(row => {
+    stakedWallets[row.wallet] = {
+      stakedAt: row.stakedAt,
+      unlocksAt: row.unlocksAt,
+      amount: row.amount
+    };
+  });
+})();
+
+
+// Constants
+const STAKE_AMOUNT = 50000;           // 50000 SeagullCoin staked
+const LOCK_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;  // 30 days in ms
+const DAILY_REWARD = 80;            // 80 SeagullCoin per day reward
+
+// Add stake (called after successful stake signed)
+async function addStake(wallet) {
+  const stakedAt = Date.now();
+  const unlocksAt = stakedAt + LOCK_PERIOD_MS;
+  const amount = STAKE_AMOUNT;
+
+  await db.run(`
+    INSERT OR REPLACE INTO staking (wallet, stakedAt, unlocksAt, amount)
+    VALUES (?, ?, ?, ?)
+  `, [wallet, stakedAt, unlocksAt, amount]);
+}
+
+// Get stake by wallet
+async function getStake(wallet) {
+  return db.get(`SELECT * FROM staking WHERE wallet = ?`, [wallet]);
+}
+
 // Remove stake on unstake
 async function removeStake(wallet) {
   return db.run(`DELETE FROM staking WHERE wallet = ?`, [wallet]);
@@ -707,36 +802,41 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
 const stakedWallets = {};
 
 app.get('/stake-status/:uuid', async (req, res) => {
+  const { uuid } = req.params;
+  if (!uuid) return res.status(400).json({ error: 'UUID is required' });
+
   try {
-    const uuid = req.params.uuid;
-    const payload = await xumm.payload.get(uuid);
+    const payloadStatus = await xumm.payload.get(uuid);
 
-    if (!payload.meta.signed) {
-      return res.json({ staked: false, message: 'Not signed yet' });
+    if (payloadStatus.meta.expired) {
+      return res.json({ status: 'expired', signed: false });
     }
 
-    const walletAddress = payload.response.account;
-
-    // Check if stake already exists
-    const existingStake = await getStake(walletAddress);
-    if (!existingStake) {
-      // Add stake record to DB now that payment is confirmed
-      await addStake(walletAddress);
+    if (!payloadStatus.meta.signed) {
+      return res.json({ status: 'pending', signed: false });
     }
 
-    // Optionally, keep in-memory map updated if you use it elsewhere
-    stakedWallets[walletAddress] = {
-      stakedAt: Date.now(),
-      uuid
-    };
+    const tx = payloadStatus.response.txid;
+    const wallet = payloadStatus.response.account;
 
-    res.json({ staked: true, wallet: walletAddress });
+    // Update wallet and status once
+    await db.run(
+      'UPDATE stakes SET walletAddress = ?, status = ? WHERE uuid = ?',
+      [wallet, 'staked', uuid]
+    );
 
-  } catch (error) {
-    console.error('Stake status check error:', error);
-    res.status(500).json({ error: 'Unable to check stake status' });
+    return res.json({
+      status: 'signed',
+      signed: true,
+      txid: tx,
+      wallet,
+    });
+
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to fetch payload status', details: err.message });
   }
 });
+
 
 app.get('/stake-rewards', (req, res) => {
   const { wallet } = req.query;
@@ -769,7 +869,239 @@ app.get('/unstake-payload', async (req, res) => {
   const { wallet } = req.query;
   if (!wallet) return res.status(400).json({ error: 'Wallet address is required' });
 
-  db.get('SELECT 
+  db.get('SELECT * FROM stakes WHERE walletAddress = ?', [wallet], async (err, row) => {
+    if (err) return res.status(500).json({ error: 'Database error', details: err.message });
+    if (!row) return res.status(404).json({ error: 'No stake found for this wallet' });
+
+    const now = Date.now();
+    const unlockTime = row.startTime + (row.duration * 24 * 60 * 60 * 1000);
+
+    if (now < unlockTime) {
+      return res.status(403).json({
+        error: 'Tokens are still locked',
+        unlocksAt: new Date(unlockTime).toISOString(),
+        message: `Tokens will be unlocked after ${new Date(unlockTime).toDateString()}`
+      });
+    }
+
+    // Eligible: Create XUMM payload
+    try {
+      const payload = {
+        txjson: {
+          TransactionType: 'Payment',
+          Destination: row.walletAddress,
+          Amount: (row.amount * 1000000).toString(), // Assuming stake is in XRP
+        },
+        options: {
+          submit: true,
+          expire: 300,
+        }
+      };
+
+      const createRes = await xumm.payload.create(payload);
+      return res.json({
+        uuid: createRes.uuid,
+        next: createRes.next.always,
+        refs: createRes.refs,
+      });
+
+    } catch (xerr) {
+      return res.status(500).json({ error: 'XUMM payload creation failed', details: xerr.message });
+    }
+  });
+});
+
+app.get('/unstake-status/:uuid', async (req, res) => {
+  const { uuid } = req.params;
+  if (!uuid) return res.status(400).json({ error: 'UUID is required' });
+
+  try {
+    const payloadStatus = await xumm.payload.get(uuid);
+
+    if (payloadStatus.meta.expired) {
+      return res.json({ status: 'expired', signed: false });
+    }
+
+    if (!payloadStatus.meta.signed) {
+      return res.json({ status: 'pending', signed: false });
+    }
+
+    const tx = payloadStatus.response.txid;
+    const wallet = payloadStatus.response.account;
+
+    // Mark as unstaked
+    await db.run(
+      'UPDATE stakes SET walletAddress = ?, status = ? WHERE uuid = ?',
+      [wallet, 'unstaked', uuid]
+    );
+
+    return res.json({
+      status: 'signed',
+      signed: true,
+      txid: tx,
+      wallet,
+    });
+
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to fetch payload status', details: err.message });
+  }
+});
+
+
+
+// Endpoint: Stake rewards calculation
+app.get('/stake-rewards/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+  try {
+    const stake = await getStake(wallet);
+    if (!stake) return res.json({ eligible: false, message: 'Wallet not staked' });
+
+    const now = Date.now();
+    const stakedDurationMs = now - stake.stakedAt;
+    const stakedDays = Math.floor(stakedDurationMs / (1000 * 60 * 60 * 24));
+    const reward = (stakedDays * DAILY_REWARD).toFixed(2);
+
+    res.json({
+      wallet,
+      daysStaked: stakedDays,
+      eligible: true,
+      reward: `${reward} SeagullCoin`
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'DB error', details: err.message });
+  }
+});
+
+
+
+// Endpoint: Stake status by wallet
+app.get('/stake-status/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+  try {
+    const stake = await getStake(wallet);
+    if (!stake) return res.json({ staked: false, wallet });
+
+    res.json({
+      staked: true,
+      wallet: stake.wallet,
+      stakedAt: stake.stakedAt,
+      unlocksAt: stake.unlocksAt,
+      amount: stake.amount
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'DB error', details: err.message });
+  }
+});
+
+
+
+
+app.get('/stake-rewards/:walletAddress', (req, res) => {
+  const wallet = req.params.walletAddress;
+  const stake = stakedWallets[wallet];
+
+  if (!stake) return res.json({ eligible: false, message: 'Wallet not staked' });
+
+  const stakedDurationMs = Date.now() - stake.stakedAt;
+  const stakedDays = Math.floor(stakedDurationMs / (1000 * 60 * 60 * 24));
+  const reward = (stakedDays * 2).toFixed(2); // e.g., 2 SGLCN per day
+
+  res.json({
+    wallet,
+    daysStaked: stakedDays,
+    eligible: true,
+    reward: `${reward} SeagullCoin`
+  });
+});
+
+
+app.post('/claim-rewards/:walletAddress', async (req, res) => {
+  const wallet = req.params.walletAddress;
+  const stake = stakedWallets[wallet];
+  if (!stake) return res.status(400).json({ error: 'Wallet not staked' });
+
+  const stakedDays = Math.floor((Date.now() - stake.stakedAt) / (1000 * 60 * 60 * 24));
+  if (stakedDays < 1) return res.status(400).json({ error: 'No rewards available yet' });
+
+  const rewardAmount = (stakedDays * 80).toFixed(0); // total reward in whole SGLCN
+
+  // Create XUMM payload to send rewardAmount SeagullCoin to wallet
+  try {
+    const payload = await xumm.payload.create({
+      txjson: {
+        TransactionType: "Payment",
+        Destination: wallet,
+        Amount: {
+          currency: "53656167756C6C436F696E000000000000000000",
+          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+          value: rewardAmount
+        }
+      }
+    });
+
+    // Reset staking timer or update stakedAt after payout
+    stakedWallets[wallet].stakedAt = Date.now();
+
+    res.json({
+      message: `Reward payout payload created for ${rewardAmount} SeagullCoin`,
+      uuid: payload.uuid,
+      next: payload.next,
+      refs: payload.refs
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create payout payload', details: err.message });
+  }
+});
+
+
+app.get('/unstake-payload/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+
+  try {
+    const stake = await getStake(wallet);
+    if (!stake) {
+      return res.status(400).json({ error: 'Wallet is not staked' });
+    }
+
+    const now = Date.now();
+    if (now < stake.unlocksAt) {
+      return res.status(400).json({
+        error: 'Tokens are still locked',
+        unlocksAt: new Date(stake.unlocksAt).toISOString(),
+        message: `Tokens will be unlocked after ${new Date(stake.unlocksAt).toDateString()}`
+      });
+    }
+
+    // Build XUMM payload to send 52,400 SeagullCoin from service wallet to user
+    const payload = {
+      txjson: {
+        TransactionType: 'Payment',
+        Account: process.env.SERVICE_WALLET,
+        Destination: stake.walletAddress,
+        Amount: {
+          currency: 'SeagullCoin',
+          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+          value: '52400'
+        }
+      },
+      options: {
+        submit: true,
+        expire: 10
+      }
+    };
+
+    const created = await xumm.payload.create(payload);
+
+    res.json({
+      message: 'Unstake payload created',
+      payload: created,
+      unlocksAt: new Date(stake.unlocksAt).toISOString()
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create unstake payload', details: err.message });
+  }
+});
 
 
 

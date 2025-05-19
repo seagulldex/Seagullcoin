@@ -282,6 +282,37 @@ db.serialize(() => {
 });
 
 
+// 2. Then later insert/read as needed
+const uuid = 'some-uuid';
+const txid = 'some-txid';
+const wallet = 'rExampleWalletAddress';
+const signedAt = new Date().toISOString();
+
+db.run(
+  `INSERT INTO signed_payloads (uuid, txid, signed_at, wallet) VALUES (?, ?, ?, ?)`,
+  [uuid, txid, signedAt, wallet],
+  function(err) {
+    if (err) {
+      console.error('Insert error:', err);
+    } else {
+      console.log('Inserted row with id:', this.lastID);
+
+      db.get(
+        `SELECT * FROM signed_payloads WHERE id = ?`,
+        [this.lastID],
+        (err, row) => {
+          if (err) {
+            console.error('Select error:', err);
+          } else {
+            const signedAtDate = new Date(row.signed_at);
+            console.log('Parsed signed_at:', signedAtDate.toString());
+          }
+        }
+      );
+    }
+  }
+);
+
 
 
 // Initialize SQLite database

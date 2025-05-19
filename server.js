@@ -803,36 +803,41 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
 const stakedWallets = {};
 
 app.get('/stake-status/:uuid', async (req, res) => {
+  const { uuid } = req.params;
+  if (!uuid) return res.status(400).json({ error: 'UUID is required' });
+
   try {
-    const uuid = req.params.uuid;
-    const payload = await xumm.payload.get(uuid);
+    const payloadStatus = await xumm.payload.get(uuid);
 
-    if (!payload.meta.signed) {
-      return res.json({ staked: false, message: 'Not signed yet' });
+    if (payloadStatus.meta.expired) {
+      return res.json({ status: 'expired', signed: false });
     }
 
-    const walletAddress = payload.response.account;
-
-    // Check if stake already exists
-    const existingStake = await getStake(walletAddress);
-    if (!existingStake) {
-      // Add stake record to DB now that payment is confirmed
-      await addStake(walletAddress);
+    if (!payloadStatus.meta.signed) {
+      return res.json({ status: 'pending', signed: false });
     }
 
-    // Optionally, keep in-memory map updated if you use it elsewhere
-    stakedWallets[walletAddress] = {
-      stakedAt: Date.now(),
-      uuid
-    };
+    const tx = payloadStatus.response.txid;
+    const wallet = payloadStatus.response.account;
 
-    res.json({ staked: true, wallet: walletAddress });
+    // Update wallet and status once
+    await db.run(
+      'UPDATE stakes SET walletAddress = ?, status = ? WHERE uuid = ?',
+      [wallet, 'staked', uuid]
+    );
 
-  } catch (error) {
-    console.error('Stake status check error:', error);
-    res.status(500).json({ error: 'Unable to check stake status' });
+    return res.json({
+      status: 'signed',
+      signed: true,
+      txid: tx,
+      wallet,
+    });
+
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to fetch payload status', details: err.message });
   }
 });
+
 
 app.get('/stake-rewards', (req, res) => {
   const { wallet } = req.query;
@@ -909,7 +914,6 @@ app.get('/unstake-payload', async (req, res) => {
 
 app.get('/unstake-status/:uuid', async (req, res) => {
   const { uuid } = req.params;
-
   if (!uuid) return res.status(400).json({ error: 'UUID is required' });
 
   try {
@@ -923,12 +927,14 @@ app.get('/unstake-status/:uuid', async (req, res) => {
       return res.json({ status: 'pending', signed: false });
     }
 
-    // Optional: mark as unstaked in DB (only once!)
     const tx = payloadStatus.response.txid;
     const wallet = payloadStatus.response.account;
 
-    // Mark as unstaked in DB (optional - only once)
-    db.run('UPDATE stakes SET status = ? WHERE walletAddress = ?', ['unstaked', wallet]);
+    // Mark as unstaked
+    await db.run(
+      'UPDATE stakes SET walletAddress = ?, status = ? WHERE uuid = ?',
+      [wallet, 'unstaked', uuid]
+    );
 
     return res.json({
       status: 'signed',
@@ -941,6 +947,7 @@ app.get('/unstake-status/:uuid', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch payload status', details: err.message });
   }
 });
+
 
 
 // Endpoint: Stake rewards calculation

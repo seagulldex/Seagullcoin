@@ -925,23 +925,26 @@ app.get('/stake-status/:wallet', async (req, res) => {
 
 
 
-app.get('/stake-rewards/:walletAddress', (req, res) => {
+app.get('/stake-rewards/:walletAddress', async (req, res) => {
   const wallet = req.params.walletAddress;
-  const stake = stakedWallets[wallet];
 
+  const stake = await getStake(wallet);
   if (!stake) return res.json({ eligible: false, message: 'Wallet not staked' });
 
-  const stakedDurationMs = Date.now() - stake.stakedAt;
-  const stakedDays = Math.floor(stakedDurationMs / (1000 * 60 * 60 * 24));
-  const reward = (stakedDays * 2).toFixed(2); // e.g., 2 SGLCN per day
+  const now = Date.now();
+  const daysStaked = Math.floor((now - stake.stakedAt) / (1000 * 60 * 60 * 24));
+  const cappedDays = Math.min(daysStaked, 30); // Cap to 30 days max
+  const reward = (cappedDays * DAILY_REWARD).toFixed(2);
 
   res.json({
     wallet,
-    daysStaked: stakedDays,
-    eligible: true,
-    reward: `${reward} SeagullCoin`
+    daysStaked: cappedDays,
+    reward: Number(reward),
+    unlocksAt: new Date(stake.unlocksAt).toISOString(),
+    eligible: now >= stake.unlocksAt
   });
 });
+
 
 
 app.post('/claim-rewards/:walletAddress', async (req, res) => {
@@ -4065,4 +4068,4 @@ setInterval(cleanupExpiredPayloads, 24 * 60 * 60 * 1000); // Every 24 hours
  // Start the server
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server running on port ' + (process.env.PORT || 3000));
-}); 
+});

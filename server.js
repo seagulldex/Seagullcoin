@@ -685,13 +685,24 @@ console.log(tables);
 
   
   await db.exec(`
-    CREATE TABLE IF NOT EXISTS staking (
-      wallet TEXT PRIMARY KEY,
-      stakedAt INTEGER,
-      unlocksAt INTEGER,
-      amount INTEGER
-    )
-  `);
+  CREATE TABLE IF NOT EXISTS staking (
+    wallet TEXT PRIMARY KEY,
+    stakedAt INTEGER,
+    unlocksAt INTEGER,
+    amount INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS stakes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    walletAddress TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    startTime INTEGER NOT NULL,
+    duration INTEGER NOT NULL,
+    status TEXT DEFAULT 'active',
+    rewards INTEGER DEFAULT 0
+  );
+`);
+
 })();
 
 (async () => {

@@ -252,16 +252,8 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Create the transactions table if it doesn't exist
 db.serialize(() => {
-       db.run(`
-       CREATE TABLE IF NOT EXISTS signed_payloads (
-         uuid TEXT PRIMARY KEY,
-         txid TEXT,
-         account TEXT,
-         timestamp TEXT
-       )
-     `);
   
-  
+
   db.run(`
     CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -275,6 +267,17 @@ db.serialize(() => {
     )
   `);
 });
+
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS signed_payloads (
+      uuid TEXT PRIMARY KEY,
+      txid TEXT,
+      signed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+});
+
 
 // Initialize SQLite database
 const dbPromise = open({
@@ -815,11 +818,14 @@ app.get('/payload-status/:uuid', async (req, res) => {
 app.get('/signed-payloads', (req, res) => {
   db.all("SELECT * FROM signed_payloads ORDER BY signed_at DESC", (err, rows) => {
     if (err) {
+      console.error("Signed payloads query error:", err);
       return res.status(500).json({ error: "Database error" });
     }
     res.json(rows);
   });
 });
+
+
 
 
 // Endpoint: Stake status by wallet

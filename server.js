@@ -752,9 +752,10 @@ app.get('/stake-status/:uuid', async (req, res) => {
     const { uuid } = req.params;
     const result = await xumm.payload.get(uuid);
 
-    if (!result?.response?.dispatched || result.response?.dispatched === false) {
-      return res.json({ success: false, message: 'Payload not signed yet' });
-    }
+    if (!result?.meta?.signed) {
+  return res.json({ success: false, message: 'Payload not signed yet' });
+}
+
 
     const tx = result.response.txjson;
     const walletAddress = result.response.account;

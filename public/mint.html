@@ -92,7 +92,7 @@
   <input type="text" id="search-bar" placeholder="Search the XRPL..." onkeydown="if(event.key==='Enter'){searchXRPL();}" />
   <button onclick="searchXRPL()">Search</button>
   <div id="search-status" style="margin-top:10px;font-weight:bold;"></div>
-  <div id="search-results" style="margin-top:15px;"></div>
+  <div id="search-results" style="margin-top:15px; white-space: pre-wrap;"></div>
 
   <main>
     <section class="hero">
@@ -136,6 +136,8 @@
       loadWalletFromStorage();
       updateWalletUI();
       setupTrustlineButton();
+      loadUserNFTs();
+      loadStakingData();
     });
 
     function loadWalletFromStorage() {
@@ -186,6 +188,8 @@
             localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
             document.getElementById('wallet-address').textContent = wallet;
             updateWalletUI();
+            loadUserNFTs();
+            loadStakingData();
           }
         }, 3000);
       } catch (e) {
@@ -264,49 +268,105 @@
           console.error(err);
         });
     }
+
+    async function loadUserNFTs() {
+      if (!wallet) return;
+      const nftsDiv = document.getElementById('user-nfts');
+      nftsDiv.textContent = 'Loading NFTs...';
+      try {
+        const res = await fetch(`/nfts/${wallet}`);
+        const data = await res.json();
+        if (data.nfts && data.nfts.length > 0) {
+          nftsDiv.innerHTML = data.nfts.map(nft => `<div>${nft.name} (ID: ${nft.tokenId})</div>`).join('');
+        } else {
+          nftsDiv.textContent = 'No NFTs found.';
+        }
+      } catch (e) {
+        nftsDiv.textContent = 'Failed to load NFTs.';
+      }
+    }
+
+    async function loadStakingData() {
+      if (!wallet) return;
+      const stakingStatus = document.getElementById('staking-status');
+      const rewardsList = document.getElementById('rewards-list');
+
+      stakingStatus.textContent = 'Loading staking data...';
+      rewardsList.innerHTML = '<li>Loading history...</li>';
+
+      try {
+        const res = await fetch(`/staking/${wallet}`);
+        const data = await res.json();
+
+        if (data.stakedAmount !== undefined) {
+          stakingStatus.textContent = `You have staked ${data.stakedAmount} SeagullCoin. Rewards earned: ${data.rewards || 0}`;
+        } else {
+          stakingStatus.textContent = 'No staking data found.';
+        }
+
+        rewardsList.innerHTML = (data.rewardHistory || []).map(r =>
+          `<li>${new Date(r.timestamp).toLocaleDateString()}: ${r.amount} SGLCN</li>`
+        ).join('') || '<li>No rewards history.</li>';
+
+      } catch (err) {
+        stakingStatus.textContent = 'Failed to load staking data.';
+        rewardsList.innerHTML = '<li>Error loading rewards history.</li>';
+      }
+    }
+
+    // Stake and unstake buttons wired to backend
     document.getElementById('stake-btn').addEventListener('click', async () => {
-  if (!wallet) return alert('Please log in first.');
+      if (!wallet) {
+        alert('Please login to stake.');
+        return;
+      }
+      const amount = prompt('Enter amount of SeagullCoin to stake:');
+      if (!amount || isNaN(amount) || Number(amount) <= 0) return;
 
-  try {
-    const res = await fetch('https://sglcn-x20-api.glitch.me/stake-payload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wallet })
+      try {
+        const res = await fetch(`/stake`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ wallet, amount: Number(amount) })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Stake successful!');
+          loadStakingData();
+        } else {
+          alert('Stake failed: ' + (data.message || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Stake failed: ' + err.message);
+      }
     });
 
-    const data = await res.json();
-    if (data.payloadURL) {
-      window.open(data.payloadURL, '_blank');
-    } else {
-      alert('Failed to initiate staking.');
-    }
-  } catch (err) {
-    alert('Staking error: ' + err.message);
-  }
-});
+    document.getElementById('unstake-btn').addEventListener('click', async () => {
+      if (!wallet) {
+        alert('Please login to unstake.');
+        return;
+      }
+      const amount = prompt('Enter amount of SeagullCoin to unstake:');
+      if (!amount || isNaN(amount) || Number(amount) <= 0) return;
 
-document.getElementById('unstake-btn').addEventListener('click', async () => {
-  if (!wallet) return alert('Please log in first.');
-
-  try {
-    const res = await fetch('https://sglcn-x20-api.glitch.me/unstake-payload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wallet })
+      try {
+        const res = await fetch(`/unstake`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ wallet, amount: Number(amount) })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Unstake successful!');
+          loadStakingData();
+        } else {
+          alert('Unstake failed: ' + (data.message || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Unstake failed: ' + err.message);
+      }
     });
 
-    const data = await res.json();
-    if (data.payloadURL) {
-      window.open(data.payloadURL, '_blank');
-    } else {
-      alert('Failed to initiate unstaking.');
-    }
-  } catch (err) {
-    alert('Unstaking error: ' + err.message);
-  }
-});
-
-    
   </script>
 </body>
 </html>

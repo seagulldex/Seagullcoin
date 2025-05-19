@@ -112,31 +112,37 @@
     });
 
     function updateWalletUI() {
-      const indicator = document.getElementById('wallet-indicator');
-      const walletInfo = document.getElementById('wallet-info');
-      const container = document.getElementById('wallet-container');
-      const stakeBtn = document.getElementById('stake-btn');
-      const unstakeBtn = document.getElementById('unstake-btn');
+  const walletInfo = document.getElementById('wallet-info');
+  const stakeBtn = document.getElementById('stake-btn');
+  const unstakeBtn = document.getElementById('unstake-btn');
+  const walletBtn = document.getElementById('wallet-button');
 
-      if (wallet) {
-        walletInfo.style.display = 'block';
-        document.getElementById('wallet-address').textContent = wallet;
-        indicator.textContent = '🟢 Profile';
-        indicator.className = 'green';
-        container.onclick = () => alert('Profile page coming soon.');
+  if (wallet) {
+    walletInfo.style.display = 'block';
+    document.getElementById('wallet-address').textContent = wallet;
+    walletBtn.textContent = '🟢 Logout';
+    walletBtn.classList.remove('red');
+    walletBtn.classList.add('green');
+    walletBtn.onclick = () => {
+      localStorage.removeItem('xumm_wallet_address');
+      wallet = null;
+      updateWalletUI();
+    };
 
-        stakeBtn.disabled = false;
-        unstakeBtn.disabled = false;
-      } else {
-        walletInfo.style.display = 'none';
-        indicator.textContent = '🔴 Login';
-        indicator.className = 'red';
-        container.onclick = () => loginWithXUMM();
+    stakeBtn.disabled = false;
+    unstakeBtn.disabled = false;
+  } else {
+    walletInfo.style.display = 'none';
+    walletBtn.textContent = '🔴 Connect Wallet';
+    walletBtn.classList.remove('green');
+    walletBtn.classList.add('red');
+    walletBtn.onclick = () => loginWithXUMM();
 
-        stakeBtn.disabled = true;
-        unstakeBtn.disabled = true;
-      }
-    }
+    stakeBtn.disabled = true;
+    unstakeBtn.disabled = true;
+  }
+}
+
 
     async function loginWithXUMM() {
       const res = await fetch('https://sglcn-x20-api.glitch.me/login');

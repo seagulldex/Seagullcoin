@@ -252,6 +252,16 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Create the transactions table if it doesn't exist
 db.serialize(() => {
+       db.run(`
+       CREATE TABLE IF NOT EXISTS signed_payloads (
+         uuid TEXT PRIMARY KEY,
+         txid TEXT,
+         account TEXT,
+         timestamp TEXT
+       )
+     `);
+  
+  
   db.run(`
     CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -774,8 +784,25 @@ app.get('/payload-status/:uuid', async (req, res) => {
     }
 
     if (result.meta?.signed === true) {
-      console.log("Payload signed:", result.response.txid);
-      return res.json({ status: "signed", txid: result.response.txid });
+      const txid = result.response.txid;
+      const account = result.response.account;
+      const timestamp = new Date().toISOString();
+
+      // Save to SQLite
+      db.run(
+        `INSERT OR REPLACE INTO signed_payloads (uuid, txid, account, timestamp)
+         VALUES (?, ?, ?, ?)`,
+        [uuid, txid, account, timestamp],
+        function (err) {
+          if (err) {
+            console.error("SQLite insert error:", err);
+            return res.status(500).json({ error: "DB insert failed" });
+          }
+
+          console.log("Payload signed & saved:", txid);
+          return res.json({ status: "signed", txid });
+        }
+      );
     } else {
       return res.json({ status: "rejected" });
     }
@@ -783,6 +810,15 @@ app.get('/payload-status/:uuid', async (req, res) => {
     console.error("Error checking payload status:", err);
     res.status(500).json({ error: "Could not check payload status" });
   }
+});
+
+app.get('/signed-payloads', (req, res) => {
+  db.all("SELECT * FROM signed_payloads ORDER BY signed_at DESC", (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json(rows);
+  });
 });
 
 

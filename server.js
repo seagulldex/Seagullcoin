@@ -634,6 +634,50 @@ app.get('/login', async (req, res) => {
 });
 
 
+const stakedWallets = {};
+
+async function initDB() {
+  if (db) return; // Prevent re-initialization if called multiple times
+
+  db = await open({ filename: './staking.db', driver: sqlite3.Database });
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS staking (
+      wallet TEXT PRIMARY KEY,
+      stakedAt INTEGER,
+      unlocksAt INTEGER,
+      amount INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS stakes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      walletAddress TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      startTime INTEGER NOT NULL,
+      duration INTEGER NOT NULL,
+      status TEXT DEFAULT 'active',
+      rewards INTEGER DEFAULT 0
+    );
+  `);
+
+  const rows = await db.all('SELECT wallet, stakedAt, unlocksAt, amount FROM staking');
+  rows.forEach(row => {
+    stakedWallets[row.wal
+
+async function addStake(wallet) {
+  const stakedAt = Date.now();
+  const unlocksAt = stakedAt + 30 * 24 * 60 * 60 * 1000; // 30 days
+  const amount = 50000; // Your stake amount
+
+  await db.run(`
+    INSERT OR REPLACE INTO staking (wallet, stakedAt, unlocksAt, amount)
+    VALUES (?, ?, ?, ?)
+  `, [wallet, stakedAt, unlocksAt, amount]);
+
+  // Sync in-memory cache
+  stakedWallets[wallet] = { stakedAt, unlocksAt, amount };
+}
+
+
 
 
 app.get('/db-test', (req, res) => {
@@ -674,52 +718,6 @@ function calculateDaysStaked(stake) {
 }
 
 
-// Open SQLite DB (async/await friendly)
-(async () => {
-  db = await open({
-    filename: './staking.db',
-    driver: sqlite3.Database
-  });
-
-  // Create tables if not exist
-  await db.run(`CREATE TABLE IF NOT EXISTS staking (...)`);
-  await db.run(`CREATE TABLE IF NOT EXISTS stakes (...)`);
-  
-const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table';");
-console.log(tables);
-
-  
-  await db.exec(`
-  CREATE TABLE IF NOT EXISTS staking (
-    wallet TEXT PRIMARY KEY,
-    stakedAt INTEGER,
-    unlocksAt INTEGER,
-    amount INTEGER
-  );
-
-  CREATE TABLE IF NOT EXISTS stakes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    walletAddress TEXT NOT NULL,
-    amount INTEGER NOT NULL,
-    startTime INTEGER NOT NULL,
-    duration INTEGER NOT NULL,
-    status TEXT DEFAULT 'active',
-    rewards INTEGER DEFAULT 0
-  );
-`);
-
-})();
-
-(async () => {
-  const rows = await db.all('SELECT wallet, stakedAt, unlocksAt, amount FROM staking');
-  rows.forEach(row => {
-    stakedWallets[row.wallet] = {
-      stakedAt: row.stakedAt,
-      unlocksAt: row.unlocksAt,
-      amount: row.amount
-    };
-  });
-})();
 
 
 // Constants

@@ -734,7 +734,7 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
         Memos: [
           {
             Memo: {
-              MemoType: Buffer.from('stake', 'utf8').toString('hex').toUpperCase(),
+              MemoType: Buffer.from('Monthly', 'utf8').toString('hex').toUpperCase(),
               MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
             }
           }

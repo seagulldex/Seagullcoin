@@ -9,7 +9,6 @@
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <script src="https://unpkg.com/xrpl@2.12.0/dist/xrpl.js"></script>
   <style>
-    /* Your existing styles here ... */
     #top-bar {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -71,7 +70,6 @@
 </head>
 <body>
 
-  <!-- Top Bar -->
   <div id="top-bar">
     <div id="wallet-container">
       <div id="wallet-status">
@@ -83,12 +81,10 @@
   <header>
     <nav>
       <ul>
-        <li>
-        </li>
         <li><a href="index.html">Home</a></li>
         <li><a href="nfts.html">NFTs</a></li>
         <li><a href="mint.html">Staking</a></li>
-        <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
+        <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank">SGLMN V2 (mint)</a></li>
       </ul>
     </nav>
   </header>
@@ -98,7 +94,6 @@
   <div id="search-status" style="margin-top:10px;font-weight:bold;"></div>
   <div id="search-results" style="margin-top:15px;"></div>
 
-  <!-- Main Content -->
   <main>
     <section class="hero">
       <h1>Welcome to SeagullCoin NFT Marketplace</h1>
@@ -112,20 +107,20 @@
       <p id="user-balance">Loading balance...</p>
       <div id="user-nfts">Loading NFTs...</div>
     </div>
-<div id="staking-section" style="margin-top: 30px; padding: 20px; border: 1px solid #ccc; border-radius: 10px;">
-  <h2>Staking Dashboard</h2>
-  <p id="staking-status">Loading staking data...</p>
-  
-  <button id="stake-btn" style="margin-right: 10px;">Stake SeagullCoin</button>
-  <button id="unstake-btn">Unstake</button>
 
-  <div id="rewards-history" style="margin-top: 20px;">
-    <h3>Rewards History</h3>
-    <ul id="rewards-list">
-      <li>Loading history...</li>
-    </ul>
-  </div>
-</div>
+    <div id="staking-section" style="margin-top: 30px; padding: 20px; border: 1px solid #ccc; border-radius: 10px;">
+      <h2>Staking Dashboard</h2>
+      <p id="staking-status">Loading staking data...</p>
+      <button id="stake-btn" style="margin-right: 10px;">Stake SeagullCoin</button>
+      <button id="unstake-btn">Unstake</button>
+
+      <div id="rewards-history" style="margin-top: 20px;">
+        <h3>Rewards History</h3>
+        <ul id="rewards-list">
+          <li>Loading history...</li>
+        </ul>
+      </div>
+    </div>
 
     <div id="data-display">Loading token data...</div>
   </main>
@@ -135,60 +130,8 @@
   </footer>
 
   <script>
-    // Initialize state
     let wallet = null;
-    
-    function setupTrustlineButton() {
-  const btn = document.getElementById('trustline-button');
-  btn.disabled = !wallet; // disable if no wallet connected
 
-  btn.onclick = async () => {
-    if (!wallet) {
-      alert('Please login first to add trustline.');
-      return;
-    }
-
-    try {
-      // Build the trustline transaction JSON
-      const trustlinePayload = {
-        TransactionType: "TrustSet",
-        Account: wallet, // user's wallet
-        LimitAmount: {
-          currency: "SseagullMansions", // replace with your token code exactly
-          issuer: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV", // replace with your actual issuer address
-          value: "2"
-        }
-      };
-
-      // Call XUMM API to create a payload (you need to replace with your backend or do it here with your XUMM API key)
-      // Since you currently call your backend, update backend to accept raw txjson OR do it here:
-
-      // For example, call your backend that creates the payload:
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/create-trustline`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ txjson: trustlinePayload })
-      });
-
-      if (!res.ok) throw new Error('Failed to create trustline payload');
-
-      const data = await res.json();
-
-      if (data.payloadURL) {
-        // Open XUMM to sign trustline tx
-        window.open(data.payloadURL, '_blank');
-      } else {
-        alert('Failed to create trustline transaction.');
-      }
-
-    } catch (err) {
-      alert('Error adding trustline: ' + err.message);
-    }
-  };
-}
-
-
-    // On page load, check login
     window.addEventListener('DOMContentLoaded', () => {
       loadWalletFromStorage();
       updateWalletUI();
@@ -263,7 +206,8 @@
 
     function setupTrustlineButton() {
       const btn = document.getElementById('trustline-button');
-      btn.disabled = !wallet; // disable if no wallet connected
+      if (!btn) return;
+      btn.disabled = !wallet;
 
       btn.onclick = async () => {
         if (!wallet) {
@@ -272,135 +216,54 @@
         }
 
         try {
-          // Call backend API to create trustline payload for this account
-          const res = await fetch(`https://sglcn-x20-api.glitch.me/add-trustline?account=${wallet}`);
-          const trustlineData = await res.json();
+          const trustlinePayload = {
+            TransactionType: "TrustSet",
+            Account: wallet,
+            LimitAmount: {
+              currency: "SseagullMansions",
+              issuer: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
+              value: "2"
+            }
+          };
 
-          if(trustlineData.payloadURL){
-            // Redirect user to XUMM to sign trustline tx
-            window.location.href = trustlineData.payloadURL;
+          const res = await fetch(`https://sglcn-x20-api.glitch.me/create-trustline`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ txjson: trustlinePayload })
+          });
+
+          if (!res.ok) throw new Error('Failed to create trustline payload');
+          const data = await res.json();
+          if (data.payloadURL) {
+            window.open(data.payloadURL, '_blank');
           } else {
             alert('Failed to create trustline transaction.');
           }
+
         } catch (err) {
           alert('Error adding trustline: ' + err.message);
         }
       };
     }
 
-    /* ---------- XRPL Search (wallets + NFTs) ---------- */
+    function searchXRPL() {
+      const query = document.getElementById("search-bar").value.trim();
+      if (!query) return;
 
-    const XRPL_ENDPOINT = "wss://s2.ripple.com";
-    let xrplClient;
+      document.getElementById("search-status").textContent = "Searching...";
+      document.getElementById("search-results").textContent = "";
 
-    const WALLET_REGEX = /^r[1-9A-HJ-NP-Za-km-z]{25,34}$/;
-
-    async function connectXRPL() {
-      if (!xrplClient || !xrplClient.isConnected()) {
-        xrplClient = new xrpl.Client(XRPL_ENDPOINT);
-        await xrplClient.connect();
-      }
-    }
-
-    async function searchXRPL() {
-      const query = document.getElementById('search-bar').value.trim();
-      if (!query) {
-        alert('Please enter a wallet address or NFT ID.');
-        return;
-      }
-
-      const status = document.getElementById('search-status');
-      status.textContent = 'Searching...';
-      const resultsDiv = document.getElementById('search-results');
-      resultsDiv.innerHTML = '';
-
-      if (WALLET_REGEX.test(query)) {
-        // Wallet address
-        try {
-          await connectXRPL();
-          // Fetch NFTs owned by wallet
-          const nfts = await xrplClient.request({
-            method: 'account_nfts',
-            account: query
-          });
-          status.textContent = `Found ${nfts.result.account_nfts.length} NFTs for ${query}:`;
-
-          nfts.result.account_nfts.forEach(nft => {
-            const el = document.createElement('div');
-            el.textContent = `NFTokenID: ${nft.NFTokenID}`;
-            resultsDiv.appendChild(el);
-          });
-
-          await xrplClient.disconnect();
-        } catch (err) {
-          status.textContent = `Error fetching NFTs for ${query}: ${err.message}`;
-        }
-      } else {
-        status.textContent = 'Invalid XRPL wallet address.';
-      }
-    }
-document.addEventListener("DOMContentLoaded", () => {
-  const stakeBtn = document.getElementById('stake-btn');
-  const unstakeBtn = document.getElementById('unstake-btn');
-  const stakingStatus = document.getElementById('staking-status');
-  const rewardsList = document.getElementById('rewards-list');
-
-  if (!wallet) {
-    stakeBtn.disabled = true;
-    unstakeBtn.disabled = true;
-    stakingStatus.textContent = 'Connect wallet to access staking features.';
-    return;
-  }
-
-  stakeBtn.onclick = async () => {
-    try {
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-payload/${wallet}`);
-      const data = await res.json();
-      if (data.payloadURL) {
-        window.open(data.payloadURL, '_blank');
-      } else {
-        alert('Unable to initiate staking transaction.');
-      }
-    } catch (err) {
-      alert('Error starting stake: ' + err.message);
-    }
-  };
-
-  unstakeBtn.onclick = async () => {
-    try {
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/unstake-payload/${wallet}`);
-      const data = await res.json();
-      if (data.payloadURL) {
-        window.open(data.payloadURL, '_blank');
-      } else {
-        alert('Unable to initiate unstake transaction.');
-      }
-    } catch (err) {
-      alert('Error starting unstake: ' + err.message);
-    }
-  };
-
-  async function loadRewardsHistory() {
-    try {
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/rewards-history/${wallet}`);
-      const history = await res.json();
-      rewardsList.innerHTML = '';
-      if (history.length === 0) {
-        rewardsList.innerHTML = '<li>No rewards yet.</li>';
-      } else {
-        history.forEach(entry => {
-          const li = document.createElement('li');
-          li.textContent = `${entry.date}: +${entry.amount} SeagullCoin`;
-          rewardsList.appendChild(li);
+      fetch(`https://sglcn-x20-api.glitch.me/search?query=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("search-status").textContent = "Results:";
+          document.getElementById("search-results").textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(err => {
+          document.getElementById("search-status").textContent = "Search failed.";
+          console.error(err);
         });
-      }
-    } catch (err) {
-      rewardsList.innerHTML = '<li>Error loading rewards.</li>';
     }
-  }
-
-  loadRewardsHistory();
-});
   </script>
 </body>
 </html>

@@ -264,6 +264,49 @@
           console.error(err);
         });
     }
+    document.getElementById('stake-btn').addEventListener('click', async () => {
+  if (!wallet) return alert('Please log in first.');
+
+  try {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/stake-payload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet })
+    });
+
+    const data = await res.json();
+    if (data.payloadURL) {
+      window.open(data.payloadURL, '_blank');
+    } else {
+      alert('Failed to initiate staking.');
+    }
+  } catch (err) {
+    alert('Staking error: ' + err.message);
+  }
+});
+
+document.getElementById('unstake-btn').addEventListener('click', async () => {
+  if (!wallet) return alert('Please log in first.');
+
+  try {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/unstake-payload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet })
+    });
+
+    const data = await res.json();
+    if (data.payloadURL) {
+      window.open(data.payloadURL, '_blank');
+    } else {
+      alert('Failed to initiate unstaking.');
+    }
+  } catch (err) {
+    alert('Unstaking error: ' + err.message);
+  }
+});
+
+    
   </script>
 </body>
 </html>

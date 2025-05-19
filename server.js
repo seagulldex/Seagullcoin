@@ -744,18 +744,14 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
 });
 
 
-
-
-
 app.get('/stake-status/:uuid', async (req, res) => {
   try {
     const { uuid } = req.params;
     const result = await xumm.payload.get(uuid);
 
     if (!result?.meta?.signed) {
-  return res.json({ success: false, message: 'Payload not signed yet' });
-}
-
+      return res.json({ success: false, message: 'Payload not signed yet' });
+    }
 
     const tx = result.response.txjson;
     const walletAddress = result.response.account;
@@ -766,14 +762,7 @@ app.get('/stake-status/:uuid', async (req, res) => {
     const isCorrectIssuer = tx?.Amount?.issuer === 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
     const isCorrectValue = tx?.Amount?.value === '50000';
 
-    if (
-      walletAddress &&
-      result.meta.signed === true &&
-      isPayment &&
-      isCorrectCurrency &&
-      isCorrectIssuer &&
-      isCorrectValue
-    ) {
+    if (walletAddress && isPayment && isCorrectCurrency && isCorrectIssuer && isCorrectValue) {
       db.run(
         'INSERT OR IGNORE INTO stakers (wallet_address, staked_at) VALUES (?, datetime("now"))',
         [walletAddress],
@@ -797,7 +786,14 @@ app.get('/stake-status/:uuid', async (req, res) => {
 
 
 
+function msToTime(duration) {
+  const seconds = Math.floor((duration / 1000) % 60),
+        minutes = Math.floor((duration / (1000 * 60)) % 60),
+        hours = Math.floor((duration / (1000 * 60 * 60)) % 24),
+        days = Math.floor(duration / (1000 * 60 * 60 * 24));
 
+  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
 
 
 
@@ -809,18 +805,26 @@ app.get('/stake-status/:wallet', async (req, res) => {
     const stake = await getStake(wallet);
     if (!stake) return res.json({ staked: false, wallet });
 
+    const startTime = new Date(stake.staked_at);
+    const durationDays = 30; // Staking period
+    const endTime = new Date(startTime);
+    endTime.setDate(startTime.getDate() + durationDays);
+
     res.json({
-  staked: true,
-  wallet: stake.wallet,
-  startTime: stake.startTime,
-  endTime: stake.endTime,
-  amount: stake.amount
-  });
+      staked: true,
+      wallet: stake.wallet_address,
+      amount: '500.00', // Fixed stake amount in SeagullCoin
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      duration: `${durationDays} days`,
+      timeRemaining: msToTime(endTime - new Date())
+    });
 
   } catch (err) {
     res.status(500).json({ error: 'DB error', details: err.message });
   }
 });
+
 
 
 

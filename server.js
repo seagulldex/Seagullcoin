@@ -697,7 +697,7 @@ function calculateDaysStaked(stake) {
 // Constants
 const STAKE_AMOUNT = 50000;           // 50000 SeagullCoin staked
 const LOCK_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;  // 30 days in ms
-const DAILY_REWARD = 80;            // 80 SeagullCoin per day reward
+const DAILY_REWARD = 16.7;            // 16.7 SeagullCoin per day reward
 
 
 // Get stake by wallet
@@ -813,31 +813,6 @@ app.get('/stake-status/:uuid', async (req, res) => {
 });
 
 
-app.get('/stake-rewards', (req, res) => {
-  const { wallet } = req.query;
-  if (!wallet) return res.status(400).json({ error: 'Wallet address is required' });
-
-  db.get('SELECT * FROM stakes WHERE walletAddress = ?', [wallet], (err, row) => {
-    if (err) return res.status(500).json({ error: 'Database error', details: err.message });
-    if (!row) return res.status(404).json({ error: 'No stake found for this wallet' });
-
-    const now = Date.now();
-    const start = row.startTime;
-    const durationMs = row.duration * 24 * 60 * 60 * 1000;
-    const elapsed = now - start;
-    const daysStaked = Math.min(Math.floor(elapsed / (24 * 60 * 60 * 1000)), row.duration);
-    const eligible = elapsed >= durationMs;
-    const reward = eligible ? Math.round(row.amount * 0.05) : 0;
-
-    res.json({
-      wallet: row.walletAddress,
-      daysStaked,
-      eligible,
-      reward: `${reward} SeagullCoin`,
-      unlocksAt: new Date(start + durationMs).toISOString()
-    });
-  });
-});
 
 
 app.get('/unstake-payload', async (req, res) => {
@@ -924,28 +899,7 @@ app.get('/unstake-status/:uuid', async (req, res) => {
 
 
 
-// Endpoint: Stake rewards calculation
-app.get('/stake-rewards/:wallet', async (req, res) => {
-  const wallet = req.params.wallet;
-  try {
-    const stake = await getStake(wallet);
-    if (!stake) return res.json({ eligible: false, message: 'Wallet not staked' });
 
-    const now = Date.now();
-    const stakedDurationMs = now - stake.stakedAt;
-    const stakedDays = Math.floor(stakedDurationMs / (1000 * 60 * 60 * 24));
-    const reward = (stakedDays * DAILY_REWARD).toFixed(2);
-
-    res.json({
-      wallet,
-      daysStaked: stakedDays,
-      eligible: true,
-      reward: `${reward} SeagullCoin`
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'DB error', details: err.message });
-  }
-});
 
 
 
@@ -998,7 +952,7 @@ app.post('/claim-rewards/:walletAddress', async (req, res) => {
   const stakedDays = Math.floor((Date.now() - stake.stakedAt) / (1000 * 60 * 60 * 24));
   if (stakedDays < 1) return res.status(400).json({ error: 'No rewards available yet' });
 
-  const rewardAmount = (stakedDays * 80).toFixed(0); // total reward in whole SGLCN
+  const rewardAmount = (stakedDays * 16.7).toFixed(0); // total reward in whole SGLCN
 
   // Create XUMM payload to send rewardAmount SeagullCoin to wallet
   try {
@@ -1056,7 +1010,7 @@ app.get('/unstake-payload/:wallet', async (req, res) => {
         Amount: {
           currency: 'SeagullCoin',
           issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-          value: '52400'
+          value: '50500'
         }
       },
       options: {

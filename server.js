@@ -758,81 +758,53 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
 });
 
 
+// Check the status of a staking payload and record it in SQLite3
 app.get('/stake-status/:uuid', async (req, res) => {
   try {
     const { uuid } = req.params;
+    const result = await xumm.payload.get(uuid);
 
-    const payloadStatus = await xumm.payload.get(uuid);
-    if (!payloadStatus || payloadStatus.meta.resolved !== true || payloadStatus.meta.signed !== true) {
-      return res.status(400).json({ error: 'Stake payment not completed' });
+    if (!result?.response?.dispatched || result.response?.dispatched === false) {
+      return res.json({ success: false, message: 'Payload not signed yet' });
     }
 
-    const tx = payloadStatus.response.txn;
-    const memo = tx.Memos?.[0]?.Memo?.MemoData;
-    const walletAddress = memo ? Buffer.from(memo, 'hex').toString('utf8') : null;
+    const memo = result?.response?.txblob ? Buffer.from(
+      result.response.txrefs.Memos?.[0]?.Memo?.MemoData || '',
+      'hex'
+    ).toString('utf8') : null;
 
-    if (!walletAddress) {
-      return res.status(400).json({ error: 'Could not extract wallet address from memo' });
+    const walletAddress = result.response.account;
+
+    if (walletAddress && result.meta.signed === true) {
+      // Insert into the stakers table
+      db.run(
+        'INSERT OR IGNORE INTO stakers (wallet_address, staked_at) VALUES (?, datetime("now"))',
+        [walletAddress],
+        (err) => {
+          if (err) {
+            console.error('DB insert error:', err);
+            return res.status(500).json({ error: 'Database error' });
+          }
+
+          return res.json({ success: true, message: 'Stake confirmed', walletAddress });
+        }
+      );
+    } else {
+      return res.json({ success: false, message: 'Stake not signed' });
     }
-
-    await addStake(walletAddress); // Write to DB + memory
-
-    res.json({ message: 'Stake confirmed', walletAddress });
   } catch (error) {
-    console.error('Error confirming stake:', error);
-    res.status(500).json({ error: 'Failed to confirm stake' });
+    console.error('Error checking stake status:', error);
+    res.status(500).json({ error: 'Failed to check stake status' });
   }
 });
 
+module.exports = app;
 
 
 
 
-app.get('/unstake-payload', async (req, res) => {
-  const { wallet } = req.query;
-  if (!wallet) return res.status(400).json({ error: 'Wallet address is required' });
 
-  db.get('SELECT * FROM stakes WHERE walletAddress = ?', [wallet], async (err, row) => {
-    if (err) return res.status(500).json({ error: 'Database error', details: err.message });
-    if (!row) return res.status(404).json({ error: 'No stake found for this wallet' });
 
-    const now = Date.now();
-    const unlockTime = row.startTime + (row.duration * 24 * 60 * 60 * 1000);
-
-    if (now < unlockTime) {
-      return res.status(403).json({
-        error: 'Tokens are still locked',
-        unlocksAt: new Date(unlockTime).toISOString(),
-        message: `Tokens will be unlocked after ${new Date(unlockTime).toDateString()}`
-      });
-    }
-
-    // Eligible: Create XUMM payload
-    try {
-      const payload = {
-        txjson: {
-          TransactionType: 'Payment',
-          Destination: row.walletAddress,
-          Amount: (row.amount * 1000000).toString(), // Assuming stake is in XRP
-        },
-        options: {
-          submit: true,
-          expire: 300,
-        }
-      };
-
-      const createRes = await xumm.payload.create(payload);
-      return res.json({
-        uuid: createRes.uuid,
-        next: createRes.next.always,
-        refs: createRes.refs,
-      });
-
-    } catch (xerr) {
-      return res.status(500).json({ error: 'XUMM payload creation failed', details: xerr.message });
-    }
-  });
-});
 
 app.get('/unstake-status/:uuid', async (req, res) => {
   const { uuid } = req.params;
@@ -866,9 +838,7 @@ app.get('/unstake-status/:uuid', async (req, res) => {
     });
 
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to fetch payload status', details: err.message });
-  }
-});
+    return res.status(500).json({ error: 'Failed to fetch payload stat
 
 
 

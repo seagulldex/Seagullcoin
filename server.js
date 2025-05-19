@@ -713,6 +713,7 @@ async function removeStake(wallet) {
 
 
 
+
 app.get('/stake-payload/:walletAddress', async (req, res) => {
   try {
     const walletAddress = req.params.walletAddress;
@@ -733,7 +734,7 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
         Memos: [
           {
             Memo: {
-              MemoType: Buffer.from('Monthly Staking', 'utf8').toString('hex').toUpperCase(),
+              MemoType: Buffer.from('stake', 'utf8').toString('hex').toUpperCase(),
               MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
             }
           }
@@ -756,6 +757,9 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
     res.status(500).json({ error: 'Failed to create stake payload' });
   }
 });
+
+
+
 
 
 app.get('/stake-status/:uuid', async (req, res) => {

@@ -634,71 +634,26 @@ app.get('/login', async (req, res) => {
 });
 
 
+const STAKE_AMOUNT = 50000; // SeagullCoin
+const LOCK_PERIOD_DAYS = 30;
+const LOCK_PERIOD_MS = LOCK_PERIOD_DAYS * 24 * 60 * 60 * 1000;
+const DAILY_REWARD = 16.7;
+
 const stakedWallets = {};
 
-
+// Add stake
 async function addStake(wallet) {
-  const stakedAt = Date.now();
-  const unlocksAt = stakedAt + 30 * 24 * 60 * 60 * 1000; // 30 days
-  const amount = 50000; // Your stake amount
+  const startTime = Date.now();
+  const endTime = startTime + LOCK_PERIOD_MS;
+  const duration = LOCK_PERIOD_DAYS;
 
   await db.run(`
-    INSERT OR REPLACE INTO staking (wallet, stakedAt, unlocksAt, amount)
-    VALUES (?, ?, ?, ?)
-  `, [wallet, stakedAt, unlocksAt, amount]);
+    INSERT OR REPLACE INTO staking (wallet, amount, duration, startTime, endTime, status, rewards)
+    VALUES (?, ?, ?, ?, ?, 'active', 0)
+  `, [wallet, STAKE_AMOUNT, duration, startTime, endTime]);
 
-  // Sync in-memory cache
-  stakedWallets[wallet] = { stakedAt, unlocksAt, amount };
+  stakedWallets[wallet] = { startTime, endTime, amount: STAKE_AMOUNT };
 }
-
-
-
-
-app.get('/db-test', (req, res) => {
-  db.all('SELECT * FROM staking', (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    res.json(rows);
-  });
-});
-
-const insertStake = (wallet, amount, duration, startTime, endTime) => {
-  return new Promise((resolve, reject) => {
-    db.run(`INSERT INTO stakes (walletAddress, amount, duration, startTime, endTime, status, rewards) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-      [wallet, amount, duration, startTime, endTime, 'active', 0], 
-      function(err) {
-        if (err) {
-          console.error('DB insert error:', err);
-          return reject(err);
-        }
-        console.log('Stake inserted for wallet:', wallet);
-        resolve(this.lastID);
-      });
-  });
-};
-
-
-
-function calculateDaysStaked(stake) {
-  const now = Date.now();
-  const start = stake.startTime;
-  const durationMs = stake.duration * 24 * 60 * 60 * 1000; // duration in ms
-  const elapsed = now - start;
-  const daysStakedSoFar = Math.min(Math.floor(elapsed / (24 * 60 * 60 * 1000)), stake.duration);
-  const eligible = elapsed >= durationMs;
-  return { daysStakedSoFar, eligible };
-}
-
-
-
-
-// Constants
-const STAKE_AMOUNT = 50000;           // 50000 SeagullCoin staked
-const LOCK_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;  // 30 days in ms
-const DAILY_REWARD = 16.7;            // 16.7 SeagullCoin per day reward
-
 
 // Get stake by wallet
 async function getStake(wallet) {
@@ -710,8 +665,38 @@ async function removeStake(wallet) {
   return db.run(`DELETE FROM staking WHERE wallet = ?`, [wallet]);
 }
 
+// Insert stake (alias for addStake with more params)
+function insertStake(wallet, amount, duration, startTime, endTime) {
+  return db.run(`
+    INSERT INTO staking (wallet, amount, duration, startTime, endTime, status, rewards)
+    VALUES (?, ?, ?, ?, ?, 'active', 0)
+  `, [wallet, amount, duration, startTime, endTime]);
+}
 
+// Stake duration check
+function calculateDaysStaked(stake) {
+  const now = Date.now();
+  const elapsed = now - stake.startTime;
+  const durationMs = stake.duration * 24 * 60 * 60 * 1000;
 
+  const daysStakedSoFar = Math.min(
+    Math.floor(elapsed / (24 * 60 * 60 * 1000)),
+    stake.duration
+  );
+
+  const eligible = elapsed >= durationMs;
+  return { daysStakedSoFar, eligible };
+}
+
+// Test route
+app.get('/db-test', (req, res) => {
+  db.all('SELECT * FROM staking', (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(rows);
+  });
+});
 
 
 app.get('/stake-payload/:walletAddress', async (req, res) => {

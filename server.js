@@ -698,6 +698,14 @@ app.get('/db-test', (req, res) => {
   });
 });
 
+app.post('/stake', async (req, res) => {
+  const { wallet } = req.body;
+  if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
+
+  await addStake(wallet);
+  res.json({ success: true, message: 'Stake registered', wallet });
+});
+
 
 app.get('/stake-payload/:walletAddress', async (req, res) => {
   try {

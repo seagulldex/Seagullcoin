@@ -664,6 +664,17 @@ app.get('/db-test', (req, res) => {
 });
 
 
+function calculateDaysStaked(stake) {
+  const now = Date.now();
+  const start = stake.startTime;
+  const durationMs = stake.duration * 24 * 60 * 60 * 1000; // duration in ms
+  const elapsed = now - start;
+  const daysStakedSoFar = Math.min(Math.floor(elapsed / (24 * 60 * 60 * 1000)), stake.duration);
+  const eligible = elapsed >= durationMs;
+  return { daysStakedSoFar, eligible };
+}
+
+
 // Open SQLite DB (async/await friendly)
 (async () => {
   db = await open({
@@ -697,7 +708,7 @@ console.log(tables);
 
 
 // Constants
-const STAKE_AMOUNT = 100;           // 100 SeagullCoin staked
+const STAKE_AMOUNT = 50000;           // 50000 SeagullCoin staked
 const LOCK_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;  // 30 days in ms
 const DAILY_REWARD = 80;            // 80 SeagullCoin per day reward
 

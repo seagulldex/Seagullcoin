@@ -988,34 +988,6 @@ app.get('/stake-status/:wallet', async (req, res) => {
 });
 
 
-app.get('/unstake-payload/:walletAddress', (req, res) => {
-  const wallet = req.params.walletAddress;
-  const stake = stakedWallets[wallet];
-
-  if (!stake) {
-    return res.status(400).json({ error: 'Wallet is not currently staked' });
-  }
-
-  const now = Date.now();
-  const lockPeriodMs = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
-  const stakedDuration = now - stake.stakedAt;
-
-  if (stakedDuration < lockPeriodMs) {
-    const unlockDate = new Date(stake.stakedAt + lockPeriodMs);
-    return res.status(403).json({
-      error: 'Tokens are still locked',
-      unlocksAt: unlockDate.toISOString(),
-      message: `Tokens will be unlocked after ${unlockDate.toDateString()}`
-    });
-  }
-
-  // Generate XUMM unstake payload to send 100 SeagullCoin back to the user
-  // Your existing code to create the XUMM payload goes here...
-  
-  // Example:
-  // const unstakePayload = await createUnstakePayload(wallet);
-  // res.json(unstakePayload);
-});
 
 
 app.get('/stake-rewards/:walletAddress', (req, res) => {

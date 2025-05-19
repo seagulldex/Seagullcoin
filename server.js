@@ -1075,37 +1075,66 @@ app.post('/claim-rewards/:walletAddress', async (req, res) => {
   }
 });
 
-// Endpoint: Unstake payload
 app.get('/unstake-payload/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
+
   try {
     const stake = await getStake(wallet);
-    if (!stake) return res.status(400).json({ error: 'Wallet not staked' });
-
-    const now = Date.now();
-    if (now < stake.unlocksAt) {
-      return res.status(400).json({
-        error: 'Tokens are still locked',
-        unlocksAt: new Date(stake.unlocksAt).toISOString(),
-        message: `Tokens will be unlocked after ${new Date(stake.unlocksAt).toDateString()}`
-      });
+    if (!stake) {
+      return res.status(400).json({ error: 'Wallet not staked' });
     }
 
-    // Build XUMM payload for unstaking here...
-    // For demo, just return success placeholder
+    // TEMPORARY: Bypass unlock restriction for testing
+    // const now = Date.now();
+    // if (now < stake.unlocksAt) {
+    //   return res.status(400).json({
+    //     error: 'Tokens are still locked',
+    //     unlocksAt: new Date(stake.unlocksAt).toISOString(),
+    //     message: `Tokens will be unlocked after ${new Date(stake.unlocksAt).toDateString()}`
+    //   });
+    // }
+
+    const payload = {
+      txjson: {
+        TransactionType: 'Payment',
+        Account: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Your service wallet
+        Destination: wallet,
+        Amount: {
+          currency: 'SeagullCoin',
+          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+          value: '52400'
+        },
+        Memos: [
+          {
+            Memo: {
+              MemoData: Buffer.from('Unstake payout').toString('hex')
+            }
+          }
+        ]
+      },
+      options: {
+        submit: true,
+        expire: 300
+      }
+    };
+
+    const created = await xumm.payload.createAndSubscribe(payload, e => {
+      return e.data.signed === true || e.data.signed === false;
+    });
 
     res.json({
-      message: 'Unstake payload ready (implement your XUMM payload here)',
-      wallet
+      message: 'Test unstake payload ready',
+      wallet,
+      uuid: created.created.uuid,
+      next: created.created.next
     });
 
   } catch (err) {
-    res.status(500).json({ error: 'DB error', details: err.message });
+    res.status(500).json({ error: 'DB error or XUMM error', details: err.message });
   }
 });
 
-// Sample: Call addStake(wallet) when stake succeeds (example usage)
-// await addStake('rSomeWalletAddress');
+
 
 
 

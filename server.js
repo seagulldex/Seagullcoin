@@ -269,14 +269,17 @@ db.serialize(() => {
 });
 
 db.serialize(() => {
+  db.run(`DROP TABLE IF EXISTS signed_payloads`);
   db.run(`
-    CREATE TABLE IF NOT EXISTS signed_payloads (
-      uuid TEXT PRIMARY KEY,
+    CREATE TABLE signed_payloads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uuid TEXT,
       txid TEXT,
       signed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 });
+
 
 
 // Initialize SQLite database

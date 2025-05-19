@@ -3,156 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NFT Collections - SGLCN-X20</title>
+  <title>SGLCN-X20 Minting Platform</title>
   <link rel="stylesheet" href="style.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <link rel="stylesheet" href="header.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+  <script src="https://unpkg.com/xrpl@2.12.0/dist/xrpl.js"></script>
   <style>
-    body {
-      background-color: black;
-      color: white;
-      font-family: Arial, sans-serif;
-      margin-top: 60px;
-    }
-
+    /* Your existing styles here ... */
     #top-bar {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       height: 40px;
-      background-color: #333;
+      background-color: #2e2e2e;
       display: flex;
       align-items: center;
       justify-content: flex-end;
       padding: 0 20px;
       z-index: 1000;
     }
-
     #wallet-container {
-      border: 2px solid #fff;
+      border: 2px solid #000;
       border-radius: 10px;
       padding: 6px 12px;
-      background-color: #444;
+      background-color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
       max-width: 140px;
     }
-
     #wallet-status {
       font-size: 0.9rem;
       cursor: pointer;
       font-weight: bold;
     }
-
-    #wallet-indicator.red {
-      color: #ff4444;
-    }
-
-    #wallet-indicator.green {
-      color: #44ff44;
-    }
-
-    .mint-form {
-      margin-top: 20px;
-      padding: 20px;
-      background-color: #000;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-      max-width: 500px;
-      margin-left: auto;
-      margin-right: auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .mint-form input,
-    .mint-form textarea,
-    .mint-form button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border: none;
-      color: white;
-      background-color: #333;
-    }
-
-    .trait-row input {
-      background-color: #222;
-      border: 1px solid #444;
-    }
-
-    .mint-form button:hover {
-      background-color: #555;
-    }
-
-    .mint-form input::placeholder,
-    .mint-form textarea::placeholder {
-      color: #888;
-    }
-
-    .mint-form label {
-      font-weight: bold;
-    }
-
-    .preview-container {
-      margin-top: 15px;
-      padding: 10px;
-      border: 2px dashed #fff;
-      border-radius: 10px;
-      background-color: #333;
-      width: 100%;
-      height: 200px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .preview-container img,
-    .preview-container video {
-      max-width: 100%;
-      max-height: 100%;
-    }
-
-    .mint-form input[type="file"] {
+    #wallet-indicator.red { color: #ff4444; }
+    #wallet-indicator.green { color: #44ff44; }
+    #search-bar {
       padding: 8px;
-      background-color: #444;
+      font-size: 16px;
+      width: 340px;
+    }
+    button {
+      padding: 8px 12px;
+      font-size: 16px;
+      background-color: #4CAF50;
       color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
     }
-
-    #collections-container {
-      margin-top: 30px;
-      padding: 20px;
+    button:hover {
+      background-color: #45a049;
     }
-
-    .collection-item {
-      background-color: #333;
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 10px;
-      color: white;
+    body { margin-top: 60px; }
+    header { margin-top: 10px; }
+    nav ul {
+      display: flex;
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
     }
-
-    .collection-item img {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
+    nav ul li {
+      margin: 0 15px;
     }
-
-    .collection-item h3 {
-      margin: 5px 0;
-    }
-
-    .collection-item p {
-      font-size: 0.9rem;
-    }
+    #data-display { margin-top: 20px; font-weight: bold; }
   </style>
 </head>
 <body>
 
+  <!-- Top Bar -->
   <div id="top-bar">
     <div id="wallet-container">
       <div id="wallet-status">
@@ -164,53 +83,51 @@
   <header>
     <nav>
       <ul>
+        <li>
+        </li>
         <li><a href="index.html">Home</a></li>
         <li><a href="nfts.html">NFTs</a></li>
-        <li><a href="mint.html">Mint NFT</a></li>
-        <li><a href="messages.html">Messages</a></li>
+        <li><a href="mint.html">Staking</a></li>
+        <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
       </ul>
     </nav>
   </header>
 
+  <input type="text" id="search-bar" placeholder="Search the XRPL..." onkeydown="if(event.key==='Enter'){searchXRPL();}" />
+  <button onclick="searchXRPL()">Search</button>
+  <div id="search-status" style="margin-top:10px;font-weight:bold;"></div>
+  <div id="search-results" style="margin-top:15px;"></div>
+
+  <!-- Main Content -->
   <main>
-    <h1>NFT Collections</h1>
-    <p>Browse SeagullCoin-backed NFT collections minted on this platform.</p>
-
-    <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
-
-    <div class="mint-form">
-      <h2>Mint Your NFT</h2>
-      <form id="mint-form">
-        <label for="nft-name">NFT Name</label>
-        <input type="text" id="nft-name" required placeholder="Enter NFT name" />
-
-        <label for="nft-description">NFT Description</label>
-        <textarea id="nft-description" required placeholder="Enter a description for your NFT"></textarea>
-
-        <label for="nft-file">NFT File</label>
-        <input type="file" id="nft-file" required accept="image/*,video/*,gif/*" onchange="previewFile()" />
-
-        <label for="nft-domain">Domain (optional)</label>
-        <input type="text" id="nft-domain" placeholder="Enter domain for your NFT" />
-
-        <label for="nft-collection">Collection</label>
-        <input type="text" id="nft-collection" placeholder="Enter collection name (optional)" />
-
-        <label>NFT Properties</label>
-        <div id="traits-container"></div>
-        <button type="button" id="add-trait-btn" style="margin-top:10px;">➕ Add Trait</button>
-
-        <button type="submit">Mint NFT</button>
-      </form>
-
-      <div class="preview-container" id="preview-container">
-        <span>No file selected</span>
+    <section class="hero">
+      <h1>Welcome to SeagullCoin NFT Marketplace</h1>
+      <p>Mint, Buy, Sell, and Trade SeagullCoin-only NFTs.</p>
+      <div id="wallet-info" style="display:none;">
+        Connected: <span id="wallet-address"></span>
       </div>
+    </section>
 
-      <p id="minting-status" style="color: #2e2e2e;"></p>
+    <div id="user-info">
+      <p id="user-balance">Loading balance...</p>
+      <div id="user-nfts">Loading NFTs...</div>
     </div>
+<div id="staking-section" style="margin-top: 30px; padding: 20px; border: 1px solid #ccc; border-radius: 10px;">
+  <h2>Staking Dashboard</h2>
+  <p id="staking-status">Loading staking data...</p>
+  
+  <button id="stake-btn" style="margin-right: 10px;">Stake SeagullCoin</button>
+  <button id="unstake-btn">Unstake</button>
 
-    <div id="collections-container">Loading collections...</div>
+  <div id="rewards-history" style="margin-top: 20px;">
+    <h3>Rewards History</h3>
+    <ul id="rewards-list">
+      <li>Loading history...</li>
+    </ul>
+  </div>
+</div>
+
+    <div id="data-display">Loading token data...</div>
   </main>
 
   <footer>
@@ -218,143 +135,273 @@
   </footer>
 
   <script>
+    // Initialize state
+    let wallet = null;
+    
+    function setupTrustlineButton() {
+  const btn = document.getElementById('trustline-button');
+  btn.disabled = !wallet; // disable if no wallet connected
+
+  btn.onclick = async () => {
+    if (!wallet) {
+      alert('Please login first to add trustline.');
+      return;
+    }
+
+    try {
+      // Build the trustline transaction JSON
+      const trustlinePayload = {
+        TransactionType: "TrustSet",
+        Account: wallet, // user's wallet
+        LimitAmount: {
+          currency: "SseagullMansions", // replace with your token code exactly
+          issuer: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV", // replace with your actual issuer address
+          value: "2"
+        }
+      };
+
+      // Call XUMM API to create a payload (you need to replace with your backend or do it here with your XUMM API key)
+      // Since you currently call your backend, update backend to accept raw txjson OR do it here:
+
+      // For example, call your backend that creates the payload:
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/create-trustline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txjson: trustlinePayload })
+      });
+
+      if (!res.ok) throw new Error('Failed to create trustline payload');
+
+      const data = await res.json();
+
+      if (data.payloadURL) {
+        // Open XUMM to sign trustline tx
+        window.open(data.payloadURL, '_blank');
+      } else {
+        alert('Failed to create trustline transaction.');
+      }
+
+    } catch (err) {
+      alert('Error adding trustline: ' + err.message);
+    }
+  };
+}
+
+
+    // On page load, check login
     window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
+      loadWalletFromStorage();
+      updateWalletUI();
+      setupTrustlineButton();
     });
 
-    async function updateWalletStatus() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      const indicator = document.getElementById('wallet-indicator');
+    function loadWalletFromStorage() {
+      wallet = localStorage.getItem('xumm_wallet_address');
+      if(wallet) {
+        document.getElementById('wallet-address').textContent = wallet;
+      }
+    }
 
-      if (wallet) {
+    function updateWalletUI() {
+      const indicator = document.getElementById('wallet-indicator');
+      if(wallet) {
         document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wallet-address').innerText = wallet;
         indicator.textContent = '🟢 Profile';
         indicator.classList.remove('red');
         indicator.classList.add('green');
         indicator.title = 'Go to profile';
-        indicator.onclick = () => window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
-        loadCollections();
+        indicator.onclick = () => {
+          const user = JSON.parse(localStorage.getItem('xumm_user'));
+          if(user && user.uuid) {
+            window.location.href = `/profile.html?uuid=${user.uuid}`;
+          }
+        };
+        fetchSeagullCoinBalance(wallet);
       } else {
         document.getElementById('wallet-info').style.display = 'none';
         indicator.textContent = '🔴 Login';
         indicator.classList.remove('green');
         indicator.classList.add('red');
         indicator.title = 'Click to login';
-        indicator.onclick = startLoginFlow;
+        indicator.onclick = () => startLoginFlow();
       }
     }
 
     async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-      const data = await res.json();
-      const payloadUUID = data.payloadUUID;
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+        const data = await res.json();
+        window.location.href = data.payloadURL;
 
-      window.open(data.payloadURL, "_blank");
-
-      const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
-        const loginStatus = await check.json();
-
-        if (loginStatus.loggedIn) {
-          clearInterval(interval);
-          localStorage.setItem('xumm_wallet_address', loginStatus.walletAddress);
-          localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
-          updateWalletStatus();
-        }
-      }, 5000);
-    }
-
-    function previewFile() {
-      const file = document.getElementById('nft-file').files[0];
-      const previewContainer = document.getElementById('preview-container');
-      const reader = new FileReader();
-
-      reader.onloadend = function () {
-        previewContainer.innerHTML = `<img src="${reader.result}" alt="NFT Preview" />`;
-      };
-      
-      if (file) {
-        reader.readAsDataURL(file);
+        const interval = setInterval(async () => {
+          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+          const loginStatus = await check.json();
+          if (loginStatus.loggedIn) {
+            clearInterval(interval);
+            wallet = loginStatus.account;
+            localStorage.setItem('xumm_wallet_address', wallet);
+            localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+            document.getElementById('wallet-address').textContent = wallet;
+            updateWalletUI();
+          }
+        }, 3000);
+      } catch (e) {
+        alert('Login failed: ' + e.message);
       }
     }
 
-    document.getElementById('mint-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    async function fetchSeagullCoinBalance(account) {
+      try {
+        const response = await fetch(`/balance/${account}`);
+        const data = await response.json();
+        document.getElementById('user-balance').textContent = `Balance: ${data.balance} SeagullCoin`;
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+        document.getElementById('user-balance').textContent = 'Failed to load balance';
+      }
+    }
 
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet) {
-        alert('Please connect your wallet first.');
+    function setupTrustlineButton() {
+      const btn = document.getElementById('trustline-button');
+      btn.disabled = !wallet; // disable if no wallet connected
+
+      btn.onclick = async () => {
+        if (!wallet) {
+          alert('Please login first to add trustline.');
+          return;
+        }
+
+        try {
+          // Call backend API to create trustline payload for this account
+          const res = await fetch(`https://sglcn-x20-api.glitch.me/add-trustline?account=${wallet}`);
+          const trustlineData = await res.json();
+
+          if(trustlineData.payloadURL){
+            // Redirect user to XUMM to sign trustline tx
+            window.location.href = trustlineData.payloadURL;
+          } else {
+            alert('Failed to create trustline transaction.');
+          }
+        } catch (err) {
+          alert('Error adding trustline: ' + err.message);
+        }
+      };
+    }
+
+    /* ---------- XRPL Search (wallets + NFTs) ---------- */
+
+    const XRPL_ENDPOINT = "wss://s2.ripple.com";
+    let xrplClient;
+
+    const WALLET_REGEX = /^r[1-9A-HJ-NP-Za-km-z]{25,34}$/;
+
+    async function connectXRPL() {
+      if (!xrplClient || !xrplClient.isConnected()) {
+        xrplClient = new xrpl.Client(XRPL_ENDPOINT);
+        await xrplClient.connect();
+      }
+    }
+
+    async function searchXRPL() {
+      const query = document.getElementById('search-bar').value.trim();
+      if (!query) {
+        alert('Please enter a wallet address or NFT ID.');
         return;
       }
 
-      const name = document.getElementById('nft-name').value;
-      const description = document.getElementById('nft-description').value;
-      const file = document.getElementById('nft-file').files[0];
-      const domain = document.getElementById('nft-domain').value;
-      const collection = document.getElementById('nft-collection').value;
+      const status = document.getElementById('search-status');
+      status.textContent = 'Searching...';
+      const resultsDiv = document.getElementById('search-results');
+      resultsDiv.innerHTML = '';
 
-      const traits = [];
-      document.querySelectorAll('.trait-row').forEach((row) => {
-        const trait_type = row.querySelector('.trait-type').value;
-        const value = row.querySelector('.trait-value').value;
-        if (trait_type && value) traits.push({ trait_type, value });
-      });
+      if (WALLET_REGEX.test(query)) {
+        // Wallet address
+        try {
+          await connectXRPL();
+          // Fetch NFTs owned by wallet
+          const nfts = await xrplClient.request({
+            method: 'account_nfts',
+            account: query
+          });
+          status.textContent = `Found ${nfts.result.account_nfts.length} NFTs for ${query}:`;
 
-      const formData = new FormData();
-      formData.append('wallet', wallet);
-      formData.append('name', name);
-      formData.append('description', description);
-      formData.append('domain', domain);
-      formData.append('collection', collection);
-      formData.append('file', file);
-      formData.append('traits', JSON.stringify(traits));
+          nfts.result.account_nfts.forEach(nft => {
+            const el = document.createElement('div');
+            el.textContent = `NFTokenID: ${nft.NFTokenID}`;
+            resultsDiv.appendChild(el);
+          });
 
-      const mintStatus = document.getElementById('minting-status');
-      mintStatus.textContent = 'Uploading & Minting...';
-
-      const res = await fetch('https://sglcn-x20-api.glitch.me/mint', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await res.json();
-      if (result.success) {
-        mintStatus.textContent = 'Minted successfully! Token ID: ' + result.tokenId;
+          await xrplClient.disconnect();
+        } catch (err) {
+          status.textContent = `Error fetching NFTs for ${query}: ${err.message}`;
+        }
       } else {
-        mintStatus.textContent = 'Mint failed: ' + result.error;
+        status.textContent = 'Invalid XRPL wallet address.';
       }
-    });
-
-    document.getElementById('add-trait-btn').addEventListener('click', () => {
-      const container = document.getElementById('traits-container');
-      const div = document.createElement('div');
-      div.classList.add('trait-row');
-      div.innerHTML = `
-        <input type="text" class="trait-type" placeholder="Trait type" />
-        <input type="text" class="trait-value" placeholder="Value" />
-        <button type="button" onclick="this.parentElement.remove()">❌</button>
-      `;
-      container.appendChild(div);
-    });
-
-    async function loadCollections() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/collections');
-      const collections = await res.json();
-      const container = document.getElementById('collections-container');
-      container.innerHTML = '';
-      
-      collections.forEach((collection) => {
-        const div = document.createElement('div');
-        div.classList.add('collection-item');
-        div.innerHTML = `
-          <img src="${collection.icon || 'default-icon.png'}" alt="Collection Icon" />
-          <h3>${collection.name}</h3>
-          <p>${collection.description}</p>
-        `;
-        container.appendChild(div);
-      });
     }
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+  const stakeBtn = document.getElementById('stake-btn');
+  const unstakeBtn = document.getElementById('unstake-btn');
+  const stakingStatus = document.getElementById('staking-status');
+  const rewardsList = document.getElementById('rewards-list');
+
+  if (!wallet) {
+    stakeBtn.disabled = true;
+    unstakeBtn.disabled = true;
+    stakingStatus.textContent = 'Connect wallet to access staking features.';
+    return;
+  }
+
+  stakeBtn.onclick = async () => {
+    try {
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-payload/${wallet}`);
+      const data = await res.json();
+      if (data.payloadURL) {
+        window.open(data.payloadURL, '_blank');
+      } else {
+        alert('Unable to initiate staking transaction.');
+      }
+    } catch (err) {
+      alert('Error starting stake: ' + err.message);
+    }
+  };
+
+  unstakeBtn.onclick = async () => {
+    try {
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/unstake-payload/${wallet}`);
+      const data = await res.json();
+      if (data.payloadURL) {
+        window.open(data.payloadURL, '_blank');
+      } else {
+        alert('Unable to initiate unstake transaction.');
+      }
+    } catch (err) {
+      alert('Error starting unstake: ' + err.message);
+    }
+  };
+
+  async function loadRewardsHistory() {
+    try {
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/rewards-history/${wallet}`);
+      const history = await res.json();
+      rewardsList.innerHTML = '';
+      if (history.length === 0) {
+        rewardsList.innerHTML = '<li>No rewards yet.</li>';
+      } else {
+        history.forEach(entry => {
+          const li = document.createElement('li');
+          li.textContent = `${entry.date}: +${entry.amount} SeagullCoin`;
+          rewardsList.appendChild(li);
+        });
+      }
+    } catch (err) {
+      rewardsList.innerHTML = '<li>Error loading rewards.</li>';
+    }
+  }
+
+  loadRewardsHistory();
+});
   </script>
 </body>
 </html>

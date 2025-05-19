@@ -663,6 +663,22 @@ app.get('/db-test', (req, res) => {
   });
 });
 
+const insertStake = (wallet, amount, duration, startTime, endTime) => {
+  return new Promise((resolve, reject) => {
+    db.run(`INSERT INTO stakes (walletAddress, amount, duration, startTime, endTime, status, rewards) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+      [wallet, amount, duration, startTime, endTime, 'active', 0], 
+      function(err) {
+        if (err) {
+          console.error('DB insert error:', err);
+          return reject(err);
+        }
+        console.log('Stake inserted for wallet:', wallet);
+        resolve(this.lastID);
+      });
+  });
+};
+
+
 
 function calculateDaysStaked(stake) {
   const now = Date.now();

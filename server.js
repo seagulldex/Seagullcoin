@@ -759,40 +759,31 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
 
 
 app.get('/stake-status/:uuid', async (req, res) => {
-  const { uuid } = req.params;
-  if (!uuid) return res.status(400).json({ error: 'UUID is required' });
-
   try {
+    const { uuid } = req.params;
+
     const payloadStatus = await xumm.payload.get(uuid);
-
-    if (payloadStatus.meta.expired) {
-      return res.json({ status: 'expired', signed: false });
+    if (!payloadStatus || payloadStatus.meta.resolved !== true || payloadStatus.meta.signed !== true) {
+      return res.status(400).json({ error: 'Stake payment not completed' });
     }
 
-    if (!payloadStatus.meta.signed) {
-      return res.json({ status: 'pending', signed: false });
+    const tx = payloadStatus.response.txn;
+    const memo = tx.Memos?.[0]?.Memo?.MemoData;
+    const walletAddress = memo ? Buffer.from(memo, 'hex').toString('utf8') : null;
+
+    if (!walletAddress) {
+      return res.status(400).json({ error: 'Could not extract wallet address from memo' });
     }
 
-    const tx = payloadStatus.response.txid;
-    const wallet = payloadStatus.response.account;
+    await addStake(walletAddress); // Write to DB + memory
 
-    // Update wallet and status once
-    await db.run(
-      'UPDATE stakes SET walletAddress = ?, status = ? WHERE uuid = ?',
-      [wallet, 'staked', uuid]
-    );
-
-    return res.json({
-      status: 'signed',
-      signed: true,
-      txid: tx,
-      wallet,
-    });
-
-  } catch (err) {
-    return res.status(500).json({ error: 'Failed to fetch payload status', details: err.message });
+    res.json({ message: 'Stake confirmed', walletAddress });
+  } catch (error) {
+    console.error('Error confirming stake:', error);
+    res.status(500).json({ error: 'Failed to confirm stake' });
   }
 });
+
 
 
 

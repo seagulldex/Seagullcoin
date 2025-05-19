@@ -54,10 +54,6 @@
   </header>
 
   <main>
-    <input type="text" id="search-bar" placeholder="Search the XRPL..." onkeydown="if(event.key==='Enter'){searchXRPL();}" />
-    <button onclick="searchXRPL()">Search</button>
-    <div id="search-status"></div>
-    <div id="search-results"></div>
 
     <section class="hero">
       <h1>Welcome to SeagullCoin NFT Marketplace</h1>
@@ -72,11 +68,18 @@
 
     <div id="staking-section">
       <h2>Staking Dashboard</h2>
-      <p id="staking-status">Loading staking data...</p>
-
+      <p id="staking-status"></p>
+      <div class="staking-details-top">
+    <p><strong>50,000 SeagullCoin 🔒</strong></p>
+  </div>
       <button id="stake-btn" disabled>Stake SeagullCoin</button>
       <button id="unstake-btn" disabled>Unstake</button>
-
+      <div class="staking-details-bottom">
+    <p>Earn 80 SeagullCoin per day</p>
+    <p>30 day 🔒 lockup</p>
+    <p><strong>Short-term Stake</strong></p>
+  </div>
+      
       <div id="qr-code-container">
         <img id="qr-code" alt="XUMM QR Code" />
       </div>
@@ -301,28 +304,7 @@
     };
 
     // Search XRPL example (existing)
-    async function searchXRPL() {
-      const query = document.getElementById('search-bar').value.trim();
-      if (!query) return alert('Enter search term.');
-
-      document.getElementById('search-status').textContent = 'Searching...';
-      const resultsEl = document.getElementById('search-results');
-      resultsEl.innerHTML = '';
-
-      try {
-        // Example API call - adjust as needed
-        const res = await fetch(`https://sglcn-x20-api.glitch.me/search?q=${encodeURIComponent(query)}`);
-        const data = await res.json();
-        if (!data || data.length === 0) {
-          resultsEl.textContent = 'No results found.';
-        } else {
-          resultsEl.innerHTML = data.map(item => `<div>${JSON.stringify(item)}</div>`).join('');
-        }
-      } catch {
-        resultsEl.textContent = 'Error during search.';
-      }
-      document.getElementById('search-status').textContent = '';
-    }
+    async fu
   </script>
 </body>
 </html>

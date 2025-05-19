@@ -1048,6 +1048,54 @@ app.post('/claim-rewards/:walletAddress', async (req, res) => {
 });
 
 
+app.get('/unstake-payload/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+
+  try {
+    const stake = await getStake(wallet);
+    if (!stake) {
+      return res.status(400).json({ error: 'Wallet is not staked' });
+    }
+
+    const now = Date.now();
+    if (now < stake.unlocksAt) {
+      return res.status(400).json({
+        error: 'Tokens are still locked',
+        unlocksAt: new Date(stake.unlocksAt).toISOString(),
+        message: `Tokens will be unlocked after ${new Date(stake.unlocksAt).toDateString()}`
+      });
+    }
+
+    // Build XUMM payload to send 52,400 SeagullCoin from service wallet to user
+    const payload = {
+      txjson: {
+        TransactionType: 'Payment',
+        Account: process.env.SERVICE_WALLET,
+        Destination: stake.walletAddress,
+        Amount: {
+          currency: 'SeagullCoin',
+          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+          value: '52400'
+        }
+      },
+      options: {
+        submit: true,
+        expire: 10
+      }
+    };
+
+    const created = await xumm.payload.create(payload);
+
+    res.json({
+      message: 'Unstake payload created',
+      payload: created,
+      unlocksAt: new Date(stake.unlocksAt).toISOString()
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create unstake payload', details: err.message });
+  }
+});
 
 
 

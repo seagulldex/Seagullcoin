@@ -236,17 +236,15 @@ console.log("Wallet from localStorage:", wallet);
   const res = await fetch('https://sglcn-x20-api.glitch.me/login');
   const { payloadURL, payloadUUID } = await res.json();
 
-  // Display the QR code instead of just opening a tab
-  const qrImg = document.getElementById('qr-code');
-  qrImg.src = payloadURL;
-  qrImg.style.display = 'block';
+  // Open XUMM login in a new popup tab
+  const popup = window.open(payloadURL, '_blank', 'width=420,height=750');
 
   const interval = setInterval(async () => {
     const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
     const { loggedIn, account } = await check.json();
     if (loggedIn) {
       clearInterval(interval);
-      qrImg.style.display = 'none';
+      if (popup) popup.close();
       wallet = account;
       localStorage.setItem('xumm_wallet_address', wallet);
       updateWalletUI();
@@ -256,6 +254,7 @@ console.log("Wallet from localStorage:", wallet);
     }
   }, 3000);
 }
+
 
 
 

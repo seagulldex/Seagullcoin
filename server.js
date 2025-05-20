@@ -4028,20 +4028,33 @@ app.post("/backup-pay", async (req, res) => {
 
   try {
     const payload = {
-      txjson: {
-        TransactionType: "Payment",
-        Destination: destination,
-        Amount: {
-          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
-          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-          value: "50501"
+  txjson: {
+    TransactionType: "Payment",
+    Destination: destination,
+    Amount: {
+      currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
+      issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+      value: "50501"
+    },
+    Memos: [
+      {
+        Memo: {
+          MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
+          MemoData: Buffer.from("Monthly", "utf8").toString("hex")
         }
-      },
-      options: {
-        submit: true,
-        expire: 300, // seconds
-        return_url: {
-          app
+      }
+    ]
+  },
+  options: {
+    submit: true,
+    expire: 300,
+    return_url: {
+      app: "https://yourdomain.com/thank-you",
+      web: "https://yourdomain.com/thank-you"
+    }
+  }
+};
+
 
     const created = await xumm.payload.create(payload);
 

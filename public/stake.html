@@ -173,18 +173,26 @@
     let pollInterval = null;
 
     window.addEventListener('DOMContentLoaded', () => {
-  const storedWallet = localStorage.getItem('xumm_wallet_address');
-  if (storedWallet) {
-    wallet = storedWallet;
-    updateWalletUI();
-    fetchBalance(wallet);
-    loadUserNFTs(wallet);
-    loadStakingData();
-  } else {
-    updateWalletUI(); // still call this so it shows "Login" if not connected
+    updateWalletStatus();
+    document.getElementById('back-btn').onclick = showCollections;
+  });
+
+  function updateWalletStatus() {
+    const wallet = localStorage.getItem('xumm_wallet_address');
+    const indicator = document.getElementById('wallet-indicator');
+    if (wallet) {
+      indicator.textContent = '🟢 Connected';
+      indicator.classList.replace('red', 'green');
+      indicator.title = 'Logged in';
+      document.getElementById('logout-btn').style.display = 'inline-block';
+      fetchNFTs(wallet);
+    } else {
+      indicator.textContent = '🔴 Login';
+      indicator.classList.replace('green', 'red');
+      indicator.title = 'Click to login';
+      indicator.onclick = startLoginFlow;
+    }
   }
-});
-console.log("Wallet from localStorage:", wallet);
 
 
     function updateWalletUI() {
@@ -233,31 +241,21 @@ console.log("Wallet from localStorage:", wallet);
 
 
 
-    async function loginWithXUMM() {
-  const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-  const { payloadURL, payloadUUID } = await res.json();
+    async function startLoginFlow() {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+    const data = await res.json();
+    window.open(data.payloadURL, "_blank");
 
-  // Open XUMM login in a new popup tab
-  const popup = window.open(payloadURL, '_blank', 'width=420,height=750');
-
-  const interval = setInterval(async () => {
-    const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
-    const { loggedIn, account } = await check.json();
-    if (loggedIn) {
-      clearInterval(interval);
-      if (popup) popup.close();
-      wallet = account;
-      localStorage.setItem('xumm_wallet_address', wallet);
-      updateWalletUI();
-      fetchBalance(wallet);
-      loadUserNFTs(wallet);
-      loadStakingData();
+    const interval = setInterval(async () => {
+      const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+      const loginStatus = await check.json();
+      if (loginStatus.loggedIn) {
+        clearInterval(interval);
+        localStorage.setItem('xumm_wallet_address', loginStatus.account);
+        updateWalletStatus();
+      }
+    }, 3000);
     }
-  }, 3000);
-}
-
-
-
 
     async function loadStakingData() {
       if (!wallet) {

@@ -257,44 +257,7 @@
     }
   }
 
-  function setupStakingButtonListeners() {
-    document.getElementById('stake-btn').onclick = () => {
-      if (wallet) {
-        alert('Monthly staking started for wallet: ' + wallet);
-        // Add API request or logic here
-      }
-    };
 
-    document.getElementById('unstake-btn').onclick = () => {
-      if (wallet) {
-        alert('Unstaked from monthly plan: ' + wallet);
-      }
-    };
-
-    document.getElementById('stake-btn-2').onclick = () => {
-      if (wallet) {
-        alert('Yearly staking started for wallet: ' + wallet);
-      }
-    };
-
-    document.getElementById('unstake-btn-2').onclick = () => {
-      if (wallet) {
-        alert('Unstaked from yearly plan: ' + wallet);
-      }
-    };
-
-    document.getElementById('stake-btn-3').onclick = () => {
-      if (wallet) {
-        alert('5-Year staking started for wallet: ' + wallet);
-      }
-    };
-
-    document.getElementById('unstake-btn-3').onclick = () => {
-      if (wallet) {
-        alert('Unstaked from 5-year plan: ' + wallet);
-      }
-    };
-  }
 
     async function loadStakingData() {
       if (!wallet) {

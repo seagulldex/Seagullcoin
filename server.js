@@ -4168,6 +4168,7 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
   }
 });
 
+
 app.post("/backup-pay-three", async (req, res) => {
   const { destination } = req.body;
 
@@ -4224,6 +4225,49 @@ app.post("/backup-pay-three", async (req, res) => {
   }
 });
 
+app.get('/stake-payload-three/:walletAddress', async (req, res) => {
+  try {
+    const walletAddress = req.params.walletAddress;
+
+    if (!walletAddress || !walletAddress.startsWith('r')) {
+      return res.status(400).json({ error: 'Invalid or missing wallet address' });
+    }
+
+    const payloadResponse = await xumm.payload.create({
+      txjson: {
+        TransactionType: 'Payment',
+        Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Your staking service wallet
+        Amount: {
+          currency: '53656167756C6C436F696E000000000000000000', // Hex for "SeagullCoin"
+          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+          value: '10000000'
+        },
+        Memos: [
+          {
+            Memo: {
+              MemoType: Buffer.from('2 Years', 'utf8').toString('hex').toUpperCase(),
+              MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
+            }
+          }
+        ]
+      },
+      options: {
+        submit: true,
+        expire: 10
+      }
+    });
+
+    if (!payloadResponse?.uuid) {
+      throw new Error('XUMM payload creation failed');
+    }
+
+    res.json(payloadResponse);
+
+  } catch (error) {
+    console.error('Error creating stake payload:', error);
+    res.status(500).json({ error: 'Failed to create stake payload' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

@@ -167,25 +167,27 @@
     <img id="qr-code-3" alt="XUMM QR Code" style="display:none; max-width:200px; max-height:200px; border:1px solid #ccc; padding:10px; margin-top:10px;"/>
         </div>
 
-  <script>
-    const wallet = localStorage.getItem('xumm_wallet_address');
-    let currentUUID = null;
-    let pollInterval = null;
+  <!-- Place inside your script tag at the bottom -->
+<script>
+  let wallet = localStorage.getItem('xumm_wallet_address') || null;
+  let currentUUID = null;
+  let pollInterval = null;
 
-    window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('DOMContentLoaded', () => {
     updateWalletStatus();
-    document.getElementById('back-btn').onclick = showCollections;
+    updateWalletUI();
+    setupStakingButtonListeners();
   });
 
   function updateWalletStatus() {
-    const wallet = localStorage.getItem('xumm_wallet_address');
+    wallet = localStorage.getItem('xumm_wallet_address'); // FIX: Assign wallet here
     const indicator = document.getElementById('wallet-indicator');
     if (wallet) {
       indicator.textContent = '🟢 Connected';
       indicator.classList.replace('red', 'green');
       indicator.title = 'Logged in';
       document.getElementById('logout-btn').style.display = 'inline-block';
-      fetchNFTs(wallet);
+      updateWalletUI(); // Also update UI when logged in
     } else {
       indicator.textContent = '🔴 Login';
       indicator.classList.replace('green', 'red');
@@ -194,54 +196,7 @@
     }
   }
 
-
-    function updateWalletUI() {
-  const indicator = document.getElementById('wallet-indicator');
-  const short = document.getElementById('wallet-short');
-  const walletInfo = document.getElementById('wallet-info');
-  const container = document.getElementById('wallet-container');
-
-  const stakeBtn = document.getElementById('stake-btn');
-  const unstakeBtn = document.getElementById('unstake-btn');
-  const stakeBtn2 = document.getElementById('stake-btn-2');
-  const unstakeBtn2 = document.getElementById('unstake-btn-2');
-  const stakeBtn3 = document.getElementById('stake-btn-3');
-  const unstakeBtn3 = document.getElementById('unstake-btn-3');
-
-  if (wallet) {
-    walletInfo.style.display = 'block';
-    document.getElementById('wallet-address').textContent = wallet;
-    indicator.textContent = '🟢 Profile';
-    indicator.className = 'green';
-    short.style.display = 'inline';
-    short.textContent = wallet.slice(0, 6) + '...' + wallet.slice(-4);
-    container.onclick = () => alert('Profile page coming soon.');
-
-    stakeBtn.disabled = false;
-    unstakeBtn.disabled = false;
-    stakeBtn2.disabled = false;
-    unstakeBtn2.disabled = false;
-    stakeBtn3.disabled = false;
-    unstakeBtn3.disabled = false;
-  } else {
-    walletInfo.style.display = 'none';
-    indicator.textContent = '🔴 Login';
-    indicator.className = 'red';
-    short.style.display = 'none';
-    container.onclick = () => loginWithXUMM();
-
-    stakeBtn.disabled = true;
-    unstakeBtn.disabled = true;
-    stakeBtn2.disabled = true;
-    unstakeBtn2.disabled = true;
-    stakeBtn3.disabled = true;
-    unstakeBtn3.disabled = true;
-  }
-}
-
-
-
-    async function startLoginFlow() {
+  async function startLoginFlow() {
     const res = await fetch('https://sglcn-x20-api.glitch.me/login');
     const data = await res.json();
     window.open(data.payloadURL, "_blank");
@@ -251,11 +206,95 @@
       const loginStatus = await check.json();
       if (loginStatus.loggedIn) {
         clearInterval(interval);
-        localStorage.setItem('xumm_wallet_address', loginStatus.account);
+        wallet = loginStatus.account; // FIX: assign wallet here
+        localStorage.setItem('xumm_wallet_address', wallet);
         updateWalletStatus();
       }
     }, 3000);
+  }
+
+  function updateWalletUI() {
+    const indicator = document.getElementById('wallet-indicator');
+    const short = document.getElementById('wallet-short');
+    const walletInfo = document.getElementById('wallet-info');
+    const container = document.getElementById('wallet-container');
+
+    const stakeBtn = document.getElementById('stake-btn');
+    const unstakeBtn = document.getElementById('unstake-btn');
+    const stakeBtn2 = document.getElementById('stake-btn-2');
+    const unstakeBtn2 = document.getElementById('unstake-btn-2');
+    const stakeBtn3 = document.getElementById('stake-btn-3');
+    const unstakeBtn3 = document.getElementById('unstake-btn-3');
+
+    if (wallet) {
+      walletInfo.style.display = 'block';
+      document.getElementById('wallet-address').textContent = wallet;
+      indicator.textContent = '🟢 Profile';
+      indicator.className = 'green';
+      short.style.display = 'inline';
+      short.textContent = wallet.slice(0, 6) + '...' + wallet.slice(-4);
+      container.onclick = () => alert('Profile page coming soon.');
+
+      stakeBtn.disabled = false;
+      unstakeBtn.disabled = false;
+      stakeBtn2.disabled = false;
+      unstakeBtn2.disabled = false;
+      stakeBtn3.disabled = false;
+      unstakeBtn3.disabled = false;
+    } else {
+      walletInfo.style.display = 'none';
+      indicator.textContent = '🔴 Login';
+      indicator.className = 'red';
+      short.style.display = 'none';
+      container.onclick = () => startLoginFlow();
+
+      stakeBtn.disabled = true;
+      unstakeBtn.disabled = true;
+      stakeBtn2.disabled = true;
+      unstakeBtn2.disabled = true;
+      stakeBtn3.disabled = true;
+      unstakeBtn3.disabled = true;
     }
+  }
+
+  function setupStakingButtonListeners() {
+    document.getElementById('stake-btn').onclick = () => {
+      if (wallet) {
+        alert('Monthly staking started for wallet: ' + wallet);
+        // Add API request or logic here
+      }
+    };
+
+    document.getElementById('unstake-btn').onclick = () => {
+      if (wallet) {
+        alert('Unstaked from monthly plan: ' + wallet);
+      }
+    };
+
+    document.getElementById('stake-btn-2').onclick = () => {
+      if (wallet) {
+        alert('Yearly staking started for wallet: ' + wallet);
+      }
+    };
+
+    document.getElementById('unstake-btn-2').onclick = () => {
+      if (wallet) {
+        alert('Unstaked from yearly plan: ' + wallet);
+      }
+    };
+
+    document.getElementById('stake-btn-3').onclick = () => {
+      if (wallet) {
+        alert('5-Year staking started for wallet: ' + wallet);
+      }
+    };
+
+    document.getElementById('unstake-btn-3').onclick = () => {
+      if (wallet) {
+        alert('Unstaked from 5-year plan: ' + wallet);
+      }
+    };
+  }
 
     async function loadStakingData() {
       if (!wallet) {
@@ -665,6 +704,14 @@ const stakeBtn3 = document.getElementById('stake-btn-3');
     localStorage.removeItem('xumm_wallet_address');
     location.reload();
   };
+    
+document.getElementById('stake-btn-3').addEventListener('click', () => {
+  startStake('3');
+});
+
+document.getElementById('unstake-btn-3').addEventListener('click', () => {
+  startUnstake('3');
+});
   </script>
-   </body>
+</body>
       </html>

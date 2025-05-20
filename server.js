@@ -4013,6 +4013,47 @@ app.post('/issue-tokens', async (req, res) => {
   }
 });
 
+app.post("/backup-pay", async (req, res) => {
+  const { destination } = req.body;
+
+  if (!destination || typeof destination !== "string") {
+    return res.status(400).json({ error: "Destination address is required." });
+  }
+
+  // Validate XRPL address format (starts with r and length check)
+  if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(destination)) {
+    return res.status(400).json({ error: "Invalid XRPL address." });
+  }
+
+  try {
+    const payload = {
+      txjson: {
+        TransactionType: "Payment",
+        Destination: destination,
+        Amount: {
+          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin in hex
+          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+          value: "50501"
+        }
+      },
+      options: {
+        submit: true,
+        expire: 300,
+        return_url: {
+          app: "https://outgoing-destiny-bladder.glitch.me",
+          web: "https://outgoing-destiny-bladder.glitch.me"
+        }
+      }
+    };
+
+    const created = await xumm.payload.createAndSubscribe(payload, () => {});
+    return res.json({ uuid: created.uuid, next: created.next.always });
+  } catch (err) {
+    console.error("Error creating backup payment:", err.message);
+    return res.status(500).json({ error: "Failed to create backup payment." });
+  }
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

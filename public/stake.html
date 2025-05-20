@@ -200,7 +200,6 @@ const unstakeBtn3 = document.getElementById('unstake-btn-3');
       }, 3000);
     }
 
-  
 
     async function loadStakingData() {
       if (!wallet) {
@@ -549,7 +548,7 @@ const stakeBtn3 = document.getElementById('stake-btn-3');
       qr.style.display = 'block';
       window.open(data.next.always, '_blank');
       document.getElementById('staking-status-3').textContent = 'Please sign the stake transaction in your wallet.';
-      pollStatus3(currentUUID3, () => loadStakingData3());
+      pollStatus3(currentUUID2, () => loadStakingData3());
     } catch {
       alert('Error creating stake transaction.');
     }

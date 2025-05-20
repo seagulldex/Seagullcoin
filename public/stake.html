@@ -119,15 +119,15 @@
   
   <div class="staking-details-top">
     <p><strong>5,000,000 SeagullCoin</strong></p>
-    <p>5 Year Stake</p>
+    <p>Macro-Stake</p>
   </div>
 
   <button id="stake-btn-3" disabled>Stake SeagullCoin</button>
   <button id="unstake-btn-3" disabled>Unstake</button>
   
   <div class="staking-details-bottom">
-    <p>Earn 684 SeagullCoin per day</p>
-    <p>2 year 🔒 lockup</p>
+    <p>Earn 547 SeagullCoin per day</p>
+    <p>5 year 🔒 lockup</p>
   </div>
 
   <div id="qr-code-container-3">
@@ -514,7 +514,7 @@ const stakeBtn3 = document.getElementById('stake-btn-3');
       const res = await fetch(`https://sglcn-x20-api.glitch.me/unstake-payload/${wallet}`);
       const data = await res.json();
       if (!data.uuid) {
-        alert('Error getting unstake payload.');
+        alert('Tokens Locked 🔒.');
         return;
       }
       currentUUID2 = data.uuid;
@@ -563,7 +563,7 @@ const stakeBtn3 = document.getElementById('stake-btn-3');
       const res = await fetch(`https://sglcn-x20-api.glitch.me/unstake-payload-three/${wallet}`);
       const data = await res.json();
       if (!data.uuid) {
-        alert('Error getting unstake payload.');
+        alert('Tokens Locked 🔒');
         return;
       }
       currentUUID3 = data.uuid;
@@ -588,7 +588,7 @@ const stakeBtn3 = document.getElementById('stake-btn-3');
         const res = await fetch(`https://sglcn-x20-api.glitch.me/unstake-payload/${wallet}`);
         const data = await res.json();
         if (!data.uuid) {
-          alert('Error getting unstake payload.');
+          alert('Tokens Locked 🔒.');
           return;
         }
 

@@ -173,14 +173,19 @@
     let pollInterval = null;
 
     window.addEventListener('DOMContentLoaded', () => {
-      wallet = localStorage.getItem('xumm_wallet_address');
-      updateWalletUI();
-      if (wallet) {
-        fetchBalance(wallet);
-        loadUserNFTs(wallet);
-        loadStakingData();
-      }
-    });
+  const storedWallet = localStorage.getItem('xumm_wallet_address');
+  if (storedWallet) {
+    wallet = storedWallet;
+    updateWalletUI();
+    fetchBalance(wallet);
+    loadUserNFTs(wallet);
+    loadStakingData();
+  } else {
+    updateWalletUI(); // still call this so it shows "Login" if not connected
+  }
+});
+console.log("Wallet from localStorage:", wallet);
+
 
     function updateWalletUI() {
   const indicator = document.getElementById('wallet-indicator');

@@ -634,12 +634,8 @@
       alert('Error creating stake transaction.');
     }
   };
-  document.getElementById('stake-btn-3').addEventListener('click', () => {
-  alert('Stake btn 3 clicked');
-});
 
 
-  
   document.getElementById('unstake-btn-3').onclick = async () => {
     if (!wallet) {
       alert('Please login first.');
@@ -696,13 +692,6 @@
     location.reload();
   };
     
-document.getElementById('stake-btn-3').addEventListener('click', () => {
-  startStake('3');
-});
-
-document.getElementById('unstake-btn-3').addEventListener('click', () => {
-  startUnstake('3');
-});
   </script>
 </body>
       </html>

@@ -42,9 +42,13 @@
 <body>
 
   <div id="top-bar">
-    <div id="wallet-container" title="Click to login or view profile">
-      <div id="wallet-status">
-        <span id="wallet-indicator" class="red">🔴 Login</span>
+    <div id="wallet-container" class="wallet-container">
+  <div id="wallet-address-container">
+    <span id="wallet-indicator" class="red">🔴 Login</span>
+    <span id="wallet-short" style="display:none;"></span>
+  </div>
+</div>
+
       </div>
     </div>
   </div>
@@ -196,23 +200,30 @@
 
 
     async function loginWithXUMM() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-      const { payloadURL, payloadUUID } = await res.json();
-      window.open(payloadURL, '_blank');
-      const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
-        const { loggedIn, account } = await check.json();
-        if (loggedIn) {
-          clearInterval(interval);
-          wallet = account;
-          localStorage.setItem('xumm_wallet_address', wallet);
-          updateWalletUI();
-          fetchBalance(wallet);
-          loadUserNFTs(wallet);
-          loadStakingData();
-        }
-      }, 3000);
+  const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+  const { payloadURL, payloadUUID } = await res.json();
+
+  // Display the QR code instead of just opening a tab
+  const qrImg = document.getElementById('qr-code');
+  qrImg.src = payloadURL;
+  qrImg.style.display = 'block';
+
+  const interval = setInterval(async () => {
+    const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+    const { loggedIn, account } = await check.json();
+    if (loggedIn) {
+      clearInterval(interval);
+      qrImg.style.display = 'none';
+      wallet = account;
+      localStorage.setItem('xumm_wallet_address', wallet);
+      updateWalletUI();
+      fetchBalance(wallet);
+      loadUserNFTs(wallet);
+      loadStakingData();
     }
+  }, 3000);
+}
+
 
 
     async function loadStakingData() {

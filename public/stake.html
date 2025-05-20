@@ -68,7 +68,7 @@
     </div>
 
     <div id="staking-section">
-      <h2>Staking Dashboard</h2>
+      <h2>Monthly Staking</h2>
       <p id="staking-status"></p>
       
       <div class="staking-details-top">
@@ -89,13 +89,28 @@
         <img id="qr-code" alt="XUMM QR Code" />
       </div>
 
-      <div id="rewards-history">
-        <h3>Rewards History</h3>
-        <ul id="rewards-list">
-          <li>Loading rewards...</li>
-        </ul>
-      </div>
-    </div>
+  
+    
+    <div id="staking-section-2" style="margin-top:40px; border-top:2px solid #ccc; padding-top:20px;">
+  <h2>Yearly Staking</h2>
+  <p id="staking-status-2"></p>
+  
+  <div class="staking-details-top">
+    <p><strong>2,500,000 SeagullCoin</strong></p>
+    <p>Long-term Stake</p>
+  </div>
+
+  <button id="stake-btn-2" disabled>Stake SeagullCoin</button>
+  <button id="unstake-btn-2" disabled>Unstake</button>
+  
+  <div class="staking-details-bottom">
+    <p>Earn 205 SeagullCoin per day</p>
+    <p> 1 Year 🔒 lockup</p>
+  </div>
+
+  <div id="qr-code-container-2">
+    <img id="qr-code-2" alt="XUMM QR Code" style="display:none; max-width:200px; max-height:200px; border:1px solid #ccc; padding:10px; margin-top:10px;"/>
+  </div>
 
   <script>
     let wallet = null;
@@ -264,6 +279,56 @@
         alert('Error initiating stake transaction.');
       }
     };
+    
+    //stake button #2
+    document.getElementById('stake-btn-2').onclick = async () => {
+    if (!wallet) {
+      alert('Please login first.');
+      return;
+    }
+    try {
+      // Call your existing stake API (same as first section)
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-payload-two/${wallet}`);
+      const data = await res.json();
+      if (!data.uuid) {
+        alert('Error getting stake payload.');
+        return;
+      }
+      currentUUID2 = data.uuid;
+      const qr = document.getElementById('qr-code-2');
+      qr.src = data.refs.qr_png;
+      qr.style.display = 'block';
+      window.open(data.next.always, '_blank');
+      document.getElementById('staking-status-2').textContent = 'Please sign the stake transaction in your wallet.';
+      pollStatus2(currentUUID2, () => loadStakingData2());
+    } catch {
+      alert('Error creating stake transaction.');
+    }
+  };
+
+  document.getElementById('unstake-btn-2').onclick = async () => {
+    if (!wallet) {
+      alert('Please login first.');
+      return;
+    }
+    try {
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/unstake-payload/${wallet}`);
+      const data = await res.json();
+      if (!data.uuid) {
+        alert('Error getting unstake payload.');
+        return;
+      }
+      currentUUID2 = data.uuid;
+      const qr = document.getElementById('qr-code-2');
+      qr.src = data.refs.qr_png;
+      qr.style.display = 'block';
+      window.open(data.next.always, '_blank');
+      document.getElementById('staking-status-2').textContent = 'Please sign the unstake transaction in your wallet.';
+      pollStatus2(currentUUID2, () => loadStakingData2());
+    } catch {
+      alert('Error creating unstake transaction.');
+    }
+  };
 
     // Unstake button
     document.getElementById('unstake-btn').onclick = async () => {

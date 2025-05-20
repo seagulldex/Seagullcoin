@@ -4016,11 +4016,12 @@ app.post('/issue-tokens', async (req, res) => {
 app.post("/backup-pay", async (req, res) => {
   const { destination } = req.body;
 
+  // Validate address
   if (!destination || typeof destination !== "string") {
     return res.status(400).json({ error: "Destination address is required." });
   }
 
-  // Validate XRPL address format (starts with r and length check)
+  // Basic XRPL address validation
   if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(destination)) {
     return res.status(400).json({ error: "Invalid XRPL address." });
   }
@@ -4031,26 +4032,27 @@ app.post("/backup-pay", async (req, res) => {
         TransactionType: "Payment",
         Destination: destination,
         Amount: {
-          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin in hex
+          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
           issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
           value: "50501"
         }
       },
       options: {
         submit: true,
-        expire: 300,
+        expire: 300, // seconds
         return_url: {
-          app: "https://outgoing-destiny-bladder.glitch.me",
-          web: "https://outgoing-destiny-bladder.glitch.me"
-        }
-      }
-    };
+          app
 
-    const created = await xumm.payload.createAndSubscribe(payload, () => {});
-    return res.json({ uuid: created.uuid, next: created.next.always });
+    const created = await xumm.payload.create(payload);
+
+    res.json({
+      uuid: created.uuid,
+      next: created.next.always
+    });
+
   } catch (err) {
-    console.error("Error creating backup payment:", err.message);
-    return res.status(500).json({ error: "Failed to create backup payment." });
+    console.error("XUMM Payload Error:", err?.message || err);
+    res.status(500).json({ error: "Failed to create backup payment." });
   }
 });
 

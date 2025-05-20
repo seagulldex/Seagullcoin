@@ -604,6 +604,13 @@ const stakeBtn3 = document.getElementById('stake-btn-3');
         alert('Error initiating unstake transaction.');
       }
     };
+document.getElementById('stake-btn-3').addEventListener('click', () => {
+  startStake('3');
+});
+
+document.getElementById('unstake-btn-3').addEventListener('click', () => {
+  startUnstake('3');
+});
 
 
   </script>

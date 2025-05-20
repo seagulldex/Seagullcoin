@@ -4168,6 +4168,62 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
   }
 });
 
+app.post("/backup-pay-three", async (req, res) => {
+  const { destination } = req.body;
+
+  // Validate address
+  if (!destination || typeof destination !== "string") {
+    return res.status(400).json({ error: "Destination address is required." });
+  }
+
+  // Basic XRPL address validation
+  if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(destination)) {
+    return res.status(400).json({ error: "Invalid XRPL address." });
+  }
+
+  try {
+    const payload = {
+  txjson: {
+    TransactionType: "Payment",
+    Destination: destination,
+    Amount: {
+      currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
+      issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+      value: "10500000"
+    },
+    Memos: [
+      {
+        Memo: {
+          MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
+          MemoData: Buffer.from("2 year", "utf8").toString("hex")
+        }
+      }
+    ]
+  },
+  options: {
+    submit: true,
+    expire: 300,
+    return_url: {
+      app: "https://sglcn-x20-api.glitch.me",
+      web: "https://sglcn-x20-api.glitch.me"
+    }
+  }
+};
+
+
+    const created = await xumm.payload.create(payload);
+
+    res.json({
+      uuid: created.uuid,
+      next: created.next.always
+    });
+
+  } catch (err) {
+    console.error("XUMM Payload Error:", err?.message || err);
+    res.status(500).json({ error: "Failed to create backup payment." });
+  }
+});
+
 
 
 // Call the XRPL ping when the server starts

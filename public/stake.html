@@ -618,6 +618,11 @@ const stakeBtn3 = document.getElementById('stake-btn-3');
       alert('Error creating stake transaction.');
     }
   };
+  document.getElementById('stake-btn-3').addEventListener('click', () => {
+  alert('Stake btn 3 clicked');
+});
+
+
   
   document.getElementById('unstake-btn-3').onclick = async () => {
     if (!wallet) {

@@ -172,22 +172,18 @@
     let currentUUID = null;
     let pollInterval = null;
 
-    window.addEventListener('DOMContentLoaded', () => {
-  const storedWallet = localStorage.getItem('xumm_wallet_address');
-  if (storedWallet) {
-    wallet = storedWallet;
-    updateWalletUI();
+window.addEventListener('DOMContentLoaded', () => {
+  wallet = localStorage.getItem('xumm_wallet_address');
+  updateWalletUI();
+
+  if (wallet) {
     fetchBalance(wallet);
     loadUserNFTs(wallet);
     loadStakingData();
-  } else {
-    updateWalletUI(); // still call this so it shows "Login" if not connected
   }
 });
-console.log("Wallet from localStorage:", wallet);
 
-
-    function updateWalletUI() {
+function updateWalletUI() {
   const indicator = document.getElementById('wallet-indicator');
   const short = document.getElementById('wallet-short');
   const walletInfo = document.getElementById('wallet-info');
@@ -204,7 +200,8 @@ console.log("Wallet from localStorage:", wallet);
     walletInfo.style.display = 'block';
     document.getElementById('wallet-address').textContent = wallet;
     indicator.textContent = '🟢 Profile';
-    indicator.className = 'green';
+    indicator.classList.add('green');
+    indicator.classList.remove('red');
     short.style.display = 'inline';
     short.textContent = wallet.slice(0, 6) + '...' + wallet.slice(-4);
     container.onclick = () => alert('Profile page coming soon.');
@@ -218,7 +215,8 @@ console.log("Wallet from localStorage:", wallet);
   } else {
     walletInfo.style.display = 'none';
     indicator.textContent = '🔴 Login';
-    indicator.className = 'red';
+    indicator.classList.add('red');
+    indicator.classList.remove('green');
     short.style.display = 'none';
     container.onclick = () => loginWithXUMM();
 
@@ -230,6 +228,7 @@ console.log("Wallet from localStorage:", wallet);
     unstakeBtn3.disabled = true;
   }
 }
+
 
 
 

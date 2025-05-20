@@ -4133,7 +4133,7 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
     Amount: {
       currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
       issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-      value: "2550000"
+      value: "2575000"
     },
     Memos: [
       {

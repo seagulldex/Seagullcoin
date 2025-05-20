@@ -156,36 +156,44 @@
     });
 
     function updateWalletUI() {
-      const indicator = document.getElementById('wallet-indicator');
-      const walletInfo = document.getElementById('wallet-info');
-      const container = document.getElementById('wallet-container');
-      const stakeBtn = document.getElementById('stake-btn');
-const unstakeBtn = document.getElementById('unstake-btn');
-const stakeBtn2 = document.getElementById('stake-btn-2');
-const unstakeBtn2 = document.getElementById('unstake-btn-2');
-const stakeBtn3 = document.getElementById('stake-btn-3');
-const unstakeBtn3 = document.getElementById('unstake-btn-3');
+  const indicator = document.getElementById('wallet-indicator');
+  const walletInfo = document.getElementById('wallet-info');
+  const container = document.getElementById('wallet-container');
+  const stakeBtn = document.getElementById('stake-btn');
+  const unstakeBtn = document.getElementById('unstake-btn');
+  const stakeBtn2 = document.getElementById('stake-btn-2');
+  const unstakeBtn2 = document.getElementById('unstake-btn-2');
+  const stakeBtn3 = document.getElementById('stake-btn-3');
+  const unstakeBtn3 = document.getElementById('unstake-btn-3');
 
+  if (wallet) {
+    walletInfo.style.display = 'block';
+    document.getElementById('wallet-address').textContent = wallet;
+    indicator.textContent = '🟢 Profile';
+    indicator.className = 'green';
+    container.onclick = () => alert('Profile page coming soon.');
 
-      if (wallet) {
-        walletInfo.style.display = 'block';
-        document.getElementById('wallet-address').textContent = wallet;
-        indicator.textContent = '🟢 Profile';
-        indicator.className = 'green';
-        container.onclick = () => alert('Profile page coming soon.');
+    stakeBtn.disabled = false;
+    unstakeBtn.disabled = false;
+    stakeBtn2.disabled = false;
+    unstakeBtn2.disabled = false;
+    stakeBtn3.disabled = false;
+    unstakeBtn3.disabled = false;
+  } else {
+    walletInfo.style.display = 'none';
+    indicator.textContent = '🔴 Login';
+    indicator.className = 'red';
+    container.onclick = () => loginWithXUMM();
 
-        stakeBtn.disabled = false;
-        unstakeBtn.disabled = false;
-      } else {
-        walletInfo.style.display = 'none';
-        indicator.textContent = '🔴 Login';
-        indicator.className = 'red';
-        container.onclick = () => loginWithXUMM();
+    stakeBtn.disabled = true;
+    unstakeBtn.disabled = true;
+    stakeBtn2.disabled = true;
+    unstakeBtn2.disabled = true;
+    stakeBtn3.disabled = true;
+    unstakeBtn3.disabled = true;
+  }
+}
 
-        stakeBtn.disabled = true;
-        unstakeBtn.disabled = true;
-      }
-    }
 
     async function loginWithXUMM() {
       const res = await fetch('https://sglcn-x20-api.glitch.me/login');

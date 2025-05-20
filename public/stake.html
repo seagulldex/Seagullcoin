@@ -172,18 +172,30 @@
     let currentUUID = null;
     let pollInterval = null;
 
-window.addEventListener('DOMContentLoaded', () => {
-  wallet = localStorage.getItem('xumm_wallet_address');
-  updateWalletUI();
+    window.addEventListener('DOMContentLoaded', () => {
+    updateWalletStatus();
+    document.getElementById('back-btn').onclick = showCollections;
+  });
 
-  if (wallet) {
-    fetchBalance(wallet);
-    loadUserNFTs(wallet);
-    loadStakingData();
+  function updateWalletStatus() {
+    const wallet = localStorage.getItem('xumm_wallet_address');
+    const indicator = document.getElementById('wallet-indicator');
+    if (wallet) {
+      indicator.textContent = '🟢 Connected';
+      indicator.classList.replace('red', 'green');
+      indicator.title = 'Logged in';
+      document.getElementById('logout-btn').style.display = 'inline-block';
+      fetchNFTs(wallet);
+    } else {
+      indicator.textContent = '🔴 Login';
+      indicator.classList.replace('green', 'red');
+      indicator.title = 'Click to login';
+      indicator.onclick = startLoginFlow;
+    }
   }
-});
 
-function updateWalletUI() {
+
+    function updateWalletUI() {
   const indicator = document.getElementById('wallet-indicator');
   const short = document.getElementById('wallet-short');
   const walletInfo = document.getElementById('wallet-info');
@@ -200,8 +212,7 @@ function updateWalletUI() {
     walletInfo.style.display = 'block';
     document.getElementById('wallet-address').textContent = wallet;
     indicator.textContent = '🟢 Profile';
-    indicator.classList.add('green');
-    indicator.classList.remove('red');
+    indicator.className = 'green';
     short.style.display = 'inline';
     short.textContent = wallet.slice(0, 6) + '...' + wallet.slice(-4);
     container.onclick = () => alert('Profile page coming soon.');
@@ -215,8 +226,7 @@ function updateWalletUI() {
   } else {
     walletInfo.style.display = 'none';
     indicator.textContent = '🔴 Login';
-    indicator.classList.add('red');
-    indicator.classList.remove('green');
+    indicator.className = 'red';
     short.style.display = 'none';
     container.onclick = () => loginWithXUMM();
 
@@ -231,32 +241,21 @@ function updateWalletUI() {
 
 
 
+    async function startLoginFlow() {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+    const data = await res.json();
+    window.open(data.payloadURL, "_blank");
 
-    async function loginWithXUMM() {
-  const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-  const { payloadURL, payloadUUID } = await res.json();
-
-  // Open XUMM login in a new popup tab
-  const popup = window.open(payloadURL, '_blank', 'width=420,height=750');
-
-  const interval = setInterval(async () => {
-    const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
-    const { loggedIn, account } = await check.json();
-    if (loggedIn) {
-      clearInterval(interval);
-      if (popup) popup.close();
-      wallet = account;
-      localStorage.setItem('xumm_wallet_address', wallet);
-      updateWalletUI();
-      fetchBalance(wallet);
-      loadUserNFTs(wallet);
-      loadStakingData();
+    const interval = setInterval(async () => {
+      const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+      const loginStatus = await check.json();
+      if (loginStatus.loggedIn) {
+        clearInterval(interval);
+        localStorage.setItem('xumm_wallet_address', loginStatus.account);
+        updateWalletStatus();
+      }
+    }, 3000);
     }
-  }, 3000);
-}
-
-
-
 
     async function loadStakingData() {
       if (!wallet) {
@@ -666,14 +665,6 @@ const stakeBtn3 = document.getElementById('stake-btn-3');
     localStorage.removeItem('xumm_wallet_address');
     location.reload();
   };
-    
-document.getElementById('stake-btn-3').addEventListener('click', () => {
-  startStake('3');
-});
-
-document.getElementById('unstake-btn-3').addEventListener('click', () => {
-  startUnstake('3');
-});
   </script>
-</body>
+   </body>
       </html>

@@ -493,18 +493,25 @@ const stakeBtn3 = document.getElementById('stake-btn-3');
     const unstakeBtn = document.getElementById('unstake-btn');
     const stakeBtn2 = document.getElementById('stake-btn-2');
     const unstakeBtn2 = document.getElementById('unstake-btn-2');
+    const stakeBtn3 = document.getElementById('stake-btn-3');
+    const unstakeBtn3 = document.getElementById('unstake-btn-3');
+
 
     if (wallet) {
       stakeBtn.disabled = false;
       unstakeBtn.disabled = false;
       stakeBtn2.disabled = false;
       unstakeBtn2.disabled = false;
+      stakeBtn3.disabled = false;
+      unstakeBtn3.disabled = false;
     } else {
       stakeBtn.disabled = true;
       unstakeBtn.disabled = true;
       stakeBtn2.disabled = true;
       unstakeBtn2.disabled = true;
-    }
+    } stakeBtn3.disabled = true;
+      unstakeBtn3.disabled = true;
+    
   }
 
   // Call loadStakingData and loadStakingData2 on login or wallet change

@@ -3326,8 +3326,8 @@ app.post('/create-sell-offer', async (req, res) => {
       Account: wallet,
       NFTokenID: tokenId,
       Amount: {
-        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (hex)
-        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',         // Issuer
+        currency: '53656167756C6C43617368000000000000000000', // SeagullCoin (hex)
+        issuer: 'rNHeGnj4kqGSVyFzDcoyi3gsp1bdPuGeNK',         // Issuer
         value: amount.toString()                               // Price in SeagullCoin
       },
       Flags: 1

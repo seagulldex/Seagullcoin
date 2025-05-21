@@ -4275,50 +4275,7 @@ app.get('/api/sglcn-xrp', async (req, res) => {
   const client = new Client("wss://s1.ripple.com");
 
   try {
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("XRPL request timed out")), 8000)
-    );
-
-    await Promise.race([client.connect(), timeoutPromise]);
-
-    const result = await Promise.race([
-      client.request({
-        command: "book_offers",
-        taker_gets: {
-          currency: "53656167756C6C436F696E000000000000000000",
-          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-        },
-        taker_pays: { currency: "XRP" },
-        limit: 1
-      }),
-      timeoutPromise
-    ]);
-
-    await client.disconnect();
-
-    const offers = result.offers || result.result?.offers || [];
-
-    if (!offers.length) {
-      return res.status(404).json({ error: "No SGLCN/XRP offers found." });
-    }
-
-    const offer = offers[0];
-    const takerPaysXRP = parseFloat(offer.TakerPays); // drops
-    const takerGetsSGLCN = parseFloat(offer.TakerGets.value); // IOU
-
-    if (!takerPaysXRP || !takerGetsSGLCN) {
-      return res.status(500).json({ error: "Invalid offer data format" });
-    }
-
-    const price = takerPaysXRP / 1000000 / takerGetsSGLCN;
-
-    res.json({ price });
-  } catch (err) {
-    console.error("Error in /api/sglcn-xrp:", err.message);
-    try { await client.disconnect(); } catch (e) {}
-    res.status(500).json({ error: err.message });
-  }
-});
+    const timeoutPromise = ne
 
 
 

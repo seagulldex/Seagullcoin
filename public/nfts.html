@@ -3,51 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>User NFTs - SGLCN-X20</title>
+  <title>Trading - SGLCN-X20</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="header.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@3.3.0/dist/chartjs-chart-financial.min.js"></script>
   <style>
-    .pagination { margin-top: 20px; text-align: center; }
-    .pagination button { margin: 0 5px; padding: 5px 10px; }
-    #page-controls { margin: 15px 0; text-align: right; }
-    .nft-card, .collection-card {
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      padding: 10px;
-      text-align: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .nft-card img, .collection-card img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-    }
-    .nft-grid, .collection-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 15px;
-      padding: 15px 0;
-    }
-    .nft-card button { margin: 5px; }
-    #back-btn { margin: 10px 0; display: none; }
-    #search-bar {
-      padding: 8px;
-      font-size: 16px;
-      width: 540px;
-    }
-    button {
-      padding: 8px 12px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
     #timeframe-buttons {
       margin-bottom: 15px;
     }
@@ -56,6 +17,9 @@
       background-color: #2196F3;
       color: white;
       border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      padding: 6px 12px;
     }
     #timeframe-buttons button.active {
       background-color: #0b7dda;
@@ -65,11 +29,33 @@
       margin-bottom: 30px;
       display: block;
     }
+    #wallet-indicator.red {
+      color: red;
+      cursor: pointer;
+    }
+    #wallet-indicator.green {
+      color: green;
+      cursor: default;
+    }
+    button {
+      padding: 8px 12px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
   </style>
 </head>
 <body>
-  <div id="top-bar">
-    <div style="flex:1;"><button id="logout-btn">Logout</button></div>
+  <div id="top-bar" style="display:flex; align-items:center; justify-content:space-between; padding:10px;">
+    <div style="flex:1;">
+      <button id="logout-btn" style="display:none;">Logout</button>
+    </div>
     <div id="wallet-container">
       <div id="wallet-status">
         <span id="wallet-indicator" class="red">🔴 Login</span>
@@ -79,7 +65,7 @@
 
   <header>
     <nav>
-      <ul>
+      <ul style="display:flex; gap:15px; list-style:none; padding-left:0;">
         <li><a href="index.html">Home</a></li>
         <li><a href="stake.html">Stake</a></li>
         <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
@@ -87,7 +73,7 @@
     </nav>
   </header>
 
-  <main>
+  <main style="max-width: 900px; margin: auto; padding: 15px;">
     <h1>Trading</h1>
 
     <h2>SGLCN/XRP Price Chart</h2>
@@ -101,269 +87,97 @@
       <button data-timeframe="max">Max</button>
     </div>
 
-    <!-- Chart is placed below the buttons -->
     <canvas id="priceChart"></canvas>
-
-    <div id="loading-spinner" style="text-align:center; margin-top: 20px;">
-      <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading Seagull" class="seagull-spinner" />
-      <p>Loading your NFTs...</p>
-    </div>
-
-    <button id="back-btn">← Back to Collections</button>
-
-    <div id="nft-container" class="collection-grid" style="display:none;"></div>
-    <div class="pagination" id="pagination"></div>
   </main>
 
   <script>
-    // Utilities
-    function convertIPFSToURL(ipfsUrl) {
-      if (!ipfsUrl) return "";
-      return ipfsUrl.startsWith("ipfs://")
-        ? "https://cloudflare-ipfs.com/ipfs/" + ipfsUrl.slice(7)
-        : ipfsUrl;
-    }
-
-    // NFT Management (unchanged)
-    let allNFTs = [];
-    let collectionMap = {};
-    let nftsPerPage = 50;
-    let currentPage = 1;
-
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
-      document.getElementById('back-btn').onclick = showCollections;
       setupTimeframeButtons();
       updateChartForTimeframe('1h');
     });
 
+    // Wallet login/logout and status
     function updateWalletStatus() {
       const wallet = localStorage.getItem('xumm_wallet_address');
       const indicator = document.getElementById('wallet-indicator');
+      const logoutBtn = document.getElementById('logout-btn');
+
       if (wallet) {
         indicator.textContent = '🟢 Connected';
         indicator.classList.replace('red', 'green');
-        indicator.title = 'Logged in';
-        document.getElementById('logout-btn').style.display = 'inline-block';
-        fetchNFTs(wallet);
+        indicator.title = 'Logged in as ' + wallet;
+        indicator.onclick = null;
+        logoutBtn.style.display = 'inline-block';
+        logoutBtn.onclick = () => {
+          localStorage.removeItem('xumm_wallet_address');
+          updateWalletStatus();
+        };
       } else {
         indicator.textContent = '🔴 Login';
         indicator.classList.replace('green', 'red');
         indicator.title = 'Click to login';
         indicator.onclick = startLoginFlow;
-        document.getElementById('logout-btn').style.display = 'none';
+        logoutBtn.style.display = 'none';
       }
     }
 
     async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-      const data = await res.json();
-      window.open(data.payloadURL, "_blank");
-
-      const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-        const loginStatus = await check.json();
-        if (loginStatus.loggedIn) {
-          clearInterval(interval);
-          localStorage.setItem('xumm_wallet_address', loginStatus.account);
-          updateWalletStatus();
-        }
-      }, 3000);
-    }
-
-    async function fetchNFTs(wallet) {
-      document.getElementById('loading-spinner').style.display = 'block';
-      document.getElementById('nft-container').style.display = 'none';
       try {
-        const res = await fetch(`https://sglcn-x20-api.glitch.me/catalog`);
+        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
         const data = await res.json();
-        allNFTs = (data.nfts || []).filter(nft => nft.metadata && nft.metadata.name && nft.metadata.image);
-        collectionMap = groupByCollection(allNFTs);
-        showCollections();
-      } catch (err) {
-        console.error("Error loading NFTs:", err);
-      } finally {
-        document.getElementById('loading-spinner').style.display = 'none';
+        window.open(data.payloadURL, "_blank");
+
+        const interval = setInterval(async () => {
+          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+          const loginStatus = await check.json();
+          if (loginStatus.loggedIn) {
+            clearInterval(interval);
+            localStorage.setItem('xumm_wallet_address', loginStatus.account);
+            updateWalletStatus();
+          }
+        }, 3000);
+      } catch (e) {
+        alert("Login failed, please try again.");
+        console.error(e);
       }
     }
 
-    function groupByCollection(nfts) {
-      const map = {};
-      for (const nft of nfts) {
-        const collection = nft.metadata.collection || 'Uncategorized';
-        if (!map[collection]) map[collection] = [];
-        map[collection].push(nft);
-      }
-      return map;
-    }
-
-    function showCollections() {
-      document.getElementById('back-btn').style.display = 'none';
-      const container = document.getElementById('nft-container');
-      container.innerHTML = "";
-      container.className = 'collection-grid';
-      container.style.display = 'grid';
-      for (const [collection, items] of Object.entries(collectionMap)) {
-        const logo = convertIPFSToURL(items[0].metadata.logo || items[0].metadata.image);
-        const card = document.createElement('div');
-        card.className = 'collection-card';
-        card.innerHTML = `
-          <img src="${logo}" alt="${collection}" />
-          <h3>${collection}</h3>
-          <p>${items.length} NFT(s)</p>
-        `;
-        card.onclick = () => showNFTsInCollection(collection);
-        container.appendChild(card);
-      }
-    }
-
-    function showNFTsInCollection(collection) {
-      const container = document.getElementById('nft-container');
-      container.innerHTML = "";
-      container.className = 'nft-grid';
-      const items = collectionMap[collection];
-      for (const nft of items) {
-        const metadata = nft.metadata;
-        const card = document.createElement('div');
-        card.className = 'nft-card';
-        card.innerHTML = `
-          <img src="${convertIPFSToURL(metadata.image)}" alt="${metadata.name}" />
-          <h4>${metadata.name}</h4>
-          <p>${metadata.description || ''}</p>
-          <button onclick="viewDetails('${nft.tokenID}')">View Details</button>
-          <button onclick="transferNFT('${nft.tokenID}')">Transfer</button>
-        `;
-        container.appendChild(card);
-      }
-      document.getElementById('back-btn').style.display = 'inline-block';
-    }
-
-    function viewDetails(tokenID) {
-      alert("View Details not implemented. TokenID: " + tokenID);
-    }
-
-    function transferNFT(tokenID) {
-      alert("Transfer not implemented. TokenID: " + tokenID);
-    }
-
-    // ----- Chart Section -----
-
-    let priceChart;
-    const ctx = document.getElementById('priceChart').getContext('2d');
-
-    // Generates fake OHLC data for candlestick chart based on timeframe
-    function generateFakeOHLC(timeframe) {
-      let points = 0;
-      let intervalMinutes = 60; // Default 1 hour
-      switch (timeframe) {
-        case '1h': points = 12; intervalMinutes = 5; break; // 1 hour, 5min intervals
-        case '6h': points = 36; intervalMinutes = 10; break; // 6 hours, 10min intervals
-        case '24h': points = 48; intervalMinutes = 30; break; // 24h, 30min intervals
-        case '7d': points = 56; intervalMinutes = 180; break; // 7 days, 3h intervals
-        case '1m': points = 30; intervalMinutes = 1440; break; // 1 month (30 days), daily intervals
-        case 'max': points = 120; intervalMinutes = 4320; break; // max ~ 120 points, 3 days intervals
-      }
-
-      const now = Date.now();
-      let basePrice = 1000 + Math.random() * 100; // Starting price
-      let data = [];
-
-      for (let i = points - 1; i >= 0; i--) {
-        const time = now - i * intervalMinutes * 60 * 1000;
-        // Create OHLC values around basePrice with random variance
-        const open = basePrice + (Math.random() - 0.5) * 20;
-        const close = open + (Math.random() - 0.5) * 20;
-        const high = Math.max(open, close) + Math.random() * 10;
-        const low = Math.min(open, close) - Math.random() * 10;
-        basePrice = close; // Next candle opens near previous close
-
-        data.push({
-          x: time,
-          o: parseFloat(open.toFixed(2)),
-          h: parseFloat(high.toFixed(2)),
-          l: parseFloat(low.toFixed(2)),
-          c: parseFloat(close.toFixed(2))
-        });
-      }
-      return data;
-    }
-
+    // Timeframe buttons and chart logic (example placeholders)
     function setupTimeframeButtons() {
       const buttons = document.querySelectorAll('#timeframe-buttons button');
       buttons.forEach(btn => {
-        btn.onclick = () => {
+        btn.addEventListener('click', () => {
           buttons.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           updateChartForTimeframe(btn.dataset.timeframe);
-        };
+        });
       });
     }
 
     function updateChartForTimeframe(timeframe) {
-      const data = generateFakeOHLC(timeframe);
-
-      if (priceChart) {
-        priceChart.destroy();
+      // Fetch and update chart data for timeframe
+      // Placeholder example below:
+      const ctx = document.getElementById('priceChart').getContext('2d');
+      if (window.priceChartInstance) {
+        window.priceChartInstance.destroy();
       }
-
-      priceChart = new Chart(ctx, {
-        type: 'candlestick',
+      window.priceChartInstance = new Chart(ctx, {
+        type: 'line',
         data: {
+          labels: ['0', '1', '2', '3', '4', '5'],
           datasets: [{
-            label: 'SGLCN/XRP',
-            data: data,
-            color: {
-              up: '#4caf50',
-              down: '#f44336',
-              unchanged: '#999'
-            }
+            label: `Price (${timeframe})`,
+            data: [100, 105, 102, 108, 110, 115],
+            borderColor: 'blue',
+            fill: false,
           }]
         },
         options: {
           responsive: true,
-          animation: false,
           scales: {
-            x: {
-              type: 'time',
-              time: {
-                tooltipFormat: 'MMM DD HH:mm',
-                unit: 'hour',
-                displayFormats: {
-                  hour: 'MMM d, HH:mm',
-                  day: 'MMM d',
-                  month: 'MMM yyyy',
-                }
-              },
-              ticks: {
-                maxRotation: 0,
-                autoSkip: true,
-                maxTicksLimit: 10
-              }
-            },
-            y: {
-              beginAtZero: false,
-              title: {
-                display: true,
-                text: 'Price (SGLCN per XRP)'
-              }
-            }
-          },
-          plugins: {
-            legend: {
-              display: true,
-              position: 'top',
-            },
-            tooltip: {
-              enabled: true,
-              mode: 'nearest',
-              intersect: false,
-              callbacks: {
-                label: ctx => {
-                  const d = ctx.raw;
-                  return `O: ${d.o}  H: ${d.h}  L: ${d.l}  C: ${d.c}`;
-                }
-              }
-            }
+            x: { display: true },
+            y: { display: true }
           }
         }
       });

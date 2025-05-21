@@ -409,37 +409,6 @@
     }, 3000);
   }
 
-  // Example loadStakingData3 to fetch rewards and status for second section
-  async function loadStakingData3() {
-    if (!wallet) {
-      document.getElementById('staking-status-3').textContent = 'Please login to view staking data.';
-      return;
-    }
-    try {
-      const rewardsRes = await fetch(`https://sglcn-x20-api.glitch.me/stake-rewards/${wallet}`);
-      const rewards = await rewardsRes.json();
-      const rewardsList = document.getElementById('rewards-list-3');
-      rewardsList.innerHTML = '';
-      if (rewards.length === 0) {
-        rewardsList.innerHTML = '<li>No rewards yet.</li>';
-      } else {
-        rewards.forEach(r => {
-          const li = document.createElement('li');
-          li.textContent = `Reward: ${r.amount} SeagullCoin at ${new Date(r.timestamp).toLocaleString()}`;
-          rewardsList.appendChild(li);
-        });
-      }
-      const statusRes = await fetch(`https://sglcn-x20-api.glitch.me/stake-status/latest/${wallet}`);
-      if (statusRes.ok) {
-        const status = await statusRes.json();
-        document.getElementById('staking-status-3').textContent = `Currently Staked: ${status.stakedAmount || 0} SeagullCoin`;
-      } else {
-        document.getElementById('staking-status-3').textContent = 'No active stake found.';
-      }
-    } catch {
-      document.getElementById('staking-status-3').textContent = 'Error loading staking data.';
-    }
-  }
 
   // When wallet changes or logs in, enable the buttons for both sections
 
@@ -453,8 +422,6 @@
   const unstakeBtn = document.getElementById('unstake-btn');
   const stakeBtn2 = document.getElementById('stake-btn-2');
   const unstakeBtn2 = document.getElementById('unstake-btn-2');
-  const stakeBtn3 = document.getElementById('stake-btn-3');
-  const unstakeBtn3 = document.getElementById('unstake-btn-3');
 
   if (wallet) {
     walletInfo.style.display = 'block';
@@ -469,8 +436,6 @@
     unstakeBtn.disabled = false;
     stakeBtn2.disabled = false;
     unstakeBtn2.disabled = false;
-    stakeBtn3.disabled = false;
-    unstakeBtn3.disabled = false;
   } else {
     walletInfo.style.display = 'none';
     indicator.textContent = '🔴 Login';
@@ -521,8 +486,6 @@
     const unstakeBtn = document.getElementById('unstake-btn');
     const stakeBtn2 = document.getElementById('stake-btn-2');
     const unstakeBtn2 = document.getElementById('unstake-btn-2');
-    const stakeBtn3 = document.getElementById('stake-btn-3');
-    const unstakeBtn3 = document.getElementById('unstake-btn-3');
 
 
     if (wallet) {
@@ -530,15 +493,12 @@
       unstakeBtn.disabled = false;
       stakeBtn2.disabled = false;
       unstakeBtn2.disabled = false;
-      stakeBtn3.disabled = false;
-      unstakeBtn3.disabled = false;
     } else {
       stakeBtn.disabled = true;
       unstakeBtn.disabled = true;
       stakeBtn2.disabled = true;
       unstakeBtn2.disabled = true;
-    } stakeBtn3.disabled = true;
-      unstakeBtn3.disabled = true;
+    }
     
   }
 
@@ -597,33 +557,6 @@
       alert('Error creating stake transaction.');
     }
   };
-
-    // stake #3
-    document.getElementById('stake-btn-3').onclick = async () => {
-    if (!wallet) {
-      alert('Please login first.');
-      return;
-    }
-    try {
-      // Call your existing stake API (same as first section)
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-payload-three/${wallet}`);
-      const data = await res.json();
-      if (!data.uuid) {
-        alert('Error getting stake payload.');
-        return;
-      }
-      currentUUID3 = data.uuid;
-      const qr = document.getElementById('qr-code-3');
-      qr.src = data.refs.qr_png;
-      qr.style.display = 'block';
-      window.open(data.next.always, '_blank');
-      document.getElementById('staking-status-3').textContent = 'Please sign the stake transaction in your wallet.';
-      pollStatus3(currentUUID3, () => loadStakingData3());
-    } catch {
-      alert('Error creating stake transaction.');
-    }
-  };
-
 
     
   </script>

@@ -4196,7 +4196,7 @@ app.post("/backup-pay-three", async (req, res) => {
       {
         Memo: {
           MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
-          MemoData: Buffer.from("2 year", "utf8").toString("hex")
+          MemoData: Buffer.from("5 year", "utf8").toString("hex")
         }
       }
     ]
@@ -4240,12 +4240,12 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
         Amount: {
           currency: '53656167756C6C436F696E000000000000000000', // Hex for "SeagullCoin"
           issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-          value: '10000000'
+          value: '5000000'
         },
         Memos: [
           {
             Memo: {
-              MemoType: Buffer.from('2 Years', 'utf8').toString('hex').toUpperCase(),
+              MemoType: Buffer.from('5 Year', 'utf8').toString('hex').toUpperCase(),
               MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
             }
           }

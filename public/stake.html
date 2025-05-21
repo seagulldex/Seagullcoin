@@ -558,6 +558,11 @@
       alert('Error creating stake transaction.');
     }
   };
+  
+  document.getElementById('logout-btn').onclick = () => {
+    localStorage.removeItem('xumm_wallet_address');
+    location.reload();
+  };
 
     
   </script>

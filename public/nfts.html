@@ -116,17 +116,6 @@
 
     <canvas id="priceChart" style="max-width: 700px; margin-bottom: 30px;"></canvas>
 
-    <div id="loading-spinner" style="display:none;">
-      <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading Seagull" class="seagull-spinner" />
-      <p>Loading your NFTs...</p>
-    </div>
-
-    <button id="back-btn">← Back to Collections</button>
-
-    <div id="nft-container" class="collection-grid" style="display:none;"></div>
-    <div class="pagination" id="pagination" style="display:none;"></div>
-  </main>
-
   <script>
     // Utilities
     function convertIPFSToURL(ipfsUrl) {
@@ -195,118 +184,7 @@
       }
     }
 
-    async function fetchNFTs(wallet) {
-      document.getElementById('loading-spinner').style.display = 'block';
-      document.getElementById('nft-container').style.display = 'none';
-      document.getElementById('pagination').style.display = 'none';
-      try {
-        const res = await fetch(`https://sglcn-x20-api.glitch.me/catalog`);
-        if (!res.ok) throw new Error('Failed to load NFT catalog');
-        const data = await res.json();
-        allNFTs = (data.nfts || []).filter(nft => nft.metadata && nft.metadata.name && nft.metadata.image);
-        collectionMap = groupByCollection(allNFTs);
-        showCollections();
-      } catch (err) {
-        alert('Error loading NFTs.');
-        console.error(err);
-      } finally {
-        document.getElementById('loading-spinner').style.display = 'none';
-      }
-    }
-
-    function groupByCollection(nfts) {
-      const map = {};
-      for (const nft of nfts) {
-        const collection = (nft.metadata.collection && nft.metadata.collection.trim()) || 'Uncategorized';
-        if (!map[collection]) map[collection] = [];
-        map[collection].push(nft);
-      }
-      return map;
-    }
-
-    function showCollections() {
-      document.getElementById('back-btn').style.display = 'none';
-      const container = document.getElementById('nft-container');
-      container.innerHTML = "";
-      container.className = 'collection-grid';
-      container.style.display = 'grid';
-      for (const collection in collectionMap) {
-        const colCard = document.createElement('div');
-        colCard.className = 'collection-card';
-        const sampleNFT = collectionMap[collection][0];
-        let imgSrc = "";
-        if (sampleNFT && sampleNFT.metadata && sampleNFT.metadata.image) {
-          imgSrc = convertIPFSToURL(sampleNFT.metadata.image);
-        }
-        colCard.innerHTML = `
-          <h3>${collection}</h3>
-          <img src="${imgSrc}" alt="${collection} Icon" loading="lazy" />
-          <p>${collectionMap[collection].length} NFTs</p>
-        `;
-        colCard.onclick = () => showNFTs(collection);
-        container.appendChild(colCard);
-      }
-      document.getElementById('pagination').style.display = 'none';
-    }
-
-    function showNFTs(collection) {
-      currentNFTs = collectionMap[collection] || [];
-      currentPage = 1;
-      document.getElementById('back-btn').style.display = 'inline-block';
-      renderNFTPage();
-    }
-
-    function renderNFTPage() {
-      const container = document.getElementById('nft-container');
-      container.className = 'nft-grid';
-      container.style.display = 'grid';
-
-      const pagination = document.getElementById('pagination');
-      pagination.style.display = 'block';
-      pagination.innerHTML = '';
-
-      const start = (currentPage - 1) * nftsPerPage;
-      const end = start + nftsPerPage;
-      const pageNFTs = currentNFTs.slice(start, end);
-
-      container.innerHTML = '';
-      pageNFTs.forEach(nft => {
-        const nftCard = document.createElement('div');
-        nftCard.className = 'nft-card';
-        nftCard.innerHTML = `
-          <h4>${nft.metadata.name || 'Unnamed NFT'}</h4>
-          <img src="${convertIPFSToURL(nft.metadata.image)}" alt="${nft.metadata.name}" loading="lazy" />
-          <p>${nft.metadata.description || ''}</p>
-          <button onclick="alert('Transfer NFT functionality coming soon!')">Transfer</button>
-        `;
-        container.appendChild(nftCard);
-      });
-
-      // Pagination controls
-      const totalPages = Math.ceil(currentNFTs.length / nftsPerPage);
-
-      if (currentPage > 1) {
-        const prevBtn = document.createElement('button');
-        prevBtn.textContent = 'Prev';
-        prevBtn.onclick = () => {
-          currentPage--;
-          renderNFTPage();
-        };
-        pagination.appendChild(prevBtn);
-      }
-
-      pagination.appendChild(document.createTextNode(` Page ${currentPage} of ${totalPages} `));
-
-      if (currentPage < totalPages) {
-        const nextBtn = document.createElement('button');
-        nextBtn.textContent = 'Next';
-        nextBtn.onclick = () => {
-          currentPage++;
-          renderNFTPage();
-        };
-        pagination.appendChild(nextBtn);
-      }
-    }
+   
 
     // Chart.js Price Chart with Timeframe Buttons
     let priceChart;

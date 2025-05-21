@@ -559,6 +559,52 @@
     }
   };
   
+  function setupStakingButtonListeners() {
+    // Existing buttons assumed already handled
+
+    document.getElementById('stake-btn-3').addEventListener('click', async () => {
+      if (!wallet) return alert('Connect your XUMM wallet first.');
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-payload-three?wallet=${wallet}`);
+      const data = await res.json();
+      if (data.payloadURL) {
+        document.getElementById('qr-code-3').src = data.qr;
+        document.getElementById('qr-code-3').style.display = 'block';
+        pollTransactionStatus(data.uuid, 'staking-status-3');
+      } else {
+        alert('Failed to initiate staking.');
+      }
+    });
+
+    document.getElementById('unstake-btn-3').addEventListener('click', async () => {
+      if (!wallet) return alert('Connect your XUMM wallet first.');
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/unstake-5yr?wallet=${wallet}`);
+      const data = await res.json();
+      if (data.payloadURL) {
+        document.getElementById('qr-code-3').src = data.qr;
+        document.getElementById('qr-code-3').style.display = 'block';
+        pollTransactionStatus(data.uuid, 'staking-status-3');
+      } else {
+        alert('Failed to initiate unstaking.');
+      }
+    });
+  }
+
+  function pollTransactionStatus(uuid, statusElementId) {
+    let interval = setInterval(async () => {
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/check-status?uuid=${uuid}`);
+      const data = await res.json();
+      if (data.signed) {
+        clearInterval(interval);
+        document.getElementById(statusElementId).textContent = 'Transaction signed!';
+      } else if (data.expired) {
+        clearInterval(interval);
+        document.getElementById(statusElementId).textContent = 'QR code expired.';
+      }
+    }, 3000);
+  }
+
+
+  
   document.getElementById('logout-btn').onclick = () => {
     localStorage.removeItem('xumm_wallet_address');
     location.reload();

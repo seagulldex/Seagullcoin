@@ -602,6 +602,50 @@
       }
     }, 3000);
   }
+  
+  function setupStakingButtonListeners() {
+  const stakeBtn3 = document.getElementById('stake-btn-3');
+  const qr3 = document.getElementById('qr-code-3');
+
+  if (stakeBtn3) {
+    stakeBtn3.addEventListener('click', async () => {
+      if (!wallet) return alert('Please connect your wallet first.');
+
+      try {
+        const response = await fetch(`https://sglcn-x20-api.glitch.me/stake-payload-three/${wallet}`);
+        const data = await response.json();
+
+        if (data.qrImage || data.payload_url) {
+          if (data.qrImage) {
+            qr3.src = data.qrImage;
+            qr3.style.display = 'block';
+          } else {
+            window.open(data.payload_url, "_blank");
+          }
+
+          // Optional: Poll for completion
+          const uuid = data.uuid || data.payloadUUID;
+          if (uuid) {
+            const poll = setInterval(async () => {
+              const result = await fetch(`https://sglcn-x20-api.glitch.me/check-stake-status/${uuid}`);
+              const status = await result.json();
+              if (status && status.staked) {
+                clearInterval(poll);
+                alert('5 Year stake successful!');
+              }
+            }, 4000);
+          }
+        } else {
+          alert('Error: Invalid payload response.');
+        }
+      } catch (err) {
+        console.error('Stake error:', err);
+        alert('Stake failed. Check the console for details.');
+      }
+    });
+  }
+}
+
 
 
   

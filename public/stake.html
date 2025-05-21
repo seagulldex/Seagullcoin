@@ -487,18 +487,23 @@
     const unstakeBtn = document.getElementById('unstake-btn');
     const stakeBtn2 = document.getElementById('stake-btn-2');
     const unstakeBtn2 = document.getElementById('unstake-btn-2');
-
+    const stakeBtn3 = document.getElementById('stake-btn-3');
+    const unstakeBtn3 = document.getElementById('unstake-btn-3');
 
     if (wallet) {
       stakeBtn.disabled = false;
       unstakeBtn.disabled = false;
       stakeBtn2.disabled = false;
       unstakeBtn2.disabled = false;
+      stakeBtn3.disabled = false;
+      unstakeBtn3.disabled = false;
     } else {
       stakeBtn.disabled = true;
       unstakeBtn.disabled = true;
       stakeBtn2.disabled = true;
       unstakeBtn2.disabled = true;
+      stakeBtn3.disabled = true;
+      unstakeBtn3.disabled = true;
     }
     
   }
@@ -559,49 +564,31 @@
     }
   };
   
-  function setupStakingButtonListeners() {
-    // Existing buttons assumed already handled
-
-    document.getElementById('stake-btn-3').addEventListener('click', async () => {
-      if (!wallet) return alert('Connect your XUMM wallet first.');
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-payload-three?wallet=${wallet}`);
+   //stake button #3
+    document.getElementById('stake-btn-3').onclick = async () => {
+    if (!wallet) {
+      alert('Please login first.');
+      return;
+    }
+    try {
+      // Call your existing stake API (same as first section)
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-payload-three/${wallet}`);
       const data = await res.json();
-      if (data.payloadURL) {
-        document.getElementById('qr-code-3').src = data.qr;
-        document.getElementById('qr-code-3').style.display = 'block';
-        pollTransactionStatus(data.uuid, 'staking-status-3');
-      } else {
-        alert('Failed to initiate staking.');
+      if (!data.uuid) {
+        alert('Error getting stake payload.');
+        return;
       }
-    });
-
-    document.getElementById('unstake-btn-3').addEventListener('click', async () => {
-      if (!wallet) return alert('Connect your XUMM wallet first.');
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/unstake-5yr?wallet=${wallet}`);
-      const data = await res.json();
-      if (data.payloadURL) {
-        document.getElementById('qr-code-3').src = data.qr;
-        document.getElementById('qr-code-3').style.display = 'block';
-        pollTransactionStatus(data.uuid, 'staking-status-3');
-      } else {
-        alert('Failed to initiate unstaking.');
-      }
-    });
-  }
-
-  function pollTransactionStatus(uuid, statusElementId) {
-    let interval = setInterval(async () => {
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/check-status?uuid=${uuid}`);
-      const data = await res.json();
-      if (data.signed) {
-        clearInterval(interval);
-        document.getElementById(statusElementId).textContent = 'Transaction signed!';
-      } else if (data.expired) {
-        clearInterval(interval);
-        document.getElementById(statusElementId).textContent = 'QR code expired.';
-      }
-    }, 3000);
-  }
+      currentUUID3 = data.uuid;
+      const qr = document.getElementById('qr-code-2');
+      qr.src = data.refs.qr_png;
+      qr.style.display = 'block';
+      window.open(data.next.always, '_blank');
+      document.getElementById('staking-status-2').textContent = 'Please sign the stake transaction in your wallet.';
+      pollStatus3(currentUUID3, () => loadStakingData3());
+    } catch {
+      alert('Error creating stake transaction.');
+    }
+  };
 
 
   

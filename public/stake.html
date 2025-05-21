@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -309,6 +310,40 @@
 
 
 
+function setupStakingButtonListeners() {
+  // Existing listeners for stake-btn and stake-btn-2...
+
+  // New listener for stake-btn-3
+  const stakeBtn3 = document.getElementById('stake-btn-3');
+  stakeBtn3.addEventListener('click', async () => {
+    if (!wallet) {
+      alert('Please login to stake.');
+      return;
+    }
+    try {
+      const res = await fetch('https://sglcn-x20-api.glitch.me/stake-payload-three/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet })
+      });
+      if (!res.ok) throw new Error('Failed to get stake payload URL');
+      const data = await res.json();
+      if (data.payloadURL) {
+        window.open(data.payloadURL, '_blank');
+        // Optionally start polling if you want to track signing status for this UUID:
+        if (data.payloadUUID) {
+          pollStatus(data.payloadUUID, () => {
+            loadStakingData();  // reload data after success
+          });
+        }
+      } else {
+        alert('No payload URL received');
+      }
+    } catch (err) {
+      alert('Error opening XUMM payload: ' + err.message);
+    }
+  });
+}
 
 
 

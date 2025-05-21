@@ -4133,7 +4133,7 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
     Amount: {
       currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
       issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-      value: "2575000"
+      value: "2562500"
     },
     Memos: [
       {
@@ -4190,7 +4190,7 @@ app.post("/backup-pay-three", async (req, res) => {
     Amount: {
       currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
       issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-      value: "10500000"
+      value: "6000000"
     },
     Memos: [
       {

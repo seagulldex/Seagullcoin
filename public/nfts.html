@@ -6,6 +6,7 @@
   <title>User NFTs - SGLCN-X20</title>
   <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="header.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .pagination { margin-top: 20px; text-align: center; }
     .pagination button { margin: 0 5px; padding: 5px 10px; }
@@ -30,27 +31,25 @@
     }
     .nft-card button { margin: 5px; }
     #back-btn { margin: 10px 0; display: none; }
-    }
     
     #search-bar {
-  padding: 8px;
-  font-size: 16px;
-  width: 540px;
-}
+      padding: 8px;
+      font-size: 16px;
+      width: 540px;
+    }
 
-button {
-  padding: 8px 12px;
-  font-size: 16px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
+    button {
+      padding: 8px 12px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
 
-button:hover {
-  background-color: #45a049;
-}
-
+    button:hover {
+      background-color: #45a049;
+    }
   </style>
 </head>
 <body>
@@ -67,16 +66,18 @@ button:hover {
     <nav>
       <ul>
         <li><a href="index.html">Home</a></li>
-        <li><a href="nfts.html">NFTs</a></li>
         <li><a href="stake.html">Stake</a></li>
         <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
       </ul>
     </nav>
   </header>
   
-  
   <main>
-    <h1>NFTs</h1>
+    <h1>Trading</h1>
+
+    <h2>SGLCN/XRP Live Price</h2>
+    <canvas id="priceChart" style="max-width: 600px; margin-bottom: 30px;"></canvas>
+
     <div id="loading-spinner">
       <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading Seagull" class="seagull-spinner">
       <p>Loading your NFTs...</p>
@@ -87,6 +88,7 @@ button:hover {
     <div id="nft-container" class="collection-grid" style="display:none;"></div>
     <div class="pagination" id="pagination"></div>
   </main>
+  
 <script>
   function convertIPFSToURL(ipfsUrl) {
     if (!ipfsUrl) return "";
@@ -231,25 +233,66 @@ button:hover {
 
   document.getElementById('logout-btn').onclick = () => {
     localStorage.removeItem('xumm_wallet_address');
-    location.reload();
+    updateWalletStatus();
   };
 
-  // Function to handle search
-  function searchNFTs() {
-    const query = document.getElementById('search-bar').value.toLowerCase();
-    if (!query) {
-      showCollections();
-      return;
+  // --- Chart.js price chart setup ---
+
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  const priceData = {
+    labels: [],
+    datasets: [{
+      label: 'SGLCN to XRP',
+      data: [],
+      borderColor: 'rgb(33, 150, 243)',
+      backgroundColor: 'rgba(33, 150, 243, 0.2)',
+      fill: true,
+      tension: 0.3,
+    }]
+  };
+  const priceChart = new Chart(ctx, {
+    type: 'line',
+    data: priceData,
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          title: { display: true, text: 'Time' }
+        },
+        y: {
+          beginAtZero: false,
+          title: { display: true, text: 'Price (XRP)' }
+        }
+      }
     }
+  });
 
-    const filteredNFTs = allNFTs.filter(nft => 
-      nft.metadata.name.toLowerCase().includes(query) ||
-      (nft.metadata.description && nft.metadata.description.toLowerCase().includes(query))
-    );
+  async function fetchPriceAndUpdateChart() {
+    try {
+      const res = await fetch('/api/sglcn-xrp');
+      const data = await res.json();
+      if (data.sglcn_to_xrp) {
+        const now = new Date();
+        const timeLabel = now.toLocaleTimeString();
 
-    collectionMap = groupByCollection(filteredNFTs);
-    showCollections();
+        priceData.labels.push(timeLabel);
+        priceData.datasets[0].data.push(data.sglcn_to_xrp);
+
+        if (priceData.labels.length > 30) {
+          priceData.labels.shift();
+          priceData.datasets[0].data.shift();
+        }
+
+        priceChart.update();
+      }
+    } catch (err) {
+      console.error('Error fetching price:', err);
+    }
   }
+
+  fetchPriceAndUpdateChart();
+  setInterval(fetchPriceAndUpdateChart, 15000);
 </script>
+
 </body>
 </html>

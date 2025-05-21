@@ -4272,10 +4272,60 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
 // Express endpoint
 
 app.get('/api/sglcn-xrp', async (req, res) => {
-  const client = new Client("wss://s1.ripple.com");
+  const client = new Client("wss://s1.ripple.com");
 
-  try {
-    const timeoutPromise = ne
+  try {
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("XRPL request timed out")), 8000)
+    );
+
+    await Promise.race([client.connect(), timeoutPromise]);
+
+    const result = await Promise.race([
+      client.request({
+        command: "book_offers",
+        taker_gets: {
+          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
+          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+        },
+        taker_pays: { currency: "XRP" },
+        limit: 1
+      }),
+      timeoutPromise
+    ]);
+
+    await client.disconnect();
+
+    const offers = result.result?.offers || [];
+
+    if (!offers.length) {
+      return res.status(404).json({ error: "No SGLCN/XRP offers found." });
+    }
+
+    const offer = offers[0];
+    const takerPaysXRP = parseFloat(offer.TakerPays); // in drops
+    const takerGetsSGLCN = parseFloat(offer.TakerGets?.value); // IOU (SGLCN)
+
+    if (!takerPaysXRP || !takerGetsSGLCN) {
+      return res.status(500).json({ error: "Invalid offer data format." });
+    }
+
+    const sglcnToXrp = takerPaysXRP / 1000000 / takerGetsSGLCN;
+    const xrpToSglcn = sglcnToXrp > 0 ? 1 / sglcnToXrp : null;
+
+    res.json({
+  sglcn_to_xrp: sglcnToXrp.toFixed(6),
+  xrp_to_sglcn: xrpToSglcn ? xrpToSglcn.toFixed(2) : null
+});
+
+
+  } catch (err) {
+    console.error("Error in /api/sglcn-xrp:", err.message);
+    try { await client.disconnect(); } catch (e) {}
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 

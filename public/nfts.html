@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="header.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@3.3.0/dist/chartjs-chart-financial.min.js"></script>
   <style>
     .pagination { margin-top: 20px; text-align: center; }
     .pagination button { margin: 0 5px; padding: 5px 10px; }
@@ -53,9 +54,16 @@
     #timeframe-buttons button {
       margin-right: 8px;
       background-color: #2196F3;
+      color: white;
+      border-radius: 5px;
     }
     #timeframe-buttons button.active {
       background-color: #0b7dda;
+    }
+    #priceChart {
+      max-width: 700px;
+      margin-bottom: 30px;
+      display: block;
     }
   </style>
 </head>
@@ -89,11 +97,14 @@
       <button data-timeframe="6h">6 Hours</button>
       <button data-timeframe="24h">24 Hours</button>
       <button data-timeframe="7d">7 Days</button>
+      <button data-timeframe="1m">Monthly</button>
+      <button data-timeframe="max">Max</button>
     </div>
 
-    <canvas id="priceChart" style="max-width: 700px; margin-bottom: 30px;"></canvas>
+    <!-- Chart is placed below the buttons -->
+    <canvas id="priceChart"></canvas>
 
-    <div id="loading-spinner">
+    <div id="loading-spinner" style="text-align:center; margin-top: 20px;">
       <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading Seagull" class="seagull-spinner" />
       <p>Loading your NFTs...</p>
     </div>
@@ -113,7 +124,7 @@
         : ipfsUrl;
     }
 
-    // NFT Management
+    // NFT Management (unchanged)
     let allNFTs = [];
     let collectionMap = {};
     let nftsPerPage = 50;
@@ -123,6 +134,7 @@
       updateWalletStatus();
       document.getElementById('back-btn').onclick = showCollections;
       setupTimeframeButtons();
+      updateChartForTimeframe('1h');
     });
 
     function updateWalletStatus() {
@@ -205,91 +217,75 @@
       }
     }
 
-    document.getElementById('logout-btn').onclick = () => {
-      localStorage.removeItem('xumm_wallet_address');
-      updateWalletStatus();
-    };
-
-    // --- Chart.js price chart setup ---
-    const ctx = document.getElementById('priceChart').getContext('2d');
-
-    const priceData = {
-      labels: [],
-      datasets: [{
-        label: 'SGLCN to XRP',
-        data: [],
-        borderColor: 'rgb(33, 150, 243)',
-        backgroundColor: 'rgba(33, 150, 243, 0.2)',
-        fill: true,
-        tension: 0.3,
-      }]
-    };
-
-    const priceChart = new Chart(ctx, {
-      type: 'line',
-      data: priceData,
-      options: {
-        responsive: true,
-        interaction: {
-          mode: 'index',
-          intersect: false,
-        },
-        plugins: {
-          legend: { display: true },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-          },
-        },
-        scales: {
-          x: {
-            type: 'time',
-            time: {
-              tooltipFormat: 'MMM d, HH:mm',
-              unit: 'minute',
-              displayFormats: {
-                minute: 'HH:mm',
-                hour: 'MMM d HH:mm',
-                day: 'MMM d',
-              }
-            },
-            title: { display: true, text: 'Time' },
-          },
-          y: {
-            beginAtZero: false,
-            title: { display: true, text: 'Price (XRP)' },
-          }
-        }
+    function showNFTsInCollection(collection) {
+      const container = document.getElementById('nft-container');
+      container.innerHTML = "";
+      container.className = 'nft-grid';
+      const items = collectionMap[collection];
+      for (const nft of items) {
+        const metadata = nft.metadata;
+        const card = document.createElement('div');
+        card.className = 'nft-card';
+        card.innerHTML = `
+          <img src="${convertIPFSToURL(metadata.image)}" alt="${metadata.name}" />
+          <h4>${metadata.name}</h4>
+          <p>${metadata.description || ''}</p>
+          <button onclick="viewDetails('${nft.tokenID}')">View Details</button>
+          <button onclick="transferNFT('${nft.tokenID}')">Transfer</button>
+        `;
+        container.appendChild(card);
       }
-    });
-
-    // Dummy data generation for chart
-    function generateDummyData(points, intervalMinutes) {
-      const now = new Date();
-      let data = [];
-      for (let i = points - 1; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * intervalMinutes * 60 * 1000);
-        // Simulated price data with some random walk
-        const price = 0.00001 + 0.00001 * Math.sin(i / 5) + (Math.random() - 0.5) * 0.000002;
-        data.push({ time, price: price.toFixed(8) });
-      }
-      return data;
+      document.getElementById('back-btn').style.display = 'inline-block';
     }
 
-    function updateChartForTimeframe(tf) {
-      let points, interval;
-      switch(tf) {
-        case '1h': points = 60; interval = 1; break;
-        case '6h': points = 72; interval = 5; break; // 6*60/5 = 72 points
-        case '24h': points = 96; interval = 15; break; // 24*60/15 = 96
-        case '7d': points = 168; interval = 60; break; // 7*24=168 hourly points
-        default: points = 60; interval = 1;
+    function viewDetails(tokenID) {
+      alert("View Details not implemented. TokenID: " + tokenID);
+    }
+
+    function transferNFT(tokenID) {
+      alert("Transfer not implemented. TokenID: " + tokenID);
+    }
+
+    // ----- Chart Section -----
+
+    let priceChart;
+    const ctx = document.getElementById('priceChart').getContext('2d');
+
+    // Generates fake OHLC data for candlestick chart based on timeframe
+    function generateFakeOHLC(timeframe) {
+      let points = 0;
+      let intervalMinutes = 60; // Default 1 hour
+      switch (timeframe) {
+        case '1h': points = 12; intervalMinutes = 5; break; // 1 hour, 5min intervals
+        case '6h': points = 36; intervalMinutes = 10; break; // 6 hours, 10min intervals
+        case '24h': points = 48; intervalMinutes = 30; break; // 24h, 30min intervals
+        case '7d': points = 56; intervalMinutes = 180; break; // 7 days, 3h intervals
+        case '1m': points = 30; intervalMinutes = 1440; break; // 1 month (30 days), daily intervals
+        case 'max': points = 120; intervalMinutes = 4320; break; // max ~ 120 points, 3 days intervals
       }
-      const dummyData = generateDummyData(points, interval);
-      priceChart.data.labels = dummyData.map(d => d.time);
-      priceChart.data.datasets[0].data = dummyData.map(d => parseFloat(d.price));
-      priceChart.options.scales.x.time.unit = interval >= 60 ? 'hour' : 'minute';
-      priceChart.update();
+
+      const now = Date.now();
+      let basePrice = 1000 + Math.random() * 100; // Starting price
+      let data = [];
+
+      for (let i = points - 1; i >= 0; i--) {
+        const time = now - i * intervalMinutes * 60 * 1000;
+        // Create OHLC values around basePrice with random variance
+        const open = basePrice + (Math.random() - 0.5) * 20;
+        const close = open + (Math.random() - 0.5) * 20;
+        const high = Math.max(open, close) + Math.random() * 10;
+        const low = Math.min(open, close) - Math.random() * 10;
+        basePrice = close; // Next candle opens near previous close
+
+        data.push({
+          x: time,
+          o: parseFloat(open.toFixed(2)),
+          h: parseFloat(high.toFixed(2)),
+          l: parseFloat(low.toFixed(2)),
+          c: parseFloat(close.toFixed(2))
+        });
+      }
+      return data;
     }
 
     function setupTimeframeButtons() {
@@ -298,24 +294,80 @@
         btn.onclick = () => {
           buttons.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          updateChartForTimeframe(btn.getAttribute('data-timeframe'));
+          updateChartForTimeframe(btn.dataset.timeframe);
         };
       });
-      updateChartForTimeframe('1h'); // default
     }
 
-    // Live price update simulation
-    setInterval(() => {
-      // Randomly adjust last price by a small amount
-      const lastIndex = priceChart.data.datasets[0].data.length - 1;
-      if (lastIndex < 0) return;
-      let lastPrice = priceChart.data.datasets[0].data[lastIndex];
-      const change = (Math.random() - 0.5) * 0.000001;
-      lastPrice = Math.max(0.000001, lastPrice + change);
-      priceChart.data.datasets[0].data[lastIndex] = parseFloat(lastPrice.toFixed(8));
-      priceChart.update('none');
-    }, 15000);
+    function updateChartForTimeframe(timeframe) {
+      const data = generateFakeOHLC(timeframe);
 
+      if (priceChart) {
+        priceChart.destroy();
+      }
+
+      priceChart = new Chart(ctx, {
+        type: 'candlestick',
+        data: {
+          datasets: [{
+            label: 'SGLCN/XRP',
+            data: data,
+            color: {
+              up: '#4caf50',
+              down: '#f44336',
+              unchanged: '#999'
+            }
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: false,
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                tooltipFormat: 'MMM DD HH:mm',
+                unit: 'hour',
+                displayFormats: {
+                  hour: 'MMM d, HH:mm',
+                  day: 'MMM d',
+                  month: 'MMM yyyy',
+                }
+              },
+              ticks: {
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 10
+              }
+            },
+            y: {
+              beginAtZero: false,
+              title: {
+                display: true,
+                text: 'Price (SGLCN per XRP)'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+            },
+            tooltip: {
+              enabled: true,
+              mode: 'nearest',
+              intersect: false,
+              callbacks: {
+                label: ctx => {
+                  const d = ctx.raw;
+                  return `O: ${d.o}  H: ${d.h}  L: ${d.l}  C: ${d.c}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
   </script>
 </body>
 </html>

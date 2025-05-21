@@ -2898,8 +2898,8 @@ app.post('/sell-nft', async (req, res) => {
       Account: walletAddress,
       NFTokenID: nftId,
       Amount: {
-        currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (Hex code)
-        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SeagullCoin issuer
+        currency: '53656167756C6C43617368000000000000000000', // SeagullCash (Hex code)
+        issuer: 'rNHeGnj4kqGSVyFzDcoyi3gsp1bdPuGeNK', // SeagullCash issuer
         value: price.toString(), // Convert price to a string
       },
       Flags: 1, // Ensure you're setting the correct flag for selling
@@ -3301,8 +3301,8 @@ app.get('/verify-trustline/:wallet', async (req, res) => {
 
     const hasTrustline = accountLines.result.lines.some(
       line =>
-        line.currency === "53656167756C6C436F696E000000000000000000" &&
-        line.account === "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+        line.currency === "53656167756C6C43617368000000000000000000" &&
+        line.account === "rNHeGnj4kqGSVyFzDcoyi3gsp1bdPuGeNK"
     );
 
     await client.disconnect();

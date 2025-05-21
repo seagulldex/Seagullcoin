@@ -17,6 +17,7 @@
       padding: 10px;
       text-align: center;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      cursor: pointer;
     }
     .nft-card img, .collection-card img {
       max-width: 100%;
@@ -43,6 +44,7 @@
       color: white;
       border: none;
       cursor: pointer;
+      border-radius: 4px;
     }
     button:hover {
       background-color: #45a049;
@@ -53,22 +55,36 @@
     #timeframe-buttons button {
       margin-right: 8px;
       background-color: #2196F3;
+      border-radius: 4px;
       color: white;
-      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      padding: 6px 12px;
     }
     #timeframe-buttons button.active {
       background-color: #0b7dda;
     }
-    #priceChart {
-      max-width: 700px;
-      margin-bottom: 30px;
-      display: block;
+    #loading-spinner {
+      text-align: center;
+      margin-top: 30px;
+    }
+    #loading-spinner img {
+      width: 80px;
+      height: 80px;
+    }
+    #wallet-indicator.red {
+      color: red;
+      cursor: pointer;
+    }
+    #wallet-indicator.green {
+      color: green;
+      cursor: default;
     }
   </style>
 </head>
 <body>
-  <div id="top-bar">
-    <div style="flex:1;"><button id="logout-btn">Logout</button></div>
+  <div id="top-bar" style="display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#eee;">
+    <div><button id="logout-btn" style="display:none;">Logout</button></div>
     <div id="wallet-container">
       <div id="wallet-status">
         <span id="wallet-indicator" class="red">🔴 Login</span>
@@ -78,15 +94,15 @@
 
   <header>
     <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="stake.html">Stake</a></li>
+      <ul style="display:flex; list-style:none; padding-left:0;">
+        <li style="margin-right:15px;"><a href="index.html">Home</a></li>
+        <li style="margin-right:15px;"><a href="stake.html">Stake</a></li>
         <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
       </ul>
     </nav>
   </header>
 
-  <main>
+  <main style="padding: 20px;">
     <h1>Trading</h1>
 
     <h2>SGLCN/XRP Price Chart</h2>
@@ -98,10 +114,9 @@
       <button data-timeframe="7d">7 Days</button>
     </div>
 
-    <!-- Chart is placed below the buttons -->
-    <canvas id="priceChart"></canvas>
+    <canvas id="priceChart" style="max-width: 700px; margin-bottom: 30px;"></canvas>
 
-    <div id="loading-spinner" style="text-align:center; margin-top: 20px;">
+    <div id="loading-spinner" style="display:none;">
       <img src="https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" alt="Loading Seagull" class="seagull-spinner" />
       <p>Loading your NFTs...</p>
     </div>
@@ -109,7 +124,7 @@
     <button id="back-btn">← Back to Collections</button>
 
     <div id="nft-container" class="collection-grid" style="display:none;"></div>
-    <div class="pagination" id="pagination"></div>
+    <div class="pagination" id="pagination" style="display:none;"></div>
   </main>
 
   <script>
@@ -126,12 +141,12 @@
     let collectionMap = {};
     let nftsPerPage = 50;
     let currentPage = 1;
+    let currentNFTs = [];
 
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
       document.getElementById('back-btn').onclick = showCollections;
       setupTimeframeButtons();
-      updateChartForTimeframe('1h');
     });
 
     function updateWalletStatus() {
@@ -139,46 +154,61 @@
       const indicator = document.getElementById('wallet-indicator');
       if (wallet) {
         indicator.textContent = '🟢 Connected';
-        indicator.classList.replace('red', 'green');
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
         indicator.title = 'Logged in';
+        indicator.onclick = null;
         document.getElementById('logout-btn').style.display = 'inline-block';
         fetchNFTs(wallet);
       } else {
         indicator.textContent = '🔴 Login';
-        indicator.classList.replace('green', 'red');
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
         indicator.title = 'Click to login';
         indicator.onclick = startLoginFlow;
         document.getElementById('logout-btn').style.display = 'none';
+        document.getElementById('nft-container').style.display = 'none';
+        document.getElementById('pagination').style.display = 'none';
       }
     }
 
     async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-      const data = await res.json();
-      window.open(data.payloadURL, "_blank");
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+        if (!res.ok) throw new Error('Login API error');
+        const data = await res.json();
+        window.open(data.payloadURL, "_blank");
 
-      const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-        const loginStatus = await check.json();
-        if (loginStatus.loggedIn) {
-          clearInterval(interval);
-          localStorage.setItem('xumm_wallet_address', loginStatus.account);
-          updateWalletStatus();
-        }
-      }, 3000);
+        const interval = setInterval(async () => {
+          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+          if (!check.ok) return;
+          const loginStatus = await check.json();
+          if (loginStatus.loggedIn) {
+            clearInterval(interval);
+            localStorage.setItem('xumm_wallet_address', loginStatus.account);
+            updateWalletStatus();
+          }
+        }, 3000);
+      } catch (err) {
+        alert('Login failed. Please try again.');
+        console.error(err);
+      }
     }
 
     async function fetchNFTs(wallet) {
       document.getElementById('loading-spinner').style.display = 'block';
       document.getElementById('nft-container').style.display = 'none';
+      document.getElementById('pagination').style.display = 'none';
       try {
         const res = await fetch(`https://sglcn-x20-api.glitch.me/catalog`);
+        if (!res.ok) throw new Error('Failed to load NFT catalog');
         const data = await res.json();
         allNFTs = (data.nfts || []).filter(nft => nft.metadata && nft.metadata.name && nft.metadata.image);
         collectionMap = groupByCollection(allNFTs);
         showCollections();
       } catch (err) {
-        console.error("Error loading NFTs:", err);
+        alert('Error loading NFTs.');
+        console.error(err);
       } finally {
         document.getElementById('loading-spinner').style.display = 'none';
       }
@@ -187,7 +217,7 @@
     function groupByCollection(nfts) {
       const map = {};
       for (const nft of nfts) {
-        const collection = nft.metadata.collection || 'Uncategorized';
+        const collection = (nft.metadata.collection && nft.metadata.collection.trim()) || 'Uncategorized';
         if (!map[collection]) map[collection] = [];
         map[collection].push(nft);
       }
@@ -200,147 +230,193 @@
       container.innerHTML = "";
       container.className = 'collection-grid';
       container.style.display = 'grid';
-      for (const [collection, items] of Object.entries(collectionMap)) {
-        const logo = convertIPFSToURL(items[0].metadata.logo || items[0].metadata.image);
-        const card = document.createElement('div');
-        card.className = 'collection-card';
-        card.innerHTML = `
-          <img src="${logo}" alt="${collection}" />
+      for (const collection in collectionMap) {
+        const colCard = document.createElement('div');
+        colCard.className = 'collection-card';
+        const sampleNFT = collectionMap[collection][0];
+        let imgSrc = "";
+        if (sampleNFT && sampleNFT.metadata && sampleNFT.metadata.image) {
+          imgSrc = convertIPFSToURL(sampleNFT.metadata.image);
+        }
+        colCard.innerHTML = `
           <h3>${collection}</h3>
-          <p>${items.length} NFT(s)</p>
+          <img src="${imgSrc}" alt="${collection} Icon" loading="lazy" />
+          <p>${collectionMap[collection].length} NFTs</p>
         `;
-        card.onclick = () => showNFTsInCollection(collection);
-        container.appendChild(card);
+        colCard.onclick = () => showNFTs(collection);
+        container.appendChild(colCard);
       }
+      document.getElementById('pagination').style.display = 'none';
     }
 
-    function showNFTsInCollection(collection) {
-      const container = document.getElementById('nft-container');
-      container.innerHTML = "";
-      container.className = 'nft-grid';
-      const items = collectionMap[collection];
-      for (const nft of items) {
-        const metadata = nft.metadata;
-        const card = document.createElement('div');
-        card.className = 'nft-card';
-        card.innerHTML = `
-          <img src="${convertIPFSToURL(metadata.image)}" alt="${metadata.name}" />
-          <h3>${metadata.name}</h3>
-          <p>${metadata.description || ""}</p>
-        `;
-
-        const sellBtn = document.createElement('button');
-        sellBtn.textContent = 'Sell';
-        sellBtn.onclick = async () => {
-          const amount = prompt("Enter price in SeagullCoin:");
-          if (!amount) return;
-          const response = await fetch("/sell-nft", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ nftId: nft.NFTokenID, price: amount }),
-          });
-          if (response.ok) alert("Sell offer created!");
-          else alert("Failed to create sell offer.");
-        };
-        card.appendChild(sellBtn);
-
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = 'Cancel Sell Offer';
-        cancelBtn.onclick = async () => {
-          const response = await fetch("/cancel-sell-offer", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ nftId: nft.NFTokenID }),
-          });
-          if (response.ok) alert("Sell offer canceled!");
-          else alert("Failed to cancel sell offer.");
-        };
-        card.appendChild(cancelBtn);
-
-        container.appendChild(card);
-      }
+    function showNFTs(collection) {
+      currentNFTs = collectionMap[collection] || [];
+      currentPage = 1;
       document.getElementById('back-btn').style.display = 'inline-block';
+      renderNFTPage();
     }
 
-    // Chart.js Price Chart Setup
-    const ctx = document.getElementById('priceChart').getContext('2d');
+    function renderNFTPage() {
+      const container = document.getElementById('nft-container');
+      container.className = 'nft-grid';
+      container.style.display = 'grid';
+
+      const pagination = document.getElementById('pagination');
+      pagination.style.display = 'block';
+      pagination.innerHTML = '';
+
+      const start = (currentPage - 1) * nftsPerPage;
+      const end = start + nftsPerPage;
+      const pageNFTs = currentNFTs.slice(start, end);
+
+      container.innerHTML = '';
+      pageNFTs.forEach(nft => {
+        const nftCard = document.createElement('div');
+        nftCard.className = 'nft-card';
+        nftCard.innerHTML = `
+          <h4>${nft.metadata.name || 'Unnamed NFT'}</h4>
+          <img src="${convertIPFSToURL(nft.metadata.image)}" alt="${nft.metadata.name}" loading="lazy" />
+          <p>${nft.metadata.description || ''}</p>
+          <button onclick="alert('Transfer NFT functionality coming soon!')">Transfer</button>
+        `;
+        container.appendChild(nftCard);
+      });
+
+      // Pagination controls
+      const totalPages = Math.ceil(currentNFTs.length / nftsPerPage);
+
+      if (currentPage > 1) {
+        const prevBtn = document.createElement('button');
+        prevBtn.textContent = 'Prev';
+        prevBtn.onclick = () => {
+          currentPage--;
+          renderNFTPage();
+        };
+        pagination.appendChild(prevBtn);
+      }
+
+      pagination.appendChild(document.createTextNode(` Page ${currentPage} of ${totalPages} `));
+
+      if (currentPage < totalPages) {
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = 'Next';
+        nextBtn.onclick = () => {
+          currentPage++;
+          renderNFTPage();
+        };
+        pagination.appendChild(nextBtn);
+      }
+    }
+
+    // Chart.js Price Chart with Timeframe Buttons
     let priceChart;
+    const ctx = document.getElementById('priceChart').getContext('2d');
 
     function setupTimeframeButtons() {
       const buttons = document.querySelectorAll('#timeframe-buttons button');
-      buttons.forEach(button => {
-        button.addEventListener('click', () => {
-          buttons.forEach(btn => btn.classList.remove('active'));
-          button.classList.add('active');
-          const timeframe = button.dataset.timeframe;
-          updateChartForTimeframe(timeframe);
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          buttons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          fetchAndRenderPriceData(btn.dataset.timeframe);
         });
       });
+      // Load default timeframe
+      fetchAndRenderPriceData('1h');
     }
 
-    async function updateChartForTimeframe(timeframe) {
-      // For demonstration: generate dummy data or fetch real data from your API
-      const data = generateDummyChartData(timeframe);
+    async function fetchAndRenderPriceData(timeframe) {
+      try {
+        // Show loading text in canvas or disable chart temporarily
+        if (priceChart) {
+          priceChart.destroy();
+        }
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.font = "16px Arial";
+        ctx.fillText("Loading price data...", 10, 50);
 
-      if (priceChart) {
-        priceChart.data.labels = data.labels;
-        priceChart.data.datasets[0].data = data.prices;
-        priceChart.update();
-      } else {
+        // Define start and end times for API call
+        let startTime;
+        const endTime = Date.now();
+        switch (timeframe) {
+          case '1h': startTime = endTime - 60 * 60 * 1000; break;
+          case '6h': startTime = endTime - 6 * 60 * 60 * 1000; break;
+          case '24h': startTime = endTime - 24 * 60 * 60 * 1000; break;
+          case '7d': startTime = endTime - 7 * 24 * 60 * 60 * 1000; break;
+          default: startTime = endTime - 60 * 60 * 1000;
+        }
+
+        // Use CoinGecko API to get price data for XRP (as a proxy)
+        // SGLCN-X20 price is custom, so we use XRP as a placeholder
+        const fromUnix = Math.floor(startTime / 1000);
+        const toUnix = Math.floor(endTime / 1000);
+
+        // CoinGecko API URL (using XRP as a proxy)
+        const url = `https://api.coingecko.com/api/v3/coins/ripple/market_chart/range?vs_currency=xrp&from=${fromUnix}&to=${toUnix}`;
+        // Note: vs_currency=xrp is invalid, so use 'usd' and treat as placeholder
+        // We'll fetch in USD and just show the chart as example
+
+        // Correction: CoinGecko does not support 'vs_currency=xrp', so fetch vs_currency=usd
+        // Then just plot that price - for demo only.
+        const correctedUrl = `https://api.coingecko.com/api/v3/coins/ripple/market_chart/range?vs_currency=usd&from=${fromUnix}&to=${toUnix}`;
+
+        const res = await fetch(correctedUrl);
+        if (!res.ok) throw new Error('Failed to fetch price data');
+        const data = await res.json();
+
+        // Data: prices array of [timestamp, price]
+        const prices = data.prices || [];
+        if (!prices.length) throw new Error('No price data available');
+
+        // Prepare labels and price data
+        const labels = prices.map(p => {
+          const d = new Date(p[0]);
+          if (timeframe === '7d') return d.toLocaleDateString();
+          else if (timeframe === '24h' || timeframe === '6h') return d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          else return d.toLocaleTimeString();
+        });
+        const priceValues = prices.map(p => p[1]);
+
+        // Create Chart
         priceChart = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: data.labels,
+            labels: labels,
             datasets: [{
-              label: 'SGLCN / XRP Price',
-              data: data.prices,
-              borderColor: 'rgb(75, 192, 192)',
-              tension: 0.3,
+              label: 'XRP Price (USD)',
+              data: priceValues,
               fill: false,
+              borderColor: 'rgb(33, 150, 243)',
+              tension: 0.1,
               pointRadius: 0,
-            }],
+            }]
           },
           options: {
             responsive: true,
-            plugins: {
-              legend: { display: true },
-              tooltip: { mode: 'index', intersect: false },
-            },
             scales: {
               x: { display: true, title: { display: true, text: 'Time' } },
-              y: { display: true, title: { display: true, text: 'Price (XRP)' } },
+              y: { display: true, title: { display: true, text: 'Price (USD)' }, beginAtZero: false }
             },
-          },
+            plugins: {
+              legend: { display: true },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+              }
+            },
+            interaction: {
+              mode: 'nearest',
+              axis: 'x',
+              intersect: false
+            }
+          }
         });
+      } catch (err) {
+        console.error(err);
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.font = "16px Arial";
+        ctx.fillText("Failed to load price data.", 10, 50);
       }
-    }
-
-    function generateDummyChartData(timeframe) {
-      let points = 0;
-      let labelFormat = 'HH:mm';
-      switch (timeframe) {
-        case '1h': points = 60; break;
-        case '6h': points = 72; break;
-        case '24h': points = 96; break;
-        case '7d': points = 168; break;
-        default: points = 60;
-      }
-      const now = Date.now();
-      const interval = (timeframe === '7d') ? 60*60*1000 : 60*1000; // 1h for 7d, else 1min
-
-      const labels = [];
-      const prices = [];
-      let basePrice = 10 + Math.random() * 5;
-
-      for (let i = points - 1; i >= 0; i--) {
-        const time = new Date(now - i * interval);
-        labels.push(time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
-        // Simulate some random price movement
-        basePrice += (Math.random() - 0.5) * 0.2;
-        prices.push(basePrice.toFixed(4));
-      }
-
-      return { labels, prices };
     }
   </script>
 </body>

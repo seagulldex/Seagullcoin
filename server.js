@@ -4448,10 +4448,7 @@ app.get('/api/orderbook', async (req, res) => {
     });
   } catch (error) {
     console.error('Orderbook fetch failed:', error.message || error);
-    if (client.isConnected()) await client.disconnect();
-    res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
-  }
-});
+    if (client.isC
 
 
 

@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Trading - SGLCN-X20</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="header.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     #timeframe-buttons {
@@ -26,11 +24,13 @@
     button:hover {
       background-color: #45a049;
     }
+    .red { color: red; }
+    .green { color: green; }
   </style>
 </head>
 <body>
   <div id="top-bar">
-    <div style="flex:1;"><button id="logout-btn">Logout</button></div>
+    <div style="flex:1;"><button id="logout-btn" style="display:none;">Logout</button></div>
     <div id="wallet-container">
       <div id="wallet-status">
         <span id="wallet-indicator" class="red">🔴 Login</span>
@@ -50,7 +50,6 @@
 
   <main>
     <h1>Trading</h1>
-
     <h2>SGLCN/XRP Price Chart</h2>
 
     <div id="timeframe-buttons">
@@ -64,7 +63,7 @@
   </main>
 
   <script>
-    // Wallet status update (kept minimal, no NFT calls)
+    // Wallet login status update (minimal)
     function updateWalletStatus() {
       const wallet = localStorage.getItem('xumm_wallet_address');
       const indicator = document.getElementById('wallet-indicator');
@@ -73,6 +72,7 @@
         indicator.classList.replace('red', 'green');
         indicator.title = 'Logged in';
         document.getElementById('logout-btn').style.display = 'inline-block';
+        indicator.onclick = null;
       } else {
         indicator.textContent = '🔴 Login';
         indicator.classList.replace('green', 'red');
@@ -83,19 +83,23 @@
     }
 
     async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-      const data = await res.json();
-      window.open(data.payloadURL, "_blank");
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+        const data = await res.json();
+        window.open(data.payloadURL, "_blank");
 
-      const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-        const loginStatus = await check.json();
-        if (loginStatus.loggedIn) {
-          clearInterval(interval);
-          localStorage.setItem('xumm_wallet_address', loginStatus.account);
-          updateWalletStatus();
-        }
-      }, 3000);
+        const interval = setInterval(async () => {
+          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+          const loginStatus = await check.json();
+          if (loginStatus.loggedIn) {
+            clearInterval(interval);
+            localStorage.setItem('xumm_wallet_address', loginStatus.account);
+            updateWalletStatus();
+          }
+        }, 3000);
+      } catch (err) {
+        console.error('Login failed', err);
+      }
     }
 
     document.getElementById('logout-btn').onclick = () => {
@@ -103,13 +107,7 @@
       updateWalletStatus();
     };
 
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
-      setupTimeframeButtons();
-      updateChartForTimeframe('1h');
-    });
-
-    // Chart.js price chart setup
+    // Chart.js setup
     const ctx = document.getElementById('priceChart').getContext('2d');
 
     const priceData = {
@@ -129,16 +127,10 @@
       data: priceData,
       options: {
         responsive: true,
-        interaction: {
-          mode: 'index',
-          intersect: false,
-        },
+        interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { display: true },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-          },
+          tooltip: { mode: 'index', intersect: false }
         },
         scales: {
           x: {
@@ -162,33 +154,48 @@
       }
     });
 
-    // Dummy data generator for the chart
+    // Fetch price data from API
+    async function fetchPriceData(timeframe) {
+      try {
+        const url = `https://sglcn-x20-api.glitch.me/api/sglcn-xrp?timeframe=${timeframe}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Network response was not ok: ${res.status}`);
+        const data = await res.json();
+        // Validate data format:
+        if (!Array.isArray(data)) throw new Error('API response is not an array');
+        if (!data.length) throw new Error('API response is empty');
+        if (!data[0].time || !data[0].price) throw new Error('API response missing time or price fields');
+        return data;
+      } catch (error) {
+        console.error('Failed to fetch price data:', error);
+        return null;
+      }
+    }
+
+    async function updateChartForTimeframe(tf) {
+      let pricePoints = await fetchPriceData(tf);
+      if (!pricePoints) {
+        pricePoints = generateDummyData(
+          tf === '1h' ? 60 : tf === '6h' ? 72 : tf === '24h' ? 96 : 168,
+          tf === '1h' ? 1 : tf === '6h' ? 5 : tf === '24h' ? 15 : 60
+        );
+      }
+      priceChart.data.labels = pricePoints.map(d => new Date(d.time));
+      priceChart.data.datasets[0].data = pricePoints.map(d => Number(d.price));
+      priceChart.options.scales.x.time.unit = (tf === '7d' || tf === '24h') ? 'hour' : 'minute';
+      priceChart.update();
+    }
+
+    // Dummy fallback data generator
     function generateDummyData(points, intervalMinutes) {
       const now = new Date();
       let data = [];
       for (let i = points - 1; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * intervalMinutes * 60 * 1000);
-        // Simulated price data with some randomness
+        const time = new Date(now.getTime() - i * intervalMinutes * 60000);
         const price = 0.00001 + 0.00001 * Math.sin(i / 5) + (Math.random() - 0.5) * 0.000002;
-        data.push({ time, price: price.toFixed(8) });
+        data.push({ time: time.toISOString(), price: price.toFixed(8) });
       }
       return data;
-    }
-
-    function updateChartForTimeframe(tf) {
-      let points, interval;
-      switch(tf) {
-        case '1h': points = 60; interval = 1; break;
-        case '6h': points = 72; interval = 5; break; 
-        case '24h': points = 96; interval = 15; break;
-        case '7d': points = 168; interval = 60; break;
-        default: points = 60; interval = 1;
-      }
-      const dummyData = generateDummyData(points, interval);
-      priceChart.data.labels = dummyData.map(d => d.time);
-      priceChart.data.datasets[0].data = dummyData.map(d => parseFloat(d.price));
-      priceChart.options.scales.x.time.unit = interval >= 60 ? 'hour' : 'minute';
-      priceChart.update();
     }
 
     function setupTimeframeButtons() {
@@ -201,6 +208,12 @@
         };
       });
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
+      setupTimeframeButtons();
+      updateChartForTimeframe('1h');
+    });
   </script>
 </body>
 </html>

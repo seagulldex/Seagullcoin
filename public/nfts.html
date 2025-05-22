@@ -24,6 +24,25 @@
       font-weight: bold;
       margin-top: 20px;
     }
+    .action-btn {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    .buy-btn {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .sell-btn {
+      background-color: #f44336;
+      color: white;
+    }
+    .action-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -46,12 +65,14 @@
           <tr>
             <th>Sell Price (Ask)</th>
             <th>Amount</th>
+            <th>Action</th>
             <th>Buy Price (Bid)</th>
             <th>Amount</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody id="orderbook-body">
-          <tr><td colspan="4">Loading orderbook...</td></tr>
+          <tr><td colspan="6">Loading orderbook...</td></tr>
         </tbody>
       </table>
     </div>
@@ -61,106 +82,4 @@
     function updateWalletStatus() {
       const wallet = localStorage.getItem('xumm_wallet_address');
       const indicator = document.getElementById('wallet-indicator');
-      const logoutBtn = document.getElementById('logout-btn');
-      if (wallet) {
-        indicator.textContent = '🟢 Connected';
-        indicator.classList.remove('red');
-        indicator.classList.add('green');
-        indicator.title = 'Logged in';
-        indicator.onclick = null;
-        logoutBtn.style.display = 'inline-block';
-      } else {
-        indicator.textContent = '🔴 Login';
-        indicator.classList.remove('green');
-        indicator.classList.add('red');
-        indicator.title = 'Click to login';
-        indicator.onclick = startLoginFlow;
-        logoutBtn.style.display = 'none';
-      }
-    }
-
-    async function startLoginFlow() {
-      try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-        const data = await res.json();
-        window.open(data.payloadURL, "_blank");
-
-        const interval = setInterval(async () => {
-          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-          const loginStatus = await check.json();
-          if (loginStatus.loggedIn) {
-            clearInterval(interval);
-            localStorage.setItem('xumm_wallet_address', loginStatus.account);
-            updateWalletStatus();
-          }
-        }, 3000);
-      } catch (err) {
-        alert('Login failed: ' + err.message);
-      }
-    }
-
-    document.getElementById('logout-btn').onclick = () => {
-      localStorage.removeItem('xumm_wallet_address');
-      updateWalletStatus();
-    };
-
-    function formatPrice(price) {
-      return !price || isNaN(price) ? '' : Number(price).toFixed(6);
-    }
-
-    function formatAmount(amount) {
-      return !amount || isNaN(amount) ? '' : Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    async function updateCurrentPrice() {
-      try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/api/orderbook');
-        const data = await res.json();
-
-        const midPrice = data.midPrice;
-        const bids = Array.isArray(data.asks) ? data.asks.slice(0, 10) : [];
-        const asks = Array.isArray(data.bids) ? data.bids.slice(0, 10) : [];
-
-        document.getElementById('price-value').textContent = isNaN(midPrice) ? 'N/A' : parseFloat(midPrice).toFixed(6);
-
-        asks.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-        bids.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
-
-        const tbody = document.getElementById('orderbook-body');
-        tbody.innerHTML = '';
-
-        const maxRows = Math.max(asks.length, bids.length);
-        for (let i = 0; i < maxRows; i++) {
-          const ask = asks[i];
-          const bid = bids[i];
-
-          if (!ask && !bid) continue;
-
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${ask ? formatPrice(ask.price) : ''}</td>
-            <td>${ask ? formatAmount(ask.amount) : ''}</td>
-            <td>${bid ? formatPrice(bid.price) : ''}</td>
-            <td>${bid ? formatAmount(bid.amount) : ''}</td>
-          `;
-          tbody.appendChild(row);
-        }
-
-        if (tbody.children.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4">No orderbook data available</td></tr>`;
-        }
-      } catch (err) {
-        console.error('Orderbook error:', err);
-        document.getElementById('price-value').textContent = 'Error';
-        document.getElementById('orderbook-body').innerHTML = `<tr><td colspan="4">Failed to load orderbook</td></tr>`;
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
-      updateCurrentPrice();
-      setInterval(updateCurrentPrice, 60000);
-    });
-  </script>
-</body>
-</html>
+      const logoutBtn =

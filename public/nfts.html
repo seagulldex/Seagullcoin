@@ -46,6 +46,7 @@
       border: 1px solid #ccc;
       padding: 6px 10px;
       text-align: right;
+      white-space: nowrap;
     }
     .orderbook-table th {
       background-color: #f2f2f2;
@@ -57,7 +58,7 @@
   </style>
 </head>
 <body>
-  <div id="top-bar">
+  <div id="top-bar" style="display:flex; align-items:center; padding: 10px;">
     <div style="flex:1;">
       <button id="logout-btn">Logout</button>
     </div>
@@ -79,7 +80,7 @@
   </header>
 
   <main style="padding: 20px;">
-    <h1></h1>
+    <h1>Trading SGLCN-X20</h1>
 
     <div id="current-price">
       SGLCN / XRP Price: <span id="price-value">Loading...</span> XRP
@@ -87,7 +88,7 @@
 
     <div id="orderbook">
       <div class="orderbook-header">Order Book</div>
-      <table class="orderbook-table">
+      <table class="orderbook-table" aria-label="Order Book">
         <thead>
           <tr>
             <th>Sell Price (Ask)</th>
@@ -135,6 +136,7 @@
         const interval = setInterval(async () => {
           try {
             const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+            if (!check.ok) throw new Error('Login status API error');
             const loginStatus = await check.json();
             if (loginStatus.loggedIn) {
               clearInterval(interval);
@@ -160,28 +162,45 @@
         const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
         if (!res.ok) throw new Error('Failed to fetch price');
         const data = await res.json();
-        const priceValue = parseFloat(data.midPrice);
-        if (!isNaN(priceValue)) {
-          document.getElementById('price-value').textContent = priceValue.toFixed(6);
+
+        // Check for required fields safely
+        const midPrice = typeof data.midPrice === 'string' || typeof data.midPrice === 'number' ? data.midPrice : null;
+        const asks = Array.isArray(data.asks) ? data.asks : [];
+        const bids = Array.isArray(data.bids) ? data.bids : [];
+
+        if (midPrice !== null && !isNaN(parseFloat(midPrice))) {
+          document.getElementById('price-value').textContent = parseFloat(midPrice).toFixed(6);
         } else {
           document.getElementById('price-value').textContent = 'N/A';
         }
 
-        // Render orderbook
+        // Render orderbook safely
         const tbody = document.getElementById('orderbook-body');
         tbody.innerHTML = '';
 
         for (let i = 0; i < 10; i++) {
-          const ask = data.asks[i];
-          const bid = data.bids[i];
+          const ask = asks[i];
+          const bid = bids[i];
+
+          const askPrice = (ask && !isNaN(parseFloat(ask.price))) ? Number(ask.price).toExponential(2) : '';
+          const askAmount = (ask && !isNaN(parseFloat(ask.amount))) ? Number(ask.amount).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '';
+
+          const bidPrice = (bid && !isNaN(parseFloat(bid.price))) ? Number(bid.price).toExponential(2) : '';
+          const bidAmount = (bid && !isNaN(parseFloat(bid.amount))) ? Number(bid.amount).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '';
+
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td>${ask ? ask.price.toExponential(2) : ''}</td>
-            <td>${ask ? ask.amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''}</td>
-            <td>${bid ? bid.price.toExponential(2) : ''}</td>
-            <td>${bid ? bid.amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''}</td>
+            <td>${askPrice}</td>
+            <td>${askAmount}</td>
+            <td>${bidPrice}</td>
+            <td>${bidAmount}</td>
           `;
           tbody.appendChild(row);
+        }
+
+        // If no orderbook entries found, show placeholder
+        if (asks.length === 0 && bids.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4">No orderbook data available</td></tr>`;
         }
       } catch (error) {
         console.error('Error updating price/orderbook:', error);
@@ -193,7 +212,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
       updateCurrentPrice();
-      setInterval(updateCurrentPrice, 60000); // refresh every 60s
+      setInterval(updateCurrentPrice, 60000); // refresh every 60 seconds
     });
   </script>
 </body>

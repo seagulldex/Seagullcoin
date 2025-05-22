@@ -4328,7 +4328,7 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 
 
 app.get('/api/orderbook', async (req, res) => {
-  const client = new xrpl.Client('wss://s2.ripple.com');
+  const client = new xrpl.Client('wss://s1.ripple.com');
 
   const withTimeout = (promise, ms) =>
     Promise.race([
@@ -4341,7 +4341,7 @@ app.get('/api/orderbook', async (req, res) => {
   const TIMEOUT_CONNECT = 4000;
   const TIMEOUT_REQUEST = 8000;
 
-  const currency = '53656167756C6C436F696E000000000000000000'; // SeagullCoin hex
+  const currency = '53656167756C6C436F696E000000000000000000'; // SeagullCoin (hex)
   const issuer = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
   const XRP = { currency: 'XRP' };
 
@@ -4368,17 +4368,11 @@ app.get('/api/orderbook', async (req, res) => {
       TIMEOUT_REQUEST
     );
 
-    // Debug logs: sample offers
-    console.log('Sample bid offer:', bidsResponse.result.offers[0]);
-    console.log('Sample ask offer:', asksResponse.result.offers[0]);
-
     const parseAmount = (amt, label) => {
       if (typeof amt === 'string') {
-        console.log(`${label} as XRP string:`, amt);
-        return Number(amt) / 1e6;
+        return Number(amt) / 1e6; // XRP
       } else if (amt && typeof amt.value === 'string') {
-        console.log(`${label} as token object:`, amt.value);
-        return Number(amt.value);
+        return Number(amt.value); // IOU (SeagullCoin)
       } else {
         console.warn(`${label} invalid format:`, amt);
         return 0;
@@ -4386,19 +4380,14 @@ app.get('/api/orderbook', async (req, res) => {
     };
 
     function parseOffer(offer, isBid) {
-      const gets = offer.taker_gets;
-      const pays = offer.taker_pays;
+      const gets = offer.TakerGets;
+      const pays = offer.TakerPays;
 
       const getsAmount = parseAmount(gets, 'gets');
       const paysAmount = parseAmount(pays, 'pays');
 
       if (!getsAmount || !paysAmount || isNaN(getsAmount) || isNaN(paysAmount)) {
-        console.warn('Invalid offer skipped:', offer);
-        return {
-          price: null,
-          amount: 0,
-          offerAccount: offer.account,
-        };
+        return null;
       }
 
       const price = isBid
@@ -4408,17 +4397,21 @@ app.get('/api/orderbook', async (req, res) => {
       return {
         price: +price.toFixed(6),
         amount: isBid ? getsAmount : paysAmount,
-        offerAccount: offer.account,
+        offerAccount: offer.Account,
       };
     }
 
     const bids = (bidsResponse.result.offers || [])
       .map((o) => parseOffer(o, true))
-      .filter((b) => b.price !== null);
+      .filter(Boolean)
+      .sort((a, b) => b.price - a.price)
+      .slice(0, 5);
 
     const asks = (asksResponse.result.offers || [])
       .map((o) => parseOffer(o, false))
-      .filter((a) => a.price !== null);
+      .filter(Boolean)
+      .sort((a, b) => a.price - b.price)
+      .slice(0, 5);
 
     let midPrice = null;
     if (bids.length && asks.length) {
@@ -4433,6 +4426,7 @@ app.get('/api/orderbook', async (req, res) => {
     return res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
   }
 });
+
 
 
 

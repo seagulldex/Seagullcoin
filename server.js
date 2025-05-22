@@ -4328,7 +4328,7 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 
 
 app.get('/api/orderbook', async (req, res) => {
-  const client = new xrpl.Client('wss://s1.ripple.com');
+  const client = new xrpl.Client('wss://s2.ripple.com');
 
   const withTimeout = (promise, ms) =>
     Promise.race([
@@ -4371,61 +4371,6 @@ app.get('/api/orderbook', async (req, res) => {
         return Number(amt) / 1e6; // XRP drops to XRP
       } else if (amt && typeof amt.value === 'string') {
         return Number(amt.value); // IOU value
-      } else {
-        console.warn(`${label} invalid format:`, amt);
-        return 0;
-      }
-    };
-
-    function parseOffer(offer, isBid) {
-      const gets = offer.TakerGets;
-      const pays = offer.TakerPays;
-
-      const getsAmount = parseAmount(gets, 'gets');
-      const paysAmount = parseAmount(pays, 'pays');
-
-      if (!getsAmount || !paysAmount || isNaN(getsAmount) || isNaN(paysAmount)) {
-        return null;
-      }
-
-      // Price calculation: 
-      // Bids: price = pays / gets (XRP / IOU)
-      // Asks: price = gets / pays (IOU / XRP)
-      const price = isBid ? paysAmount / getsAmount : getsAmount / paysAmount;
-
-      // Return strings with fixed decimals to avoid scientific notation in JSON
-      return {
-        price: price.toFixed(8), // 8 decimals for price
-        amount: (isBid ? getsAmount : paysAmount).toFixed(6), // 6 decimals for amount
-        offerAccount: offer.Account,
-      };
-    }
-
-    const bids = (bidsResponse.result.offers || [])
-      .map((o) => parseOffer(o, true))
-      .filter(Boolean)
-      .sort((a, b) => parseFloat(b.price) - parseFloat(a.price))
-      .slice(0, 5);
-
-    const asks = (asksResponse.result.offers || [])
-      .map((o) => parseOffer(o, false))
-      .filter(Boolean)
-      .sort((a, b) => parseFloat(a.price) - parseFloat(b.price))
-      .slice(0, 5);
-
-    let midPrice = null;
-    if (bids.length && asks.length) {
-      midPrice = ((parseFloat(bids[0].price) + parseFloat(asks[0].price)) / 2).toFixed(8);
-    }
-
-    await client.disconnect();
-    return res.json({ bids, asks, midPrice });
-  } catch (error) {
-    console.error('Orderbook fetch failed:', error.message || error);
-    if (client.isConnected()) await client.disconnect();
-    return res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
-  }
-});
 
 
 

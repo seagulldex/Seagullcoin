@@ -1,320 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Trading - SGLCN-X20</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="header.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@3.3.0/dist/chartjs-chart-financial.min.js"></script>
+  <meta charset="UTF-8">
+  <title>XRP/SGLCN - Last 1 Hour Chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
   <style>
-    #timeframe-buttons {
-      margin-bottom: 15px;
-    }
-    #timeframe-buttons button {
-      margin-right: 8px;
-      background-color: #2196F3;
-      color: white;
-      border-radius: 5px;
-      border: none;
-      cursor: pointer;
-      padding: 6px 12px;
-      font-weight: 600;
-    }
-    #timeframe-buttons button.active {
-      background-color: #0b7dda;
-    }
-    #priceChart {
-      max-width: 900px;
-      margin-bottom: 30px;
-      display: block;
-      background: #f8f9fa;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
-    }
-    #wallet-indicator.red {
-      color: red;
-      cursor: pointer;
-    }
-    #wallet-indicator.green {
-      color: green;
-      cursor: default;
-    }
-    button {
-      padding: 8px 12px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; background: #111; color: #fff; }
+    canvas { max-width: 100%; height: 400px; background: #fff; border-radius: 10px; }
   </style>
 </head>
 <body>
-  <div id="top-bar" style="display:flex; align-items:center; justify-content:space-between; padding:10px;">
-    <div style="flex:1;">
-      <button id="logout-btn" style="display:none;">Logout</button>
-    </div>
-    <div id="wallet-container">
-      <div id="wallet-status">
-        <span id="wallet-indicator" class="red">🔴 Login</span>
-      </div>
-    </div>
-  </div>
-
-  <header>
-    <nav>
-      <ul style="display:flex; gap:15px; list-style:none; padding-left:0;">
-        <li><a href="index.html">Home</a></li>
-        <li><a href="stake.html">Stake</a></li>
-        <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
-      </ul>
-    </nav>
-  </header>
-
-  <main style="max-width: 900px; margin: auto; padding: 15px;">
-    <h1>Trading</h1>
-
-    <h2>SGLCN/XRP Price Chart</h2>
-
-    <div id="timeframe-buttons">
-      <button data-timeframe="1h" class="active">1 Hour</button>
-      <button data-timeframe="6h">6 Hours</button>
-      <button data-timeframe="24h">24 Hours</button>
-      <button data-timeframe="7d">7 Days</button>
-      <button data-timeframe="1m">1 Month</button>
-      <button data-timeframe="max">Max</button>
-    </div>
-
-    <canvas id="priceChart" height="400"></canvas>
-  </main>
+  <h2>XRP / SeagullCoin - Last 1 Hour Candlestick Chart</h2>
+  <canvas id="chart" width="800" height="400"></canvas>
 
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
-      setupTimeframeButtons();
-      updateChartForTimeframe('1h');
-    });
+    async function fetchTrades() {
+      const response = await fetch('/get-trades');
+      const data = await response.json();
+      const oneHourAgo = Date.now() - (60 * 60 * 1000);
 
-    // Wallet login/logout and status
-    function updateWalletStatus() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      const indicator = document.getElementById('wallet-indicator');
-      const logoutBtn = document.getElementById('logout-btn');
-
-      if (wallet) {
-        indicator.textContent = '🟢 Connected';
-        indicator.classList.replace('red', 'green');
-        indicator.title = 'Logged in as ' + wallet;
-        indicator.onclick = null;
-        logoutBtn.style.display = 'inline-block';
-        logoutBtn.onclick = () => {
-          localStorage.removeItem('xumm_wallet_address');
-          updateWalletStatus();
-        };
-      } else {
-        indicator.textContent = '🔴 Login';
-        indicator.classList.replace('green', 'red');
-        indicator.title = 'Click to login';
-        indicator.onclick = startLoginFlow;
-        logoutBtn.style.display = 'none';
-      }
-    }
-
-    // Simulated login flow (replace with real XUMM integration)
-    async function startLoginFlow() {
-      try {
-        // Normally you'd fetch a login payload and open XUMM app
-        // Here we simulate by asking user input for demo purposes
-        let wallet = prompt('Enter your wallet address to simulate login:');
-        if (wallet) {
-          localStorage.setItem('xumm_wallet_address', wallet.trim());
-          updateWalletStatus();
-        }
-      } catch (e) {
-        alert("Login failed, please try again.");
-        console.error(e);
-      }
-    }
-
-    // Timeframe buttons setup
-    function setupTimeframeButtons() {
-      const buttons = document.querySelectorAll('#timeframe-buttons button');
-      buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          buttons.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          updateChartForTimeframe(btn.dataset.timeframe);
-        });
+      // Filter trades from last 1 hour
+      const recentTrades = data.trades.filter(trade => {
+        const timestamp = new Date(trade.timestamp).getTime();
+        return timestamp >= oneHourAgo;
       });
+
+      // Bucket trades by minute
+      const buckets = {};
+      recentTrades.forEach(trade => {
+        const date = new Date(trade.timestamp);
+        const minute = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes());
+        const key = minute.toISOString();
+
+        if (!buckets[key]) {
+          buckets[key] = {
+            t: minute,
+            o: trade.price,
+            h: trade.price,
+            l: trade.price,
+            c: trade.price
+          };
+        } else {
+          buckets[key].h = Math.max(buckets[key].h, trade.price);
+          buckets[key].l = Math.min(buckets[key].l, trade.price);
+          buckets[key].c = trade.price;
+        }
+      });
+
+      return Object.values(buckets);
     }
 
-    // Sample OHLC + Volume data for different timeframes
-    // Each entry: {x: timestamp, o: open, h: high, l: low, c: close, v: volume}
-    const sampleData = {
-      '1h': generateRandomData(12, 5 * 60 * 1000), // 12 points, 5 min interval (~1 hour)
-      '6h': generateRandomData(24, 15 * 60 * 1000), // 24 points, 15 min interval (~6 hours)
-      '24h': generateRandomData(48, 30 * 60 * 1000), // 48 points, 30 min interval (~24 hours)
-      '7d': generateRandomData(28, 6 * 60 * 60 * 1000), // 28 points, 6 hour interval (~7 days)
-      '1m': generateRandomData(30, 24 * 60 * 60 * 1000), // 30 points, 1 day interval (~1 month)
-      'max': generateRandomData(90, 24 * 60 * 60 * 1000), // 90 points, 1 day interval (~3 months)
-    };
+    async function renderChart() {
+      const candles = await fetchTrades();
 
-    // Function to generate synthetic OHLC + volume data for demo
-    function generateRandomData(points, interval) {
-      let data = [];
-      let baseTime = Date.now() - points * interval;
-      let lastClose = 100; // starting price
-      for(let i = 0; i < points; i++) {
-        const open = lastClose;
-        const close = open + (Math.random() - 0.5) * 4; // +/- 2 fluctuation
-        const high = Math.max(open, close) + Math.random() * 2;
-        const low = Math.min(open, close) - Math.random() * 2;
-        const volume = Math.floor(Math.random() * 1000) + 200;
-        data.push({
-          x: baseTime + i * interval,
-          o: parseFloat(open.toFixed(2)),
-          h: parseFloat(high.toFixed(2)),
-          l: parseFloat(low.toFixed(2)),
-          c: parseFloat(close.toFixed(2)),
-          v: volume
-        });
-        lastClose = close;
-      }
-      return data;
-    }
-
-    let priceChartInstance = null;
-
-    function updateChartForTimeframe(timeframe) {
-      const ctx = document.getElementById('priceChart').getContext('2d');
-      if (priceChartInstance) {
-        priceChartInstance.destroy();
-      }
-
-      const ohlcData = sampleData[timeframe] || sampleData['1h'];
-
-      // Candlestick dataset
-      const candleData = ohlcData.map(d => ({
-        x: d.x,
-        o: d.o,
-        h: d.h,
-        l: d.l,
-        c: d.c
-      }));
-
-      // Volume dataset for bar chart
-      const volumeData = ohlcData.map(d => ({
-        x: d.x,
-        y: d.v
-      }));
-
-      priceChartInstance = new Chart(ctx, {
+      const ctx = document.getElementById('chart').getContext('2d');
+      new Chart(ctx, {
+        type: 'candlestick',
         data: {
-          datasets: [
-            {
-              label: 'Price',
-              data: candleData,
-              type: 'candlestick',
-              borderColor: 'black',
-              borderWidth: 1,
-              color: {
-                up: '#4CAF50',
-                down: '#F44336',
-                unchanged: '#999999'
-              },
-            },
-            {
-              label: 'Volume',
-              data: volumeData,
-              type: 'bar',
-              yAxisID: 'volume',
-              backgroundColor: 'rgba(33, 150, 243, 0.5)'
+          datasets: [{
+            label: 'XRP / SGLCN',
+            data: candles,
+            color: {
+              up: '#0f0',
+              down: '#f00',
+              unchanged: '#999'
             }
-          ]
+          }]
         },
         options: {
           responsive: true,
-          interaction: {
-            mode: 'index',
-            intersect: false,
-          },
           scales: {
             x: {
-              type: 'time',
               time: {
-                tooltipFormat: 'MMM d, yyyy HH:mm',
-                unit: timeframe === '1h' ? 'minute' :
-                      timeframe === '6h' ? 'hour' :
-                      timeframe === '24h' ? 'hour' :
-                      timeframe === '7d' ? 'day' :
-                      timeframe === '1m' ? 'day' :
-                      'day'
+                unit: 'minute',
               },
-              ticks: {
-                maxRotation: 0,
-                autoSkipPadding: 15,
-              },
-              grid: {
-                display: false,
-              }
+              type: 'time',
+              ticks: { color: '#fff' },
+              grid: { color: '#333' }
             },
             y: {
-              position: 'left',
-              title: {
-                display: true,
-                text: 'Price (SGLCN/XRP)'
-              },
-              grid: {
-                color: '#eee'
-              }
-            },
-            volume: {
-              position: 'right',
-              title: {
-                display: true,
-                text: 'Volume'
-              },
-              grid: {
-                drawOnChartArea: false,
-              },
-              min: 0,
-              max: Math.max(...volumeData.map(d => d.y)) * 3,
-              ticks: {
-                display: false
-              }
+              ticks: { color: '#fff' },
+              grid: { color: '#333' }
             }
-          },
-          plugins: {
-            legend: {
-              display: true,
-              position: 'top',
-            },
-            tooltip: {
-              enabled: true,
-              mode: 'nearest',
-              intersect: false,
-              callbacks: {
-                label: ctx => {
-                  const d = ctx.raw;
-                  if (ctx.dataset.type === 'candlestick') {
-                    return `O: ${d.o} H: ${d.h} L: ${d.l} C: ${d.c}`;
-                  } else if (ctx.dataset.type === 'bar') {
-                    return `Volume: ${d.y}`;
-                  }
-                  return ctx.formattedValue;
-                }
-              }
-            }
-          },
+          }
         }
       });
     }
+
+    renderChart();
   </script>
 </body>
 </html>

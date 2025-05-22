@@ -74,6 +74,24 @@
       </table>
     </div>
 
+    <div class="trade-box">
+      <h2>Place Buy Order</h2>
+      <label for="buy-price">Buy Price (XRP):</label>
+      <input id="buy-price" type="number" step="0.000001" placeholder="0.900000" />
+      <label for="buy-amount">Amount (SGLCN):</label>
+      <input id="buy-amount" type="number" step="0.01" placeholder="10" />
+      <button onclick="placeBuyOrder()">Place Buy Offer</button>
+    </div>
+
+    <div class="trade-box">
+      <h2>Place Sell Order</h2>
+      <label for="nft-id-sell">NFTokenID:</label>
+      <input id="nft-id-sell" type="text" placeholder="00090000ABCDEF123..." />
+      <label for="sell-price">Sell Price (XRP):</label>
+      <input id="sell-price" type="number" step="0.000001" placeholder="1.100000" />
+      <button onclick="placeSellOrder()">Place Sell Offer</button>
+    </div>
+  </main>
 
   <script>
     function updateWalletStatus() {
@@ -139,14 +157,6 @@
         const bids = Array.isArray(data.bids) ? data.bids.slice(0, 10) : [];
         const asks = Array.isArray(data.asks) ? data.asks.slice(0, 10) : [];
 
-
-
-        // Mock additional data (5 extra fake orders for visual filler)
-        for (let i = 1; i <= 5; i++) {
-          bids.push({ price: (1.000000 - i * 0.01).toFixed(6), amount: (10 + i).toFixed(2) });
-          asks.push({ price: (1.000000 + i * 0.01).toFixed(6), amount: (15 + i).toFixed(2) });
-        }
-
         document.getElementById('price-value').textContent = isNaN(midPrice) ? 'N/A' : parseFloat(midPrice).toFixed(6);
 
         asks.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
@@ -159,7 +169,6 @@
         for (let i = 0; i < maxRows; i++) {
           const ask = asks[i];
           const bid = bids[i];
-
           const row = document.createElement('tr');
           row.innerHTML = `
             <td class="red">${ask ? formatPrice(ask.price) : ''}</td>
@@ -196,21 +205,6 @@
       else alert("Error placing buy offer.");
     }
 
-    async function placeSellOrder() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet) return alert("Please log in first.");
-      const tokenId = document.getElementById('nft-id-sell').value.trim();
-      const price = parseFloat(document.getElementById('sell-price').value);
-      if (!tokenId || !price) return alert("Enter valid token ID and price.");
-      const res = await fetch('https://sglcn-x20-api.glitch.me/api/sell-offer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet, tokenId, price })
-      });
-      const data = await res.json();
-      if (data.payloadURL) window.open(data.payloadURL, '_blank');
-      else alert("Error placing sell offer.");
-    }
 
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();

@@ -4327,6 +4327,79 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 });
 
 
+const SGLCN_CURRENCY = '53656167756c6c436f696e000000000000000000'; // use string currency for xrpl.js request
+
+
+app.get('/api/orderbook', async (req, res) => {
+  const client = new xrpl.Client('wss://s1.ripple.com'); // Mainnet websocket
+  try {
+    await client.connect();
+
+    // Fetch bids: offers where taker_gets = SGLCN, taker_pays = XRP
+    const bidsResponse = await client.request({
+      command: 'book_offers',
+      taker_gets: {
+        currency: SGLCN_CURRENCY,
+        issuer: SGLCN_ISSUER,
+      },
+      taker_pays: {
+        currency: 'XRP',
+      },
+      limit: 20,
+    });
+
+    // Fetch asks: offers where taker_gets = XRP, taker_pays = SGLCN
+    const asksResponse = await client.request({
+      command: 'book_offers',
+      taker_gets: {
+        currency: 'XRP',
+      },
+      taker_pays: {
+        currency: SGLCN_CURRENCY,
+        issuer: SGLCN_ISSUER,
+      },
+      limit: 20,
+    });
+
+    // Parse offers helper
+    function parseOffer(offer, isBid) {
+      const taker_gets = offer.taker_gets;
+      const taker_pays = offer.taker_pays;
+
+      // Convert XRP drops to XRP or parse issued currency value
+      const getsAmount = typeof taker_gets === 'string'
+        ? Number(taker_gets) / 1000000
+        : Number(taker_gets.value);
+
+      const paysAmount = typeof taker_pays === 'string'
+        ? Number(taker_pays) / 1000000
+        : Number(taker_pays.value);
+
+      // Price in XRP per SGLCN
+      // For bids: price = paysAmount / getsAmount (XRP / SGLCN)
+      // For asks: price = getsAmount / paysAmount (XRP / SGLCN)
+      const price = isBid ? paysAmount / getsAmount : getsAmount / paysAmount;
+
+      return {
+        price,
+        amount: isBid ? getsAmount : paysAmount, // amount of SGLCN available
+        offerAccount: offer.account,
+      };
+    }
+
+    const bids = (bidsResponse.offers || []).map(offer => parseOffer(offer, true));
+    const asks = (asksResponse.offers || []).map(offer => parseOffer(offer, false));
+
+    await client.disconnect();
+
+    res.json({ bids, asks });
+
+  } catch (error) {
+    if (client.isConnected()) await client.disconnect();
+    console.error('Error fetching orderbook:', error);
+    res.status(500).json({ error: 'Failed to fetch orderbook' });
+  }
+});
 
 
 

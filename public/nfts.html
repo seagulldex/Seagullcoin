@@ -6,29 +6,7 @@
   <title>Trading - SGLCN-X20</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="header.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    #timeframe-buttons {
-      margin: 20px 0;
-      display: flex;
-      gap: 10px;
-    }
-    #timeframe-buttons button {
-      background-color: #2196F3;
-      padding: 8px 14px;
-      font-size: 16px;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
-    }
-    #timeframe-buttons button.active {
-      background-color: #0b7dda;
-    }
-    #timeframe-buttons button:hover:not(.active) {
-      background-color: #45a049;
-    }
     #wallet-status {
       cursor: pointer;
       user-select: none;
@@ -52,7 +30,7 @@
     }
     #current-price {
       font-size: 1.5rem;
-      margin-bottom: 10px;
+      margin: 20px 0;
       font-weight: bold;
     }
   </style>
@@ -80,22 +58,11 @@
   </header>
 
   <main style="padding: 20px;">
-    <h1>Trading</h1>
-
-    <h2>SGLCN/XRP Price Chart</h2>
+    <h1></h1>
 
     <div id="current-price">
       SGLCN / XRP Price: <span id="price-value">Loading...</span> XRP
     </div>
-
-    <div id="timeframe-buttons">
-      <button data-timeframe="1h" class="active">1 Hour</button>
-      <button data-timeframe="6h">6 Hours</button>
-      <button data-timeframe="24h">24 Hours</button>
-      <button data-timeframe="7d">7 Days</button>
-    </div>
-
-    <canvas id="priceChart" style="max-width: 700px; width: 100%; height: 400px;"></canvas>
   </main>
 
   <script>
@@ -151,115 +118,6 @@
       updateWalletStatus();
     };
 
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
-      setupTimeframeButtons();
-      updateChartForTimeframe('1h');
-      updateCurrentPrice();
-      setInterval(updateCurrentPrice, 60000); // refresh price every 60s
-    });
-
-    // Chart.js price chart setup
-    const ctx = document.getElementById('priceChart').getContext('2d');
-
-    const priceData = {
-      labels: [],
-      datasets: [{
-        label: 'SGLCN to XRP',
-        data: [],
-        borderColor: 'rgb(33, 150, 243)',
-        backgroundColor: 'rgba(33, 150, 243, 0.2)',
-        fill: true,
-        tension: 0.3,
-      }]
-    };
-
-    const priceChart = new Chart(ctx, {
-      type: 'line',
-      data: priceData,
-      options: {
-        responsive: true,
-        interaction: {
-          mode: 'index',
-          intersect: false,
-        },
-        plugins: {
-          legend: { display: true },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-          },
-        },
-        scales: {
-          x: {
-            type: 'time',
-            time: {
-              tooltipFormat: 'MMM d, HH:mm',
-              unit: 'minute',
-              displayFormats: {
-                minute: 'HH:mm',
-                hour: 'MMM d HH:mm',
-                day: 'MMM d',
-              }
-            },
-            title: { display: true, text: 'Time' },
-          },
-          y: {
-            beginAtZero: false,
-            title: { display: true, text: 'Price (XRP)' },
-          }
-        }
-      }
-    });
-
-    async function fetchPriceData(timeframe) {
-      try {
-        const res = await fetch(`https://sglcn-x20-api.glitch.me/api/sglcn-xrp?timeframe=${timeframe}`);
-        if (!res.ok) throw new Error('Network response was not ok');
-        const data = await res.json();
-        return data;
-      } catch (error) {
-        console.error('Failed to fetch price data:', error);
-        return null;
-      }
-    }
-
-    async function updateChartForTimeframe(tf) {
-      let pricePoints = await fetchPriceData(tf);
-      if (!pricePoints) {
-        pricePoints = generateDummyData(
-          tf === '1h' ? 60 : tf === '6h' ? 72 : tf === '24h' ? 96 : 168,
-          tf === '1h' ? 1 : tf === '6h' ? 5 : tf === '24h' ? 15 : 60
-        );
-      }
-      priceChart.data.labels = pricePoints.map(d => new Date(d.time));
-      priceChart.data.datasets[0].data = pricePoints.map(d => Number(d.price));
-      priceChart.options.scales.x.time.unit = (tf === '7d' || tf === '24h') ? 'hour' : 'minute';
-      priceChart.update();
-    }
-
-    function generateDummyData(points, intervalMinutes) {
-      const now = new Date();
-      let data = [];
-      for (let i = points - 1; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * intervalMinutes * 60 * 1000);
-        const price = 0.00001 + 0.00001 * Math.sin(i / 5) + (Math.random() - 0.5) * 0.000002;
-        data.push({ time: time.toISOString(), price: price.toFixed(8) });
-      }
-      return data;
-    }
-
-    function setupTimeframeButtons() {
-      const buttons = document.querySelectorAll('#timeframe-buttons button');
-      buttons.forEach(btn => {
-        btn.onclick = () => {
-          buttons.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          updateChartForTimeframe(btn.dataset.timeframe);
-        };
-      });
-    }
-
     async function updateCurrentPrice() {
       try {
         const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
@@ -276,6 +134,12 @@
         document.getElementById('price-value').textContent = 'Error';
       }
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
+      updateCurrentPrice();
+      setInterval(updateCurrentPrice, 60000); // refresh price every 60s
+    });
   </script>
 </body>
 </html>

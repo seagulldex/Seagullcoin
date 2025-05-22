@@ -4327,11 +4327,9 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 });
 
 
-
 app.get('/api/orderbook', async (req, res) => {
   const client = new xrpl.Client('wss://s2.ripple.com');
 
-  // Timeout helper
   const withTimeout = (promise, ms) =>
     Promise.race([
       promise,
@@ -4340,17 +4338,16 @@ app.get('/api/orderbook', async (req, res) => {
       ),
     ]);
 
-  const TIMEOUT_CONNECT = 4000; // 4 sec for connect
-  const TIMEOUT_REQUEST = 8000; // 8 sec for requests
+  const TIMEOUT_CONNECT = 4000;
+  const TIMEOUT_REQUEST = 8000;
 
-  const currency = '53656167756C6C436F696E000000000000000000'; // SeagullCoin hex (20 bytes)
-  const issuer = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'; // Correct issuer
-  const XRP = { currency: 'XRP' }; // XRP as object
+  const currency = '53656167756C6C436F696E000000000000000000'; // SeagullCoin hex
+  const issuer = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
+  const XRP = { currency: 'XRP' };
 
   try {
     await withTimeout(client.connect(), TIMEOUT_CONNECT);
 
-    // Fetch bids: users selling SGLCN, wanting XRP
     const bidsResponse = await withTimeout(
       client.request({
         command: 'book_offers',
@@ -4361,7 +4358,6 @@ app.get('/api/orderbook', async (req, res) => {
       TIMEOUT_REQUEST
     );
 
-    // Fetch asks: users selling XRP, wanting SGLCN
     const asksResponse = await withTimeout(
       client.request({
         command: 'book_offers',
@@ -4372,24 +4368,42 @@ app.get('/api/orderbook', async (req, res) => {
       TIMEOUT_REQUEST
     );
 
+    // Debug logs: sample offers
+    console.log('Sample bid offer:', bidsResponse.result.offers[0]);
+    console.log('Sample ask offer:', asksResponse.result.offers[0]);
+
+    const parseAmount = (amt, label) => {
+      if (typeof amt === 'string') {
+        console.log(`${label} as XRP string:`, amt);
+        return Number(amt) / 1e6;
+      } else if (amt && typeof amt.value === 'string') {
+        console.log(`${label} as token object:`, amt.value);
+        return Number(amt.value);
+      } else {
+        console.warn(`${label} invalid format:`, amt);
+        return 0;
+      }
+    };
+
     function parseOffer(offer, isBid) {
       const gets = offer.taker_gets;
       const pays = offer.taker_pays;
 
-      // Safely parse amount whether XRP (string) or issued currency (object)
-      const parseAmount = (amt) => {
-        if (typeof amt === 'string') {
-          return Number(amt) / 1e6; // XRP drops to XRP
-        } else if (amt && typeof amt.value === 'string') {
-          return Number(amt.value);
-        }
-        return 0; // fallback safe default
-      };
+      const getsAmount = parseAmount(gets, 'gets');
+      const paysAmount = parseAmount(pays, 'pays');
 
-      const getsAmount = parseAmount(gets);
-      const paysAmount = parseAmount(pays);
+      if (!getsAmount || !paysAmount || isNaN(getsAmount) || isNaN(paysAmount)) {
+        console.warn('Invalid offer skipped:', offer);
+        return {
+          price: null,
+          amount: 0,
+          offerAccount: offer.account,
+        };
+      }
 
-      const price = isBid ? paysAmount / getsAmount : getsAmount / paysAmount;
+      const price = isBid
+        ? paysAmount / getsAmount
+        : getsAmount / paysAmount;
 
       return {
         price: +price.toFixed(6),
@@ -4398,27 +4412,29 @@ app.get('/api/orderbook', async (req, res) => {
       };
     }
 
-    const bids = (bidsResponse.result.offers || []).map((o) =>
-      parseOffer(o, true)
-    );
-    const asks = (asksResponse.result.offers || []).map((o) =>
-      parseOffer(o, false)
-    );
+    const bids = (bidsResponse.result.offers || [])
+      .map((o) => parseOffer(o, true))
+      .filter((b) => b.price !== null);
+
+    const asks = (asksResponse.result.offers || [])
+      .map((o) => parseOffer(o, false))
+      .filter((a) => a.price !== null);
 
     let midPrice = null;
-    if (bids.length > 0 && asks.length > 0) {
-      const highestBid = bids[0].price;
-      const lowestAsk = asks[0].price;
-      midPrice = +((highestBid + lowestAsk) / 2).toFixed(6);
+    if (bids.length && asks.length) {
+      midPrice = +((bids[0].price + asks[0].price) / 2).toFixed(6);
     }
 
     await client.disconnect();
-
     return res.json({ bids, asks, midPrice });
   } catch (error) {
     console.error('Orderbook fetch failed:', error.message || error);
     if (client.isConnected()) await client.disconnect();
-    return res
+    return res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
+  }
+});
+
+
 
 
 

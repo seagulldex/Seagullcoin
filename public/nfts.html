@@ -118,8 +118,9 @@
         const data = await res.json();
 
         const midPrice = data.midPrice;
-        const asks = Array.isArray(data.asks) ? data.asks.slice(0, 10) : [];
-        const bids = Array.isArray(data.bids) ? data.bids.slice(0, 10) : [];
+        const bids = Array.isArray(data.asks) ? data.asks.slice(0, 10) : [];
+        const asks = Array.isArray(data.bids) ? data.bids.slice(0, 10) : [];
+
 
         document.getElementById('price-value').textContent = isNaN(midPrice) ? 'N/A' : parseFloat(midPrice).toFixed(6);
 

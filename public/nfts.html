@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trading - SGLCN-X20</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="header.css" />
+  <style>
+    #wallet-status {
+      cursor: pointer;
+      user-select: none;
+    }
+    #wallet-indicator.red {
+      color: red;
+    }
+    #wallet-indicator.green {
+      color: green;
+    }
+    #logout-btn {
+      display: none;
+      background-color: #f44336;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      font-size: 14px;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    #current-price {
+      font-size: 1.5rem;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    #orderbook {
+      margin-top: 30px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .orderbook-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .orderbook-table th,
+    .orderbook-table td {
+      border: 1px solid #ccc;
+      padding: 6px 10px;
+      text-align: right;
+      white-space: nowrap;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+    .orderbook-table th {
+      background-color: #f2f2f2;
+    }
+    .orderbook-header {
+      font-size: 1.2rem;
+      margin-top: 20px;
+      text-align: center;
+      font-weight: 600;
+    }
+    /* Color coding */
+    .ask-price, .ask-amount {
+      color: #d32f2f; /* red */
+      font-weight: 600;
+    }
+    .bid-price, .bid-amount {
+      color: #2e7d32; /* green */
+      font-weight: 600;
+    }
+    /* Responsive tweaks */
+    @media (max-width: 600px) {
+      #orderbook {
+        max-width: 100%;
+        padding: 0 10px;
+      }
+      .orderbook-table th,
+      .orderbook-table td {
+        font-size: 0.8rem;
+        padding: 4px 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="top-bar" style="display:flex; align-items:center; padding: 10px;">
+    <div style="flex:1;">
+      <button id="logout-btn">Logout</button>
+    </div>
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="stake.html">Stake</a></li>
+        <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main style="padding: 20px;">
+    <h1>Trading SGLCN-X20</h1>
+
+    <div id="current-price">
+      Median Price: <span id="price-value">Loading...</span> XRP
+    </div>
+
+    <div id="orderbook">
+      <div class="orderbook-header">Order Book</div>
+      <table class="orderbook-table" aria-label="Order Book">
+        <thead>
+          <tr>
+            <th>Sell Price (Ask)</th>
+            <th>Amount</th>
+            <th>Buy Price (Bid)</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="orderbook-body">
+          <tr><td colspan="4">Loading orderbook...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    function updateWalletStatus() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      const indicator = document.getElementById('wallet-indicator');
+      const logoutBtn = document.getElementById('logout-btn');
+      if (wallet) {
+        indicator.textContent = '🟢 Connected';
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
+        indicator.title = 'Logged in';
+        indicator.onclick = null;
+        logoutBtn.style.display = 'inline-block';
+      } else {
+        indicator.textContent = '🔴 Login';
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
+        indicator.title = 'Click to login';
+        indicator.onclick = startLoginFlow;
+        logoutBtn.style.display = 'none';
+      }
+    }
+
+    async function startLoginFlow() {
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+        if (!res.ok) throw new Error('Login API error');
+        const data = await res.json();
+        window.open(data.payloadURL, "_blank");
+
+        const interval = setInterval(async () => {
+          try {
+            const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+            if (!check.ok) throw new Error('Login status API error');
+            const loginStatus = await check.json();
+            if (loginStatus.loggedIn) {
+              clearInterval(interval);
+              localStorage.setItem('xumm_wallet_address', loginStatus.account);
+              updateWalletStatus();
+            }
+          } catch (err) {
+            console.error('Login status check error', err);
+          }
+        }, 3000);
+      } catch (err) {
+        alert('Failed to start login: ' + err.message);
+      }
+    }
+
+    document.getElementById('logout-btn').onclick = () => {
+      localStorage.removeItem('xumm_wallet_address');
+      updateWalletStatus();
+    };
+
+    function formatPrice(price) {
+      if (price === null || price === undefined || isNaN(price)) return '';
+      if (price < 0.0001) return Number(price).toExponential(4);
+      return Number(price).toFixed(6);
+    }
+
+    function formatAmount(amount) {
+      if (amount === null || amount === undefined || isNaN(amount)) return '';
+      return Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async function updateCurrentPrice() {
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/api/orderbook');
+        if (!res.ok) throw new Error(`Failed to fetch orderbook: ${res.status}`);
+
+        const data = await res.json();
+
+        const midPrice = data.midPrice;
+        const asks = Array.isArray(data.asks) ? data.asks : [];
+        const bids = Array.isArray(data.bids) ? data.bids : [];
+
+        // Update median price display
+        if (midPrice !== null && midPrice !== undefined && !isNaN(parseFloat(midPrice))) {
+          document.getElementById('price-value').textContent = parseFloat(midPrice).toFixed(6);
+        } else {
+          document.getElementById('price-value').textContent = 'N/A';
+        }
+
+        // Sort asks ascending by price (lowest ask first)
+        asks.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+        // Sort bids descending by price (highest bid first)
+        bids.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+
+        const tbody = document.getElementById('orderbook-body');
+        tbody.innerHTML = '';
+
+        // Show up to 15 rows of asks and bids side by side
+        const maxRows = Math.max(asks.length, bids.length, 15);
+
+        for (let i = 0; i < maxRows; i++) {
+          const ask = asks[i];
+          const bid = bids[i];
+
+          const askPrice = ask ? formatPrice(ask.price) : '';
+          const askAmount = ask ? formatAmount(ask.amount) : '';
+          const bidPrice = bid ? formatPrice(bid.price) : '';
+          const bidAmount = bid ? formatAmount(bid.amount) : '';
+
+          const row = document.createElement('tr');
+
+          row.innerHTML = `
+            <td class="ask-price">${askPrice}</td>
+            <td class="ask-amount">${askAmount}</td>
+            <td class="bid-price">${bidPrice}</td>
+            <td class="bid-amount">${bidAmount}</td>
+          `;
+          tbody.appendChild(row);
+        }
+
+        if (asks.length === 0 && bids.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4">No orderbook data available</td></tr>`;
+        }
+      } catch (error) {
+        console.error('Error updating price/orderbook:', error);
+        document.getElementById('price-value').textContent = 'Error';
+        document.getElementById('orderbook-body').innerHTML = `<tr><td colspan="4">Failed to load orderbook</td></tr>`;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
+      updateCurrentPrice();
+      setInterval(updateCurrentPrice, 60000); // refresh every 60 seconds
+    });
+  </script>
+</body>
+</html>

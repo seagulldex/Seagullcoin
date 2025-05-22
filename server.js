@@ -4328,46 +4328,99 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 
 
 app.get('/api/orderbook', async (req, res) => {
-  const xrpl = require('xrpl');
-  const client = new xrpl.Client('wss://s1.ripple.com');
+  const client = new xrpl.Client('');
 
-  const timeoutMs = 8000; // 8 seconds timeout for the whole request
+  // Timeout helper
+  const withTimeout = (promise, ms) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('XRPL timeout')), ms)
+      ),
+    ]);
 
-  // Helper to timeout XRPL calls
-  function withTimeout(promise, ms) {
-    return Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error("XRPL timeout")), ms))
-    ]);
-  }
+  const TIMEOUT_CONNECT = 4000; // 4 sec for connect
+  const TIMEOUT_REQUEST = 8000; // 8 sec for requests
 
-  try {
-    // Try connecting with timeout
-    await withTimeout(client.connect(), 4000); // 4s to connect max
+  const currency = '53656167756C6C436F696E000000000000000000'; // SeagullCoin hex (20 bytes)
+  const issuer = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'; // Correct issuer
 
-    const currency = "53656167756C6C436F696E000000000000000000"; // SeagullCoin (hex)
-    const issuer = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
+  try {
+    // Connect to XRPL with timeout
+    await withTimeout(client.connect(), TIMEOUT_CONNECT);
 
-    const bidsResponse = await withTimeout(client.request({
-      command: "book_offers",
-      taker_gets: { currency, issuer },
-      taker_pays: "XRP",
-      limit: 20
-    }), timeoutMs);
+    // Fetch bids: users selling SGLCN, wanting XRP
+    const bidsResponse = await withTimeout(
+      client.request({
+        command: 'book_offers',
+        taker_gets: { currency, issuer },
+        taker_pays: 'XRP',
+        limit: 20,
+      }),
+      TIMEOUT_REQUEST
+    );
 
-    const asksResponse = await withTimeout(client.request({
-      command: "book_offers",
-      taker_gets: "XRP",
-      taker_pays: { currency, issuer },
-      limit: 20
-    }), timeoutMs);
+    // Fetch asks: users selling XRP, wanting SGLCN
+    const asksResponse = await withTimeout(
+      client.request({
+        command: 'book_offers',
+        taker_gets: 'XRP',
+        taker_pays: { currency, issuer },
+        limit: 20,
+      }),
+      TIMEOUT_REQUEST
+    );
 
-    function parseOffer(offer, isBid) {
-      const gets = offer.taker_gets;
-      const pays = offer.taker_pays;
+    // Parse offers into uniform format
+    function parseOffer(offer, isBid) {
+      const gets = offer.taker_gets;
+      const pays = offer.taker_pays;
 
-      const getsAmount = typeof gets === "string" ? Number(gets) / 1e6 : Number(gets.value);
-      const paysAmount = typeof pays === "string" ? Nu
+      // Amounts in drops for XRP (string), or as decimal for issued currency
+      const getsAmount =
+        typeof gets === 'string' ? Number(gets) / 1e6 : Number(gets.value);
+      const paysAmount =
+        typeof pays === 'string' ? Number(pays) / 1e6 : Number(pays.value);
+
+      // Price calculation: how many XRP per SGLCN (or vice versa)
+      // For bids (buy offers), price = pays / gets (XRP per SGLCN)
+      // For asks (sell offers), price = gets / pays (XRP per SGLCN)
+      const price = isBid ? paysAmount / getsAmount : getsAmount / paysAmount;
+
+      return {
+        price: +price.toFixed(6),
+        amount: isBid ? getsAmount : paysAmount,
+        offerAccount: offer.account,
+      };
+    }
+
+    const bids = (bidsResponse.result.offers || []).map((o) =>
+      parseOffer(o, true)
+    );
+    const asks = (asksResponse.result.offers || []).map((o) =>
+      parseOffer(o, false)
+    );
+
+    // Calculate mid price if bids and asks exist
+    let midPrice = null;
+    if (bids.length > 0 && asks.length > 0) {
+      const highestBid = bids[0].price;
+      const lowestAsk = asks[0].price;
+      midPrice = +((highestBid + lowestAsk) / 2).toFixed(6);
+    }
+
+    await client.disconnect();
+
+    return res.json({ bids, asks, midPrice });
+  } catch (error) {
+    console.error('Orderbook fetch failed:', error.message || error);
+    if (client.isConnected()) await client.disconnect();
+    return res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
+  }
+});
+
+export default app;
+
 
 
 

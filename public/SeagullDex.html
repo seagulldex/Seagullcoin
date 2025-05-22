@@ -6,6 +6,7 @@
   <title>Trading - SGLCN-X20</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="header.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .green { color: green; }
     .red { color: red; }
@@ -33,24 +34,46 @@
       border-radius: 4px;
     }
     .trade-box {
-      margin-top: 30px;
-      padding: 15px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      max-width: 400px;
-    }
-    .trade-box input {
-      width: 100%;
-      padding: 8px;
-      margin-top: 8px;
-      margin-bottom: 12px;
-    }
-    .trade-box button {
-      width: 100%;
-      padding: 10px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #000;
+  color: #fff;
+  border: 2px solid #444;
+  border-radius: 16px;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+  max-width: 400px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.trade-box input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  border: none;
+  border-radius: 12px;
+  background-color: #222;
+  color: white;
+  font-size: 1em;
+}
+
+.trade-box button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background-color: #0af;
+  color: white;
+  font-weight: bold;
+  font-size: 1em;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.trade-box button:hover {
+  background-color: #09c;
+}
+
   </style>
 </head>
 <body>
@@ -75,6 +98,19 @@
     <div id="current-price">
       Median Price: <span id="price-value">Loading...</span> SGLCN-X20
     </div>
+    
+    <h2>Price Chart (SGLCN/XRP)</h2>
+<div>
+  <label for="timeframe">View:</label>
+  <select id="timeframe" onchange="loadChartData()">
+    <option value="1D">Daily</option>
+    <option value="1W">Weekly</option>
+    <option value="1M" selected>Monthly</option>
+    <option value="ALL">All Time</option>
+  </select>
+</div>
+<canvas id="priceChart" height="150" style="max-width: 100%; margin-bottom: 40px;"></canvas>
+
 
     <div id="orderbook">
       <div class="orderbook-header">Order Book</div>
@@ -224,6 +260,8 @@
       if (data.payloadURL) window.open(data.payloadURL, '_blank');
       else alert("Error placing buy offer.");
     }
+    
+    
 
 
     window.addEventListener('DOMContentLoaded', () => {

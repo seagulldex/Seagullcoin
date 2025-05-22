@@ -4327,6 +4327,7 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 });
 
 
+
 app.get('/api/orderbook', async (req, res) => {
   const client = new xrpl.Client('wss://s2.ripple.com');
 
@@ -4344,10 +4345,9 @@ app.get('/api/orderbook', async (req, res) => {
 
   const currency = '53656167756C6C436F696E000000000000000000'; // SeagullCoin hex (20 bytes)
   const issuer = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'; // Correct issuer
-  const XRP = { currency: 'XRP' }; // XRP as object, not string
+  const XRP = { currency: 'XRP' }; // XRP as object
 
   try {
-    // Connect to XRPL with timeout
     await withTimeout(client.connect(), TIMEOUT_CONNECT);
 
     // Fetch bids: users selling SGLCN, wanting XRP
@@ -4372,20 +4372,23 @@ app.get('/api/orderbook', async (req, res) => {
       TIMEOUT_REQUEST
     );
 
-    // Parse offers into uniform format
     function parseOffer(offer, isBid) {
       const gets = offer.taker_gets;
       const pays = offer.taker_pays;
 
-      // Amounts in drops for XRP (string), or as decimal for issued currency
-      const getsAmount =
-        typeof gets === 'string' ? Number(gets) / 1e6 : Number(gets.value);
-      const paysAmount =
-        typeof pays === 'string' ? Number(pays) / 1e6 : Number(pays.value);
+      // Safely parse amount whether XRP (string) or issued currency (object)
+      const parseAmount = (amt) => {
+        if (typeof amt === 'string') {
+          return Number(amt) / 1e6; // XRP drops to XRP
+        } else if (amt && typeof amt.value === 'string') {
+          return Number(amt.value);
+        }
+        return 0; // fallback safe default
+      };
 
-      // Price calculation: how many XRP per SGLCN (or vice versa)
-      // For bids (buy offers), price = pays / gets (XRP per SGLCN)
-      // For asks (sell offers), price = gets / pays (XRP per SGLCN)
+      const getsAmount = parseAmount(gets);
+      const paysAmount = parseAmount(pays);
+
       const price = isBid ? paysAmount / getsAmount : getsAmount / paysAmount;
 
       return {
@@ -4402,7 +4405,6 @@ app.get('/api/orderbook', async (req, res) => {
       parseOffer(o, false)
     );
 
-    // Calculate mid price if bids and asks exist
     let midPrice = null;
     if (bids.length > 0 && asks.length > 0) {
       const highestBid = bids[0].price;
@@ -4416,12 +4418,7 @@ app.get('/api/orderbook', async (req, res) => {
   } catch (error) {
     console.error('Orderbook fetch failed:', error.message || error);
     if (client.isConnected()) await client.disconnect();
-    return res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
-  }
-});
-
-export default app;
-
+    return res
 
 
 

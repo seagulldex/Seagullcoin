@@ -4333,9 +4333,7 @@ app.get('/api/orderbook', async (req, res) => {
   const withTimeout = (promise, ms) =>
     Promise.race([
       promise,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('XRPL timeout')), ms)
-      ),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('XRPL timeout')), ms)),
     ]);
 
   const TIMEOUT_CONNECT = 4000;
@@ -4370,9 +4368,9 @@ app.get('/api/orderbook', async (req, res) => {
 
     const parseAmount = (amt, label) => {
       if (typeof amt === 'string') {
-        return Number(amt) / 1e6; // XRP
+        return Number(amt) / 1e6; // XRP drops to XRP
       } else if (amt && typeof amt.value === 'string') {
-        return Number(amt.value); // IOU (SeagullCoin)
+        return Number(amt.value); // IOU value
       } else {
         console.warn(`${label} invalid format:`, amt);
         return 0;
@@ -4390,13 +4388,15 @@ app.get('/api/orderbook', async (req, res) => {
         return null;
       }
 
-      const price = isBid
-        ? paysAmount / getsAmount
-        : getsAmount / paysAmount;
+      // Price calculation: 
+      // Bids: price = pays / gets (XRP / IOU)
+      // Asks: price = gets / pays (IOU / XRP)
+      const price = isBid ? paysAmount / getsAmount : getsAmount / paysAmount;
 
+      // Return strings with fixed decimals to avoid scientific notation in JSON
       return {
-        price: +price.toFixed(6),
-        amount: isBid ? getsAmount : paysAmount,
+        price: price.toFixed(8), // 8 decimals for price
+        amount: (isBid ? getsAmount : paysAmount).toFixed(6), // 6 decimals for amount
         offerAccount: offer.Account,
       };
     }
@@ -4404,18 +4404,18 @@ app.get('/api/orderbook', async (req, res) => {
     const bids = (bidsResponse.result.offers || [])
       .map((o) => parseOffer(o, true))
       .filter(Boolean)
-      .sort((a, b) => b.price - a.price)
+      .sort((a, b) => parseFloat(b.price) - parseFloat(a.price))
       .slice(0, 5);
 
     const asks = (asksResponse.result.offers || [])
       .map((o) => parseOffer(o, false))
       .filter(Boolean)
-      .sort((a, b) => a.price - b.price)
+      .sort((a, b) => parseFloat(a.price) - parseFloat(b.price))
       .slice(0, 5);
 
     let midPrice = null;
     if (bids.length && asks.length) {
-      midPrice = +((bids[0].price + asks[0].price) / 2).toFixed(6);
+      midPrice = ((parseFloat(bids[0].price) + parseFloat(asks[0].price)) / 2).toFixed(8);
     }
 
     await client.disconnect();

@@ -3,216 +3,204 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>User NFTs - SGLCN-X20</title>
+  <title>Trading - SGLCN-X20</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="header.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      max-width: 900px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    #wallet-indicator.red {
-      color: red;
-      cursor: pointer;
-    }
-    #wallet-indicator.green {
-      color: green;
-      cursor: default;
-    }
     #timeframe-buttons {
       margin-bottom: 15px;
     }
     #timeframe-buttons button {
       margin-right: 8px;
       background-color: #2196F3;
-      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 16px;
       color: white;
       border: none;
       cursor: pointer;
-      padding: 6px 12px;
     }
     #timeframe-buttons button.active {
       background-color: #0b7dda;
     }
-    #priceChart {
-      max-width: 700px;
-      height: 350px;
-      margin-bottom: 30px;
-    }
-    #logout-btn {
-      display: none;
-      margin-left: 15px;
-      padding: 6px 12px;
-      font-size: 16px;
-      cursor: pointer;
+    button:hover {
+      background-color: #45a049;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div style="display:flex; align-items:center; margin-bottom:20px;">
-    <span id="wallet-indicator" class="red">🔴 Login</span>
-    <button id="logout-btn">Logout</button>
+  <div id="top-bar">
+    <div style="flex:1;"><button id="logout-btn">Logout</button></div>
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
+      </div>
+    </div>
   </div>
 
-  <h1>Trading</h1>
-  <h2>SGLCN/XRP Price Chart</h2>
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="stake.html">Stake</a></li>
+        <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
+      </ul>
+    </nav>
+  </header>
 
-  <div id="timeframe-buttons">
-    <button data-timeframe="1h" class="active">1 Hour</button>
-    <button data-timeframe="6h">6 Hours</button>
-    <button data-timeframe="24h">24 Hours</button>
-    <button data-timeframe="7d">7 Days</button>
-  </div>
+  <main>
+    <h1>Trading</h1>
 
-  <canvas id="priceChart"></canvas>
+    <h2>SGLCN/XRP Price Chart</h2>
+
+    <div id="timeframe-buttons">
+      <button data-timeframe="1h" class="active">1 Hour</button>
+      <button data-timeframe="6h">6 Hours</button>
+      <button data-timeframe="24h">24 Hours</button>
+      <button data-timeframe="7d">7 Days</button>
+    </div>
+
+    <canvas id="priceChart" style="max-width: 700px; margin-bottom: 30px;"></canvas>
+  </main>
 
   <script>
-    const walletIndicator = document.getElementById('wallet-indicator');
-    const logoutBtn = document.getElementById('logout-btn');
-    let priceChart;
-
+    // Wallet status update (kept minimal, no NFT calls)
     function updateWalletStatus() {
       const wallet = localStorage.getItem('xumm_wallet_address');
+      const indicator = document.getElementById('wallet-indicator');
       if (wallet) {
-        walletIndicator.textContent = '🟢 Connected: ' + wallet;
-        walletIndicator.classList.remove('red');
-        walletIndicator.classList.add('green');
-        walletIndicator.style.cursor = 'default';
-        logoutBtn.style.display = 'inline-block';
-        walletIndicator.onclick = null;
+        indicator.textContent = '🟢 Connected';
+        indicator.classList.replace('red', 'green');
+        indicator.title = 'Logged in';
+        document.getElementById('logout-btn').style.display = 'inline-block';
       } else {
-        walletIndicator.textContent = '🔴 Login';
-        walletIndicator.classList.remove('green');
-        walletIndicator.classList.add('red');
-        walletIndicator.style.cursor = 'pointer';
-        logoutBtn.style.display = 'none';
-        walletIndicator.onclick = startLoginFlow;
+        indicator.textContent = '🔴 Login';
+        indicator.classList.replace('green', 'red');
+        indicator.title = 'Click to login';
+        indicator.onclick = startLoginFlow;
+        document.getElementById('logout-btn').style.display = 'none';
       }
     }
 
     async function startLoginFlow() {
-      try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-        if (!res.ok) throw new Error('Login API error');
-        const data = await res.json();
-        window.open(data.payloadURL, "_blank");
+      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+      const data = await res.json();
+      window.open(data.payloadURL, "_blank");
 
-        const interval = setInterval(async () => {
-          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-          if (!check.ok) return;
-          const loginStatus = await check.json();
-          if (loginStatus.loggedIn) {
-            clearInterval(interval);
-            localStorage.setItem('xumm_wallet_address', loginStatus.account);
-            updateWalletStatus();
-          }
-        }, 3000);
-      } catch (err) {
-        alert('Login failed. Please try again.');
-        console.error(err);
-      }
+      const interval = setInterval(async () => {
+        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+        const loginStatus = await check.json();
+        if (loginStatus.loggedIn) {
+          clearInterval(interval);
+          localStorage.setItem('xumm_wallet_address', loginStatus.account);
+          updateWalletStatus();
+        }
+      }, 3000);
     }
 
-    logoutBtn.onclick = () => {
+    document.getElementById('logout-btn').onclick = () => {
       localStorage.removeItem('xumm_wallet_address');
       updateWalletStatus();
     };
 
-    // Chart setup and fetching
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
+      setupTimeframeButtons();
+      updateChartForTimeframe('1h');
+    });
+
+    // Chart.js price chart setup
     const ctx = document.getElementById('priceChart').getContext('2d');
+
+    const priceData = {
+      labels: [],
+      datasets: [{
+        label: 'SGLCN to XRP',
+        data: [],
+        borderColor: 'rgb(33, 150, 243)',
+        backgroundColor: 'rgba(33, 150, 243, 0.2)',
+        fill: true,
+        tension: 0.3,
+      }]
+    };
+
+    const priceChart = new Chart(ctx, {
+      type: 'line',
+      data: priceData,
+      options: {
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: { display: true },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+          },
+        },
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              tooltipFormat: 'MMM d, HH:mm',
+              unit: 'minute',
+              displayFormats: {
+                minute: 'HH:mm',
+                hour: 'MMM d HH:mm',
+                day: 'MMM d',
+              }
+            },
+            title: { display: true, text: 'Time' },
+          },
+          y: {
+            beginAtZero: false,
+            title: { display: true, text: 'Price (XRP)' },
+          }
+        }
+      }
+    });
+
+    // Dummy data generator for the chart
+    function generateDummyData(points, intervalMinutes) {
+      const now = new Date();
+      let data = [];
+      for (let i = points - 1; i >= 0; i--) {
+        const time = new Date(now.getTime() - i * intervalMinutes * 60 * 1000);
+        // Simulated price data with some randomness
+        const price = 0.00001 + 0.00001 * Math.sin(i / 5) + (Math.random() - 0.5) * 0.000002;
+        data.push({ time, price: price.toFixed(8) });
+      }
+      return data;
+    }
+
+    function updateChartForTimeframe(tf) {
+      let points, interval;
+      switch(tf) {
+        case '1h': points = 60; interval = 1; break;
+        case '6h': points = 72; interval = 5; break; 
+        case '24h': points = 96; interval = 15; break;
+        case '7d': points = 168; interval = 60; break;
+        default: points = 60; interval = 1;
+      }
+      const dummyData = generateDummyData(points, interval);
+      priceChart.data.labels = dummyData.map(d => d.time);
+      priceChart.data.datasets[0].data = dummyData.map(d => parseFloat(d.price));
+      priceChart.options.scales.x.time.unit = interval >= 60 ? 'hour' : 'minute';
+      priceChart.update();
+    }
 
     function setupTimeframeButtons() {
       const buttons = document.querySelectorAll('#timeframe-buttons button');
       buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.onclick = () => {
           buttons.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          fetchAndRenderPriceData(btn.dataset.timeframe);
-        });
+          updateChartForTimeframe(btn.dataset.timeframe);
+        };
       });
-      // Load default
-      fetchAndRenderPriceData('1h');
     }
-
-    async function fetchAndRenderPriceData(timeframe) {
-      if (priceChart) priceChart.destroy();
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.font = "16px Arial";
-      ctx.fillText("Loading price data...", 10, 50);
-
-      let startTime;
-      const endTime = Date.now();
-      switch (timeframe) {
-        case '1h': startTime = endTime - 60 * 60 * 1000; break;
-        case '6h': startTime = endTime - 6 * 60 * 60 * 1000; break;
-        case '24h': startTime = endTime - 24 * 60 * 60 * 1000; break;
-        case '7d': startTime = endTime - 7 * 24 * 60 * 60 * 1000; break;
-        default: startTime = endTime - 60 * 60 * 1000;
-      }
-
-      const fromUnix = Math.floor(startTime / 1000);
-      const toUnix = Math.floor(endTime / 1000);
-
-      try {
-        const url = `https://sglcn-x20-api.glitch.me/api-sglcn-xrp?from=${fromUnix}&to=${toUnix}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Failed to fetch price data');
-        const data = await res.json();
-
-        if (!data.prices || data.prices.length === 0) {
-          throw new Error('No price data available');
-        }
-
-        const labels = data.prices.map(p => {
-          const d = new Date(p[0]);
-          if (timeframe === '7d') return d.toLocaleDateString();
-          else if (timeframe === '24h' || timeframe === '6h') return d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-          else return d.toLocaleTimeString();
-        });
-        const prices = data.prices.map(p => p[1]);
-
-        priceChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [{
-              label: 'SGLCN Price (XRP)',
-              data: prices,
-              borderColor: '#2196F3',
-              fill: false,
-              tension: 0.1,
-              pointRadius: 0,
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: { display: true, title: { display: true, text: 'Time' } },
-              y: { display: true, title: { display: true, text: 'Price (XRP)' }, beginAtZero: false }
-            },
-            interaction: { mode: 'nearest', axis: 'x', intersect: false },
-            plugins: {
-              legend: { display: true },
-              tooltip: { mode: 'index', intersect: false }
-            }
-          }
-        });
-
-      } catch (err) {
-        console.error(err);
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        ctx.font = "16px Arial";
-        ctx.fillText("Failed to load price data.", 10, 50);
-      }
-    }
-
-    // Initialize page
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
-      setupTimeframeButtons();
-    });
   </script>
 </body>
 </html>

@@ -4328,7 +4328,7 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 
 
 app.get('/api/orderbook', async (req, res) => {
-  const client = new xrpl.Client('wss://s2.ripple.com');
+  const client = new xrpl.Client('wss://s1.ripple.com');
 
   const withTimeout = (promise, ms) =>
     Promise.race([
@@ -4337,7 +4337,7 @@ app.get('/api/orderbook', async (req, res) => {
     ]);
 
   const TIMEOUT_CONNECT = 4000;
-  const TIMEOUT_REQUEST = 8000;
+  const TIMEOUT_REQUEST = 10000;
 
   const currency = '53656167756C6C436F696E000000000000000000'; // SeagullCoin (hex)
   const issuer = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
@@ -4351,7 +4351,7 @@ app.get('/api/orderbook', async (req, res) => {
         command: 'book_offers',
         taker_gets: { currency, issuer },
         taker_pays: XRP,
-        limit: 20,
+        limit: 100,
       }),
       TIMEOUT_REQUEST
     );
@@ -4361,22 +4361,58 @@ app.get('/api/orderbook', async (req, res) => {
         command: 'book_offers',
         taker_gets: XRP,
         taker_pays: { currency, issuer },
-        limit: 20,
+        limit: 100,
       }),
       TIMEOUT_REQUEST
     );
 
-    const parseAmount = (amt, label) => {
-      if (typeof amt === 'string') {
-        return Number(amt) / 1e6; // XRP drops to XRP
-      } else if (amt && typeof amt.value === 'string') {
-        return Number(amt.value); // IOU value
+    const parseAmount = (amt) => {
+      if (typeof amt === 'string') return Number(amt) / 1e6;
+      if (amt?.value) return Number(amt.value);
+      return 0;
+    };
 
+    const parseOffer = (offer, isBid) => {
+      const gets = offer.TakerGets;
+      const pays = offer.TakerPays;
 
+      const getsAmt = parseAmount(gets);
+      const paysAmt = parseAmount(pays);
 
+      if (!getsAmt || !paysAmt) return null;
 
+      const price = isBid ? paysAmt / getsAmt : getsAmt / paysAmt;
 
+      return {
+        price: price.toString(), // full precision
+        amount: (isBid ? getsAmt : paysAmt).toString(),
+        offerAccount: offer.Account,
+      };
+    };
 
+    const bids = (bidsResponse.result.offers || [])
+      .map((o) => parseOffer(o, true))
+      .filter(Boolean)
+      .sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+
+    const asks = (asksResponse.result.offers || [])
+      .map((o) => parseOffer(o, false))
+      .filter(Boolean)
+      .sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+
+    const midPrice =
+      bids.length && asks.length
+        ? ((parseFloat(bids[0].price) + parseFloat(asks[0].price)) / 2).toPrecision(12)
+        : null;
+
+    await client.disconnect();
+    res.json({ bids, asks, midPrice });
+  } catch (error) {
+    console.error('Orderbook fetch failed:', error.message || error);
+    if (client.isConnected()) await client.disconnect();
+    res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
+  }
+});
 
 
 

@@ -4,33 +4,64 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Trading - SGLCN-X20</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="header.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     #timeframe-buttons {
-      margin-bottom: 15px;
+      margin: 20px 0;
+      display: flex;
+      gap: 10px;
     }
     #timeframe-buttons button {
-      margin-right: 8px;
       background-color: #2196F3;
-      padding: 8px 12px;
+      padding: 8px 14px;
       font-size: 16px;
       color: white;
       border: none;
       cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
     }
     #timeframe-buttons button.active {
       background-color: #0b7dda;
     }
-    button:hover {
+    #timeframe-buttons button:hover:not(.active) {
       background-color: #45a049;
     }
-    .red { color: red; }
-    .green { color: green; }
+    #wallet-status {
+      cursor: pointer;
+      user-select: none;
+    }
+    #wallet-indicator.red {
+      color: red;
+    }
+    #wallet-indicator.green {
+      color: green;
+    }
+    #logout-btn {
+      display: none;
+      background-color: #f44336;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      font-size: 14px;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    #current-price {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <div id="top-bar">
-    <div style="flex:1;"><button id="logout-btn" style="display:none;">Logout</button></div>
+    <div style="flex:1;">
+      <button id="logout-btn">Logout</button>
+    </div>
     <div id="wallet-container">
       <div id="wallet-status">
         <span id="wallet-indicator" class="red">🔴 Login</span>
@@ -48,9 +79,14 @@
     </nav>
   </header>
 
-  <main>
+  <main style="padding: 20px;">
     <h1>Trading</h1>
+
     <h2>SGLCN/XRP Price Chart</h2>
+
+    <div id="current-price">
+      SGLCN / XRP Price: <span id="price-value">Loading...</span> XRP
+    </div>
 
     <div id="timeframe-buttons">
       <button data-timeframe="1h" class="active">1 Hour</button>
@@ -59,46 +95,54 @@
       <button data-timeframe="7d">7 Days</button>
     </div>
 
-    <canvas id="priceChart" style="max-width: 700px; margin-bottom: 30px;"></canvas>
+    <canvas id="priceChart" style="max-width: 700px; width: 100%; height: 400px;"></canvas>
   </main>
 
   <script>
-    // Wallet login status update (minimal)
+    // Wallet status update
     function updateWalletStatus() {
       const wallet = localStorage.getItem('xumm_wallet_address');
       const indicator = document.getElementById('wallet-indicator');
+      const logoutBtn = document.getElementById('logout-btn');
       if (wallet) {
         indicator.textContent = '🟢 Connected';
-        indicator.classList.replace('red', 'green');
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
         indicator.title = 'Logged in';
-        document.getElementById('logout-btn').style.display = 'inline-block';
         indicator.onclick = null;
+        logoutBtn.style.display = 'inline-block';
       } else {
         indicator.textContent = '🔴 Login';
-        indicator.classList.replace('green', 'red');
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
         indicator.title = 'Click to login';
         indicator.onclick = startLoginFlow;
-        document.getElementById('logout-btn').style.display = 'none';
+        logoutBtn.style.display = 'none';
       }
     }
 
     async function startLoginFlow() {
       try {
         const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+        if (!res.ok) throw new Error('Login API error');
         const data = await res.json();
         window.open(data.payloadURL, "_blank");
 
         const interval = setInterval(async () => {
-          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-          const loginStatus = await check.json();
-          if (loginStatus.loggedIn) {
-            clearInterval(interval);
-            localStorage.setItem('xumm_wallet_address', loginStatus.account);
-            updateWalletStatus();
+          try {
+            const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+            const loginStatus = await check.json();
+            if (loginStatus.loggedIn) {
+              clearInterval(interval);
+              localStorage.setItem('xumm_wallet_address', loginStatus.account);
+              updateWalletStatus();
+            }
+          } catch (err) {
+            console.error('Login status check error', err);
           }
         }, 3000);
       } catch (err) {
-        console.error('Login failed', err);
+        alert('Failed to start login: ' + err.message);
       }
     }
 
@@ -107,7 +151,15 @@
       updateWalletStatus();
     };
 
-    // Chart.js setup
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
+      setupTimeframeButtons();
+      updateChartForTimeframe('1h');
+      updateCurrentPrice();
+      setInterval(updateCurrentPrice, 60000); // refresh price every 60s
+    });
+
+    // Chart.js price chart setup
     const ctx = document.getElementById('priceChart').getContext('2d');
 
     const priceData = {
@@ -127,10 +179,16 @@
       data: priceData,
       options: {
         responsive: true,
-        interaction: { mode: 'index', intersect: false },
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
         plugins: {
           legend: { display: true },
-          tooltip: { mode: 'index', intersect: false }
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+          },
         },
         scales: {
           x: {
@@ -154,17 +212,11 @@
       }
     });
 
-    // Fetch price data from API
     async function fetchPriceData(timeframe) {
       try {
-        const url = `https://sglcn-x20-api.glitch.me/api/sglcn-xrp?timeframe=${timeframe}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Network response was not ok: ${res.status}`);
+        const res = await fetch(`https://sglcn-x20-api.glitch.me/api/sglcn-xrp?timeframe=${timeframe}`);
+        if (!res.ok) throw new Error('Network response was not ok');
         const data = await res.json();
-        // Validate data format:
-        if (!Array.isArray(data)) throw new Error('API response is not an array');
-        if (!data.length) throw new Error('API response is empty');
-        if (!data[0].time || !data[0].price) throw new Error('API response missing time or price fields');
         return data;
       } catch (error) {
         console.error('Failed to fetch price data:', error);
@@ -186,12 +238,11 @@
       priceChart.update();
     }
 
-    // Dummy fallback data generator
     function generateDummyData(points, intervalMinutes) {
       const now = new Date();
       let data = [];
       for (let i = points - 1; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * intervalMinutes * 60000);
+        const time = new Date(now.getTime() - i * intervalMinutes * 60 * 1000);
         const price = 0.00001 + 0.00001 * Math.sin(i / 5) + (Math.random() - 0.5) * 0.000002;
         data.push({ time: time.toISOString(), price: price.toFixed(8) });
       }
@@ -209,11 +260,22 @@
       });
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      updateWalletStatus();
-      setupTimeframeButtons();
-      updateChartForTimeframe('1h');
-    });
+    async function updateCurrentPrice() {
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
+        if (!res.ok) throw new Error('Failed to fetch price');
+        const data = await res.json();
+        const priceValue = parseFloat(data.sglcn_to_xrp);
+        if (!isNaN(priceValue)) {
+          document.getElementById('price-value').textContent = priceValue.toFixed(6);
+        } else {
+          document.getElementById('price-value').textContent = 'N/A';
+        }
+      } catch (error) {
+        console.error('Error updating price:', error);
+        document.getElementById('price-value').textContent = 'Error';
+      }
+    }
   </script>
 </body>
 </html>

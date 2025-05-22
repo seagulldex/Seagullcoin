@@ -24,6 +24,14 @@
       font-weight: bold;
       margin-top: 20px;
     }
+    /* Scroll container for the orderbook */
+    .orderbook-scroll {
+      max-height: 400px;   /* Set desired max height */
+      overflow-y: auto;    /* Vertical scrollbar if content overflows */
+      border: 1px solid #ccc;
+      margin-top: 10px;
+      border-radius: 4px;
+    }
     .trade-box {
       margin-top: 30px;
       padding: 15px;
@@ -59,19 +67,21 @@
 
     <div id="orderbook">
       <div class="orderbook-header">Order Book</div>
-      <table class="orderbook-table" aria-label="Order Book">
-        <thead>
-          <tr>
-            <th class="green">Buy Price (XRP)</th>
-            <th class="green">Amount (SGLCN)</th>
-            <th class="red">Sell Price (XRP)</th>
-            <th class="red">Amount (SGLCN)</th>
-          </tr>
-        </thead>
-        <tbody id="orderbook-body">
-          <!-- JavaScript will populate this -->
-        </tbody>
-      </table>
+      <div class="orderbook-scroll">
+        <table class="orderbook-table" aria-label="Order Book">
+          <thead>
+            <tr>
+              <th class="green">Buy Price (XRP)</th>
+              <th class="green">Amount (SGLCN)</th>
+              <th class="red">Sell Price (XRP)</th>
+              <th class="red">Amount (SGLCN)</th>
+            </tr>
+          </thead>
+          <tbody id="orderbook-body">
+            <!-- JavaScript will populate this -->
+          </tbody>
+        </table>
+      </div>
     </div>
     
   </main>

@@ -4454,9 +4454,15 @@ app.get('/api/orderbook', async (req, res) => {
     const highestBidPrice = bids.length ? bids[0].price : null;
     const lowestAskPrice = asks.length ? asks[0].price : null;
     const spread =
-      highestBidPrice !== null && lowestAskPrice !== null
-        ? lowestAskPrice - highestBidPrice
-        : null;
+    highestBidPrice !== null && lowestAskPrice !== null
+    ? lowestAskPrice - highestBidPrice
+    : null;
+    
+    // Approximate last traded price as midpoint between best bid and ask
+    let lastTradedPrice = null;
+    if (highestBidPrice !== null && lowestAskPrice !== null) {
+   lastTradedPrice = (highestBidPrice + lowestAskPrice) / 2;
+    }
 
     // Disconnect XRPL client
     await client.disconnect();

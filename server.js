@@ -4328,17 +4328,46 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 
 
 app.get('/api/orderbook', async (req, res) => {
-  const client = new xrpl.Client('wss://s2.ripple.com');
+  const xrpl = require('xrpl');
+  const client = new xrpl.Client('wss://s1.ripple.com');
+
+  const timeoutMs = 8000; // 8 seconds timeout for the whole request
+
+  // Helper to timeout XRPL calls
+  function withTimeout(promise, ms) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("XRPL timeout")), ms))
+    ]);
+  }
 
   try {
-    await client.connect();
+    // Try connecting with timeout
+    await withTimeout(client.connect(), 4000); // 4s to connect max
 
     const currency = "53656167756C6C436F696E000000000000000000"; // SeagullCoin (hex)
-    const issuer = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"; // CORRECT issuer
+    const issuer = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
 
-    // Fetch bids (users selling SGLCN, wanting XRP)
-    const bidsResponse = await client.request({
-      comm
+    const bidsResponse = await withTimeout(client.request({
+      command: "book_offers",
+      taker_gets: { currency, issuer },
+      taker_pays: "XRP",
+      limit: 20
+    }), timeoutMs);
+
+    const asksResponse = await withTimeout(client.request({
+      command: "book_offers",
+      taker_gets: "XRP",
+      taker_pays: { currency, issuer },
+      limit: 20
+    }), timeoutMs);
+
+    function parseOffer(offer, isBid) {
+      const gets = offer.taker_gets;
+      const pays = offer.taker_pays;
+
+      const getsAmount = typeof gets === "string" ? Number(gets) / 1e6 : Number(gets.value);
+      const paysAmount = typeof pays === "string" ? Nu
 
 
 
@@ -4360,8 +4389,8 @@ xumm.ping().then(response => {
 console.log(requireLogin.session); // Log session data to verify its content
 
 
-// Run the cleanup job periodically (every 24 hours for example)
-setInterval(cleanupExpiredPayloads, 24 * 60 * 60 * 1000); // Every 24 hours
+// Run the cleanup job periodically (every 48 hours for example)
+setInterval(cleanupExpiredPayloads, 48 * 60 * 60 * 1000); // Every 24 hours
 
 
     

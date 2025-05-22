@@ -4345,6 +4345,7 @@ app.get('/api/orderbook', async (req, res) => {
   try {
     await withTimeout(client.connect(), TIMEOUT_CONNECT);
 
+    // Fetch bids: offers where taker_gets SeagullCoin and taker_pays XRP
     const bidsResponse = await withTimeout(
       client.request({
         command: 'book_offers',
@@ -4355,6 +4356,7 @@ app.get('/api/orderbook', async (req, res) => {
       TIMEOUT_REQUEST
     );
 
+    // Fetch asks: offers where taker_gets XRP and taker_pays SeagullCoin
     const asksResponse = await withTimeout(
       client.request({
         command: 'book_offers',
@@ -4365,19 +4367,20 @@ app.get('/api/orderbook', async (req, res) => {
       TIMEOUT_REQUEST
     );
 
-    // Parse amounts: XRP strings are drops, divide by 1e6; tokens use value as decimal string
+    // Helper to parse XRP (string drops) or token (object with .value decimal string) amounts to number
     const parseAmount = (amt) => {
       if (typeof amt === 'string') {
-        // XRP amount in drops (string)
-        return Number(amt) / 1e6;
+        return Number(amt) / 1e6; // XRP drops to XRP
       }
       if (amt?.value) {
-        // Token amount (decimal string)
-        return Number(amt.value);
+        return Number(amt.value); // Token decimal string
       }
       return 0;
     };
 
+    // Parse a single offer to { price, amount, offerAccount }
+    // For bids: price = pays / gets (XRP/SGLCN), amount = gets (SGLCN)
+    // For asks: price = gets / pays (XRP/SGLCN), amount = pays (SGLCN)
     const parseOffer = (offer, isBid) => {
       const gets = offer.TakerGets;
       const pays = offer.TakerPays;
@@ -4387,12 +4390,12 @@ app.get('/api/orderbook', async (req, res) => {
 
       if (!getsAmt || !paysAmt) return null;
 
-      // Price: for bids, price = pays / gets (XRP / SGLCN), for asks price = gets / pays (XRP / SGLCN)
       const price = isBid ? paysAmt / getsAmt : getsAmt / paysAmt;
+      const amount = isBid ? getsAmt : paysAmt;
 
       return {
         price: price.toString(),
-        amount: (isBid ? getsAmt : paysAmt).toString(),
+        amount: amount.toString(),
         offerAccount: offer.Account,
       };
     };
@@ -4400,16 +4403,16 @@ app.get('/api/orderbook', async (req, res) => {
     const bids = (bidsResponse.result.offers || [])
       .map((o) => parseOffer(o, true))
       .filter(Boolean)
-      .sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+      .sort((a, b) => parseFloat(b.price) - parseFloat(a.price)); // Desc price
 
     const asks = (asksResponse.result.offers || [])
       .map((o) => parseOffer(o, false))
       .filter(Boolean)
-      .sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+      .sort((a, b) => parseFloat(a.price) - parseFloat(b.price)); // Asc price
 
-    // Spread = lowest ask - highest bid
     const highestBidPrice = bids.length ? parseFloat(bids[0].price) : null;
     const lowestAskPrice = asks.length ? parseFloat(asks[0].price) : null;
+
     const spread =
       highestBidPrice !== null && lowestAskPrice !== null
         ? (lowestAskPrice - highestBidPrice).toFixed(12)
@@ -4457,6 +4460,7 @@ app.get('/api/orderbook', async (req, res) => {
     res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
   }
 });
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

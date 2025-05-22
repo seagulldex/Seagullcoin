@@ -33,6 +33,27 @@
       margin: 20px 0;
       font-weight: bold;
     }
+    #orderbook {
+      margin-top: 30px;
+    }
+    .orderbook-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .orderbook-table th,
+    .orderbook-table td {
+      border: 1px solid #ccc;
+      padding: 6px 10px;
+      text-align: right;
+    }
+    .orderbook-table th {
+      background-color: #f2f2f2;
+    }
+    .orderbook-header {
+      font-size: 1.2rem;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -63,10 +84,26 @@
     <div id="current-price">
       SGLCN / XRP Price: <span id="price-value">Loading...</span> XRP
     </div>
+
+    <div id="orderbook">
+      <div class="orderbook-header">Order Book</div>
+      <table class="orderbook-table">
+        <thead>
+          <tr>
+            <th>Sell Price (Ask)</th>
+            <th>Amount</th>
+            <th>Buy Price (Bid)</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="orderbook-body">
+          <tr><td colspan="4">Loading orderbook...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </main>
 
   <script>
-    // Wallet status update
     function updateWalletStatus() {
       const wallet = localStorage.getItem('xumm_wallet_address');
       const indicator = document.getElementById('wallet-indicator');
@@ -123,22 +160,40 @@
         const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
         if (!res.ok) throw new Error('Failed to fetch price');
         const data = await res.json();
-        const priceValue = parseFloat(data.sglcn_to_xrp);
+        const priceValue = parseFloat(data.midPrice);
         if (!isNaN(priceValue)) {
           document.getElementById('price-value').textContent = priceValue.toFixed(6);
         } else {
           document.getElementById('price-value').textContent = 'N/A';
         }
+
+        // Render orderbook
+        const tbody = document.getElementById('orderbook-body');
+        tbody.innerHTML = '';
+
+        for (let i = 0; i < 10; i++) {
+          const ask = data.asks[i];
+          const bid = data.bids[i];
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${ask ? ask.price.toExponential(2) : ''}</td>
+            <td>${ask ? ask.amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''}</td>
+            <td>${bid ? bid.price.toExponential(2) : ''}</td>
+            <td>${bid ? bid.amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''}</td>
+          `;
+          tbody.appendChild(row);
+        }
       } catch (error) {
-        console.error('Error updating price:', error);
+        console.error('Error updating price/orderbook:', error);
         document.getElementById('price-value').textContent = 'Error';
+        document.getElementById('orderbook-body').innerHTML = `<tr><td colspan="4">Failed to load orderbook</td></tr>`;
       }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
       updateCurrentPrice();
-      setInterval(updateCurrentPrice, 60000); // refresh price every 60s
+      setInterval(updateCurrentPrice, 60000); // refresh every 60s
     });
   </script>
 </body>

@@ -158,10 +158,10 @@
           const bid = bids[i];
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td class="red">${ask ? formatPrice(ask.price) : ''}</td>
-            <td class="red">${ask ? formatAmount(ask.amount) : ''}</td>
-            <td class="green">${bid ? formatPrice(bid.price) : ''}</td>
-            <td class="green">${bid ? formatAmount(bid.amount) : ''}</td>
+            <td class="green">${ask ? formatPrice(ask.price) : ''}</td>
+            <td class="green">${ask ? formatAmount(ask.amount) : ''}</td>
+            <td class="red">${bid ? formatPrice(bid.price) : ''}</td>
+            <td class="red">${bid ? formatAmount(bid.amount) : ''}</td>
           `;
           tbody.appendChild(row);
         }

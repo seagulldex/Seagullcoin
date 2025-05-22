@@ -4414,52 +4414,7 @@ app.get('/api/orderbook', async (req, res) => {
     const lowestAskPrice = asks.length ? parseFloat(asks[0].price) : null;
 
     const spread =
-      highestBidPrice !== null && lowestAskPrice !== null
-        ? (lowestAskPrice - highestBidPrice).toFixed(12)
-        : null;
-
-    const sumVolume = (orders) => orders.reduce((acc, o) => acc + parseFloat(o.amount), 0);
-    const totalBidVolume = sumVolume(bids);
-    const totalAskVolume = sumVolume(asks);
-
-    const weightedAvgPrice = (orders, depth = 5) => {
-      const top = orders.slice(0, depth);
-      const totalVol = sumVolume(top);
-      if (totalVol === 0) return null;
-      const weightedSum = top.reduce((acc, o) => acc + parseFloat(o.price) * parseFloat(o.amount), 0);
-      return (weightedSum / totalVol).toFixed(12);
-    };
-
-    const avgBidPrice = weightedAvgPrice(bids);
-    const avgAskPrice = weightedAvgPrice(asks);
-
-    const midPrice =
-      highestBidPrice !== null && lowestAskPrice !== null
-        ? ((highestBidPrice + lowestAskPrice) / 2).toFixed(12)
-        : null;
-
-    await client.disconnect();
-
-    res.json({
-      bids,
-      asks,
-      summary: {
-        spread,
-        totalBidVolume,
-        totalAskVolume,
-        avgBidPrice,
-        avgAskPrice,
-        midPrice,
-        highestBidPrice: highestBidPrice?.toFixed(12) || null,
-        lowestAskPrice: lowestAskPrice?.toFixed(12) || null,
-      },
-    });
-  } catch (error) {
-    console.error('Orderbook fetch failed:', error.message || error);
-    if (client.isConnected()) await client.disconnect();
-    res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
-  }
-});
+    
 
 
 // Call the XRPL ping when the server starts

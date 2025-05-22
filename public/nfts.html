@@ -121,7 +121,6 @@
         const bids = Array.isArray(data.asks) ? data.asks.slice(0, 10) : [];
         const asks = Array.isArray(data.bids) ? data.bids.slice(0, 10) : [];
 
-
         document.getElementById('price-value').textContent = isNaN(midPrice) ? 'N/A' : parseFloat(midPrice).toFixed(6);
 
         asks.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
@@ -130,9 +129,7 @@
         const tbody = document.getElementById('orderbook-body');
         tbody.innerHTML = '';
 
-        const maxRows = 10;
-        let hasRows = false;
-
+        const maxRows = Math.max(asks.length, bids.length);
         for (let i = 0; i < maxRows; i++) {
           const ask = asks[i];
           const bid = bids[i];
@@ -147,10 +144,9 @@
             <td>${bid ? formatAmount(bid.amount) : ''}</td>
           `;
           tbody.appendChild(row);
-          hasRows = true;
         }
 
-        if (!hasRows) {
+        if (tbody.children.length === 0) {
           tbody.innerHTML = `<tr><td colspan="4">No orderbook data available</td></tr>`;
         }
       } catch (err) {

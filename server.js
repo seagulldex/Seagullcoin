@@ -4468,13 +4468,14 @@ app.get('/api/orderbook', async (req, res) => {
     await client.disconnect();
 
     // Respond with JSON orderbook
-    res.json({
-      bids,
-      asks,
-      summary: {
+       res.json({
+       bids,
+       asks,
+       summary: {
         spread,
         highestBidPrice,
         lowestAskPrice,
+        lastTradedPrice,
       },
     });
 

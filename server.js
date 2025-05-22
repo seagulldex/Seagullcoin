@@ -4370,20 +4370,7 @@ app.get('/api/orderbook', async (req, res) => {
       };
     }
 
-    const bids = (bidsResponse.offers || []).map(o => parseOffer(o, true));
-    const asks = (asksResponse.offers || []).map(o => parseOffer(o, false));
-
-    await client.disconnect();
-
-    res.json({ bids, asks });
-  } catch (error) {
-    if (client.isConnected()) await client.disconnect();
-    console.error("Orderbook error:", error);
-    res.status(500).json({ error: "Failed to fetch orderbook" });
-  }
-});
-
-export default app;
+    const bids = (bidsResponse.offers |
 
 
 

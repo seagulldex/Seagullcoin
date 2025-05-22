@@ -7,11 +7,31 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="header.css" />
   <style>
-    /* [Same styles as before] */
+    .green { color: green; }
+    .red { color: red; }
+    .orderbook-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .orderbook-table th,
+    .orderbook-table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: right;
+    }
+    .orderbook-header {
+      font-weight: bold;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <!-- [Header and Wallet Status unchanged] -->
+  <!-- Header and wallet status -->
+  <header style="padding: 10px;">
+    <span id="wallet-indicator" class="red" title="Click to login" onclick="startLoginFlow()">🔴 Login</span>
+    <button id="logout-btn" style="display:none; margin-left: 10px;">Logout</button>
+  </header>
 
   <main style="padding: 20px;">
     <h1>Trading SGLCN-X20</h1>
@@ -62,26 +82,20 @@
     async function startLoginFlow() {
       try {
         const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-        if (!res.ok) throw new Error('Login API error');
         const data = await res.json();
         window.open(data.payloadURL, "_blank");
 
         const interval = setInterval(async () => {
-          try {
-            const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-            if (!check.ok) throw new Error('Login status API error');
-            const loginStatus = await check.json();
-            if (loginStatus.loggedIn) {
-              clearInterval(interval);
-              localStorage.setItem('xumm_wallet_address', loginStatus.account);
-              updateWalletStatus();
-            }
-          } catch (err) {
-            console.error('Login status check error', err);
+          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+          const loginStatus = await check.json();
+          if (loginStatus.loggedIn) {
+            clearInterval(interval);
+            localStorage.setItem('xumm_wallet_address', loginStatus.account);
+            updateWalletStatus();
           }
         }, 3000);
       } catch (err) {
-        alert('Failed to start login: ' + err.message);
+        alert('Login failed: ' + err.message);
       }
     }
 
@@ -91,30 +105,23 @@
     };
 
     function formatPrice(price) {
-      if (!price || isNaN(price)) return '';
-      return Number(price).toFixed(6);
+      return !price || isNaN(price) ? '' : Number(price).toFixed(6);
     }
 
     function formatAmount(amount) {
-      if (!amount || isNaN(amount)) return '';
-      return Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return !amount || isNaN(amount) ? '' : Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     async function updateCurrentPrice() {
       try {
         const res = await fetch('https://sglcn-x20-api.glitch.me/api/orderbook');
-        if (!res.ok) throw new Error(`Failed to fetch orderbook: ${res.status}`);
         const data = await res.json();
 
         const midPrice = data.midPrice;
         const asks = Array.isArray(data.asks) ? data.asks.slice(0, 10) : [];
         const bids = Array.isArray(data.bids) ? data.bids.slice(0, 10) : [];
 
-        if (!isNaN(parseFloat(midPrice))) {
-          document.getElementById('price-value').textContent = parseFloat(midPrice).toFixed(6);
-        } else {
-          document.getElementById('price-value').textContent = 'N/A';
-        }
+        document.getElementById('price-value').textContent = isNaN(midPrice) ? 'N/A' : parseFloat(midPrice).toFixed(6);
 
         asks.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
         bids.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
@@ -122,32 +129,31 @@
         const tbody = document.getElementById('orderbook-body');
         tbody.innerHTML = '';
 
-        const maxRows = Math.max(asks.length, bids.length);
+        const maxRows = 10;
+        let hasRows = false;
 
         for (let i = 0; i < maxRows; i++) {
           const ask = asks[i];
           const bid = bids[i];
 
-          const askPrice = ask ? formatPrice(ask.price) : '';
-          const askAmount = ask ? formatAmount(ask.amount) : '';
-          const bidPrice = bid ? formatPrice(bid.price) : '';
-          const bidAmount = bid ? formatAmount(bid.amount) : '';
+          if (!ask && !bid) continue;
 
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td class="ask-price">${askPrice}</td>
-            <td class="ask-amount">${askAmount}</td>
-            <td class="bid-price">${bidPrice}</td>
-            <td class="bid-amount">${bidAmount}</td>
+            <td>${ask ? formatPrice(ask.price) : ''}</td>
+            <td>${ask ? formatAmount(ask.amount) : ''}</td>
+            <td>${bid ? formatPrice(bid.price) : ''}</td>
+            <td>${bid ? formatAmount(bid.amount) : ''}</td>
           `;
           tbody.appendChild(row);
+          hasRows = true;
         }
 
-        if (asks.length === 0 && bids.length === 0) {
+        if (!hasRows) {
           tbody.innerHTML = `<tr><td colspan="4">No orderbook data available</td></tr>`;
         }
-      } catch (error) {
-        console.error('Error updating price/orderbook:', error);
+      } catch (err) {
+        console.error('Orderbook error:', err);
         document.getElementById('price-value').textContent = 'Error';
         document.getElementById('orderbook-body').innerHTML = `<tr><td colspan="4">Failed to load orderbook</td></tr>`;
       }

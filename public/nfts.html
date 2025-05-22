@@ -54,7 +54,7 @@
   <main style="padding: 20px;">
     <h1>Trading SGLCN-X20</h1>
     <div id="current-price">
-      Median Price: <span id="price-value">Loading...</span> XRP
+      Median Price: <span id="price-value">Loading...</span> SGLCN-X20
     </div>
 
     <div id="orderbook">
@@ -136,8 +136,9 @@
         const data = await res.json();
 
         const midPrice = data.midPrice;
-        const bids = Array.isArray(data.asks) ? data.asks.slice(0, 10) : [];
-        const asks = Array.isArray(data.bids) ? data.bids.slice(0, 10) : [];
+        const bids = Array.isArray(data.bids) ? data.bids.slice(0, 10) : [];
+        const asks = Array.isArray(data.asks) ? data.asks.slice(0, 10) : [];
+
 
 
         // Mock additional data (5 extra fake orders for visual filler)

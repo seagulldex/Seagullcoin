@@ -4272,7 +4272,7 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
 // Express endpoint
 
 app.get('/api/sglcn-xrp', async (req, res) => {
-  const client = new Client("wss://s1.ripple.com");
+  const client = new Client("wss://s2.ripple.com");
 
   try {
     const timeoutPromise = new Promise((_, reject) =>
@@ -4327,50 +4327,20 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 });
 
 
-
 app.get('/api/orderbook', async (req, res) => {
-  const client = new xrpl.Client('wss://s1.ripple.com');
+  const client = new xrpl.Client('wss://s2.ripple.com');
 
-  try {
-    await client.connect();
+  try {
+    await client.connect();
 
-    // Hardcoded SeagullCoin currency and issuer
-    const currency = "53656167756C6C436F696E000000000000000000";
-    const issuer = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
+    const currency = "53656167756C6C436F696E000000000000000000"; // SeagullCoin (hex)
+    const issuer = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"; // CORRECT issuer
 
-    // Fetch bids (offers selling SGLCN, wanting XRP)
-    const bidsResponse = await client.request({
-      command: "book_offers",
-      taker_gets: { currency, issuer },
-      taker_pays: { currency: "XRP" },
-      limit: 20,
-    });
+    // Fetch bids (users selling SGLCN, wanting XRP)
+    const bidsResponse = await client.request({
+      comm
 
-    // Fetch asks (offers selling XRP, wanting SGLCN)
-    const asksResponse = await client.request({
-      command: "book_offers",
-      taker_gets: { currency: "XRP" },
-      taker_pays: { currency, issuer },
-      limit: 20,
-    });
 
-    function parseOffer(offer, isBid) {
-      const gets = offer.taker_gets;
-      const pays = offer.taker_pays;
-
-      const getsAmount = typeof gets === "string" ? Number(gets) / 1e6 : Number(gets.value);
-      const paysAmount = typeof pays === "string" ? Number(pays) / 1e6 : Number(pays.value);
-
-      const price = isBid ? paysAmount / getsAmount : getsAmount / paysAmount;
-
-      return {
-        price: +price.toFixed(6),
-        amount: isBid ? getsAmount : paysAmount,
-        offerAccount: offer.account,
-      };
-    }
-
-    const bids = (bidsResponse.offers |
 
 
 

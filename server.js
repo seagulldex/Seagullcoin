@@ -4336,7 +4336,7 @@ app.get('/api/orderbook', async (req, res) => {
 
     // Hardcoded SeagullCoin currency and issuer
     const currency = "53656167756C6C436F696E000000000000000000";
-    const issuer = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U";
+    const issuer = "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno";
 
     // Fetch bids (offers selling SGLCN, wanting XRP)
     const bidsResponse = await client.request({

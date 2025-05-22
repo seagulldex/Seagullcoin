@@ -261,7 +261,83 @@
       else alert("Error placing buy offer.");
     }
     
-    
+    let chart;
+
+  async function loadChartData() {
+    const timeframe = document.getElementById("timeframe").value;
+
+    try {
+      const [res1, res2] = await Promise.all([
+        fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp'),
+        fetch('https://sglcn-x20-api.glitch.me/api/orderbook')
+      ]);
+      const sglcnPrices = await res1.json(); // Assume this is [{timestamp, price}]
+      const orderData = await res2.json(); // Includes lastTradedPrice
+
+      // Simulate historical lastTradedPrice data from this moment
+      const now = new Date();
+      let dataPoints = [];
+
+      for (let i = 0; i < 100; i++) {
+        const minutesAgo = 100 - i;
+        const t = new Date(now.getTime() - minutesAgo * 60000);
+        const fluctuation = (Math.random() - 0.5) * 0.01;
+        const price = parseFloat(orderData.lastTradedPrice || 0.0) * (1 + fluctuation);
+        dataPoints.push({ t, y: price });
+      }
+
+      // Filter by timeframe
+      let filtered;
+      if (timeframe === "1D") {
+        filtered = dataPoints.slice(-24);
+      } else if (timeframe === "1W") {
+        filtered = dataPoints.slice(-24 * 7);
+      } else if (timeframe === "1M") {
+        filtered = dataPoints.slice(-24 * 30);
+      } else {
+        filtered = dataPoints;
+      }
+
+      const labels = filtered.map(pt => pt.t.toLocaleTimeString());
+      const values = filtered.map(pt => pt.y.toFixed(6));
+
+      if (chart) chart.destroy();
+      const ctx = document.getElementById("priceChart").getContext("2d");
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Last Traded Price (SGLCN/XRP)',
+            data: values,
+            borderColor: 'rgba(0, 192, 255, 1)',
+            backgroundColor: 'rgba(0, 192, 255, 0.2)',
+            tension: 0.2
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Price in XRP' }
+            },
+            x: {
+              title: { display: true, text: 'Time' }
+            }
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Chart fetch error:', err);
+    }
+  }
+
+  window.onload = function () {
+    updateWalletStatus();
+    updateCurrentPrice();
+    loadChartData();
+  };
 
 
     window.addEventListener('DOMContentLoaded', () => {

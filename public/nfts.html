@@ -20,14 +20,18 @@
       border: none;
       cursor: pointer;
       padding: 6px 12px;
+      font-weight: 600;
     }
     #timeframe-buttons button.active {
       background-color: #0b7dda;
     }
     #priceChart {
-      max-width: 700px;
+      max-width: 900px;
       margin-bottom: 30px;
       display: block;
+      background: #f8f9fa;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
     }
     #wallet-indicator.red {
       color: red;
@@ -83,11 +87,11 @@
       <button data-timeframe="6h">6 Hours</button>
       <button data-timeframe="24h">24 Hours</button>
       <button data-timeframe="7d">7 Days</button>
-      <button data-timeframe="1m">Monthly</button>
+      <button data-timeframe="1m">1 Month</button>
       <button data-timeframe="max">Max</button>
     </div>
 
-    <canvas id="priceChart"></canvas>
+    <canvas id="priceChart" height="400"></canvas>
   </main>
 
   <script>
@@ -122,28 +126,23 @@
       }
     }
 
+    // Simulated login flow (replace with real XUMM integration)
     async function startLoginFlow() {
       try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-        const data = await res.json();
-        window.open(data.payloadURL, "_blank");
-
-        const interval = setInterval(async () => {
-          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-          const loginStatus = await check.json();
-          if (loginStatus.loggedIn) {
-            clearInterval(interval);
-            localStorage.setItem('xumm_wallet_address', loginStatus.account);
-            updateWalletStatus();
-          }
-        }, 3000);
+        // Normally you'd fetch a login payload and open XUMM app
+        // Here we simulate by asking user input for demo purposes
+        let wallet = prompt('Enter your wallet address to simulate login:');
+        if (wallet) {
+          localStorage.setItem('xumm_wallet_address', wallet.trim());
+          updateWalletStatus();
+        }
       } catch (e) {
         alert("Login failed, please try again.");
         console.error(e);
       }
     }
 
-    // Timeframe buttons and chart logic (example placeholders)
+    // Timeframe buttons setup
     function setupTimeframeButtons() {
       const buttons = document.querySelectorAll('#timeframe-buttons button');
       buttons.forEach(btn => {
@@ -155,30 +154,164 @@
       });
     }
 
-    function updateChartForTimeframe(timeframe) {
-      // Fetch and update chart data for timeframe
-      // Placeholder example below:
-      const ctx = document.getElementById('priceChart').getContext('2d');
-      if (window.priceChartInstance) {
-        window.priceChartInstance.destroy();
+    // Sample OHLC + Volume data for different timeframes
+    // Each entry: {x: timestamp, o: open, h: high, l: low, c: close, v: volume}
+    const sampleData = {
+      '1h': generateRandomData(12, 5 * 60 * 1000), // 12 points, 5 min interval (~1 hour)
+      '6h': generateRandomData(24, 15 * 60 * 1000), // 24 points, 15 min interval (~6 hours)
+      '24h': generateRandomData(48, 30 * 60 * 1000), // 48 points, 30 min interval (~24 hours)
+      '7d': generateRandomData(28, 6 * 60 * 60 * 1000), // 28 points, 6 hour interval (~7 days)
+      '1m': generateRandomData(30, 24 * 60 * 60 * 1000), // 30 points, 1 day interval (~1 month)
+      'max': generateRandomData(90, 24 * 60 * 60 * 1000), // 90 points, 1 day interval (~3 months)
+    };
+
+    // Function to generate synthetic OHLC + volume data for demo
+    function generateRandomData(points, interval) {
+      let data = [];
+      let baseTime = Date.now() - points * interval;
+      let lastClose = 100; // starting price
+      for(let i = 0; i < points; i++) {
+        const open = lastClose;
+        const close = open + (Math.random() - 0.5) * 4; // +/- 2 fluctuation
+        const high = Math.max(open, close) + Math.random() * 2;
+        const low = Math.min(open, close) - Math.random() * 2;
+        const volume = Math.floor(Math.random() * 1000) + 200;
+        data.push({
+          x: baseTime + i * interval,
+          o: parseFloat(open.toFixed(2)),
+          h: parseFloat(high.toFixed(2)),
+          l: parseFloat(low.toFixed(2)),
+          c: parseFloat(close.toFixed(2)),
+          v: volume
+        });
+        lastClose = close;
       }
-      window.priceChartInstance = new Chart(ctx, {
-        type: 'line',
+      return data;
+    }
+
+    let priceChartInstance = null;
+
+    function updateChartForTimeframe(timeframe) {
+      const ctx = document.getElementById('priceChart').getContext('2d');
+      if (priceChartInstance) {
+        priceChartInstance.destroy();
+      }
+
+      const ohlcData = sampleData[timeframe] || sampleData['1h'];
+
+      // Candlestick dataset
+      const candleData = ohlcData.map(d => ({
+        x: d.x,
+        o: d.o,
+        h: d.h,
+        l: d.l,
+        c: d.c
+      }));
+
+      // Volume dataset for bar chart
+      const volumeData = ohlcData.map(d => ({
+        x: d.x,
+        y: d.v
+      }));
+
+      priceChartInstance = new Chart(ctx, {
         data: {
-          labels: ['0', '1', '2', '3', '4', '5'],
-          datasets: [{
-            label: `Price (${timeframe})`,
-            data: [100, 105, 102, 108, 110, 115],
-            borderColor: 'blue',
-            fill: false,
-          }]
+          datasets: [
+            {
+              label: 'Price',
+              data: candleData,
+              type: 'candlestick',
+              borderColor: 'black',
+              borderWidth: 1,
+              color: {
+                up: '#4CAF50',
+                down: '#F44336',
+                unchanged: '#999999'
+              },
+            },
+            {
+              label: 'Volume',
+              data: volumeData,
+              type: 'bar',
+              yAxisID: 'volume',
+              backgroundColor: 'rgba(33, 150, 243, 0.5)'
+            }
+          ]
         },
         options: {
           responsive: true,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
           scales: {
-            x: { display: true },
-            y: { display: true }
-          }
+            x: {
+              type: 'time',
+              time: {
+                tooltipFormat: 'MMM d, yyyy HH:mm',
+                unit: timeframe === '1h' ? 'minute' :
+                      timeframe === '6h' ? 'hour' :
+                      timeframe === '24h' ? 'hour' :
+                      timeframe === '7d' ? 'day' :
+                      timeframe === '1m' ? 'day' :
+                      'day'
+              },
+              ticks: {
+                maxRotation: 0,
+                autoSkipPadding: 15,
+              },
+              grid: {
+                display: false,
+              }
+            },
+            y: {
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Price (SGLCN/XRP)'
+              },
+              grid: {
+                color: '#eee'
+              }
+            },
+            volume: {
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Volume'
+              },
+              grid: {
+                drawOnChartArea: false,
+              },
+              min: 0,
+              max: Math.max(...volumeData.map(d => d.y)) * 3,
+              ticks: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+            },
+            tooltip: {
+              enabled: true,
+              mode: 'nearest',
+              intersect: false,
+              callbacks: {
+                label: ctx => {
+                  const d = ctx.raw;
+                  if (ctx.dataset.type === 'candlestick') {
+                    return `O: ${d.o} H: ${d.h} L: ${d.l} C: ${d.c}`;
+                  } else if (ctx.dataset.type === 'bar') {
+                    return `Volume: ${d.y}`;
+                  }
+                  return ctx.formattedValue;
+                }
+              }
+            }
+          },
         }
       });
     }

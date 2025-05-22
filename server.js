@@ -4345,42 +4345,40 @@ app.get('/api/orderbook', async (req, res) => {
   try {
     await withTimeout(client.connect(), TIMEOUT_CONNECT);
 
-    // Fetch bids: offers where taker_gets SeagullCoin and taker_pays XRP
+    // Bids: offers to buy SGLCN by paying XRP
     const bidsResponse = await withTimeout(
       client.request({
         command: 'book_offers',
-        taker_gets: { currency, issuer },
-        taker_pays: XRP,
+        taker_gets: { currency, issuer }, // wants SGLCN
+        taker_pays: XRP,                   // pays XRP
         limit: 100,
       }),
       TIMEOUT_REQUEST
     );
 
-    // Fetch asks: offers where taker_gets XRP and taker_pays SeagullCoin
+    // Asks: offers to sell SGLCN to get XRP
     const asksResponse = await withTimeout(
       client.request({
         command: 'book_offers',
-        taker_gets: XRP,
-        taker_pays: { currency, issuer },
+        taker_gets: XRP,                  // wants XRP
+        taker_pays: { currency, issuer }, // pays SGLCN
         limit: 100,
       }),
       TIMEOUT_REQUEST
     );
 
-    // Helper to parse XRP (string drops) or token (object with .value decimal string) amounts to number
+    // Parse XRP drops (string) or token amounts (object.value) to number
     const parseAmount = (amt) => {
       if (typeof amt === 'string') {
         return Number(amt) / 1e6; // XRP drops to XRP
       }
       if (amt?.value) {
-        return Number(amt.value); // Token decimal string
+        return Number(amt.value);
       }
       return 0;
     };
 
-    // Parse a single offer to { price, amount, offerAccount }
-    // For bids: price = pays / gets (XRP/SGLCN), amount = gets (SGLCN)
-    // For asks: price = gets / pays (XRP/SGLCN), amount = pays (SGLCN)
+    // Parse offers so price is always XRP per 1 SGLCN, amount is SGLCN quantity
     const parseOffer = (offer, isBid) => {
       const gets = offer.TakerGets;
       const pays = offer.TakerPays;
@@ -4390,8 +4388,11 @@ app.get('/api/orderbook', async (req, res) => {
 
       if (!getsAmt || !paysAmt) return null;
 
+      // Price = XRP / SGLCN
+      // For bids: pays = XRP, gets = SGLCN
+      // For asks: gets = XRP, pays = SGLCN
       const price = isBid ? paysAmt / getsAmt : getsAmt / paysAmt;
-      const amount = isBid ? getsAmt : paysAmt;
+      const amount = isBid ? getsAmt : paysAmt; // amount in SGLCN
 
       return {
         price: price.toString(),
@@ -4403,18 +4404,64 @@ app.get('/api/orderbook', async (req, res) => {
     const bids = (bidsResponse.result.offers || [])
       .map((o) => parseOffer(o, true))
       .filter(Boolean)
-      .sort((a, b) => parseFloat(b.price) - parseFloat(a.price)); // Desc price
+      .sort((a, b) => parseFloat(b.price) - parseFloat(a.price)); // Desc by price
 
     const asks = (asksResponse.result.offers || [])
       .map((o) => parseOffer(o, false))
       .filter(Boolean)
-      .sort((a, b) => parseFloat(a.price) - parseFloat(b.price)); // Asc price
+      .sort((a, b) => parseFloat(a.price) - parseFloat(b.price)); // Asc by price
 
     const highestBidPrice = bids.length ? parseFloat(bids[0].price) : null;
     const lowestAskPrice = asks.length ? parseFloat(asks[0].price) : null;
 
     const spread =
-    
+      highestBidPrice !== null && lowestAskPrice !== null
+        ? (lowestAskPrice - highestBidPrice).toFixed(12)
+        : null;
+
+    const sumVolume = (orders) => orders.reduce((acc, o) => acc + parseFloat(o.amount), 0);
+    const totalBidVolume = sumVolume(bids);
+    const totalAskVolume = sumVolume(asks);
+
+    const weightedAvgPrice = (orders, depth = 5) => {
+      const top = orders.slice(0, depth);
+      const totalVol = sumVolume(top);
+      if (totalVol === 0) return null;
+      const weightedSum = top.reduce((acc, o) => acc + parseFloat(o.price) * parseFloat(o.amount), 0);
+      return (weightedSum / totalVol).toFixed(12);
+    };
+
+    const avgBidPrice = weightedAvgPrice(bids);
+    const avgAskPrice = weightedAvgPrice(asks);
+
+    const midPrice =
+      highestBidPrice !== null && lowestAskPrice !== null
+        ? ((highestBidPrice + lowestAskPrice) / 2).toFixed(12)
+        : null;
+
+    await client.disconnect();
+
+    res.json({
+      bids,
+      asks,
+      summary: {
+        spread,
+        totalBidVolume,
+        totalAskVolume,
+        avgBidPrice,
+        avgAskPrice,
+        midPrice,
+        highestBidPrice: highestBidPrice?.toFixed(12) || null,
+        lowestAskPrice: lowestAskPrice?.toFixed(12) || null,
+      },
+    });
+  } catch (error) {
+    console.error('Orderbook fetch failed:', error.message || error);
+    if (client.isConnected()) await client.disconnect();
+    res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
+  }
+});
+
 
 
 // Call the XRPL ping when the server starts

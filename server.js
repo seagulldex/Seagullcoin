@@ -4338,7 +4338,7 @@ app.get('/api/orderbook', async (req, res) => {
   const TIMEOUT_CONNECT = 4000;
   const TIMEOUT_REQUEST = 10000;
 
-  const currency = '53656167756C6C436F696E000000000000000000'; // SeagullCoin (hex)
+  const currency = '53656167756C6C436F696E000000000000000000'; // SeagullCoin hex
   const issuer = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
   const XRP = { currency: 'XRP' };
 
@@ -4365,9 +4365,16 @@ app.get('/api/orderbook', async (req, res) => {
       TIMEOUT_REQUEST
     );
 
+    // Parse amounts: XRP strings are drops, divide by 1e6; tokens use value as decimal string
     const parseAmount = (amt) => {
-      if (typeof amt === 'string') return Number(amt) / 1e6;
-      if (amt?.value) return Number(amt.value);
+      if (typeof amt === 'string') {
+        // XRP amount in drops (string)
+        return Number(amt) / 1e6;
+      }
+      if (amt?.value) {
+        // Token amount (decimal string)
+        return Number(amt.value);
+      }
       return 0;
     };
 
@@ -4380,7 +4387,7 @@ app.get('/api/orderbook', async (req, res) => {
 
       if (!getsAmt || !paysAmt) return null;
 
-      // Price = how many taker_pays per taker_gets (for bids it's pays/gets, for asks gets/pays)
+      // Price: for bids, price = pays / gets (XRP / SGLCN), for asks price = gets / pays (XRP / SGLCN)
       const price = isBid ? paysAmt / getsAmt : getsAmt / paysAmt;
 
       return {
@@ -4400,7 +4407,7 @@ app.get('/api/orderbook', async (req, res) => {
       .filter(Boolean)
       .sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
 
-    // Calculate spread = lowest ask - highest bid
+    // Spread = lowest ask - highest bid
     const highestBidPrice = bids.length ? parseFloat(bids[0].price) : null;
     const lowestAskPrice = asks.length ? parseFloat(asks[0].price) : null;
     const spread =
@@ -4408,12 +4415,10 @@ app.get('/api/orderbook', async (req, res) => {
         ? (lowestAskPrice - highestBidPrice).toFixed(12)
         : null;
 
-    // Sum total volume for bids and asks
     const sumVolume = (orders) => orders.reduce((acc, o) => acc + parseFloat(o.amount), 0);
     const totalBidVolume = sumVolume(bids);
     const totalAskVolume = sumVolume(asks);
 
-    // Weighted average price for top N (5) orders
     const weightedAvgPrice = (orders, depth = 5) => {
       const top = orders.slice(0, depth);
       const totalVol = sumVolume(top);
@@ -4448,11 +4453,10 @@ app.get('/api/orderbook', async (req, res) => {
     });
   } catch (error) {
     console.error('Orderbook fetch failed:', error.message || error);
-    if (client.isC
-
-
-
-
+    if (client.isConnected()) await client.disconnect();
+    res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

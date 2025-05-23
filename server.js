@@ -4442,17 +4442,7 @@ app.get('/api/orderbook', async (req, res) => {
       asks,
       summary: {
         spread,
-        highestBidPrice,
-        lowestAskPrice,
-        lastTradedPrice,
-      },
-    });
-  } catch (error) {
-    console.error('Orderbook fetch failed:', error.message || error);
-    if (client.isConnected()) await client.disconnect();
-    res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
-  }
-});
+        highe
 
 
 

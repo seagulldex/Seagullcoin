@@ -230,20 +230,21 @@
     }
 
     async function fetchLiveSGLCNPrice() {
-      try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0 && data[0].price) {
-          const latestPrice = parseFloat(data[0].price).toFixed(6);
-          document.getElementById('price-value').textContent = `${latestPrice} XRP`;
-        } else {
-          document.getElementById('price-value').textContent = 'Unavailable';
-        }
-      } catch (err) {
-        console.error('Failed to fetch live SGLCN price:', err);
-        document.getElementById('price-value').textContent = 'Error';
-      }
+  try {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
+    const data = await res.json();
+    if (data && data.sglcn_to_xrp) {
+      const latestPrice = parseFloat(data.sglcn_to_xrp).toFixed(6);
+      document.getElementById('price-value').textContent = `${latestPrice} XRP`;
+    } else {
+      document.getElementById('price-value').textContent = 'Unavailable';
     }
+  } catch (err) {
+    console.error('Failed to fetch live SGLCN price:', err);
+    document.getElementById('price-value').textContent = 'Error';
+  }
+}
+
 
     async function placeBuyOrder() {
       const wallet = localStorage.getItem('xumm_wallet_address');

@@ -100,8 +100,8 @@
     <div style="display: flex; align-items: center; margin-bottom: 20px;">
   <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" alt="SGLCN Logo" width="50" height="50" style="border-radius: 50%; margin-right: 12px;">
   <div id="current-price" style="font-size: 1.3em;">
-    SGLCN : <span id="price-value">Loading...</span><br />
-    <span style="font-size: 0.9em;">(XAU: <span id="price-xau">Loading...</span>)</span>
+    <span id="price-value"></span><br />
+    <span style="font-size: 0.9em;"> SGLCN: <span id="price-xau">Loading...</span></span>
   </div>
 </div>
 
@@ -314,18 +314,21 @@ async function loadChartData() {
       }
     }
     
-    async function fetchPrices() {
+    async function fetchLiveSGLCNXAUPrice() {
   try {
-    const xauRes = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xau');
-    const xauData = await xauRes.json();
-    document.getElementById('price-xau').textContent = formatPrice(xauData.latest);
+    const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xau');
+    const data = await res.json();
+    if (data && data.sglcn_to_xau) {
+      const latestPriceXAU = parseFloat(data.sglcn_to_xau).toFixed(6);
+      document.getElementById('price-xau').textContent = `${latestPriceXAU} XAU`;
+    } else {
+      document.getElementById('price-xau').textContent = 'Unavailable';
+    }
   } catch (err) {
-    console.error('Failed to fetch price data', err);
+    console.error('Error fetching SGLCN XAU price:', err);
+    document.getElementById('price-xau').textContent = 'Error';
   }
 }
-
-
-
 
     async function placeBuyOrder() {
       const wallet = localStorage.getItem('xumm_wallet_address');
@@ -358,7 +361,7 @@ async function loadChartData() {
     updateWalletStatus();
     fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
     updateCurrentPrice();            // Orderbook data
-    fetchPrices();                   // Fetch XAU price
+    fetchLiveSGLCNXAUPrice();               // Fetch XAU price
     setInterval(fetchLiveSGLCNPrice, 60000);
     setInterval(updateCurrentPrice, 30000);
     setInterval(fetchPrices, 60000); // Update XAU price every 60 seconds

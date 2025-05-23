@@ -76,7 +76,7 @@
     <span id="wallet-indicator" class="red" title="Click to login" onclick="startLoginFlow()">🔴 Login</span>
     <button id="logout-btn" style="display:none; margin-left: 10px;">Logout</button>
   </header>
-  
+
   <header>
     <nav>
       <ul>
@@ -93,7 +93,7 @@
     <div id="current-price">
       Price: <span id="price-value">Loading...</span> SGLCN-X20
     </div>
-    
+
     <h2>Price Chart (SGLCN/XRP)</h2>
     <div>
       <label for="timeframe">View:</label>
@@ -122,7 +122,7 @@
         </table>
       </div>
     </div>
-    
+
     <div class="trade-box">
       <h3>Place Buy Offer</h3>
       <label for="buy-price">Price per SGLCN (XRP)</label>
@@ -184,7 +184,9 @@
     }
 
     function formatAmount(amount) {
-      return !amount || isNaN(amount) ? '' : Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return !amount || isNaN(amount) ? '' : Number(amount).toLocaleString(undefined, {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      });
     }
 
     async function updateCurrentPrice() {
@@ -226,32 +228,28 @@
         document.getElementById('orderbook-body').innerHTML = `<tr><td colspan="4">Failed to load orderbook</td></tr>`;
       }
     }
-    
+
     async function fetchLiveSGLCNPrice() {
-  try {
-    const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
-    const data = await res.json();
-
-    // Expecting data to be an array with at least one { price, timestamp }
-    if (Array.isArray(data) && data.length > 0 && data[0].price) {
-      const latestPrice = parseFloat(data[0].price).toFixed(6);
-      document.getElementById('price-value').textContent = `${latestPrice} XRP`;
-    } else {
-      document.getElementById('price-value').textContent = 'Unavailable';
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0 && data[0].price) {
+          const latestPrice = parseFloat(data[0].price).toFixed(6);
+          document.getElementById('price-value').textContent = `${latestPrice} XRP`;
+        } else {
+          document.getElementById('price-value').textContent = 'Unavailable';
+        }
+      } catch (err) {
+        console.error('Failed to fetch live SGLCN price:', err);
+        document.getElementById('price-value').textContent = 'Error';
+      }
     }
-  } catch (err) {
-    console.error('Failed to fetch live SGLCN price:', err);
-    document.getElementById('price-value').textContent = 'Error';
-  }
-}
-
 
     async function placeBuyOrder() {
       const wallet = localStorage.getItem('xumm_wallet_address');
       if (!wallet) return alert("Please log in first.");
       const price = parseFloat(document.getElementById('buy-price').value);
       const amount = parseFloat(document.getElementById('buy-amount').value);
-
       if (isNaN(price) || isNaN(amount) || price <= 0 || amount <= 0) {
         return alert("Enter valid price and amount.");
       }
@@ -276,7 +274,7 @@
 
     updateWalletStatus();
     updateCurrentPrice();
-    setInterval(fetchLiveSGLCNPrice, 60000); // refresh every 60s
+    setInterval(fetchLiveSGLCNPrice, 60000);
     setInterval(updateCurrentPrice, 30000);
   </script>
 </body>

@@ -4329,73 +4329,53 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 app.get('/api/orderbook', async (req, res) => {
   const client = new xrpl.Client('wss://s1.ripple.com');
 
-  // Helper to timeout a promise
   const withTimeout = (promise, ms) =>
     Promise.race([
       promise,
       new Promise((_, reject) => setTimeout(() => reject(new Error('XRPL timeout')), ms)),
     ]);
 
-  const TIMEOUT_CONNECT = 4000; // ms
-  const TIMEOUT_REQUEST = 10000; // ms
+  const TIMEOUT_CONNECT = 4000;
+  const TIMEOUT_REQUEST = 10000;
 
-  // SeagullCoin currency hex and issuer address
   const currency = '53656167756C6C436F696E000000000000000000'; // SGLCN hex
   const issuer = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
   const XRP = { currency: 'XRP' };
 
+  const depth = Math.max(1, Math.min(parseInt(req.query.depth) || 50, 100));
+
   try {
-    // Connect to XRPL
     await withTimeout(client.connect(), TIMEOUT_CONNECT);
 
-    // Fetch bids (offers to buy SGLCN by paying XRP)
-    const bidsResponse = await withTimeout(
-      client.request({
+    const [bidsResponse, asksResponse] = await Promise.all([
+      withTimeout(client.request({
         command: 'book_offers',
-        taker_gets: { currency, issuer }, // wants SGLCN
-        taker_pays: XRP,                   // pays XRP
+        taker_gets: { currency, issuer },
+        taker_pays: XRP,
         limit: 100,
-      }),
-      TIMEOUT_REQUEST
-    );
-
-    // Fetch asks (offers to sell SGLCN to get XRP)
-    const asksResponse = await withTimeout(
-      client.request({
+      }), TIMEOUT_REQUEST),
+      withTimeout(client.request({
         command: 'book_offers',
-        taker_gets: XRP,                  // wants XRP
-        taker_pays: { currency, issuer }, // pays SGLCN
+        taker_gets: XRP,
+        taker_pays: { currency, issuer },
         limit: 100,
-      }),
-      TIMEOUT_REQUEST
-    );
+      }), TIMEOUT_REQUEST)
+    ]);
 
-    // Convert XRP drops (string) or token amounts (object.value) to number
-    const parseAmount = (amt) => {
-      if (typeof amt === 'string') {
-        return Number(amt) / 1e6; // drops to XRP
-      }
-      if (amt?.value) {
-        return Number(amt.value);
-      }
-      return 0;
-    };
+    const parseAmount = (amt) => typeof amt === 'string'
+      ? Number(amt) / 1e6
+      : amt?.value
+        ? Number(amt.value)
+        : 0;
 
-    // Parse offers so price is always XRP per 1 SGLCN, amount is SGLCN quantity
     const parseOffer = (offer, isBid) => {
-      const gets = offer.TakerGets;
-      const pays = offer.TakerPays;
-
-      const getsAmt = parseAmount(gets);
-      const paysAmt = parseAmount(pays);
+      const getsAmt = parseAmount(offer.TakerGets);
+      const paysAmt = parseAmount(offer.TakerPays);
 
       if (!getsAmt || !paysAmt) return null;
 
-      // Price = XRP / SGLCN
-      // For bids: pays = XRP, gets = SGLCN
-      // For asks: gets = XRP, pays = SGLCN
       const price = isBid ? paysAmt / getsAmt : getsAmt / paysAmt;
-      const amount = isBid ? getsAmt : paysAmt; // amount in SGLCN
+      const amount = isBid ? getsAmt : paysAmt;
 
       return {
         price: price.toString(),
@@ -4404,7 +4384,6 @@ app.get('/api/orderbook', async (req, res) => {
       };
     };
 
-    // Parse raw bids and asks offers
     const bidsRaw = (bidsResponse.result.offers || [])
       .map(o => parseOffer(o, true))
       .filter(Boolean);
@@ -4413,11 +4392,8 @@ app.get('/api/orderbook', async (req, res) => {
       .map(o => parseOffer(o, false))
       .filter(Boolean);
 
-    // Aggregate offers by price level rounded to 7 decimals,
-    // sum amounts, calculate value and cumulative sum.
     const aggregateOffers = (offers, isAsc) => {
       const precision = 7;
-      // Group amounts by rounded price
       const grouped = offers.reduce((acc, o) => {
         const priceKey = parseFloat(o.price).toFixed(precision);
         if (!acc[priceKey]) acc[priceKey] = 0;
@@ -4425,7 +4401,6 @@ app.get('/api/orderbook', async (req, res) => {
         return acc;
       }, {});
 
-      // Convert groups to array and calculate value and cumulative sum
       let cumSum = 0;
       const result = Object.entries(grouped)
         .map(([price, amount]) => {
@@ -4441,50 +4416,44 @@ app.get('/api/orderbook', async (req, res) => {
           };
         });
 
-      // Sort offers by price ascending or descending
       result.sort((a, b) => (isAsc ? a.price - b.price : b.price - a.price));
-
-      return result;
+      return result.slice(0, depth);
     };
 
-    const bids = aggregateOffers(bidsRaw, false); // Descending price
-    const asks = aggregateOffers(asksRaw, true);  // Ascending price
+    const bids = aggregateOffers(bidsRaw, false);
+    const asks = aggregateOffers(asksRaw, true);
 
-    // Compute summary
-    const highestBidPrice = bids.length ? bids[0].price : null;
-    const lowestAskPrice = asks.length ? asks[0].price : null;
-    const spread =
-    highestBidPrice !== null && lowestAskPrice !== null
-    ? lowestAskPrice - highestBidPrice
-    : null;
-    
-    // Approximate last traded price as midpoint between best bid and ask
-    let lastTradedPrice = null;
-    if (highestBidPrice !== null && lowestAskPrice !== null) {
-   lastTradedPrice = (highestBidPrice + lowestAskPrice) / 2;
-    }
+    const highestBidPriceNum = highestBidPrice !== null ? parseFloat(highestBidPrice) : null;
+const lowestAskPriceNum = lowestAskPrice !== null ? parseFloat(lowestAskPrice) : null;
 
-    // Disconnect XRPL client
+let lastTradedPrice = null;
+if (
+  highestBidPriceNum !== null &&
+  lowestAskPriceNum !== null &&
+  highestBidPriceNum > 0 &&
+  lowestAskPriceNum > 0
+) {
+  lastTradedPrice = Number(((highestBidPriceNum + lowestAskPriceNum) / 2).toFixed(7));
+} else {
+  lastTradedPrice = 0;
+}
+
+    const totalBidVolume = bids.reduce((sum, o) => sum + o.amount, 0);
+    const totalAskVolume = asks.reduce((sum, o) => sum + o.amount, 0);
+
     await client.disconnect();
 
-    // Respond with JSON orderbook
-       res.json({
-       bids,
-       asks,
-       summary: {
+    res.json({
+      timestamp: new Date().toISOString(),
+      bids,
+      asks,
+      summary: {
         spread,
         highestBidPrice,
         lowestAskPrice,
         lastTradedPrice,
-      },
-    });
+        tot
 
-  } catch (error) {
-    console.error('Orderbook fetch failed:', error.message || error);
-    if (client.isConnected()) await client.disconnect();
-    res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
-  }
-});
 
 
 // Call the XRPL ping when the server starts

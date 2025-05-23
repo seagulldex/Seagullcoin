@@ -90,9 +90,13 @@
 
   <main style="padding: 20px;">
     <h1>SeagullCoin Dex</h1>
-    <div id="current-price">
-      SGLCN-X20 : <span id="price-value">Loading...</span>
-    </div>
+    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+  <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" alt="SGLCN Logo" width="50" height="50" style="border-radius: 50%; margin-right: 12px;">
+  <div id="current-price" style="font-size: 1.3em;">
+    SGLCN : <span id="price-value">Loading...</span>
+  </div>
+</div>
+
 
     <h2>Price Chart (SGLCN/XRP)</h2>
     <div>
@@ -188,6 +192,68 @@
         minimumFractionDigits: 2, maximumFractionDigits: 2
       });
     }
+    
+    let chart;
+
+async function loadChartData() {
+  try {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
+    const data = await res.json();
+
+    const timeframe = document.getElementById('timeframe').value;
+
+    if (!data || !Array.isArray(data.history)) {
+      console.error("Invalid chart data");
+      return;
+    }
+
+    // Filter based on selected timeframe
+    const now = Date.now();
+    const history = data.history.filter(entry => {
+      const timestamp = new Date(entry.timestamp).getTime();
+      if (timeframe === "1D") return timestamp > now - 24 * 60 * 60 * 1000;
+      if (timeframe === "1W") return timestamp > now - 7 * 24 * 60 * 60 * 1000;
+      if (timeframe === "1M") return timestamp > now - 30 * 24 * 60 * 60 * 1000;
+      return true;
+    });
+
+    const labels = history.map(e => new Date(e.timestamp).toLocaleDateString());
+    const prices = history.map(e => parseFloat(e.price));
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(document.getElementById("priceChart"), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'SGLCN/XRP',
+          data: prices,
+          borderColor: '#0af',
+          backgroundColor: 'rgba(0,170,255,0.1)',
+          fill: true,
+          tension: 0.25
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { display: true, title: { display: false } },
+          y: { display: true, title: { display: true, text: 'Price in XRP' } }
+        }
+      }
+    });
+
+  } catch (err) {
+    console.error("Chart fetch error:", err);
+  }
+}
+
+loadChartData();
+
 
     async function updateCurrentPrice() {
       try {
@@ -267,6 +333,8 @@
         alert("Error submitting offer: " + err.message);
       }
     }
+    
+    
 
     updateWalletStatus();
     fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp

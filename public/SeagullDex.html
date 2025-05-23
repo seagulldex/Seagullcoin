@@ -91,7 +91,7 @@
   <main style="padding: 20px;">
     <h1>SeagullCoin Dex</h1>
     <div id="current-price">
-      Price: <span id="price-value">Loading...</span> SGLCN-X20
+      SGLCN-X20 : <span id="price-value">Loading...</span>
     </div>
 
     <h2>Price Chart (SGLCN/XRP)</h2>
@@ -193,11 +193,8 @@
       try {
         const res = await fetch('https://sglcn-x20-api.glitch.me/api/orderbook');
         const data = await res.json();
-        const midPrice = data.midPrice;
         const bids = Array.isArray(data.bids) ? data.bids.slice(0, 100) : [];
         const asks = Array.isArray(data.asks) ? data.asks.slice(0, 100) : [];
-
-        document.getElementById('price-value').textContent = isNaN(midPrice) ? 'N/A' : parseFloat(midPrice).toFixed(6);
 
         asks.sort((a, b) => parseFloat(a.price) - parseFloat(b.price)).reverse();
         bids.sort((a, b) => parseFloat(b.price) - parseFloat(a.price)).reverse();
@@ -224,27 +221,25 @@
         }
       } catch (err) {
         console.error('Orderbook error:', err);
-        document.getElementById('price-value').textContent = 'Error';
         document.getElementById('orderbook-body').innerHTML = `<tr><td colspan="4">Failed to load orderbook</td></tr>`;
       }
     }
 
     async function fetchLiveSGLCNPrice() {
-  try {
-    const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
-    const data = await res.json();
-    if (data && data.sglcn_to_xrp) {
-      const latestPrice = parseFloat(data.sglcn_to_xrp).toFixed(6);
-      document.getElementById('price-value').textContent = `${latestPrice} XRP`;
-    } else {
-      document.getElementById('price-value').textContent = 'Unavailable';
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
+        const data = await res.json();
+        if (data && data.sglcn_to_xrp) {
+          const latestPrice = parseFloat(data.sglcn_to_xrp).toFixed(6);
+          document.getElementById('price-value').textContent = `${latestPrice} XRP`;
+        } else {
+          document.getElementById('price-value').textContent = 'Unavailable';
+        }
+      } catch (err) {
+        console.error('Failed to fetch live SGLCN price:', err);
+        document.getElementById('price-value').textContent = 'Error';
+      }
     }
-  } catch (err) {
-    console.error('Failed to fetch live SGLCN price:', err);
-    document.getElementById('price-value').textContent = 'Error';
-  }
-}
-
 
     async function placeBuyOrder() {
       const wallet = localStorage.getItem('xumm_wallet_address');
@@ -274,7 +269,8 @@
     }
 
     updateWalletStatus();
-    updateCurrentPrice();
+    fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
+    updateCurrentPrice();            // Orderbook data
     setInterval(fetchLiveSGLCNPrice, 60000);
     setInterval(updateCurrentPrice, 30000);
   </script>

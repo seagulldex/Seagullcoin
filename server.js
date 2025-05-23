@@ -4326,6 +4326,7 @@ app.get('/api/sglcn-xrp', async (req, res) => {
   }
 });
 
+
 app.get('/api/orderbook', async (req, res) => {
   const client = new xrpl.Client('wss://s1.ripple.com');
 
@@ -4342,31 +4343,38 @@ app.get('/api/orderbook', async (req, res) => {
   const issuer = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
   const XRP = { currency: 'XRP' };
 
-  const depth = Math.max(1, Math.min(parseInt(req.query.depth) || 50, 100));
-
   try {
     await withTimeout(client.connect(), TIMEOUT_CONNECT);
 
-    const [bidsResponse, asksResponse] = await Promise.all([
-      withTimeout(client.request({
+    const bidsResponse = await withTimeout(
+      client.request({
         command: 'book_offers',
         taker_gets: { currency, issuer },
         taker_pays: XRP,
         limit: 100,
-      }), TIMEOUT_REQUEST),
-      withTimeout(client.request({
+      }),
+      TIMEOUT_REQUEST
+    );
+
+    const asksResponse = await withTimeout(
+      client.request({
         command: 'book_offers',
         taker_gets: XRP,
         taker_pays: { currency, issuer },
         limit: 100,
-      }), TIMEOUT_REQUEST)
-    ]);
+      }),
+      TIMEOUT_REQUEST
+    );
 
-    const parseAmount = (amt) => typeof amt === 'string'
-      ? Number(amt) / 1e6
-      : amt?.value
-        ? Number(amt.value)
-        : 0;
+    const parseAmount = (amt) => {
+      if (typeof amt === 'string') {
+        return Number(amt) / 1e6;
+      }
+      if (amt?.value) {
+        return Number(amt.value);
+      }
+      return 0;
+    };
 
     const parseOffer = (offer, isBid) => {
       const getsAmt = parseAmount(offer.TakerGets);
@@ -4417,42 +4425,52 @@ app.get('/api/orderbook', async (req, res) => {
         });
 
       result.sort((a, b) => (isAsc ? a.price - b.price : b.price - a.price));
-      return result.slice(0, depth);
+      return result;
     };
 
     const bids = aggregateOffers(bidsRaw, false);
     const asks = aggregateOffers(asksRaw, true);
 
-    const highestBidPriceNum = highestBidPrice !== null ? parseFloat(highestBidPrice) : null;
-const lowestAskPriceNum = lowestAskPrice !== null ? parseFloat(lowestAskPrice) : null;
+    const highestBidPrice = bids.length ? bids[0].price : null;
+    const lowestAskPrice = asks.length ? asks[0].price : null;
 
-let lastTradedPrice = null;
-if (
-  highestBidPriceNum !== null &&
-  lowestAskPriceNum !== null &&
-  highestBidPriceNum > 0 &&
-  lowestAskPriceNum > 0
-) {
-  lastTradedPrice = Number(((highestBidPriceNum + lowestAskPriceNum) / 2).toFixed(7));
-} else {
-  lastTradedPrice = 0;
-}
+    const spread =
+      highestBidPrice !== null && lowestAskPrice !== null
+        ? Number((lowestAskPrice - highestBidPrice).toFixed(7))
+        : null;
 
-    const totalBidVolume = bids.reduce((sum, o) => sum + o.amount, 0);
-    const totalAskVolume = asks.reduce((sum, o) => sum + o.amount, 0);
+    // Fix for lastTradedPrice
+    let lastTradedPrice = null;
+    if (
+      highestBidPrice !== null &&
+      lowestAskPrice !== null &&
+      highestBidPrice > 0 &&
+      lowestAskPrice > 0
+    ) {
+      lastTradedPrice = Number(((highestBidPrice + lowestAskPrice) / 2).toFixed(7));
+    } else {
+      lastTradedPrice = 0;
+    }
 
     await client.disconnect();
 
     res.json({
-      timestamp: new Date().toISOString(),
       bids,
       asks,
       summary: {
         spread,
-        highestBidPrice,
-        lowestAskPrice,
+        highestBidPrice: highestBidPrice !== null ? Number(highestBidPrice.toFixed(7)) : null,
+        lowestAskPrice: lowestAskPrice !== null ? Number(lowestAskPrice.toFixed(7)) : null,
         lastTradedPrice,
-        tot
+      },
+    });
+
+  } catch (error) {
+    console.error('Orderbook fetch failed:', error.message || error);
+    if (client.isConnected()) await client.disconnect();
+    res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
+  }
+});
 
 
 

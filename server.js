@@ -4272,49 +4272,44 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
 // Express endpoint
 
 app.get('/api/sglcn-xrp', async (req, res) => {
-  const client = new xrpl.Client('wss://s2.ripple.com');
+  const client = new Client("wss://s2.ripple.com");
 
   try {
     await client.connect();
 
-    // Fetch the most recent trades for SGLCN/XRP
-    const tradesResponse = await client.request({
-      command: 'account_tx',
-      account: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-      ledger_index_min: -1,
-      ledger_index_max: -1,
-      limit: 1,
-      binary: false,
-      forward: false
+    const ammResponse = await client.request({
+      command: "amm_info",
+      asset: {
+        currency: "XRP"
+      },
+      asset2: {
+        currency: "53656167756C6C436F696E000000000000000000",
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+      }
     });
 
-    const transactions = tradesResponse.result.transactions;
-
-    if (transactions.length === 0) {
-      return res.status(404).json({ error: 'No recent trades found for SGLCN/XRP.' });
+    const amm = ammResponse.result.amm;
+    if (!amm || !amm.amount || !amm.amount2) {
+      return res.status(404).json({ error: "AMM pool not found or invalid." });
     }
 
-    const trade = transactions[0].tx;
+    const xrpInDrops = parseFloat(amm.amount); // XRP side (in drops)
+    const sglcn = parseFloat(amm.amount2.value); // SGLCN side
 
-    // Extract trade details
-    const takerPays = parseFloat(trade.TakerPays);
-    const takerGets = parseFloat(trade.TakerGets.value);
-
-    const sglcnToXrp = takerPays / 1e6 / takerGets;
-    const xrpToSglcn = 1 / sglcnToXrp;
+    const xrp = xrpInDrops / 1000000;
+    const priceSGLCNToXRP = xrp / sglcn;
+    const priceXRPToSGLCN = sglcn / xrp;
 
     res.json({
-      sglcn_to_xrp: sglcnToXrp.toFixed(6),
-      xrp_to_sglcn: xrpToSglcn.toFixed(2)
+      sglcn_to_xrp: priceSGLCNToXRP.toFixed(6),
+      xrp_to_sglcn: priceXRPToSGLCN.toFixed(2)
     });
 
   } catch (err) {
-    console.error('Error fetching SGLCN/XRP price:', err.message);
-    res.status(500).json({ error: 'Failed to fetch SGLCN/XRP price.' });
+    console.error("Error fetching AMM price:", err.message);
+    res.status(500).json({ error: err.message });
   } finally {
-    if (client.isConnected()) {
-      await client.disconnect();
-    }
+    if (client.isConnected()) await client.disconnect();
   }
 });
 

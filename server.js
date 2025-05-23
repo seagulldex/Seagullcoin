@@ -4377,25 +4377,34 @@ app.get('/api/orderbook', async (req, res) => {
     };
 
     const parseOffer = (offer, isBid) => {
-      const getsAmt = parseAmount(offer.TakerGets);
-      const paysAmt = parseAmount(offer.TakerPays);
+  const getsAmt = parseAmount(offer.TakerGets);
+  const paysAmt = parseAmount(offer.TakerPays);
 
-      if (!Number.isFinite(getsAmt) || !Number.isFinite(paysAmt) || getsAmt <= 0 || paysAmt <= 0) return null;
+  if (!Number.isFinite(getsAmt) || !Number.isFinite(paysAmt) || getsAmt <= 0 || paysAmt <= 0) return null;
+
+  const price = isBid ? paysAmt / getsAmt : getsAmt / paysAmt;
 
 
-      const price = isBid ? paysAmt / getsAmt : getsAmt / paysAmt;
-      
-      // skip invalid prices
-  if (price === 0 || !isFinite(price)) return null;
+  // Filter out invalid or spam offers
+  if (!Number.isFinite(price) || price <= 0 || price < 1e-7) {
+    console.warn('Filtered suspicious offer:', {
+      account: offer.Account,
+      getsAmt,
+      paysAmt,
+      price,
+    });
+    return null;
+  }
 
-      const amount = isBid ? getsAmt : paysAmt;
+  const amount = isBid ? getsAmt : paysAmt;
 
-      return {
-        price: price.toString(),
-        amount: amount.toString(),
-        offerAccount: offer.Account,
-      };
-    };
+  return {
+    price: price.toString(),
+    amount: amount.toString(),
+    offerAccount: offer.Account,
+  };
+};
+
 
     const bidsRaw = (bidsResponse.result.offers || [])
       .map(o => parseOffer(o, true))

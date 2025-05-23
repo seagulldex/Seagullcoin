@@ -4327,8 +4327,9 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 });
 
 
+
 app.get('/api/orderbook', async (req, res) => {
-  const client = new Client('wss://s1.ripple.com');
+  const client = new xrpl.Client('wss://s2.ripple.com');
 
   const withTimeout = (promise, ms) =>
     Promise.race([
@@ -4339,81 +4340,90 @@ app.get('/api/orderbook', async (req, res) => {
   const TIMEOUT_CONNECT = 4000;
   const TIMEOUT_REQUEST = 10000;
 
-  const currency = '53656167756C6C436F696E000000000000000000'; // SGLCN
+  const currency = '53656167756C6C436F696E000000000000000000'; // SGLCN hex
   const issuer = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
   const XRP = { currency: 'XRP' };
-
-  const parseAmount = (amt) => {
-    if (typeof amt === 'string') return Number(amt) / 1e6; // XRP (drops)
-    if (amt?.value) return Number(amt.value);             // Token (decimal)
-    return 0;
-  };
-
-  const parseOffer = (offer, isBid) => {
-    const getsValue = parseAmount(offer.TakerGets);
-    const paysValue = parseAmount(offer.TakerPays);
-
-    if (!getsValue || !paysValue) return null;
-
-    const price = isBid ? getsValue / paysValue : paysValue / getsValue;
-    const amount = isBid ? paysValue : getsValue;
-
-    if (!Number.isFinite(price) || !Number.isFinite(amount)) return null;
-
-    return {
-      price: Number(price.toFixed(7)),
-      amount: Number(amount.toFixed(2)),
-      offerAccount: offer.Account,
-    };
-  };
 
   try {
     await withTimeout(client.connect(), TIMEOUT_CONNECT);
 
-    const [bidsResponse, asksResponse] = await Promise.all([
-      withTimeout(
-        client.request({
-          command: 'book_offers',
-          taker_gets: { currency, issuer }, // user wants SGLCN
-          taker_pays: XRP,                 // pays XRP
-          limit: 100,
-        }),
-        TIMEOUT_REQUEST
-      ),
-      withTimeout(
-        client.request({
-          command: 'book_offers',
-          taker_gets: XRP,                 // user wants XRP
-          taker_pays: { currency, issuer }, // pays SGLCN
-          limit: 100,
-        }),
-        TIMEOUT_REQUEST
-      ),
-    ]);
+    const bidsResponse = await withTimeout(
+      client.request({
+        command: 'book_offers',
+        taker_gets: { currency, issuer },
+        taker_pays: XRP,
+        limit: 100,
+      }),
+      TIMEOUT_REQUEST
+    );
 
-    const bidsRaw = bidsResponse.result.offers
+    const asksResponse = await withTimeout(
+      client.request({
+        command: 'book_offers',
+        taker_gets: XRP,
+        taker_pays: { currency, issuer },
+        limit: 100,
+      }),
+      TIMEOUT_REQUEST
+    );
+
+    const parseAmount = (amt) => {
+      if (typeof amt === 'string') {
+        return Number(amt) / 1e6;
+      }
+      if (amt?.value) {
+        return Number(amt.value);
+      }
+      return 0;
+    };
+
+    const parseOffer = (offer, isBid) => {
+      const getsAmt = parseAmount(offer.TakerGets);
+      const paysAmt = parseAmount(offer.TakerPays);
+
+      if (!getsAmt || !paysAmt) return null;
+
+      const price = isBid ? paysAmt / getsAmt : getsAmt / paysAmt;
+      const amount = isBid ? getsAmt : paysAmt;
+
+      return {
+        price: price.toString(),
+        amount: amount.toString(),
+        offerAccount: offer.Account,
+      };
+    };
+
+    const bidsRaw = (bidsResponse.result.offers || [])
       .map(o => parseOffer(o, true))
       .filter(Boolean);
 
-    const asksRaw = asksResponse.result.offers
+    const asksRaw = (asksResponse.result.offers || [])
       .map(o => parseOffer(o, false))
       .filter(Boolean);
 
     const aggregateOffers = (offers, isAsc) => {
-      const grouped = offers.reduce((acc, { price, amount }) => {
-        const key = price.toFixed(7);
-        acc[key] = (acc[key] || 0) + amount;
+      const precision = 7;
+      const grouped = offers.reduce((acc, o) => {
+        const priceKey = parseFloat(o.price).toFixed(precision);
+        if (!acc[priceKey]) acc[priceKey] = 0;
+        acc[priceKey] += parseFloat(o.amount);
         return acc;
       }, {});
 
       let cumSum = 0;
-      const result = Object.entries(grouped).map(([price, amount]) => {
-        const p = parseFloat(price);
-        const a = amount;
-        const value = p * a;
-        cumSum += a;
-        return { price: p, amount: Number(a.toFixed(2)), value: Number(value.toFixed(2)), cumSum: Number(cumSum.toFixed(2)) };
-      });
+      const result = Object.entries(grouped)
+        .map(([price, amount]) => {
+          const p = parseFloat(price);
+          const a = amount;
+          const value = p * a;
+          cumSum += a;
+          return {
+            price: p,
+            amount: a,
+            value,
+            cumSum,
+          };
+        });
 
       result.sort((a, b) => (isAsc ? a.price - b.price : b.price - a.price));
       return result;
@@ -4425,24 +4435,37 @@ app.get('/api/orderbook', async (req, res) => {
     const highestBidPrice = bids.length ? bids[0].price : null;
     const lowestAskPrice = asks.length ? asks[0].price : null;
 
+    const invert = (value) => value ? Number((1 / value).toFixed(7)) : null;
+
     const spread =
-      highestBidPrice !== null && lowestAskPrice !== null
-        ? Number((lowestAskPrice - highestBidPrice).toFixed(7))
-        : null;
-
-    const lastTradedPrice =
       highestBidPrice && lowestAskPrice
-        ? Number(((highestBidPrice + lowestAskPrice) / 2).toFixed(7))
-        : 0;
+    ? Number((lowestAskPrice - highestBidPrice).toFixed(7))
+    : null;
 
-    await client.disconnect();
+let lastTradedPrice = null;
+if (highestBidPrice && lowestAskPrice) {
+  const midPrice = (highestBidPrice + lowestAskPrice) / 2;
+  lastTradedPrice = invert(midPrice);
+}
 
-    res.json({
-      bids,
-      asks,
-      summary: {
-        spread,
-        highe
+res.json({
+  bids,
+  asks,
+  summary: {
+    spread,
+    highestBidPrice: invert(highestBidPrice),
+    lowestAskPrice: invert(lowestAskPrice),
+    lastTradedPrice
+  },
+});
+
+
+  } catch (error) {
+    console.error('Orderbook fetch failed:', error.message || error);
+    if (client.isConnected()) await client.disconnect();
+    res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
+  }
+});
 
 
 

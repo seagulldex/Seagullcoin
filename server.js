@@ -4367,43 +4367,56 @@ app.get('/api/orderbook', async (req, res) => {
     );
 
     const parseAmount = (amt) => {
-      if (typeof amt === 'string') {
-        return Number(amt) / 1e6;
-      }
-      if (amt?.value) {
-        return Number(amt.value);
-      }
-      return 0;
-    };
-
-    const parseOffer = (offer, isBid) => {
-  const getsAmt = parseAmount(offer.TakerGets);
-  const paysAmt = parseAmount(offer.TakerPays);
-
-  if (!Number.isFinite(getsAmt) || !Number.isFinite(paysAmt) || getsAmt <= 0 || paysAmt <= 0) return null;
-
-  const price = isBid ? paysAmt / getsAmt : getsAmt / paysAmt;
+  if (typeof amt === 'string') {
+    return Number(amt) / 1e6; // XRP
+  }
+  if (amt?.value) {
+    return Number(amt.value); // Issued currency (e.g., SeagullCoin)
+  }
+  return 0;
+};
 
 
-  // Filter out invalid or spam offers
-  if (!Number.isFinite(price) || price <= 0 || price < 1e-7) {
-    console.warn('Filtered suspicious offer:', {
-      account: offer.Account,
-      getsAmt,
-      paysAmt,
-      price,
-    });
+  const parseOffer = (offer) => {
+  const get = offer.TakerGets;
+  const pay = offer.TakerPays;
+
+  let getsValue, paysValue;
+
+  // Determine which side is XRP vs SGLCN
+  const getsIsXRP = typeof get === 'string';
+  const paysIsXRP = typeof pay === 'string';
+
+  // Parse amounts properly
+  getsValue = parseAmount(get);
+  paysValue = parseAmount(pay);
+
+  // Determine direction: always want SGLCN per XRP
+  let price, amount;
+
+  if (getsIsXRP && !paysIsXRP) {
+    // It's a BID (buyer gives XRP, wants SGLCN)
+    price = paysValue / getsValue; // SGLCN per XRP
+    amount = paysValue; // total SGLCN available
+  } else if (!getsIsXRP && paysIsXRP) {
+    // It's an ASK (seller gives SGLCN, wants XRP)
+    price = getsValue / paysValue; // SGLCN per XRP
+    amount = getsValue; // total SGLCN being sold
+  } else {
+    return null; // Invalid or weird offer
+  }
+
+  if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(amount) || amount <= 0) {
     return null;
   }
 
-  const amount = isBid ? getsAmt : paysAmt;
-
   return {
-    price: price.toString(),
-    amount: amount.toString(),
+    price: price.toFixed(8),
+    amount: amount.toFixed(2),
     offerAccount: offer.Account,
   };
 };
+
 
 
     const bidsRaw = (bidsResponse.result.offers || [])

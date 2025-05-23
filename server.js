@@ -4445,7 +4445,7 @@ app.get('/api/orderbook', async (req, res) => {
 let lastTradedPrice = null;
 if (highestBidPrice && lowestAskPrice) {
   const midPrice = (highestBidPrice + lowestAskPrice) / 2;
-  lastTradedPrice = invert(midPrice);
+  lastTradedPrice = midPrice;
 }
 
 res.json({

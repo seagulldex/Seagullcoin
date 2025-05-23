@@ -4302,7 +4302,8 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 
     res.json({
       sglcn_to_xrp: priceSGLCNToXRP.toFixed(6),
-      xrp_to_sglcn: priceXRPToSGLCN.toFixed(2)
+      xrp_to_sglcn: priceXRPToSGLCN.toFixed(2),
+      timestamp: new Date().toISOString()  // <-- Add current timestamp here
     });
 
   } catch (err) {
@@ -4481,7 +4482,8 @@ app.get('/api/sglcn-xau', async (req, res) => {
 
     res.json({
       sglcn_to_xau: priceSGLCNToXAU.toFixed(6),
-      xau_to_sglcn: priceXAUToSGLCN.toFixed(2)
+      xau_to_sglcn: priceXAUToSGLCN.toFixed(2),
+      timestamp: new Date().toISOString()  // <-- Add current timestamp here
     });
 
   } catch (err) {

@@ -379,15 +379,15 @@ async function loadChartData() {
         alert("Error submitting offer: " + err.message);
       }
     }
-
+    
         loadChartData();
     updateWalletStatus();
     fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
     updateCurrentPrice();            // Orderbook data
-    fetchLiveSGLCNXAUPrice();               // Fetch XAU price
-    setInterval(fetchLiveSGLCNPrice, 60000);
+    fetchLiveSGLCNXAUPrice();  
+    setInterval(fetchLiveSGLCNXAUPrice,30000);            // Fetch XAU price
+    setInterval(fetchLiveSGLCNPrice, 30000);
     setInterval(updateCurrentPrice, 30000);
-    setInterval(fetchPrices, 60000); // Update XAU price every 60 second
   </script>
 </body>
 </html>

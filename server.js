@@ -4315,16 +4315,7 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 
     res.json({
   sglcn_to_xrp: sglcnToXrp.toFixed(6),
-  xrp_to_sglcn: xrpToSglcn ? xrpToSglcn.toFixed(2) : null
-});
-
-
-  } catch (err) {
-    console.error("Error in /api/sglcn-xrp:", err.message);
-    try { await client.disconnect(); } catch (e) {}
-    res.status(500).json({ error: err.message });
-  }
-});
+  xrp_to_sglcn: xrpToSglcn ? xrpToSgl
 
 
 app.get('/api/orderbook', async (req, res) => {
@@ -4454,15 +4445,13 @@ app.get('/api/orderbook', async (req, res) => {
         lastTradedPrice,
       },
     });
-  } catch (error) {
+  
+} catch (error) {
     console.error('Orderbook fetch failed:', error.message || error);
     if (client.isConnected()) await client.disconnect();
     res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
   }
 });
-
-export default app;
-
 
 
 // Call the XRPL ping when the server starts

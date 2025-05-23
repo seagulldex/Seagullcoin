@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="header.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
   <style>
     .green { color: green; }
     .red { color: red; }
@@ -199,10 +201,7 @@ async function loadChartData() {
       return match ? parseFloat(match.price) : null;
     });
 
-    const labels = mergedTimestamps.map(ts => {
-      const d = new Date(ts);
-      return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
-    });
+    const labels = mergedTimestamps.map(ts => new Date(ts));
 
     // Render chart
     const ctx = document.getElementById("priceChart").getContext("2d");
@@ -237,51 +236,37 @@ async function loadChartData() {
     mode: 'index',
     intersect: false
   },
+  plugins: {
+    tooltip: {
+      mode: 'index',
+      intersect: false
+    }
+  },
   scales: {
     x: {
+      type: 'time',
+      time: {
+        unit: timeframe === '1D' ? 'hour' : 'day',
+        tooltipFormat: 'MMM dd, HH:mm'
+      },
       title: {
         display: true,
-        text: 'Date'
-      },
-      ticks: {
-        autoSkip: true,
-        maxTicksLimit: 10
+        text: 'Date/Time'
       }
     },
     y1: {
       type: 'linear',
-      display: true,
       position: 'left',
-      title: {
-        display: true,
-        text: 'Price (XRP)'
-      }
+      title: { display: true, text: 'XRP' }
     },
     y2: {
       type: 'linear',
-      display: true,
       position: 'right',
-      title: {
-        display: true,
-        text: 'Price (XAU)'
-      },
-      grid: {
-        drawOnChartArea: false
-      }
+      title: { display: true, text: 'XAU' },
+      grid: { drawOnChartArea: false }
     }
-  },
-  plugins: {
-    legend: {
-      display: true
-    },
-    tooltip: {
-      enabled: true
-    }
-   }
- }
-
+  }
 }
-
     });
   } catch (err) {
     console.error("Chart loading error:", err);

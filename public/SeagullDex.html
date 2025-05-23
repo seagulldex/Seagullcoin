@@ -99,16 +99,17 @@
 
 
     <h2>Price Chart (SGLCN/XRP)</h2>
-    <div>
-      <label for="timeframe">View:</label>
-      <select id="timeframe" onchange="loadChartData()">
-        <option value="1D">Daily</option>
-        <option value="1W">Weekly</option>
-        <option value="1M" selected>Monthly</option>
-        <option value="ALL">All Time</option>
-      </select>
-    </div>
-    <canvas id="priceChart" height="150" style="max-width: 100%; margin-bottom: 40px;"></canvas>
+<div>
+  <label for="timeframe">View:</label>
+  <select id="timeframe" onchange="loadChartData()">
+    <option value="1D">1 Day</option>
+    <option value="1W">1 Week</option>
+    <option value="1M" selected>1 Month</option>
+    <option value="ALL">All Time</option>
+  </select>
+</div>
+<canvas id="priceChart" height="150" style="max-width: 100%; margin-top: 20px;"></canvas>
+
 
     <div id="orderbook">
       <div class="orderbook-header">Order Book</div>

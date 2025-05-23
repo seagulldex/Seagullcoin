@@ -262,9 +262,6 @@ async function loadChartData() {
   }
 }
 
-loadChartData();
-
-
     async function updateCurrentPrice() {
       try {
         const res = await fetch('https://sglcn-x20-api.glitch.me/api/orderbook');
@@ -316,6 +313,19 @@ loadChartData();
         document.getElementById('price-value').textContent = 'Error';
       }
     }
+    
+    async function fetchPrices() {
+  try {
+    const xauRes = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xau');
+    const xauData = await xauRes.json();
+    document.getElementById('price-xau').textContent = formatPrice(xauData.latest);
+  } catch (err) {
+    console.error('Failed to fetch price data', err);
+  }
+}
+
+
+
 
     async function placeBuyOrder() {
       const wallet = localStorage.getItem('xumm_wallet_address');
@@ -344,13 +354,14 @@ loadChartData();
       }
     }
     
-    
-    loadChartData();
+        loadChartData();
     updateWalletStatus();
     fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
     updateCurrentPrice();            // Orderbook data
+    fetchPrices();                   // Fetch XAU price
     setInterval(fetchLiveSGLCNPrice, 60000);
     setInterval(updateCurrentPrice, 30000);
+    setInterval(fetchPrices, 60000); // Update XAU price every 60 seconds
   </script>
 </body>
 </html>

@@ -4272,50 +4272,52 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
 // Express endpoint
 
 app.get('/api/sglcn-xrp', async (req, res) => {
-  const client = new Client("wss://s2.ripple.com");
+  const client = new xrpl.Client('wss://s2.ripple.com');
 
   try {
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("XRPL request timed out")), 8000)
-    );
+    await client.connect();
 
-    await Promise.race([client.connect(), timeoutPromise]);
+    // Fetch the most recent trades for SGLCN/XRP
+    const tradesResponse = await client.request({
+      command: 'account_tx',
+      account: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+      ledger_index_min: -1,
+      ledger_index_max: -1,
+      limit: 1,
+      binary: false,
+      forward: false
+    });
 
-    const result = await Promise.race([
-      client.request({
-        command: "book_offers",
-        taker_gets: {
-          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
-          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-        },
-        taker_pays: { currency: "XRP" },
-        limit: 1
-      }),
-      timeoutPromise
-    ]);
+    const transactions = tradesResponse.result.transactions;
 
-    await client.disconnect();
-
-    const offers = result.result?.offers || [];
-
-    if (!offers.length) {
-      return res.status(404).json({ error: "No SGLCN/XRP offers found." });
+    if (transactions.length === 0) {
+      return res.status(404).json({ error: 'No recent trades found for SGLCN/XRP.' });
     }
 
-    const offer = offers[0];
-    const takerPaysXRP = parseFloat(offer.TakerPays); // in drops
-    const takerGetsSGLCN = parseFloat(offer.TakerGets?.value); // IOU (SGLCN)
+    const trade = transactions[0].tx;
 
-    if (!takerPaysXRP || !takerGetsSGLCN) {
-      return res.status(500).json({ error: "Invalid offer data format." });
-    }
+    // Extract trade details
+    const takerPays = parseFloat(trade.TakerPays);
+    const takerGets = parseFloat(trade.TakerGets.value);
 
-    const sglcnToXrp = takerPaysXRP / 1000000 / takerGetsSGLCN;
-    const xrpToSglcn = sglcnToXrp > 0 ? 1 / sglcnToXrp : null;
+    const sglcnToXrp = takerPays / 1e6 / takerGets;
+    const xrpToSglcn = 1 / sglcnToXrp;
 
     res.json({
-  sglcn_to_xrp: sglcnToXrp.toFixed(6),
-  xrp_to_sglcn: xrpToSglcn ? xrpToSgl
+      sglcn_to_xrp: sglcnToXrp.toFixed(6),
+      xrp_to_sglcn: xrpToSglcn.toFixed(2)
+    });
+
+  } catch (err) {
+    console.error('Error fetching SGLCN/XRP price:', err.message);
+    res.status(500).json({ error: 'Failed to fetch SGLCN/XRP price.' });
+  } finally {
+    if (client.isConnected()) {
+      await client.disconnect();
+    }
+  }
+});
+
 
 
 app.get('/api/orderbook', async (req, res) => {

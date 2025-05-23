@@ -4380,9 +4380,14 @@ app.get('/api/orderbook', async (req, res) => {
       const getsAmt = parseAmount(offer.TakerGets);
       const paysAmt = parseAmount(offer.TakerPays);
 
-      if (!getsAmt || !paysAmt) return null;
+      if (!Number.isFinite(getsAmt) || !Number.isFinite(paysAmt) || getsAmt <= 0 || paysAmt <= 0) return null;
+
 
       const price = isBid ? paysAmt / getsAmt : getsAmt / paysAmt;
+      
+      // skip invalid prices
+  if (price === 0 || !isFinite(price)) return null;
+
       const amount = isBid ? getsAmt : paysAmt;
 
       return {
@@ -4403,7 +4408,7 @@ app.get('/api/orderbook', async (req, res) => {
     const aggregateOffers = (offers, isAsc) => {
       const precision = 7;
       const grouped = offers.reduce((acc, o) => {
-        const priceKey = parseFloat(o.price).toFixed(precision);
+        const priceKey = Number(o.price).toFixed(precision); // safely stringified key
         if (!acc[priceKey]) acc[priceKey] = 0;
         acc[priceKey] += parseFloat(o.amount);
         return acc;

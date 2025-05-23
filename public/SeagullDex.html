@@ -69,6 +69,10 @@
     .trade-box button:hover {
       background-color: #09c;
     }
+    #price-value, #price-xau {
+  font-weight: bold;
+}
+
   </style>
 </head>
 <body>
@@ -89,19 +93,12 @@
   </header>
 
   <main style="padding: 20px;">
-    <h1>SeagullCoin Dex</h1>
-    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+    <h1> SeagullCoin Dex </h1>
+  <div style="display: flex; align-items: center; margin-bottom: 20px;">
   <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" alt="SGLCN Logo" width="50" height="50" style="border-radius: 50%; margin-right: 12px;">
-  <div id="current-price" style="font-size: 1.3em;">
-    SGLCN : <span id="price-value">Loading...</span>
-  </div>
-</div>
-    <div>
-    <div style="display: flex; align-items: center; margin-bottom: 20px;">
-  <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" alt="SGLCN Logo" width="50" height="50" style="border-radius: 50%; margin-right: 12px;">
-  <div id="current-price" style="font-size: 1.3em;">
-    <span id="price-value"></span><br />
-    <span style="font-size: 0.9em;"> SGLCN: <span id="price-xau">Loading...</span></span>
+  <div style="display: flex; flex-direction: column; font-size: 1.1em; line-height: 1.2;">
+    <div><strong>SGLCN/XRP:</strong> <span id="price-value">Loading...</span></div>
+    <div style="font-size: 0.9em; color: #ccc;"><strong>SGLCN/XAU:</strong> <span id="price-xau">Loading...</span></div>
   </div>
 </div>
 

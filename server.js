@@ -4447,11 +4447,11 @@ app.get('/api/orderbook', async (req, res) => {
     // Fix for lastTradedPrice
     let lastTradedPrice = null;
     if (
-      highestBidPrice !== null &&
-      lowestAskPrice !== null &&
-      highestBidPrice > 0 &&
-      lowestAskPrice > 0
-    ) {
+  highestBidPrice !== null &&
+  lowestAskPrice !== null &&
+  highestBidPrice > 0 &&
+  lowestAskPrice !== 0
+){
       lastTradedPrice = Number(((highestBidPrice + lowestAskPrice) / 2).toFixed(7));
     } else {
       lastTradedPrice = 0;

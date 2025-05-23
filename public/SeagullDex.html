@@ -160,130 +160,114 @@
 
 async function loadChartData() {
   try {
-    // Fetch both datasets in parallel
     const [resXRP, resXAU] = await Promise.all([
       fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp'),
       fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xau')
     ]);
+
     const dataXRP = await resXRP.json();
     const dataXAU = await resXAU.json();
 
     const timeframe = document.getElementById('timeframe').value;
     const now = Date.now();
 
-    // Helper to filter by timeframe
-    function filterByTime(history) {
+    const filterByTime = (history) => {
       return history.filter(entry => {
-        const timestamp = new Date(entry.timestamp).getTime();
-        if (timeframe === "1D") return timestamp > now - 24 * 60 * 60 * 1000;
-        if (timeframe === "1W") return timestamp > now - 7 * 24 * 60 * 60 * 1000;
-        if (timeframe === "1M") return timestamp > now - 30 * 24 * 60 * 60 * 1000;
-        return true;
+        const ts = new Date(entry.timestamp).getTime();
+        if (timeframe === "1D") return ts > now - 24 * 60 * 60 * 1000;
+        if (timeframe === "1W") return ts > now - 7 * 24 * 60 * 60 * 1000;
+        if (timeframe === "1M") return ts > now - 30 * 24 * 60 * 60 * 1000;
+        return true; // ALL
       });
-    }
+    };
 
-    if (!Array.isArray(dataXRP.history) || !Array.isArray(dataXAU.history)) {
-      console.error("Invalid chart data");
-      return;
-    }
+    const filteredXRP = filterByTime(dataXRP.history || []);
+    const filteredXAU = filterByTime(dataXAU.history || []);
 
-    const filteredXRP = filterByTime(dataXRP.history);
-    const filteredXAU = filterByTime(dataXAU.history);
+    const mergedTimestamps = Array.from(new Set([
+      ...filteredXRP.map(e => e.timestamp),
+      ...filteredXAU.map(e => e.timestamp)
+    ])).sort((a, b) => new Date(a) - new Date(b));
 
-    // Merge timestamps from both datasets (to align labels)
-    const timestampsSet = new Set();
-    filteredXRP.forEach(e => timestampsSet.add(e.timestamp));
-    filteredXAU.forEach(e => timestampsSet.add(e.timestamp));
-    const allTimestamps = Array.from(timestampsSet).sort((a,b) => new Date(a) - new Date(b));
+    const pricesXRP = mergedTimestamps.map(ts => {
+      const match = filteredXRP.find(e => e.timestamp === ts);
+      return match ? parseFloat(match.price) : null;
+    });
 
-    // Build price maps keyed by timestamp
-    const priceMapXRP = {};
-    filteredXRP.forEach(e => { priceMapXRP[e.timestamp] = parseFloat(e.price); });
-    const priceMapXAU = {};
-    filteredXAU.forEach(e => { priceMapXAU[e.timestamp] = parseFloat(e.price); });
+    const pricesXAU = mergedTimestamps.map(ts => {
+      const match = filteredXAU.find(e => e.timestamp === ts);
+      return match ? parseFloat(match.price) : null;
+    });
 
-    // Prepare datasets aligned by timestamp; if no price at timestamp, use null for gaps
-    const labels = allTimestamps.map(t => new Date(t).toLocaleDateString());
-    const pricesXRP = allTimestamps.map(t => priceMapXRP[t] ?? null);
-    const pricesXAU = allTimestamps.map(t => priceMapXAU[t] ?? null);
+    const labels = mergedTimestamps.map(ts => {
+      const d = new Date(ts);
+      return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+    });
 
-    // Update latest price display for XRP
-    const latestXRP = pricesXRP.filter(p => p !== null).slice(-1)[0];
-    const prevXRP = pricesXRP.filter(p => p !== null).slice(-2,-1)[0] ?? latestXRP;
-    const changeXRP = latestXRP - prevXRP;
-    const percentChangeXRP = ((changeXRP / prevXRP) * 100).toFixed(2);
-    const priceElement = document.getElementById("price-value");
-    priceElement.textContent = `${formatPrice(latestXRP)} (${percentChangeXRP}%)`;
-    if (changeXRP > 0) {
-      priceElement.classList.add("green");
-      priceElement.classList.remove("red");
-    } else if (changeXRP < 0) {
-      priceElement.classList.add("red");
-      priceElement.classList.remove("green");
-    } else {
-      priceElement.classList.remove("green", "red");
-    }
-
-    // Update latest price display for XAU
-    const latestXAU = pricesXAU.filter(p => p !== null).slice(-1)[0];
-    const prevXAU = pricesXAU.filter(p => p !== null).slice(-2,-1)[0] ?? latestXAU;
-    const changeXAU = latestXAU - prevXAU;
-    const percentChangeXAU = ((changeXAU / prevXAU) * 100).toFixed(2);
-    const priceElementXAU = document.getElementById("price-xau");
-    priceElementXAU.textContent = `${formatPrice(latestXAU)} (${percentChangeXAU}%)`;
-    if (changeXAU > 0) {
-      priceElementXAU.classList.add("green");
-      priceElementXAU.classList.remove("red");
-    } else if (changeXAU < 0) {
-      priceElementXAU.classList.add("red");
-      priceElementXAU.classList.remove("green");
-    } else {
-      priceElementXAU.classList.remove("green", "red");
-    }
-
+    // Render chart
+    const ctx = document.getElementById("priceChart").getContext("2d");
     if (chart) chart.destroy();
 
-    chart = new Chart(document.getElementById("priceChart"), {
+    chart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels,
+        labels: labels,
         datasets: [
           {
-            label: 'SGLCN/XRP',
+            label: "SGLCN/XRP",
             data: pricesXRP,
-            borderColor: '#0af',
-            backgroundColor: 'rgba(0,170,255,0.1)',
-            fill: true,
-            tension: 0.25,
+            borderColor: "rgba(0, 200, 83, 1)",
+            backgroundColor: "rgba(0, 200, 83, 0.1)",
             spanGaps: true,
+            yAxisID: 'y1'
           },
           {
-            label: 'SGLCN/XAU',
+            label: "SGLCN/XAU",
             data: pricesXAU,
-            borderColor: '#FFD700',
-            backgroundColor: 'rgba(255,170,0,0.1)',
-            fill: true,
-            tension: 0.25,
+            borderColor: "rgba(255, 193, 7, 1)",
+            backgroundColor: "rgba(255, 193, 7, 0.1)",
             spanGaps: true,
+            yAxisID: 'y2'
           }
         ]
       },
       options: {
         responsive: true,
-        plugins: {
-          legend: { display: true }
-        },
         scales: {
-          x: { display: true, title: { display: false } },
-          y: { display: true, title: { display: true, text: 'Price' } }
+          x: {
+            display: true,
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y1: {
+            type: 'linear',
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Price (XRP)'
+            }
+          },
+          y2: {
+            type: 'linear',
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Price (XAU)'
+            },
+            grid: {
+              drawOnChartArea: false
+            }
+          }
         }
       }
     });
-
   } catch (err) {
-    console.error("Chart fetch error:", err);
+    console.error("Chart loading error:", err);
   }
 }
+
 
     async function updateCurrentPrice() {
       try {

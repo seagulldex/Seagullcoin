@@ -227,6 +227,28 @@ async function loadChartData() {
     const labels = history.map(e => new Date(e.timestamp).toLocaleDateString());
     const prices = history.map(e => parseFloat(e.price));
 
+        // Show latest price and direction
+    const priceElement = document.getElementById('price-value');
+    if (prices.length >= 2) {
+      const latest = prices[prices.length - 1];
+      const previous = prices[prices.length - 2];
+
+      priceElement.textContent = formatPrice(latest);
+      if (latest > previous) {
+        priceElement.classList.add("green");
+        priceElement.classList.remove("red");
+      } else if (latest < previous) {
+        priceElement.classList.add("red");
+        priceElement.classList.remove("green");
+      } else {
+        priceElement.classList.remove("green", "red");
+      }
+    } else {
+      priceElement.textContent = "N/A";
+      priceElement.classList.remove("green", "red");
+    }
+
+    
     if (chart) chart.destroy();
 
     chart = new Chart(document.getElementById("priceChart"), {

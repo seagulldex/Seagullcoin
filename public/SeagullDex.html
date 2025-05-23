@@ -232,36 +232,56 @@ async function loadChartData() {
         ]
       },
       options: {
-        responsive: true,
-        scales: {
-          x: {
-            display: true,
-            title: {
-              display: true,
-              text: 'Date'
-            }
-          },
-          y1: {
-            type: 'linear',
-            position: 'left',
-            title: {
-              display: true,
-              text: 'Price (XRP)'
-            }
-          },
-          y2: {
-            type: 'linear',
-            position: 'right',
-            title: {
-              display: true,
-              text: 'Price (XAU)'
-            },
-            grid: {
-              drawOnChartArea: false
-            }
-          }
-        }
+  responsive: true,
+  interaction: {
+    mode: 'index',
+    intersect: false
+  },
+  scales: {
+    x: {
+      title: {
+        display: true,
+        text: 'Date'
+      },
+      ticks: {
+        autoSkip: true,
+        maxTicksLimit: 10
       }
+    },
+    y1: {
+      type: 'linear',
+      display: true,
+      position: 'left',
+      title: {
+        display: true,
+        text: 'Price (XRP)'
+      }
+    },
+    y2: {
+      type: 'linear',
+      display: true,
+      position: 'right',
+      title: {
+        display: true,
+        text: 'Price (XAU)'
+      },
+      grid: {
+        drawOnChartArea: false
+      }
+    }
+  },
+  plugins: {
+    legend: {
+      display: true
+    },
+    tooltip: {
+      enabled: true
+    }
+   }
+ }
+
+}
+
     });
   } catch (err) {
     console.error("Chart loading error:", err);

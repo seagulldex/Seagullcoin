@@ -4438,14 +4438,13 @@ app.get('/api/orderbook', async (req, res) => {
     const invert = (value) => value ? Number((1 / value).toFixed(7)) : null;
 
     const spread =
-      highestBidPrice && lowestAskPrice
+  highestBidPrice && lowestAskPrice
     ? Number((lowestAskPrice - highestBidPrice).toFixed(7))
     : null;
 
 let lastTradedPrice = null;
 if (highestBidPrice && lowestAskPrice) {
-  const midPrice = (highestBidPrice + lowestAskPrice) / 2;
-  lastTradedPrice = midPrice;
+  lastTradedPrice = Number(((highestBidPrice + lowestAskPrice) / 2).toFixed(7));
 }
 
 res.json({
@@ -4453,21 +4452,19 @@ res.json({
   asks,
   summary: {
     spread,
-    highestBidPrice: invert(highestBidPrice),
-    lowestAskPrice: invert(lowestAskPrice),
-    lastTradedPrice
+    highestBidPrice,   // Do not invert
+    lowestAskPrice,    // Do not invert
+    lastTradedPrice    // Already mid-price
   },
 });
 
 
-  } catch (error) {
+} catch (error) {
     console.error('Orderbook fetch failed:', error.message || error);
     if (client.isConnected()) await client.disconnect();
     res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
   }
 });
-
-
 
 
 // Call the XRPL ping when the server starts

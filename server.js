@@ -4327,8 +4327,18 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 });
 
 
+const cache = {
+  data: null,
+  timestamp: 0,
+  ttl: 60 * 1000 // 1 minute
+};
 
 app.get('/api/orderbook', async (req, res) => {
+  const now = Date.now();
+  if (cache.data && now - cache.timestamp < cache.ttl) {
+    return res.json(cache.data);
+  }
+
   const client = new xrpl.Client('wss://s2.ripple.com');
 
   const withTimeout = (promise, ms) =>
@@ -4340,75 +4350,67 @@ app.get('/api/orderbook', async (req, res) => {
   const TIMEOUT_CONNECT = 4000;
   const TIMEOUT_REQUEST = 10000;
 
-  const currency = '53656167756C6C436F696E000000000000000000'; // SGLCN hex
+  const currency = '53656167756C6C436F696E000000000000000000';
   const issuer = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
   const XRP = { currency: 'XRP' };
 
   try {
     await withTimeout(client.connect(), TIMEOUT_CONNECT);
 
-    const bidsResponse = await withTimeout(
-      client.request({
-        command: 'book_offers',
-        taker_gets: { currency, issuer },
-        taker_pays: XRP,
-        limit: 100,
-      }),
-      TIMEOUT_REQUEST
-    );
-
-    const asksResponse = await withTimeout(
-      client.request({
-        command: 'book_offers',
-        taker_gets: XRP,
-        taker_pays: { currency, issuer },
-        limit: 100,
-      }),
-      TIMEOUT_REQUEST
-    );
+    const [bidsResponse, asksResponse] = await Promise.all([
+      withTimeout(
+        client.request({
+          command: 'book_offers',
+          taker_gets: { currency, issuer },
+          taker_pays: XRP,
+          limit: 100,
+        }),
+        TIMEOUT_REQUEST
+      ),
+      withTimeout(
+        client.request({
+          command: 'book_offers',
+          taker_gets: XRP,
+          taker_pays: { currency, issuer },
+          limit: 100,
+        }),
+        TIMEOUT_REQUEST
+      ),
+    ]);
 
     const parseAmount = (amt) => {
-      if (typeof amt === 'string') {
-        return Number(amt) / 1e6;
-      }
-      if (amt?.value) {
-        return Number(amt.value);
-      }
+      if (typeof amt === 'string') return Number(amt) / 1e6;
+      if (amt?.value) return Number(amt.value);
       return 0;
     };
 
-    const parseOffer = (offer, isBid) => {
+    const parseOffer = (offer) => {
       const getsAmt = parseAmount(offer.TakerGets);
       const paysAmt = parseAmount(offer.TakerPays);
 
-      if (!getsAmt || !paysAmt || getsAmt <= 0 || paysAmt <= 0) return null;
+      if (!getsAmt || !paysAmt) return null;
 
-      const price = isBid ? paysAmt / getsAmt : getsAmt / paysAmt;
-      const amount = isBid ? getsAmt : paysAmt;
-
-      if (!isFinite(price) || price <= 0) return null;
-
+      const price = getsAmt / paysAmt; // This gives SGLCN per XRP
       return {
-        price: price.toString(),
-        amount: amount.toString(),
+        price,
+        amount: getsAmt,
         offerAccount: offer.Account,
       };
     };
 
     const bidsRaw = (bidsResponse.result.offers || [])
-      .map(o => parseOffer(o, true))
+      .map(parseOffer)
       .filter(Boolean);
 
     const asksRaw = (asksResponse.result.offers || [])
-      .map(o => parseOffer(o, false))
+      .map(parseOffer)
       .filter(Boolean);
 
     const aggregateOffers = (offers, isAsc) => {
       const precision = 7;
       const grouped = offers.reduce((acc, o) => {
-        const priceKey = parseFloat(o.price).toFixed(precision);
-        if (!acc[priceKey]) acc[priceKey] = 0;
-        acc[priceKey] += parseFloat(o.amount);
+        const key = o.price.toFixed(precision);
+        acc[key] = (acc[key] || 0) + o.amount;
         return acc;
       }, {});
 
@@ -4417,16 +4419,14 @@ app.get('/api/orderbook', async (req, res) => {
         .map(([price, amount]) => {
           const p = parseFloat(price);
           const a = amount;
-          const value = p * a;
           cumSum += a;
           return {
             price: p,
             amount: a,
-            value,
+            value: p * a,
             cumSum,
           };
-        })
-        .filter(entry => entry.price > 0); // prevent bad offers
+        });
 
       result.sort((a, b) => (isAsc ? a.price - b.price : b.price - a.price));
       return result;
@@ -4435,39 +4435,43 @@ app.get('/api/orderbook', async (req, res) => {
     const bids = aggregateOffers(bidsRaw, false);
     const asks = aggregateOffers(asksRaw, true);
 
-    const highestBidPrice = bids.length ? bids[0].price : null;
-    const lowestAskPrice = asks.length ? asks[0].price : null;
-
-    const invert = (value) => value && value > 0 ? Number((1 / value).toFixed(7)) : null;
+    const highestBidPrice = bids[0]?.price ?? null;
+    const lowestAskPrice = asks[0]?.price ?? null;
 
     const spread =
       highestBidPrice && lowestAskPrice
         ? Number((lowestAskPrice - highestBidPrice).toFixed(7))
         : null;
 
-    let lastTradedPrice = null;
-    if (highestBidPrice && lowestAskPrice) {
-      const midPrice = (highestBidPrice + lowestAskPrice) / 2;
-      lastTradedPrice = invert(midPrice);
-    }
+    const lastTradedPrice =
+      highestBidPrice && lowestAskPrice
+        ? Number(((highestBidPrice + lowestAskPrice) / 2).toFixed(7))
+        : null;
 
-    res.json({
+    const response = {
       bids,
       asks,
       summary: {
         spread,
-        highestBidPrice: invert(highestBidPrice),
-        lowestAskPrice: invert(lowestAskPrice),
+        highestBidPrice,
+        lowestAskPrice,
         lastTradedPrice,
       },
-    });
+    };
 
+    cache.data = response;
+    cache.timestamp = Date.now();
+
+    await client.disconnect();
+    res.json(response);
   } catch (error) {
     console.error('Orderbook fetch failed:', error.message || error);
     if (client.isConnected()) await client.disconnect();
     res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
   }
 });
+
+
 
 
 

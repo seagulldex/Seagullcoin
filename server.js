@@ -4575,14 +4575,15 @@ const issuers = {
 
 function getCurrencyObj(currency, amount, { SGLCN_ISSUER, XAU_ISSUER }) {
   if (currency === 'XRP') {
-    return (Math.floor(parseFloat(amount) * 1000000)).toString(); // in drops
+    // XRP amount in drops as string
+    return Math.floor(parseFloat(amount) * 1000000).toString();
   }
 
   if (currency === 'SeagullCoin') {
     return {
       currency: '53656167756C6C436F696E000000000000000000',
       issuer: SGLCN_ISSUER,
-      value: amount.toString()
+      value: parseFloat(amount).toFixed(6).toString()
     };
   }
 
@@ -4590,7 +4591,7 @@ function getCurrencyObj(currency, amount, { SGLCN_ISSUER, XAU_ISSUER }) {
     return {
       currency: 'XAU',
       issuer: XAU_ISSUER,
-      value: amount.toString()
+      value: parseFloat(amount).toFixed(6).toString()
     };
   }
 
@@ -4607,52 +4608,33 @@ function getBookCurrency(symbol, { SGLCN_ISSUER, XAU_ISSUER }) {
 async function getMarketRate(from, to, issuers) {
   await client.connect();
 
-  // taker wants TO currency, paying FROM currency
-  const takerGets = getBookCurrency(to, issuers);
-  const takerPays = getBookCurrency(from, issuers);
+  const takerGets = getBookCurrency(from, issuers);
+  const takerPays = getBookCurrency(to, issuers);
 
   const orderbook = await client.request({
     command: 'book_offers',
-    TakerGets: takerGets,
-    TakerPays: takerPays,
+    taker_gets: takerGets,
+    taker_pays: takerPays,
     limit: 5
   });
 
   await client.disconnect();
 
-  if (!orderbook.result.offers || orderbook.result.offers.length === 0) {
-    throw new Error('No offers found.');
-  }
+  const bestOffer = orderbook.result.offers?.[0];
+  if (!bestOffer) throw new Error('No offers found.');
 
-  const bestOffer = orderbook.result.offers[0];
+  const gets = parseFloat(bestOffer.TakerGets.value ?? bestOffer.TakerGets);
+  const pays = parseFloat(bestOffer.TakerPays.value ?? bestOffer.TakerPays);
 
-  // Parse the amounts - can be string for XRP or object for issued
-  const gets = bestOffer.TakerGets.currency === 'XRP'
-    ? parseFloat(bestOffer.TakerGets) // XRP as string drops
-    : parseFloat(bestOffer.TakerGets.value);
-
-  const pays = bestOffer.TakerPays.currency === 'XRP'
-    ? parseFloat(bestOffer.TakerPays)
-    : parseFloat(bestOffer.TakerPays.value);
-
-  // Convert XRP drops to XRP amount for rate calculation if XRP involved
-  const getsAmount = bestOffer.TakerGets.currency === 'XRP' ? gets / 1000000 : gets;
-  const paysAmount = bestOffer.TakerPays.currency === 'XRP' ? pays / 1000000 : pays;
-
-  return parseFloat((paysAmount / getsAmount).toFixed(6));
+  return parseFloat((pays / gets).toFixed(6));
 }
-
 
 app.post('/swap', async (req, res) => {
   const { from_currency, to_currency, amount, wallet_address } = req.body;
 
-  const missing = ['from_currency', 'to_currency', 'amount', 'wallet_address']
-  .filter(field => !req.body[field]);
-
-if (missing.length > 0) {
-  return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` });
-}
-
+  if (!from_currency || !to_currency || !amount || !wallet_address) {
+    return res.status(400).json({ error: 'Missing required fields.' });
+  }
 
   if (from_currency === to_currency) {
     return res.status(400).json({ error: 'Currencies must differ.' });
@@ -4665,20 +4647,32 @@ if (missing.length > 0) {
   try {
     const rate = await getMarketRate(from_currency, to_currency, issuers);
     const fromAmt = parseFloat(amount);
-    const toAmt = parseFloat(
-      from_currency === 'SeagullCoin'
-        ? (fromAmt * rate).toFixed(6)
-        : (fromAmt / rate).toFixed(6)
-    );
+    if (isNaN(fromAmt) || fromAmt <= 0) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
 
-    const takerGets = getCurrencyObj(from_currency, fromAmt, issuers);
-    const takerPays = getCurrencyObj(to_currency, toAmt, issuers);
+    const toAmt = from_currency === 'SeagullCoin'
+      ? (fromAmt * rate).toFixed(6)
+      : (fromAmt / rate).toFixed(6);
 
-    // Debug log — delete this in prod
-    console.log('Creating OfferCreate with:', {
-      TakerGets: takerGets,
-      TakerPays: takerPays
-    });
+    // Build the TakerGets and TakerPays exactly as the XRP Ledger expects
+    const takerGets = getCurrencyObj(from_currency, fromAmt.toString(), issuers);
+    const takerPays = getCurrencyObj(to_currency, toAmt.toString(), issuers);
+
+    // Sanity check: TakerGets for XRP must be string (drops), for others an object
+    if (from_currency === 'XRP' && typeof takerGets !== 'string') {
+      throw new Error('TakerGets must be a string for XRP');
+    }
+    if (from_currency !== 'XRP' && typeof takerGets !== 'object') {
+      throw new Error('TakerGets must be an object for issued currencies');
+    }
+
+    if (to_currency === 'XRP' && typeof takerPays !== 'string') {
+      throw new Error('TakerPays must be a string for XRP');
+    }
+    if (to_currency !== 'XRP' && typeof takerPays !== 'object') {
+      throw new Error('TakerPays must be an object for issued currencies');
+    }
 
     const payload = {
       txjson: {
@@ -4691,7 +4685,21 @@ if (missing.length > 0) {
       options: {
         submit: true,
         return_url: {
-          app: 'https://sglcn-x20-api.g
+          app: 'https://sglcn-x20-api.glitch.me/success',
+          web: 'https://sglcn-x20-api.glitch.me/success'
+        }
+      }
+    };
+
+    const { uuid } = await xumm.payload.create(payload);
+    return res.json({ success: true, uuid, rate });
+
+  } catch (err) {
+    console.error('Swap error:', err);
+    return res.status(500).json({ error: err.message || 'Swap failed.' });
+  }
+});
+
 
 
 app.get('/rate-preview', async (req, res) => {

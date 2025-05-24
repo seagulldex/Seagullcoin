@@ -4263,6 +4263,56 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
 
 // Express endpoint
 
+const HISTORY_FILE2 = ".sglcn_xrp_history.json";
+let ammXrpHistory = [];
+
+if (fs.existsSync(HISTORY_FILE2)) {
+  try {
+    const raw = fs.readFileSync(HISTORY_FILE2);
+    ammXrpHistory = JSON.parse(raw).history || [];
+  } catch (e) {
+    console.error("Failed to load XRP history file:", e.message);
+  }
+}
+
+setInterval(async () => {
+  const client = new Client("wss://s2.ripple.com");
+  try {
+    await client.connect();
+    const ammResponse = await client.request({
+      command: "amm_info",
+      asset: { currency: "XRP" },
+      asset2: {
+        currency: "53656167756C6C436F696E000000000000000000",
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+      }
+    });
+
+    const amm = ammResponse.result.amm;
+    if (amm && amm.amount && amm.amount2) {
+      const xrp = parseFloat(amm.amount) / 1000000;
+      const sglcn = parseFloat(amm.amount2.value);
+
+      const entry = {
+        sglcn_to_xrp: (xrp / sglcn).toFixed(6),
+        xrp_to_sglcn: (sglcn / xrp).toFixed(2),
+        timestamp: new Date().toISOString()
+      };
+
+      ammXrpHistory.unshift(entry);
+      if (ammXrpHistory.length > 100) ammXrpHistory.pop();
+
+      fs.writeFileSync(HISTORY_FILE2, JSON.stringify({ history: ammXrpHistory }, null, 2));
+    }
+
+  } catch (err) {
+    console.error("SGLCN-XRP AMM polling error:", err.message);
+  } finally {
+    if (client.isConnected()) await client.disconnect();
+  }
+}, 1800000); // every 30 minutes
+
+
 app.get('/api/sglcn-xrp', async (req, res) => {
   const client = new Client("wss://s2.ripple.com");
 
@@ -4448,7 +4498,7 @@ app.get('/api/orderbook', async (req, res) => {
 
 
 const HISTORY_FILE = './sglcn_xau_history.json';
-const HISTORY_FILE2 = '.sglcn_xrp_history.json'
+
 
 let ammHistory = [];
 if (fs.existsSync(HISTORY_FILE)) {

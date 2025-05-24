@@ -906,8 +906,15 @@ async function fetchAndStorePrice() {
       history = history.slice(-2016);
     }
 
-    fs.writeFile(historyFile, JSON.stringify(history, null, 2), 'utf8', (err) => {
-  if (err) console.error("Write error:", err);
+    await new Promise((resolve, reject) => {
+  fs.writeFile(historyFile, JSON.stringify(history, null, 2), 'utf8', err => {
+    if (err) {
+      console.error("Write error:", err);
+      reject(err);
+    } else {
+      resolve();
+    }
+  });
 });
 
 

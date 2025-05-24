@@ -100,17 +100,6 @@ const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking ser
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
-const HISTORY_FILE = path.join(__dirname, 'history.json');
-let history = [];
-
-try {
-  if (fs.existsSync(HISTORY_FILE)) {
-    const data = fs.readFileSync(HISTORY_FILE);
-    history = JSON.parse(data);
-  }
-} catch (err) {
-  console.error("Error loading history:", err.message);
-}
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 
@@ -4462,6 +4451,7 @@ app.get('/api/orderbook', async (req, res) => {
 });
 
 
+
 app.get('/api/sglcn-xau', async (req, res) => {
   const client = new Client("wss://s2.ripple.com");
 
@@ -4481,11 +4471,30 @@ app.get('/api/sglcn-xau', async (req, res) => {
     });
 
     const amm = ammResponse.result.amm;
-    if (!amm?.amount || !amm?.amount2) {
+    if (!amm || !amm.amount || !amm.amount2) {
       return res.status(404).json({ error: "AMM pool not found or invalid." });
     }
 
-    const xau = parseFloat(
+    const xau = parseFloat(amm.amount.value); // XAU side
+    const sglcn = parseFloat(amm.amount2.value); // SGLCN side
+
+    const priceSGLCNToXAU = xau / sglcn;
+    const priceXAUToSGLCN = sglcn / xau;
+
+    res.json({
+      sglcn_to_xau: priceSGLCNToXAU.toFixed(6),
+      xau_to_sglcn: priceXAUToSGLCN.toFixed(2),
+timestamp: new Date().toISOString()  // <-- Add current timestamp here
+    });
+
+  } catch (err) {
+    console.error("Error fetching AMM price:", err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (client.isConnected()) await client.disconnect();
+  }
+});
+
 
 
 

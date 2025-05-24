@@ -4524,7 +4524,6 @@ app.get('/api/orderbook', async (req, res) => {
 });
 
 
-const historyFile = path.join(__dirname, 'sglcn-xau-history.json');
 const ammHistory = []; // store last 100 AMM snapshots
 
 // Poll every 5 mins to store history

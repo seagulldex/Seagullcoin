@@ -238,7 +238,7 @@ async function loadChartData() {
       }
     ]
   },
-  options: {
+    options: {
     responsive: true,
     interaction: {
       mode: 'index',
@@ -248,27 +248,20 @@ async function loadChartData() {
     plugins: {
       title: {
         display: true,
-        text: 'SGLCN/XAU'
+        text: 'SGLCN Market Chart'
       },
-      tooltip: {
-        mode: 'index',
-        intersect: false
+      legend: {
+        position: 'top'
       }
     },
     scales: {
-      x: {
-        title: {
-          display: true,
-          text: 'Time'
-        }
-      },
       y1: {
         type: 'linear',
         display: true,
         position: 'left',
         title: {
           display: true,
-          text: 'SGLCN/XRP'
+          text: 'Price (XRP)'
         }
       },
       y2: {
@@ -280,7 +273,13 @@ async function loadChartData() {
         },
         title: {
           display: true,
-          text: 'SGLCN/XAU'
+          text: 'Price (XAU)'
+        }
+      },
+      x: {
+        title: {
+          display: true,
+          text: 'Time'
         }
       }
     }

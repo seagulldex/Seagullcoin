@@ -4661,44 +4661,7 @@ app.post('/swap', async (req, res) => {
 
     // Sanity check: TakerGets for XRP must be string (drops), for others an object
     if (from_currency === 'XRP' && typeof takerGets !== 'string') {
-      throw new Error('TakerGets must be a string for XRP');
-    }
-    if (from_currency !== 'XRP' && typeof takerGets !== 'object') {
-      throw new Error('TakerGets must be an object for issued currencies');
-    }
-
-    if (to_currency === 'XRP' && typeof takerPays !== 'string') {
-      throw new Error('TakerPays must be a string for XRP');
-    }
-    if (to_currency !== 'XRP' && typeof takerPays !== 'object') {
-      throw new Error('TakerPays must be an object for issued currencies');
-    }
-
-    const payload = {
-      txjson: {
-        TransactionType: 'OfferCreate',
-        Account: wallet_address,
-        TakerGets: takerGets,
-        TakerPays: takerPays,
-        Flags: 0x00020000 // tfImmediateOrCancel
-      },
-      options: {
-        submit: true,
-        return_url: {
-          app: 'https://sglcn-x20-api.glitch.me/success',
-          web: 'https://sglcn-x20-api.glitch.me/success'
-        }
-      }
-    };
-
-    const { uuid } = await xumm.payload.create(payload);
-    return res.json({ success: true, uuid, rate });
-
-  } catch (err) {
-    console.error('Swap error:', err);
-    return res.status(500).json({ error: err.message || 'Swap failed.' });
-  }
-});
+      throw new Error('TakerG
 
 
 

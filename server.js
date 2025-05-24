@@ -85,6 +85,7 @@ const NFT_STORAGE_API_KEY = process.env.NFT_STORAGE_API_KEY;
 const nftData = requireLogin.body;
 const sessions = {};
 
+
 const app = express();
 const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
@@ -100,6 +101,7 @@ const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking ser
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
+
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 
@@ -798,10 +800,6 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
   }
 });
 
-
-
-
-
 function msToTime(duration) {
   const seconds = Math.floor((duration / 1000) % 60),
         minutes = Math.floor((duration / (1000 * 60)) % 60),
@@ -859,10 +857,9 @@ app.get('/signed-payloads', (req, res) => {
   });
 });
 
-//======== History Amm======
 
 
-//==========================
+
 // Endpoint: Stake status by wallet
 app.get('/stake-status/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
@@ -1789,7 +1786,6 @@ function logTransaction(userAddress, nftId, transactionType, amount, status, tra
   stmt.finalize();
 }
 
-
 // Update profile picture
 app.post('/update-profile-picture', async (req, res) => {
   const { walletAddress } = req.session;
@@ -2532,9 +2528,6 @@ app.get('/.well-known/xrp-ledger.toml', (req, res) => {
     res.send(data);
   });
 });
-
-
-
 
 app.get('/balance/:address', async (req, res) => {
   const address = req.params.address;
@@ -4450,8 +4443,6 @@ app.get('/api/orderbook', async (req, res) => {
   }
 });
 
-
-
 app.get('/api/sglcn-xau', async (req, res) => {
   const client = new Client("wss://s2.ripple.com");
 
@@ -4484,7 +4475,7 @@ app.get('/api/sglcn-xau', async (req, res) => {
     res.json({
       sglcn_to_xau: priceSGLCNToXAU.toFixed(6),
       xau_to_sglcn: priceXAUToSGLCN.toFixed(2),
-timestamp: new Date().toISOString()  // <-- Add current timestamp here
+      timestamp: new Date().toISOString()  // <-- Add current timestamp here
     });
 
   } catch (err) {
@@ -4494,9 +4485,6 @@ timestamp: new Date().toISOString()  // <-- Add current timestamp here
     if (client.isConnected()) await client.disconnect();
   }
 });
-
-
-
 
 
 // Call the XRPL ping when the server starts

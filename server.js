@@ -4314,18 +4314,29 @@ setInterval(async () => {
 
 
 app.get('/api/sglcn-xrp', async (req, res) => {
-  const client = new Client("wss://s2.ripple.com");
+  const showHistory = req.query.history === 'true';
+
+  if (showHistory) {
+    try {
+      const raw = fs.readFileSync(".sglcn_xrp_history.json");
+      const { history } = JSON.parse(raw);
+      return res.json({ history });
+    } catch (err) {
+      console.error("Error reading SGLCN-XRP history file:", err.message);
+      return res.status(500).json({ error: "Failed to read price history." });
+    }
+  }
+
+  const client = new xrpl.Client("wss://s2.ripple.com");
 
   try {
     await client.connect();
 
     const ammResponse = await client.request({
       command: "amm_info",
-      asset: {
-        currency: "XRP"
-      },
+      asset: { currency: "XRP" },
       asset2: {
-        currency: "53656167756C6C436F696E000000000000000000",
+        currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
         issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
       }
     });
@@ -4335,17 +4346,13 @@ app.get('/api/sglcn-xrp', async (req, res) => {
       return res.status(404).json({ error: "AMM pool not found or invalid." });
     }
 
-    const xrpInDrops = parseFloat(amm.amount); // XRP side (in drops)
-    const sglcn = parseFloat(amm.amount2.value); // SGLCN side
-
-    const xrp = xrpInDrops / 1000000;
-    const priceSGLCNToXRP = xrp / sglcn;
-    const priceXRPToSGLCN = sglcn / xrp;
+    const xrp = parseFloat(amm.amount) / 1000000;
+    const sglcn = parseFloat(amm.amount2.value);
 
     res.json({
-      sglcn_to_xrp: priceSGLCNToXRP.toFixed(6),
-      xrp_to_sglcn: priceXRPToSGLCN.toFixed(2),
-      timestamp: new Date().toISOString()  // <-- Add current timestamp here
+      sglcn_to_xrp: (xrp / sglcn).toFixed(6),
+      xrp_to_sglcn: (sglcn / xrp).toFixed(2),
+      timestamp: new Date().toISOString()
     });
 
   } catch (err) {
@@ -4355,6 +4362,7 @@ app.get('/api/sglcn-xrp', async (req, res) => {
     if (client.isConnected()) await client.disconnect();
   }
 });
+
 
 
 

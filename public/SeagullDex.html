@@ -78,7 +78,10 @@
     <option value="ALL">All Time</option>
   </select>
 </div>
-<canvas id="priceChart" height="150" style="max-width: 100%; margin-top: 20px;"></canvas>
+<div style="width: 100%; max-width: 1000px; margin: auto;">
+  <canvas id="priceChart" height="350" style="width: 100%; margin-top: 20px;"></canvas>
+</div>
+
 
 
     <div id="orderbook">
@@ -209,78 +212,81 @@ async function loadChartData() {
     if (chart) chart.destroy();
 
     chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: "SGLCN/XRP",
-            data: pricesXRP,
-            borderColor: "rgba(0, 200, 83, 1)",
-            backgroundColor: "rgba(0, 200, 83, 0.1)",
-            spanGaps: true,
-            yAxisID: 'y1'
-          },
-          {
-            label: "SGLCN/XAU",
-            data: pricesXAU,
-            borderColor: "rgba(255, 193, 7, 1)",
-            backgroundColor: "rgba(255, 193, 7, 0.1)",
-            spanGaps: true,
-            yAxisID: 'y2'
-          }
-        ]
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: "SGLCN/XRP",
+        data: pricesXRP,
+        borderColor: "rgba(0,200,83,1)",
+        backgroundColor: "rgba(0,200,83,0.1)",
+        spanGaps: true,
+        yAxisID: 'y1',
+        pointRadius: 3,
+        pointHoverRadius: 5
       },
-      options: {
-  responsive: true,
-  interaction: {
-    mode: 'index',
-    intersect: false
+      {
+        label: "SGLCN/XAU",
+        data: pricesXAU,
+        borderColor: "rgba(255,193,7,1)",
+        backgroundColor: "rgba(255,193,7,0.1)",
+        spanGaps: true,
+        yAxisID: 'y2',
+        pointRadius: 3,
+        pointHoverRadius: 5
+      }
+    ]
   },
-  scales: {
-    x: {
+  options: {
+    responsive: true,
+    interaction: {
+      mode: 'index',
+      intersect: false
+    },
+    stacked: false,
+    plugins: {
       title: {
         display: true,
-        text: 'Date'
+        text: 'SGLCN Price Chart'
       },
-      ticks: {
-        autoSkip: true,
-        maxTicksLimit: 10
+      tooltip: {
+        mode: 'index',
+        intersect: false
       }
     },
-    y1: {
-      type: 'linear',
-      display: true,
-      position: 'left',
-      title: {
-        display: true,
-        text: 'Price (XRP)'
-      }
-    },
-    y2: {
-      type: 'linear',
-      display: true,
-      position: 'right',
-      title: {
-        display: true,
-        text: 'Price (XAU)'
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Time'
+        }
       },
-      grid: {
-        drawOnChartArea: false
+      y1: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        title: {
+          display: true,
+          text: 'SGLCN/XRP'
+        }
+      },
+      y2: {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        grid: {
+          drawOnChartArea: false
+        },
+        title: {
+          display: true,
+          text: 'SGLCN/XAU'
+        }
       }
     }
-  },
-  plugins: {
-    legend: {
-      display: true
-    },
-    tooltip: {
-      enabled: true
-   }
   }
- }
-
-    });
+});
+    
   } catch (err) {
     console.error("Chart loading error:", err);
   }

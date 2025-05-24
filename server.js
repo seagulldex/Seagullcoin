@@ -4640,28 +4640,62 @@ app.post('/swap', async (req, res) => {
     return res.status(400).json({ error: 'Currencies must differ.' });
   }
 
-  if (from_currency !== 'SeagullCoin' && to_currency !== 'SeagullCoin') {
-    return res.status(400).json({ error: 'One side must be SeagullCoin.' });
+  if (from_currency !== 'SeagullCoin' && to_currency !== 'SeagullCoin' && from_currency !== 'XRP' && to_currency !== 'XRP' && from_currency !== 'XAU' && to_currency !== 'XAU') {
+    return res.status(400).json({ error: 'Unsupported currencies.' });
   }
 
   try {
     const rate = await getMarketRate(from_currency, to_currency, issuers);
     const fromAmt = parseFloat(amount);
-    if (isNaN(fromAmt) || fromAmt <= 0) {
-      return res.status(400).json({ error: 'Invalid amount' });
-    }
-
     const toAmt = from_currency === 'SeagullCoin'
       ? (fromAmt * rate).toFixed(6)
       : (fromAmt / rate).toFixed(6);
 
-    // Build the TakerGets and TakerPays exactly as the XRP Ledger expects
-    const takerGets = getCurrencyObj(from_currency, fromAmt.toString(), issuers);
-    const takerPays = getCurrencyObj(to_currency, toAmt.toString(), issuers);
+    const takerGets = getCurrencyObj(from_currency, fromAmt, issuers);
+    const takerPays = getCurrencyObj(to_currency, toAmt, issuers);
 
-    // Sanity check: TakerGets for XRP must be string (drops), for others an object
-    if (from_currency === 'XRP' && typeof takerGets !== 'string') {
-      throw new Error('TakerG
+    const payload = {
+      txjson: {
+        TransactionType: 'OfferCreate',
+        Account: wallet_address,
+        TakerGets: takerGets,
+        TakerPays: takerPays,
+        Flags: 0x00020000 // tfImmediateOrCancel
+      },
+      options: {
+        submit: true,
+        return_url: {
+          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
+          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html'
+        }
+      }
+    };
+
+    const { uuid } = await xumm.payload.create(payload);
+
+    res.json({
+      success: true,
+      uuid,
+      rate,
+      swap_details: {
+        from: {
+          currency: from_currency,
+          amount: fromAmt,
+          issuer: from_currency === 'XRP' ? null : (from_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : from_currency === 'XAU' ? issuers.XAU_ISSUER : null)
+        },
+        to: {
+          currency: to_currency,
+          amount: parseFloat(toAmt),
+          issuer: to_currency === 'XRP' ? null : (to_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : to_currency === 'XAU' ? issuers.XAU_ISSUER : null)
+        }
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Swap failed.' });
+  }
+});
+
 
 
 
@@ -4679,12 +4713,40 @@ app.get('/rate-preview', async (req, res) => {
 
   try {
     const rate = await getMarketRate(from, to, issuers);
-    res.json({ from, to, rate });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message || 'Failed to fetch rate.' });
+
+    res.json({
+      from: {
+        currency: from,
+        issuer: from === 'XRP' ? null : (from === 'SeagullCoin' ? issuers.SGLCN_ISSUER : from === 'XAU' ? issuers.XAU_ISSUER : null)
+      },
+      to: {
+        currency: to,
+        issuer: to === 'XRP' ? null : (to === 'SeagullCoin' ? issuers.SGLCN_ISSUER : to === 'XAU' ? issuers.XAU_ISSUER : null)
+      },
+      rate
+    });
+  } catch (err1) {
+    // Try the reverse direction
+    try {
+      const reverseRate = await getMarketRate(to, from, issuers);
+      res.json({
+        from: {
+          currency: from,
+          issuer: from === 'XRP' ? null : (from === 'SeagullCoin' ? issuers.SGLCN_ISSUER : from === 'XAU' ? issuers.XAU_ISSUER : null)
+        },
+        to: {
+          currency: to,
+          issuer: to === 'XRP' ? null : (to === 'SeagullCoin' ? issuers.SGLCN_ISSUER : to === 'XAU' ? issuers.XAU_ISSUER : null)
+        },
+        rate: 1 / reverseRate
+      });
+    } catch (err2) {
+      console.error('Both directions failed:', err1.message, '|', err2.message);
+      res.status(404).json({ error: 'No offers found in either direction.' });
+    }
   }
 });
+
 
 
 

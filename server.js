@@ -4575,7 +4575,7 @@ const issuers = {
 
 function getCurrencyObj(currency, amount, { SGLCN_ISSUER, XAU_ISSUER }) {
   if (currency === 'XRP') {
-    return (Math.floor(parseFloat(amount) * 1000_000)).toString(); // in drops
+    return (Math.floor(parseFloat(amount) * 1000000)).toString(); // in drops
   }
 
   if (currency === 'SeagullCoin') {
@@ -4619,13 +4619,15 @@ async function getMarketRate(from, to, issuers) {
 
   await client.disconnect();
 
-  const bestOffer = orderbook.result.offers[0];
-  if (!bestOffer) throw new Error('No offers found.');
+  const offers = orderbook.result.offers;
+  if (!offers || offers.length === 0) throw new Error('No offers found.');
+  const bestOffer = offers[0];
+
 
   const gets = parseFloat(bestOffer.TakerGets.value || bestOffer.TakerGets);
   const pays = parseFloat(bestOffer.TakerPays.value || bestOffer.TakerPays);
 
-  return pays / gets;
+  return parseFloat((pays / gets).toFixed(6));
 }
 
 app.post('/swap', async (req, res) => {

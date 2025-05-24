@@ -4448,6 +4448,7 @@ app.get('/api/orderbook', async (req, res) => {
 
 
 const HISTORY_FILE = './sglcn_xau_history.json';
+const HISTORY_FILE2 = '.sglcn_xrp_history.json'
 
 let ammHistory = [];
 if (fs.existsSync(HISTORY_FILE)) {

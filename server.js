@@ -861,9 +861,65 @@ app.get('/signed-payloads', (req, res) => {
   });
 });
 
+//======== History Amm======
+
+async function fetchAndStorePrice() {
+  const client = new Client("wss://s2.ripple.com");
+
+  try {
+    await client.connect();
+
+    const ammResponse = await client.request({
+      command: "amm_info",
+      asset: {
+        currency: "XAU",
+        issuer: "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ"
+      },
+      asset2: {
+        currency: "53656167756C6C436F696E000000000000000000",
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+      }
+    });
+
+    const amm = ammResponse.result.amm;
+    if (!amm || !amm.amount || !amm.amount2) return;
+
+    const xau = parseFloat(amm.amount.value);
+    const sglcn = parseFloat(amm.amount2.value);
+
+    const snapshot = {
+      sglcn_to_xau: (xau / sglcn).toFixed(6),
+      xau_to_sglcn: (sglcn / xau).toFixed(2),
+      timestamp: new Date().toISOString()
+    };
+
+    let history = [];
+    if (fs.existsSync(historyFile)) {
+      history = JSON.parse(fs.readFileSync(historyFile, 'utf8'));
+    }
+
+    history.push(snapshot);
+
+    // Keep only the last 2016 entries (7 days @ 5 min intervals)
+    if (history.length > 2016) {
+      history = history.slice(-2016);
+    }
+
+    fs.writeFileSync(historyFile, JSON.stringify(history, null, 2));
+
+  } catch (e) {
+    console.error("Failed to fetch AMM price:", e.message);
+  } finally {
+    if (client.isConnected()) await client.disconnect();
+  }
+}
+
+// Start polling every 5 mins
+setInterval(fetchAndStorePrice, 5 * 60 * 1000);
+fetchAndStorePrice(); // run once at server start
 
 
-
+//==========================
 // Endpoint: Stake status by wallet
 app.get('/stake-status/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
@@ -4451,6 +4507,8 @@ app.get('/api/orderbook', async (req, res) => {
   }
 });
 
+
+const historyFile = path.join(__dirname, 'sglcn-xau-history.json');
 const ammHistory = []; // store last 100 AMM snapshots
 
 // Poll every 5 mins to store history
@@ -4486,45 +4544,35 @@ setInterval(async () => {
 }, 300000); // 5 minutes
 
 // Single endpoint with optional ?history=true
-app.get('/api/sglcn-xau', async (req, res) => {
-  const showHistory = req.query.history === 'true';
-
-  if (showHistory) {
-    return res.json({ history: ammHistory });
-  }
-
-  const client = new Client("wss://s2.ripple.com");
-
+app.get('/api/sglcn-xau', (req, res) => {
   try {
-    await client.connect();
+    const history = JSON.parse(fs.readFileSync(historyFile, 'utf8'));
 
-    const ammResponse = await client.request({
-      command: "amm_info",
-      asset: { currency: "XAU", issuer: "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ" },
-      asset2: { currency: "53656167756C6C436F696E000000000000000000", issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno" }
-    });
-
-    const amm = ammResponse.result.amm;
-    if (!amm || !amm.amount || !amm.amount2) {
-      return res.status(404).json({ error: "AMM pool not found or invalid." });
+    if (req.query.history === 'true') {
+      return res.json({ history });
     }
 
-    const xau = parseFloat(amm.amount.value);
-    const sglcn = parseFloat(amm.amount2.value);
+    // Optional filtering
+    if (req.query.from || req.query.to) {
+      const from = new Date(req.query.from || 0).getTime();
+      const to = new Date(req.query.to || Date.now()).getTime();
 
-    res.json({
-      sglcn_to_xau: (xau / sglcn).toFixed(6),
-      xau_to_sglcn: (sglcn / xau).toFixed(2),
-      timestamp: new Date().toISOString()
-    });
+      const filtered = history.filter(h => {
+        const t = new Date(h.timestamp).getTime();
+        return t >= from && t <= to;
+      });
 
+      return res.json({ history: filtered });
+    }
+
+    // Default: return latest only
+    return res.json(history[history.length - 1] || {});
   } catch (err) {
-    console.error("Error fetching AMM price:", err.message);
-    res.status(500).json({ error: err.message });
-  } finally {
-    if (client.isConnected()) await client.disconnect();
+    console.error("Error reading AMM history:", err.message);
+    return res.status(500).json({ error: "Failed to read AMM history" });
   }
 });
+
 
 
 

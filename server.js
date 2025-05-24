@@ -4489,7 +4489,7 @@ setInterval(async () => {
   } finally {
     if (client.isConnected()) await client.disconnect();
   }
-}, 300000); // every 5 mins
+}, 1800000); // every 5 mins
 
 
 // Single endpoint with optional ?history=true

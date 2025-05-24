@@ -4445,9 +4445,19 @@ app.get('/api/orderbook', async (req, res) => {
  // In-memory history (lost on restart)
 
 
-const ammHistory = []; // store last 100 AMM snapshots
 
-// Poll every 5 mins to store history
+
+const HISTORY_FILE = './sglcn_xau_history.json';
+
+let ammHistory = [];
+if (fs.existsSync(HISTORY_FILE)) {
+  try {
+    ammHistory = JSON.parse(fs.readFileSync(HISTORY_FILE)).history || [];
+  } catch (e) {
+    console.error("Failed to load history file:", e.message);
+  }
+}
+
 setInterval(async () => {
   const client = new Client("wss://s2.ripple.com");
   try {
@@ -4468,7 +4478,10 @@ setInterval(async () => {
         timestamp: new Date().toISOString()
       };
       ammHistory.unshift(entry);
-      if (ammHistory.length > 100) ammHistory.pop(); // keep recent 100 entries
+      if (ammHistory.length > 100) ammHistory.pop();
+
+      // Save to file
+      fs.writeFileSync(HISTORY_FILE, JSON.stringify({ history: ammHistory }, null, 2));
     }
 
   } catch (err) {
@@ -4476,7 +4489,8 @@ setInterval(async () => {
   } finally {
     if (client.isConnected()) await client.disconnect();
   }
-}, 300000); // 5 minutes
+}, 300000); // every 5 mins
+
 
 // Single endpoint with optional ?history=true
 app.get('/api/sglcn-xau', async (req, res) => {

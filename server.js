@@ -4661,12 +4661,20 @@ app.post('/swap', async (req, res) => {
   try {
     const rate = await getMarketRate(from_currency, to_currency, issuers);
     const fromAmt = parseFloat(amount);
-    const toAmt = from_currency === 'SeagullCoin'
-      ? (fromAmt * rate).toFixed(6)
-      : (fromAmt / rate).toFixed(6);
+    const toAmt = parseFloat(
+      from_currency === 'SeagullCoin'
+        ? (fromAmt * rate).toFixed(6)
+        : (fromAmt / rate).toFixed(6)
+    );
 
     const takerGets = getCurrencyObj(from_currency, fromAmt, issuers);
     const takerPays = getCurrencyObj(to_currency, toAmt, issuers);
+
+    // Debug log — delete this in prod
+    console.log('Creating OfferCreate with:', {
+      TakerGets: takerGets,
+      TakerPays: takerPays
+    });
 
     const payload = {
       txjson: {
@@ -4688,10 +4696,11 @@ app.post('/swap', async (req, res) => {
     const { uuid } = await xumm.payload.create(payload);
     res.json({ success: true, uuid, rate });
   } catch (err) {
-    console.error(err);
+    console.error('Swap failed:', err);
     res.status(500).json({ error: err.message || 'Swap failed.' });
   }
 });
+
 
 app.get('/rate-preview', async (req, res) => {
   const { from, to } = req.query;

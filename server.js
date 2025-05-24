@@ -48,7 +48,6 @@ import('rippled-ws-client').then(({ default: RippledWsClient }) => {
   // Your logic here
 });
     
-console.log("Saving AMM history to:", historyFile);
 
 
 // Initialize the database tables
@@ -86,7 +85,6 @@ const NFT_STORAGE_API_KEY = process.env.NFT_STORAGE_API_KEY;
 const nftData = requireLogin.body;
 const sessions = {};
 
-
 const app = express();
 const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
@@ -102,7 +100,17 @@ const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking ser
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
+const HISTORY_FILE = path.join(__dirname, 'history.json');
+let history = [];
 
+try {
+  if (fs.existsSync(HISTORY_FILE)) {
+    const data = fs.readFileSync(HISTORY_FILE);
+    history = JSON.parse(data);
+  }
+} catch (err) {
+  console.error("Error loading history:", err.message);
+}
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 
@@ -4456,39 +4464,49 @@ app.get('/api/orderbook', async (req, res) => {
 
 const ammHistory = []; // store last 100 AMM snapshots
 
-// Poll every 5 mins to store history
-setInterval(async () => {
+app.get('/api/sglcn-xau', async (req, res) => {
   const client = new Client("wss://s2.ripple.com");
+
   try {
     await client.connect();
+
     const ammResponse = await client.request({
       command: "amm_info",
-      asset: { currency: "XAU", issuer: "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ" },
-      asset2: { currency: "53656167756C6C436F696E000000000000000000", 
-      issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno" }
+      asset: {
+        currency: "XAU",
+        issuer: "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ"
+      },
+      asset2: {
+        currency: "53656167756C6C436F696E000000000000000000",
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+      }
     });
 
     const amm = ammResponse.result.amm;
-    if (amm && amm.amount && amm.amount2) {
-      const xau = parseFloat(amm.amount.value);
-      const sglcn = parseFloat(amm.amount2.value);
-      const entry = {
-        sglcn_to_xau: (xau / sglcn).toFixed(6),
-        xau_to_sglcn: (sglcn / xau).toFixed(2),
-        timestamp: new Date().toISOString()
-      };
-      ammHistory.unshift(entry);
-      if (ammHistory.length > 100) ammHistory.pop(); // keep recent 100 entries
+    if (!amm || !amm.amount || !amm.amount2) {
+      return res.status(404).json({ error: "AMM pool not found or invalid." });
     }
 
+    const xau = parseFloat(amm.amount.value); // XAU side
+    const sglcn = parseFloat(amm.amount2.value); // SGLCN side
+
+    const priceSGLCNToXAU = xau / sglcn;
+    const priceXAUToSGLCN = sglcn / xau;
+
+    res.json({
+      sglcn_to_xau: priceSGLCNToXAU.toFixed(6),
+      xau_to_sglcn: priceXAUToSGLCN.toFixed(2),
+timestamp: new Date().toISOString()  // <-- Add current timestamp here
+    });
+
   } catch (err) {
-    console.error("AMM polling error:", err.message);
+    console.error("Error fetching AMM price:", err.message);
+    res.status(500).json({ error: err.message });
   } finally {
     if (client.isConnected()) await client.disconnect();
   }
-}, 300000); // 5 minutes
+});
 
-//
 
 
 

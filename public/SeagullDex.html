@@ -7,8 +7,6 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="header.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
   <style>
     .green { color: green; }
     .red { color: red; }
@@ -33,10 +31,12 @@
       border: 1px solid #ccc;
       margin-top: 10px;
       border-radius: 4px;
+    
     }
     #price-value, #price-xau {
-      font-weight: bold;
-    }
+  font-weight: bold;
+}
+
   </style>
 </head>
 <body>
@@ -58,25 +58,28 @@
 
   <main style="padding: 20px;">
     <h1> SeagullCoin Dex </h1>
-    <div style="display: flex; align-items: center; margin-bottom: 20px;">
-      <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" alt="SGLCN Logo" width="50" height="50" style="border-radius: 50%; margin-right: 12px;">
-      <div style="display: flex; flex-direction: column; font-size: 1.1em; line-height: 1.2;">
-        <div><strong>SGLCN/XRP:</strong> <span id="price-value">Loading...</span></div>
-        <div style="font-size: 0.9em; color: #ccc;"><strong>SGLCN/XAU:</strong> <span id="price-xau">Loading...</span></div>
-      </div>
-    </div>
+  <div style="display: flex; align-items: center; margin-bottom: 20px;">
+  <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" alt="SGLCN Logo" width="50" height="50" style="border-radius: 50%; margin-right: 12px;">
+  <div style="display: flex; flex-direction: column; font-size: 1.1em; line-height: 1.2;">
+    <div><strong>SGLCN/XRP:</strong> <span id="price-value">Loading...</span></div>
+    <div style="font-size: 0.9em; color: #ccc;"><strong>SGLCN/XAU:</strong> <span id="price-xau">Loading...</span></div>
+  </div>
+</div>
+
+
 
     <h2>Price Chart SGLCN/XRP:XAU</h2>
-    <div>
-      <label for="timeframe">View:</label>
-      <select id="timeframe" onchange="loadChartData()">
-        <option value="1D">1 Day</option>
-        <option value="1W">1 Week</option>
-        <option value="1M" selected>1 Month</option>
-        <option value="ALL">All Time</option>
-      </select>
-    </div>
-    <canvas id="priceChart" height="150" style="max-width: 100%; margin-top: 20px;"></canvas>
+<div>
+  <label for="timeframe">View:</label>
+  <select id="timeframe" onchange="loadChartData()">
+    <option value="1D">1 Day</option>
+    <option value="1W">1 Week</option>
+    <option value="1M" selected>1 Month</option>
+    <option value="ALL">All Time</option>
+  </select>
+</div>
+<canvas id="priceChart" height="150" style="max-width: 100%; margin-top: 20px;"></canvas>
+
 
     <div id="orderbook">
       <div class="orderbook-header">Order Book</div>
@@ -94,203 +97,299 @@
         </table>
       </div>
     </div>
-  </main>
 
-<script>
-  function updateWalletStatus() {
-    const wallet = localStorage.getItem('xumm_wallet_address');
-    const indicator = document.getElementById('wallet-indicator');
-    const logoutBtn = document.getElementById('logout-btn');
-    if (wallet) {
-      indicator.textContent = '🟢 Connected';
-      indicator.classList.remove('red');
-      indicator.classList.add('green');
-      indicator.title = 'Logged in';
-      indicator.onclick = null;
-      logoutBtn.style.display = 'inline-block';
-    } else {
-      indicator.textContent = '🔴 Login';
-      indicator.classList.remove('green');
-      indicator.classList.add('red');
-      indicator.title = 'Click to login';
-      indicator.onclick = startLoginFlow;
-      logoutBtn.style.display = 'none';
-    }
-  }
+    
 
-  async function startLoginFlow() {
-    try {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-      const data = await res.json();
-      window.open(data.payloadURL, "_blank");
-      const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-        const loginStatus = await check.json();
-        if (loginStatus.loggedIn) {
-          clearInterval(interval);
-          localStorage.setItem('xumm_wallet_address', loginStatus.account);
-          updateWalletStatus();
-        }
-      }, 3000);
-    } catch (err) {
-      alert('Login failed: ' + err.message);
-    }
-  }
-
-  document.getElementById('logout-btn').onclick = () => {
-    localStorage.removeItem('xumm_wallet_address');
-    updateWalletStatus();
-  };
-
-  function formatPrice(price) {
-    return !price || isNaN(price) ? '' : Number(price).toFixed(6);
-  }
-
-  function formatAmount(amount) {
-    return !amount || isNaN(amount) ? '' : Number(amount).toLocaleString(undefined, {
-      minimumFractionDigits: 2, maximumFractionDigits: 2
-    });
-  }
-
-  let chart;
-
-  async function loadChartData() {
-    try {
-      const [resXRP, resXAU] = await Promise.all([
-        fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp'),
-        fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xau')
-      ]);
-
-      const dataXRP = await resXRP.json();
-      const dataXAU = await resXAU.json();
-
-      const timeframe = document.getElementById('timeframe').value;
-      const now = Date.now();
-
-      const filterByTime = (history) =>
-        history.filter(entry => {
-          const ts = new Date(entry.timestamp).getTime();
-          if (timeframe === "1D") return ts > now - 86400000;
-          if (timeframe === "1W") return ts > now - 7 * 86400000;
-          if (timeframe === "1M") return ts > now - 30 * 86400000;
-          return true;
-        });
-
-      const filteredXRP = filterByTime(dataXRP.history || []);
-      const filteredXAU = filterByTime(dataXAU.history || []);
-
-      const mergedTimestamps = Array.from(new Set([
-        ...filteredXRP.map(e => e.timestamp),
-        ...filteredXAU.map(e => e.timestamp)
-      ])).sort((a, b) => new Date(a) - new Date(b));
-
-      const pricesXRP = mergedTimestamps.map(ts => {
-        const match = filteredXRP.find(e => e.timestamp === ts);
-        return match ? parseFloat(match.price) : null;
-      });
-
-      const pricesXAU = mergedTimestamps.map(ts => {
-        const match = filteredXAU.find(e => e.timestamp === ts);
-        return match ? parseFloat(match.price) : null;
-      });
-
-      const labels = mergedTimestamps.map(ts => new Date(ts));
-
-      const ctx = document.getElementById("priceChart").getContext("2d");
-      if (chart) chart.destroy();
-
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: "SGLCN/XRP",
-              data: pricesXRP,
-              borderColor: "rgba(0, 200, 83, 1)",
-              backgroundColor: "rgba(0, 200, 83, 0.1)",
-              spanGaps: true,
-              yAxisID: 'y1'
-            },
-            {
-              label: "SGLCN/XAU",
-              data: pricesXAU,
-              borderColor: "rgba(255, 193, 7, 1)",
-              backgroundColor: "rgba(255, 193, 7, 0.1)",
-              spanGaps: true,
-              yAxisID: 'y2'
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          interaction: {
-            mode: 'index',
-            intersect: false,
-          },
-          stacked: false,
-          plugins: {
-            title: {
-              display: false
-            }
-          },
-          scales: {
-            y1: {
-              type: 'linear',
-              position: 'left',
-              title: { display: true, text: 'SGLCN/XRP' }
-            },
-            y2: {
-              type: 'linear',
-              position: 'right',
-              grid: { drawOnChartArea: false },
-              title: { display: true, text: 'SGLCN/XAU' }
-            },
-            x: {
-              type: 'time',
-              time: { unit: 'day' },
-              title: { display: true, text: 'Date' }
-            }
-          }
-        }
-      });
-
-      document.getElementById("price-value").textContent = formatPrice(dataXRP.price);
-      document.getElementById("price-xau").textContent = formatPrice(dataXAU.price);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function loadOrderBook() {
-    try {
-      const res = await fetch("https://sglcn-x20-api.glitch.me/api/orderbook");
-      const data = await res.json();
-      const tbody = document.getElementById("orderbook-body");
-      tbody.innerHTML = '';
-
-      const rows = Math.max(data.buys.length, data.sells.length);
-      for (let i = 0; i < rows; i++) {
-        const buy = data.buys[i] || {};
-        const sell = data.sells[i] || {};
-        tbody.innerHTML += `
-          <tr>
-            <td class="green">${formatPrice(buy.price)}</td>
-            <td class="green">${formatAmount(buy.amount)}</td>
-            <td class="red">${formatPrice(sell.price)}</td>
-            <td class="red">${formatAmount(sell.amount)}</td>
-          </tr>`;
+  <script>
+    function updateWalletStatus() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      const indicator = document.getElementById('wallet-indicator');
+      const logoutBtn = document.getElementById('logout-btn');
+      if (wallet) {
+        indicator.textContent = '🟢 Connected';
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
+        indicator.title = 'Logged in';
+        indicator.onclick = null;
+        logoutBtn.style.display = 'inline-block';
+      } else {
+        indicator.textContent = '🔴 Login';
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
+        indicator.title = 'Click to login';
+        indicator.onclick = startLoginFlow;
+        logoutBtn.style.display = 'none';
       }
-    } catch (e) {
-      console.error("Failed to load order book:", e);
     }
-  }
 
-  window.onload = () => {
+    async function startLoginFlow() {
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+        const data = await res.json();
+        window.open(data.payloadURL, "_blank");
+        const interval = setInterval(async () => {
+          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+          const loginStatus = await check.json();
+          if (loginStatus.loggedIn) {
+            clearInterval(interval);
+            localStorage.setItem('xumm_wallet_address', loginStatus.account);
+            updateWalletStatus();
+          }
+        }, 3000);
+      } catch (err) {
+        alert('Login failed: ' + err.message);
+      }
+    }
+
+    document.getElementById('logout-btn').onclick = () => {
+      localStorage.removeItem('xumm_wallet_address');
+      updateWalletStatus();
+    };
+
+    function formatPrice(price) {
+      return !price || isNaN(price) ? '' : Number(price).toFixed(6);
+    }
+
+    function formatAmount(amount) {
+      return !amount || isNaN(amount) ? '' : Number(amount).toLocaleString(undefined, {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      });
+    }
+    
+    let chart;
+
+async function loadChartData() {
+  try {
+    const [resXRP, resXAU] = await Promise.all([
+      fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp'),
+      fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xau')
+    ]);
+
+    const dataXRP = await resXRP.json();
+    const dataXAU = await resXAU.json();
+
+    const timeframe = document.getElementById('timeframe').value;
+    const now = Date.now();
+
+    const filterByTime = (history) => {
+      return history.filter(entry => {
+        const ts = new Date(entry.timestamp).getTime();
+        if (timeframe === "1D") return ts > now - 24 * 60 * 60 * 1000;
+        if (timeframe === "1W") return ts > now - 7 * 24 * 60 * 60 * 1000;
+        if (timeframe === "1M") return ts > now - 30 * 24 * 60 * 60 * 1000;
+        return true; // ALL
+      });
+    };
+
+    const filteredXRP = filterByTime(dataXRP.history || []);
+    const filteredXAU = filterByTime(dataXAU.history || []);
+
+    const mergedTimestamps = Array.from(new Set([
+      ...filteredXRP.map(e => e.timestamp),
+      ...filteredXAU.map(e => e.timestamp)
+    ])).sort((a, b) => new Date(a) - new Date(b));
+
+    const pricesXRP = mergedTimestamps.map(ts => {
+      const match = filteredXRP.find(e => e.timestamp === ts);
+      return match ? parseFloat(match.price) : null;
+    });
+
+    const pricesXAU = mergedTimestamps.map(ts => {
+      const match = filteredXAU.find(e => e.timestamp === ts);
+      return match ? parseFloat(match.price) : null;
+    });
+
+    const labels = mergedTimestamps.map(ts => {
+      const d = new Date(ts);
+      return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+    });
+
+    // Render chart
+    const ctx = document.getElementById("priceChart").getContext("2d");
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "SGLCN/XRP",
+            data: pricesXRP,
+            borderColor: "rgba(0, 200, 83, 1)",
+            backgroundColor: "rgba(0, 200, 83, 0.1)",
+            spanGaps: true,
+            yAxisID: 'y1'
+          },
+          {
+            label: "SGLCN/XAU",
+            data: pricesXAU,
+            borderColor: "rgba(255, 193, 7, 1)",
+            backgroundColor: "rgba(255, 193, 7, 0.1)",
+            spanGaps: true,
+            yAxisID: 'y2'
+          }
+        ]
+      },
+      options: {
+  responsive: true,
+  interaction: {
+    mode: 'index',
+    intersect: false
+  },
+  scales: {
+    x: {
+      title: {
+        display: true,
+        text: 'Date'
+      },
+      ticks: {
+        autoSkip: true,
+        maxTicksLimit: 10
+      }
+    },
+    y1: {
+      type: 'linear',
+      display: true,
+      position: 'left',
+      title: {
+        display: true,
+        text: 'Price (XRP)'
+      }
+    },
+    y2: {
+      type: 'linear',
+      display: true,
+      position: 'right',
+      title: {
+        display: true,
+        text: 'Price (XAU)'
+      },
+      grid: {
+        drawOnChartArea: false
+      }
+    }
+  },
+  plugins: {
+    legend: {
+      display: true
+    },
+    tooltip: {
+      enabled: true
+   }
+  }
+ }
+
+    });
+  } catch (err) {
+    console.error("Chart loading error:", err);
+  }
+}
+
+
+    async function updateCurrentPrice() {
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/api/orderbook');
+        const data = await res.json();
+        const bids = Array.isArray(data.bids) ? data.bids.slice(0, 100) : [];
+        const asks = Array.isArray(data.asks) ? data.asks.slice(0, 100) : [];
+
+        asks.sort((a, b) => parseFloat(a.price) - parseFloat(b.price)).reverse();
+        bids.sort((a, b) => parseFloat(b.price) - parseFloat(a.price)).reverse();
+
+        const tbody = document.getElementById('orderbook-body');
+        tbody.innerHTML = '';
+
+        const maxRows = Math.max(asks.length, bids.length);
+        for (let i = 0; i < maxRows; i++) {
+          const ask = asks[i];
+          const bid = bids[i];
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="green">${ask ? formatPrice(ask.price) : ''}</td>
+            <td class="green">${ask ? formatAmount(ask.amount) : ''}</td>
+            <td class="red">${bid ? formatPrice(bid.price) : ''}</td>
+            <td class="red">${bid ? formatAmount(bid.amount) : ''}</td>
+          `;
+          tbody.appendChild(row);
+        }
+
+        if (tbody.children.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4">No orderbook data available</td></tr>`;
+        }
+      } catch (err) {
+        console.error('Orderbook error:', err);
+        document.getElementById('orderbook-body').innerHTML = `<tr><td colspan="4">Failed to load orderbook</td></tr>`;
+      }
+    }
+
+    async function fetchLiveSGLCNPrice() {
+      try {
+        const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
+        const data = await res.json();
+        if (data && data.sglcn_to_xrp) {
+          const latestPrice = parseFloat(data.sglcn_to_xrp).toFixed(6);
+          document.getElementById('price-value').textContent = `${latestPrice} XRP`;
+        } else {
+          document.getElementById('price-value').textContent = 'Unavailable';
+        }
+      } catch (err) {
+        console.error('Failed to fetch live SGLCN price:', err);
+        document.getElementById('price-value').textContent = 'Error';
+      }
+    }
+    
+    async function fetchLiveSGLCNXAUPrice() {
+  try {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xau');
+    const data = await res.json();
+    if (data && data.sglcn_to_xau) {
+      const latestPriceXAU = parseFloat(data.sglcn_to_xau).toFixed(6);
+      document.getElementById('price-xau').textContent = `${latestPriceXAU} XAU`;
+    } else {
+      document.getElementById('price-xau').textContent = 'Unavailable';
+    }
+  } catch (err) {
+    console.error('Error fetching SGLCN XAU price:', err);
+    document.getElementById('price-xau').textContent = 'Error';
+  }
+}
+
+    async function placeBuyOrder() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      if (!wallet) return alert("Please log in first.");
+      const price = parseFloat(document.getElementById('buy-price').value);
+      const amount = parseFloat(document.getElementById('buy-amount').value);
+      if (isNaN(price) || isNaN(amount) || price <= 0 || amount <= 0) {
+        return alert("Enter valid price and amount.");
+      }
+
+      try {
+        const res = await fetch("https://sglcn-x20-api.glitch.me/place-buy-offer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wallet, price, amount })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("Buy offer submitted successfully.");
+          updateCurrentPrice();
+        } else {
+          alert("Offer failed: " + (result.error || "Unknown error"));
+        }
+      } catch (err) {
+        alert("Error submitting offer: " + err.message);
+      }
+    }
+    
+        loadChartData();
     updateWalletStatus();
-    loadChartData();
-    loadOrderBook();
-  };
-</script>
+    fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
+    updateCurrentPrice();            // Orderbook data
+    fetchLiveSGLCNXAUPrice();  
+    setInterval(fetchLiveSGLCNXAUPrice,30000);            // Fetch XAU price
+    setInterval(fetchLiveSGLCNPrice, 30000);
+    setInterval(updateCurrentPrice, 30000);
+  </script>
 </body>
 </html>

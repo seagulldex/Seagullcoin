@@ -4296,7 +4296,7 @@ const fetchSglcnXrpAmm = async () => {
     };
 
     ammXrpHistory.unshift(entry);
-    if (ammXrpHistory.length > 700) ammXrpHistory.pop();
+    if (ammXrpHistory.length > 17520) ammXrpHistory.pop();
 
     // Save to file
     fs.writeFileSync(HISTORY_FILE2, JSON.stringify({ history: ammXrpHistory }, null, 2));
@@ -4510,7 +4510,7 @@ setInterval(async () => {
         timestamp: new Date().toISOString()
       };
       ammHistory.unshift(entry);
-      if (ammHistory.length > 700) ammHistory.pop();
+      if (ammHistory.length > 17520) ammHistory.pop();
 
       // Save to file
       fs.writeFileSync(HISTORY_FILE, JSON.stringify({ history: ammHistory }, null, 2));

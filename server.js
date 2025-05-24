@@ -4678,6 +4678,38 @@ app.post('/swap', async (req, res) => {
   }
 });
 
+app.get('/rate-preview', async (req, res) => {
+  const { from, to } = req.query;
+
+  const validCurrencies = ['XRP', 'SeagullCoin', 'XAU'];
+  if (!from || !to || !validCurrencies.includes(from) || !validCurrencies.includes(to)) {
+    return res.status(400).json({ error: 'Invalid from/to parameters.' });
+  }
+
+  if (from === to) {
+    return res.status(400).json({ error: 'From and To currencies must differ.' });
+  }
+
+  // Simulated fixed rates (replace with live XRPL DEX logic or oracle later)
+  const rates = {
+    'SeagullCoin:XRP': 1.25,
+    'XRP:SeagullCoin': 0.8,
+    'SeagullCoin:XAU': 369.9,
+    'XAU:SeagullCoin': 0.0027,
+    'XRP:XAU': 295.2,
+    'XAU:XRP': 0.0034,
+  };
+
+  const key = `${from}:${to}`;
+  const rate = rates[key];
+
+  if (!rate) {
+    return res.status(404).json({ error: 'Rate not found for this pair.' });
+  }
+
+  res.json({ from, to, rate });
+});
+
 
 
 // Call the XRPL ping when the server starts

@@ -4646,9 +4646,13 @@ async function getMarketRate(from, to, issuers) {
 app.post('/swap', async (req, res) => {
   const { from_currency, to_currency, amount, wallet_address } = req.body;
 
-  if (!from_currency || !to_currency || !amount || !wallet_address) {
-    return res.status(400).json({ error: 'Missing required fields.' });
-  }
+  const missing = ['from_currency', 'to_currency', 'amount', 'wallet_address']
+  .filter(field => !req.body[field]);
+
+if (missing.length > 0) {
+  return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` });
+}
+
 
   if (from_currency === to_currency) {
     return res.status(400).json({ error: 'Currencies must differ.' });

@@ -388,14 +388,16 @@ async function loadChartData() {
       }
     }
     
-        loadChartData();
-    updateWalletStatus();
+      
+    
     fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
     updateCurrentPrice();            // Orderbook data
     fetchLiveSGLCNXAUPrice();  
     setInterval(fetchLiveSGLCNXAUPrice,30000);            // Fetch XAU price
     setInterval(fetchLiveSGLCNPrice, 30000);
     setInterval(updateCurrentPrice, 30000);
+    loadChartData();
+    updateWalletStatus();
   </script>
 </body>
 </html>

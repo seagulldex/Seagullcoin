@@ -4565,6 +4565,77 @@ app.get('/api/sglcn-xau', async (req, res) => {
   }
 });
 
+app.post('/swap', async (req, res) => {
+  const { from_currency, to_currency, amount, wallet_address } = req.body;
+
+  const currencies = ['XRP', 'XAU', 'SeagullCoin'];
+  const SGLCN_ISSUER = 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno';
+  const XAU_ISSUER = 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'; // Replace with real one
+
+  // Validate input
+  if (!from_currency || !to_currency || !amount || !wallet_address) {
+    return res.status(400).json({ error: 'Missing required fields.' });
+  }
+
+  if (!currencies.includes(from_currency) || !currencies.includes(to_currency)) {
+    return res.status(400).json({ error: 'Unsupported currency pair.' });
+  }
+
+  if (from_currency === to_currency) {
+    return res.status(400).json({ error: 'From and To currencies must differ.' });
+  }
+
+  // Only allow swaps that involve SeagullCoin
+  if (from_currency !== 'SeagullCoin' && to_currency !== 'SeagullCoin') {
+    return res.status(400).json({ error: 'Swaps must involve SeagullCoin.' });
+  }
+
+  const TakerGets = getCurrencyObj(from_currency, amount, SGLCN_ISSUER, XAU_ISSUER);
+  const TakerPays = getCurrencyObj(to_currency, null, SGLCN_ISSUER, XAU_ISSUER); // Rate assumed 1:1
+
+  // Estimate reverse amount for 1:1 (for now, real rate logic can be added)
+  TakerPays.value = amount;
+
+  const payload = {
+    txjson: {
+      TransactionType: 'OfferCreate',
+      Account: wallet_address,
+      TakerGets,
+      TakerPays,
+      Flags: 0x00020000, // tfImmediateOrCancel
+    },
+    options: {
+      submit: true,
+      return_url: {
+        app: 'https://sglcn-x20-api.glitch.me/success',
+        web: 'https://sglcn-x20-api.glitch.me/success'
+      }
+    }
+  };
+
+  try {
+    const { uuid } = await xumm.payload.create(payload);
+    res.json({ success: true, uuid });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create swap payload.' });
+  }
+});
+
+function getCurrencyObj(currency, amount, SGLCN_ISSUER, XAU_ISSUER) {
+  if (currency === 'XRP') return `${Math.floor(parseFloat(amount) * 1000000)}`; // Drops
+  if (currency === 'SeagullCoin') return {
+    currency: '53656167756C6C436F696E000000000000000000', // Hex
+    issuer: SGLCN_ISSUER,
+    value: amount
+  };
+  if (currency === 'XAU') return {
+    currency: 'XAU',
+    issuer: XAU_ISSUER,
+    value: amount
+  };
+}
+
 
 
 // Call the XRPL ping when the server starts

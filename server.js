@@ -864,70 +864,75 @@ app.get('/signed-payloads', (req, res) => {
 
 //======== History Amm======
 
+const historyFile = path.join(__dirname, 'sglcn-xau-history.json');
+console.log("Saving AMM history to:", historyFile);
+
 async function fetchAndStorePrice() {
-  const client = new Client("wss://s2.ripple.com");
+  const client = new Client("wss://s2.ripple.com");
 
-  try {
-    await client.connect();
+  try {
+    await client.connect();
 
-    const ammResponse = await client.request({
-      command: "amm_info",
-      asset: {
-        currency: "XAU",
-        issuer: "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ"
-      },
-      asset2: {
-        currency: "53656167756C6C436F696E000000000000000000",
-        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-      }
-    });
+    const ammResponse = await client.request({
+      command: "amm_info",
+      asset: {
+        currency: "XAU",
+        issuer: "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ"
+      },
+      asset2: {
+        currency: "53656167756C6C436F696E000000000000000000",
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+      }
+    });
 
-    const amm = ammResponse.result.amm;
-    if (!amm || !amm.amount || !amm.amount2) return;
-
-    const xau = parseFloat(amm.amount.value);
-    const sglcn = parseFloat(amm.amount2.value);
-
-    const snapshot = {
-      sglcn_to_xau: (xau / sglcn).toFixed(6),
-      xau_to_sglcn: (sglcn / xau).toFixed(2),
-      timestamp: new Date().toISOString()
-    };
-
-    let history = [];
-    if (fs.existsSync(historyFile)) {
-      history = JSON.parse(fs.readFileSync(historyFile, 'utf8'));
-    }
-
-    history.push(snapshot);
-
-    // Keep only the last 2016 entries (7 days @ 5 min intervals)
-    if (history.length > 2016) {
-      history = history.slice(-2016);
-    }
-
-    await new Promise((resolve, reject) => {
-  fs.writeFile(historyFile, JSON.stringify(history, null, 2), 'utf8', err => {
-    if (err) {
-      console.error("Write error:", err);
-      reject(err);
-    } else {
-      resolve();
+    const amm = ammResponse.result.amm;
+    if (!amm || !amm.amount || !amm.amount2) {
+      console.warn("Invalid AMM response structure.");
+      return;
     }
-  });
-});
 
+    const xau = parseFloat(amm.amount.value);
+    const sglcn = parseFloat(amm.amount2.value);
 
-  } catch (e) {
-    console.error("Failed to fetch AMM price:", e.message);
-  } finally {
-    if (client.isConnected()) await client.disconnect();
-  }
+    const priceSGLCNToXAU = xau / sglcn;
+    const priceXAUToSGLCN = sglcn / xau;
+
+    const newEntry = {
+      sglcn_to_xau: priceSGLCNToXAU.toFixed(6),
+      xau_to_sglcn: priceXAUToSGLCN.toFixed(2),
+      timestamp: new Date().toISOString()
+    };
+
+    // Read existing history
+    let history = [];
+    if (fs.existsSync(historyFile)) {
+      const fileContent = fs.readFileSync(historyFile, 'utf8');
+      history = JSON.parse(fileContent || '[]');
+    }
+
+    history.push(newEntry);
+
+    // Optional: limit to last 50 entries
+    if (history.length > 50) history = history.slice(-50);
+
+    await new Promise((resolve, reject) => {
+      fs.writeFile(historyFile, JSON.stringify(history, null, 2), 'utf8', err => {
+        if (err) {
+          console.error("Write error:", err);
+          reject(err);
+        } else {
+          console.log("History updated.");
+          resolve();
+        }
+      });
+    });
+
+  } catch (err) {
+    console.error("Error in fetchAndStorePrice:", err.message);
+  } finally {
+    if (client.isConnected()) await client.disconnect();
+  }
 }
-
-// Start polling every 5 mins
-setInterval(fetchAndStorePrice, 5 * 60 * 1000);
-fetchAndStorePrice(); // run once at server start
 
 
 //==========================

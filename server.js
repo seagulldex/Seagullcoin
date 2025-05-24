@@ -4262,7 +4262,7 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
 });
 
 // Express endpoint
-const HISTORY_FILE2 = ".sglcn_xrp_history.json";
+const HISTORY_FILE2 = "./sglcn_xrp_history.json";
 let ammXrpHistory = [];
 
 // Load history from file if exists
@@ -4691,19 +4691,7 @@ if (missing.length > 0) {
       options: {
         submit: true,
         return_url: {
-          app: 'https://sglcn-x20-api.glitch.me/success',
-          web: 'https://sglcn-x20-api.glitch.me/success'
-        }
-      }
-    };
-
-    const { uuid } = await xumm.payload.create(payload);
-    res.json({ success: true, uuid, rate });
-  } catch (err) {
-    console.error('Swap failed:', err);
-    res.status(500).json({ error: err.message || 'Swap failed.' });
-  }
-});
+          app: 'https://sglcn-x20-api.g
 
 
 app.get('/rate-preview', async (req, res) => {

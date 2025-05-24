@@ -4690,25 +4690,15 @@ app.get('/rate-preview', async (req, res) => {
     return res.status(400).json({ error: 'From and To currencies must differ.' });
   }
 
-  // Simulated fixed rates (replace with live XRPL DEX logic or oracle later)
-  const rates = {
-    'SeagullCoin:XRP': 1.25,
-    'XRP:SeagullCoin': 0.8,
-    'SeagullCoin:XAU': 369.9,
-    'XAU:SeagullCoin': 0.0027,
-    'XRP:XAU': 295.2,
-    'XAU:XRP': 0.0034,
-  };
-
-  const key = `${from}:${to}`;
-  const rate = rates[key];
-
-  if (!rate) {
-    return res.status(404).json({ error: 'Rate not found for this pair.' });
+  try {
+    const rate = await getMarketRate(from, to, issuers);
+    res.json({ from, to, rate });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Failed to fetch rate.' });
   }
-
-  res.json({ from, to, rate });
 });
+
 
 
 

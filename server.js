@@ -4442,14 +4442,19 @@ app.get('/api/orderbook', async (req, res) => {
     res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
   }
 });
+ // In-memory history (lost on restart)
+
+
+// In-memory history (lost on restart)
+let xauHistory = [];
 
 app.get('/api/sglcn-xau', async (req, res) => {
-  const client = new Client("wss://s2.ripple.com");
+  const client = new Client('wss://s2.ripple.com');
 
   try {
     await client.connect();
 
-    const ammResponse = await client.request({
+    const response = await client.request({
       command: "amm_info",
       asset: {
         currency: "XAU",
@@ -4461,31 +4466,31 @@ app.get('/api/sglcn-xau', async (req, res) => {
       }
     });
 
-    const amm = ammResponse.result.amm;
-    if (!amm || !amm.amount || !amm.amount2) {
-      return res.status(404).json({ error: "AMM pool not found or invalid." });
-    }
+    const amm = response.result.amm;
+    const xau = parseFloat(amm.amount.value);
+    const sglcn = parseFloat(amm.amount2.value);
 
-    const xau = parseFloat(amm.amount.value); // XAU side
-    const sglcn = parseFloat(amm.amount2.value); // SGLCN side
+    const entry = {
+      sglcn_to_xau: (xau / sglcn).toFixed(6),
+      xau_to_sglcn: (sglcn / xau).toFixed(2),
+      timestamp: new Date().toISOString()
+    };
 
-    const priceSGLCNToXAU = xau / sglcn;
-    const priceXAUToSGLCN = sglcn / xau;
+    xauHistory.push(entry);
+    if (xauHistory.length > 50) xauHistory.shift(); // keep only latest 50
 
     res.json({
-      sglcn_to_xau: priceSGLCNToXAU.toFixed(6),
-      xau_to_sglcn: priceXAUToSGLCN.toFixed(2),
-      timestamp: new Date().toISOString()  // <-- Add current timestamp here
+      current: entry,
+      history: xauHistory
     });
 
   } catch (err) {
-    console.error("Error fetching AMM price:", err.message);
+    console.error('Error fetching AMM price:', err.message);
     res.status(500).json({ error: err.message });
   } finally {
-    if (client.isConnected()) await client.disconnect();
+    await client.disconnect();
   }
 });
-
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

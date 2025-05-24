@@ -1,3 +1,14 @@
 {
-  "history": []
+  "history": [
+    {
+      "sglcn_to_xau": "0.000002",
+      "xau_to_sglcn": "538200.22",
+      "timestamp": "2025-05-24T03:29:54.848Z"
+    },
+    {
+      "sglcn_to_xau": "0.000002",
+      "xau_to_sglcn": "538200.22",
+      "timestamp": "2025-05-24T03:24:54.847Z"
+    }
+  ]
 }

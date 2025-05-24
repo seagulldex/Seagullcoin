@@ -230,41 +230,64 @@ async function loadChartData() {
           }
         ]
       },
-      options: {
-  responsive: true,
-  interaction: {
-    mode: 'index',
-    intersect: false
-  },
-  plugins: {
-    tooltip: {
-      mode: 'index',
-      intersect: false
-    }
-  },
-  scales: {
-    x: {
-      type: 'time',
-      time: {
-        unit: timeframe === '1D' ? 'hour' : 'day',
-        tooltipFormat: 'MMM dd, HH:mm'
-      },
-      title: {
-        display: true,
-        text: 'Date/Time'
+          options: {
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        stacked: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'SGLCN Price History'
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `${context.dataset.label}: ${context.parsed.y.toFixed(6)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              tooltipFormat: 'DD T',
+              unit: 'day'
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'XRP'
+            }
+          },
+          y2: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            grid: {
+              drawOnChartArea: false
+            },
+            title: {
+              display: true,
+              text: 'XAU'
+            }
+          }
+        }
       }
-    },
-    y1: {
-      type: 'linear',
-      position: 'left',
-      title: { display: true, text: 'XRP' }
-    },
-    y2: {
-      type: 'linear',
-      position: 'right',
-      title: { display: true, text: 'XAU' },
-      grid: { drawOnChartArea: false }
-    }
+    });
+  } catch (err) {
+    console.error('Failed to load chart data:', err);
   }
 }
     });

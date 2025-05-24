@@ -48,6 +48,7 @@ import('rippled-ws-client').then(({ default: RippledWsClient }) => {
   // Your logic here
 });
     
+console.log("Saving AMM history to:", historyFile);
 
 
 // Initialize the database tables
@@ -905,7 +906,10 @@ async function fetchAndStorePrice() {
       history = history.slice(-2016);
     }
 
-    fs.writeFileSync(historyFile, JSON.stringify(history, null, 2));
+    fs.writeFile(historyFile, JSON.stringify(history, null, 2), 'utf8', (err) => {
+  if (err) console.error("Write error:", err);
+});
+
 
   } catch (e) {
     console.error("Failed to fetch AMM price:", e.message);

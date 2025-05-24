@@ -4607,24 +4607,41 @@ function getBookCurrency(symbol, { SGLCN_ISSUER, XAU_ISSUER }) {
 async function getMarketRate(from, to, issuers) {
   await client.connect();
 
-  const takerGets = getBookCurrency(from, issuers);
-  const takerPays = getBookCurrency(to, issuers);
+  // taker wants TO currency, paying FROM currency
+  const takerGets = getBookCurrency(to, issuers);
+  const takerPays = getBookCurrency(from, issuers);
 
   const orderbook = await client.request({
     command: 'book_offers',
-    Taker_gets: takerGets,
-    Taker_pays: takerPays,
+    TakerGets: takerGets,
+    TakerPays: takerPays,
     limit: 5
   });
 
   await client.disconnect();
 
-  const offers = orderbook.result.offers;
-  if (!offers || offers.length === 0) throw new Error('No offers found.');
-  const bestOffer = offers[0];
+  if (!orderbook.result.offers || orderbook.result.offers.length === 0) {
+    throw new Error('No offers found.');
+  }
 
+  const bestOffer = orderbook.result.offers[0];
 
-  const gets = parseFloat(bestOffer.TakerGets.value || bes
+  // Parse the amounts - can be string for XRP or object for issued
+  const gets = bestOffer.TakerGets.currency === 'XRP'
+    ? parseFloat(bestOffer.TakerGets) // XRP as string drops
+    : parseFloat(bestOffer.TakerGets.value);
+
+  const pays = bestOffer.TakerPays.currency === 'XRP'
+    ? parseFloat(bestOffer.TakerPays)
+    : parseFloat(bestOffer.TakerPays.value);
+
+  // Convert XRP drops to XRP amount for rate calculation if XRP involved
+  const getsAmount = bestOffer.TakerGets.currency === 'XRP' ? gets / 1000000 : gets;
+  const paysAmount = bestOffer.TakerPays.currency === 'XRP' ? pays / 1000000 : pays;
+
+  return parseFloat((paysAmount / getsAmount).toFixed(6));
+}
+
 
 app.post('/swap', async (req, res) => {
   const { from_currency, to_currency, amount, wallet_address } = req.body;

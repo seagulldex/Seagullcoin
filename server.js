@@ -4462,8 +4462,6 @@ app.get('/api/orderbook', async (req, res) => {
 });
 
 
-const ammHistory = []; // store last 100 AMM snapshots
-
 app.get('/api/sglcn-xau', async (req, res) => {
   const client = new Client("wss://s2.ripple.com");
 
@@ -4483,30 +4481,11 @@ app.get('/api/sglcn-xau', async (req, res) => {
     });
 
     const amm = ammResponse.result.amm;
-    if (!amm || !amm.amount || !amm.amount2) {
+    if (!amm?.amount || !amm?.amount2) {
       return res.status(404).json({ error: "AMM pool not found or invalid." });
     }
 
-    const xau = parseFloat(amm.amount.value); // XAU side
-    const sglcn = parseFloat(amm.amount2.value); // SGLCN side
-
-    const priceSGLCNToXAU = xau / sglcn;
-    const priceXAUToSGLCN = sglcn / xau;
-
-    res.json({
-      sglcn_to_xau: priceSGLCNToXAU.toFixed(6),
-      xau_to_sglcn: priceXAUToSGLCN.toFixed(2),
-timestamp: new Date().toISOString()  // <-- Add current timestamp here
-    });
-
-  } catch (err) {
-    console.error("Error fetching AMM price:", err.message);
-    res.status(500).json({ error: err.message });
-  } finally {
-    if (client.isConnected()) await client.disconnect();
-  }
-});
-
+    const xau = parseFloat(
 
 
 

@@ -4575,7 +4575,7 @@ const issuers = {
 
 function getCurrencyObj(currency, amount, { SGLCN_ISSUER, XAU_ISSUER }) {
   if (currency === 'XRP') {
-    return (Math.floor(parseFloat(amount) * 1_000_000)).toString(); // in drops
+    return (Math.floor(parseFloat(amount) * 1000_000)).toString(); // in drops
   }
 
   if (currency === 'SeagullCoin') {

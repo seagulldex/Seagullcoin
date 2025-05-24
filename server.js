@@ -4266,16 +4266,8 @@ const HISTORY_FILE2 = ".sglcn_xrp_history.json";
 let ammXrpHistory = [];
 
 // Load history from file if exists
-if (fs.existsSync(HISTORY_FILE2)) {
-  const raw = fs.readFileSync(HISTORY_FILE2);
-  const parsed = JSON.parse(raw);
-  ammXrpHistory = parsed.history || [];
-}
-
-app.get('/api/sglcn-xrp', async (req, res) => {
-  const showHistory = req.query.history === 'true';
+const fetchSglcnXrpAmm = async () => {
   const client = new Client("wss://s2.ripple.com");
-
   try {
     await client.connect();
 
@@ -4290,7 +4282,8 @@ app.get('/api/sglcn-xrp', async (req, res) => {
 
     const amm = ammResponse.result.amm;
     if (!amm || !amm.amount || !amm.amount2) {
-      return res.status(404).json({ error: "AMM pool not found or invalid." });
+      console.error("AMM pool not found or invalid.");
+      return;
     }
 
     const xrp = parseFloat(amm.amount) / 1000000; // drops to XRP
@@ -4303,24 +4296,47 @@ app.get('/api/sglcn-xrp', async (req, res) => {
     };
 
     ammXrpHistory.unshift(entry);
-    if (ammXrpHistory.length > 100) ammXrpHistory.pop();
+    if (ammXrpHistory.length > 700) ammXrpHistory.pop();
 
     // Save to file
     fs.writeFileSync(HISTORY_FILE2, JSON.stringify({ history: ammXrpHistory }, null, 2));
-
-    if (showHistory) {
-      return res.json({ history: ammXrpHistory });
-    }
-
-    res.json(entry);
+    console.log("AMM data saved to HISTORY_FILE2");
 
   } catch (err) {
-    console.error("Error fetching SGLCN-XRP AMM:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("Error fetching AMM:", err.message);
   } finally {
     if (client.isConnected()) await client.disconnect();
   }
+};
+
+// Run once immediately on startup
+fetchSglcnXrpAmm();
+
+// Then every 30 minutes (1800000 ms)
+setInterval(fetchSglcnXrpAmm, 1800000);
+
+app.get('/api/sglcn-xrp', (req, res) => {
+  try {
+    const raw = fs.readFileSync(HISTORY_FILE2);
+    const { history } = JSON.parse(raw);
+    if (!history || !history.length) {
+      return res.status(404).json({ error: "No AMM price history available." });
+    }
+
+    const showHistory = req.query.history === 'true';
+    if (showHistory) {
+      return res.json({ history });
+    }
+
+    // Return latest entry
+    res.json(history[0]);
+
+  } catch (err) {
+    console.error("Error reading SGLCN-XRP history file:", err.message);
+    res.status(500).json({ error: "Failed to read price history." });
+  }
 });
+
 
 
 app.get('/api/orderbook', async (req, res) => {
@@ -4494,7 +4510,7 @@ setInterval(async () => {
         timestamp: new Date().toISOString()
       };
       ammHistory.unshift(entry);
-      if (ammHistory.length > 100) ammHistory.pop();
+      if (ammHistory.length > 700) ammHistory.pop();
 
       // Save to file
       fs.writeFileSync(HISTORY_FILE, JSON.stringify({ history: ammHistory }, null, 2));

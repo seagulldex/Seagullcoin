@@ -4263,8 +4263,7 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
 
 // Express endpoint
 const HISTORY_FILE2 = "./sglcn_xrp_history.json";
-let ammXrpHistory = [];
-
+let ammXrpHistory = []
 // Load history from file if exists
 const fetchSglcnXrpAmm = async () => {
   const client = new Client("wss://s2.ripple.com");

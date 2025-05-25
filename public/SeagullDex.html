@@ -492,6 +492,42 @@ createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
   // Initialize on load
   window.addEventListener('DOMContentLoaded', updateAmountLabel);
     
+    document.getElementById('swap-btn').addEventListener('click', async () => {
+  const from = document.getElementById('swap-from').value;
+  const to = document.getElementById('swap-to').value;
+  const amount = document.getElementById('swap-amount').value;
+  const wallet = localStorage.getItem('xumm_wallet_address');
+
+  if (!wallet) {
+    alert('Please connect your wallet first.');
+    return;
+  }
+
+  if (!amount || isNaN(amount) || amount <= 0) {
+    alert('Please enter a valid amount to swap.');
+    return;
+  }
+
+  try {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/swap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to, amount, wallet })
+    });
+
+    const data = await res.json();
+
+    if (data.payloadURL) {
+      window.open(data.payloadURL, '_blank');
+    } else {
+      alert('Error initiating swap: ' + (data.error || 'Unknown error.'));
+    }
+  } catch (err) {
+    alert('Swap failed: ' + err.message);
+  }
+});
+
+    
     
     fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
     updateCurrentPrice();            // Orderbook data

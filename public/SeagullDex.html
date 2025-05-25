@@ -120,7 +120,7 @@
     <input type="number" id="swap-amount" placeholder="Amount" style="width: 90%; padding: 6px;" />
   </div>
   <div style="flex: 1; min-width: 100px;">
-    <label for="swap-price"><strong>Price / Rate</strong></label>
+    <label for="swap-price"><strong>Recieve</strong></label>
     <input type="number" id="swap-price" placeholder="Fetching..." style="width: 90%; padding: 6px;" readonly />
 
   </div>
@@ -479,6 +479,19 @@ createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
   // TODO: Implement actual swap payload here, e.g., open XUMM payload URL, call API, etc.
 });
 
+    const toCurrency = document.getElementById('swap-to');
+  const amountLabel = document.getElementById('amount-label');
+
+  function updateAmountLabel() {
+    const selected = toCurrency.value;
+    amountLabel.innerHTML = `<strong>${selected} Amount</strong>`;
+  }
+
+  toCurrency.addEventListener('change', updateAmountLabel);
+
+  // Initialize on load
+  window.addEventListener('DOMContentLoaded', updateAmountLabel);
+    
     
     fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
     updateCurrentPrice();            // Orderbook data

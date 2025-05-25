@@ -206,136 +206,95 @@
     }
     
     let chart;
-
-async function loadChartData() {
-  try {
-    const [resXRP, resXAU] = await Promise.all([
-      fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp'),
-      fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xau')
-    ]);
-
+    
+  async function loadChartData() {
+    const timeframe = document.getElementById('timeframe').value;
+    const resXRP = await fetch(`https://sglcn-x20-api.glitch.me/api/sglcn-xrp?range=${timeframe}`);
+    const resXAU = await fetch(`https://sglcn-x20-api.glitch.me/api/sglcn-xau?range=${timeframe}`);
     const dataXRP = await resXRP.json();
     const dataXAU = await resXAU.json();
 
-    const timeframe = document.getElementById('timeframe').value;
-    const now = Date.now();
+    const format = (data) =>
+      data.map(point => ({
+        x: new Date(point.timestamp),
+        y: point.price
+      }));
 
-    const filterByTime = (history) => {
-      return history.filter(entry => {
-        const ts = new Date(entry.timestamp).getTime();
-        if (timeframe === "1D") return ts > now - 24 * 60 * 60 * 1000;
-        if (timeframe === "1W") return ts > now - 7 * 24 * 60 * 60 * 1000;
-        if (timeframe === "1M") return ts > now - 30 * 24 * 60 * 60 * 1000;
-        return true; // ALL
-      });
-    };
+    const xrpData = format(dataXRP);
+    const xauData = format(dataXAU);
 
-    const filteredXRP = filterByTime(dataXRP.history || []);
-    const filteredXAU = filterByTime(dataXAU.history || []);
+    const ctx = document.getElementById('priceChart').getContext('2d');
 
-    const mergedTimestamps = Array.from(new Set([
-      ...filteredXRP.map(e => e.timestamp),
-      ...filteredXAU.map(e => e.timestamp)
-    ])).sort((a, b) => new Date(a) - new Date(b));
-
-    const pricesXRP = mergedTimestamps.map(ts => {
-      const match = filteredXRP.find(e => e.timestamp === ts);
-      return match ? parseFloat(match.price) : null;
-    });
-
-    const pricesXAU = mergedTimestamps.map(ts => {
-      const match = filteredXAU.find(e => e.timestamp === ts);
-      return match ? parseFloat(match.price) : null;
-    });
-
-    const labels = mergedTimestamps.map(ts => {
-      const d = new Date(ts);
-      return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
-    });
-
-    // Render chart
-    const ctx = document.getElementById("priceChart").getContext("2d");
-    if (chart) chart.destroy();
+    if (chart) chart.destroy(); // Clear previous chart
 
     chart = new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels,
-    datasets: [
-      {
-        label: "SGLCN/XRP",
-        data: pricesXRP,
-        borderColor: "rgba(0,200,83,1)",
-        backgroundColor: "rgba(0,200,83,0.1)",
-        spanGaps: true,
-        yAxisID: 'y1',
-        pointRadius: 3,
-        pointHoverRadius: 5
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'SGLCN/XRP',
+            data: xrpData,
+            borderColor: 'rgba(0,123,255,1)',
+            yAxisID: 'y-xrp',
+            tension: 0.3
+          },
+          {
+            label: 'SGLCN/XAU',
+            data: xauData,
+            borderColor: 'rgba(255,193,7,1)',
+            yAxisID: 'y-xau',
+            tension: 0.3
+          }
+        ]
       },
-      {
-        label: "SGLCN/XAU",
-        data: pricesXAU,
-        borderColor: "rgba(255,193,7,1)",
-        backgroundColor: "rgba(255,193,7,0.1)",
-        spanGaps: true,
-        yAxisID: 'y2',
-        pointRadius: 3,
-        pointHoverRadius: 5
-      }
-    ]
-  },
-    options: {
-    responsive: true,
-    interaction: {
-      mode: 'index',
-      intersect: false
-    },
-    stacked: false,
-    plugins: {
-      title: {
-        display: true,
-        text: 'SGLCN Market Chart'
-      },
-      legend: {
-        position: 'top'
-      }
-    },
-    scales: {
-      y1: {
-        type: 'linear',
-        display: true,
-        position: 'left',
-        title: {
-          display: true,
-          text: 'Price (XRP)'
-        }
-      },
-      y2: {
-        type: 'linear',
-        display: true,
-        position: 'right',
-        grid: {
-          drawOnChartArea: false
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              tooltipFormat: 'PPpp',
+              unit: timeframe === '1D' ? 'hour' : 'day'
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          'y-xrp': {
+            type: 'linear',
+            position: 'left',
+            title: {
+              display: true,
+              text: 'XRP'
+            }
+          },
+          'y-xau': {
+            type: 'linear',
+            position: 'right',
+            grid: {
+              drawOnChartArea: false
+            },
+            title: {
+              display: true,
+              text: 'XAU'
+            }
+          }
         },
-        title: {
-          display: true,
-          text: 'Price (XAU)'
-        }
-      },
-      x: {
-        title: {
-          display: true,
-          text: 'Time'
+        plugins: {
+          legend: {
+            display: true
+          }
         }
       }
-    }
+    });
   }
-});
-    
-  } catch (err) {
-    console.error("Chart loading error:", err);
-  }
-}
+
+  window.addEventListener('DOMContentLoaded', () => {
+    updateWalletStatus();
+    loadChartData();
+  });
+
 
 
     async function updateCurrentPrice() {

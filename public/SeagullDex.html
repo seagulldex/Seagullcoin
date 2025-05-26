@@ -122,7 +122,7 @@
   </div>
   
   <div style="flex: 1; min-width: 100px;">
-  <label for="swap-price" id="receive-label"><strong> Selling </strong></label>
+  <label for="swap-price" id="receive-label"><strong><span id='from-asset-label'>From</span> Cost</strong></label>
   <input
     type="number"
     id="swap-price"
@@ -494,6 +494,13 @@ createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
     alert('Swap failed: ' + err.message);
   }
 });
+
+  document.getElementById('swap-from').addEventListener('change', function () {
+    document.getElementById('from-asset-label').textContent = this.value;
+  });
+
+  // Trigger initial value
+  document.getElementById('from-asset-label').textContent = document.getElementById('swap-from').value;
 
     
     

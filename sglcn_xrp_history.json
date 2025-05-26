@@ -2,6 +2,11 @@
   "history": [
     {
       "sglcn_to_xrp": "0.000090",
+      "xrp_to_sglcn": "11151.91",
+      "timestamp": "2025-05-26T05:12:26.284Z"
+    },
+    {
+      "sglcn_to_xrp": "0.000090",
       "xrp_to_sglcn": "11151.63",
       "timestamp": "2025-05-26T04:42:26.450Z"
     }

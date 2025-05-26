@@ -128,7 +128,7 @@
   </div>
   
   <div style="flex: 1; min-width: 100px;">
-    <label for="swap-amount" id="amount-label"><strong>Amount</strong></label>
+   <label for="swap-amount" id="recieve-label"><strong>Receive</strong></label>
     <input type="number" id="swap-amount" placeholder="Purchasing" style="width: 90%; padding: 6px;" />
   </div>
 
@@ -503,6 +503,12 @@ createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
   // Trigger initial value
   document.getElementById('from-asset-label').textContent = document.getElementById('swap-from').value;
 
+    function updateLabels() {
+  const fromAsset = document.getElementById('swap-from').value;
+  const toAsset = document.getElementById('swap-to').value;
+  document.getElementById('from-asset-label').textContent = fromAsset;
+  document.getElementById('amount-label').innerHTML = `<strong>You Will Receive (${toAsset})</strong>`;
+    }
     
     
     fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp

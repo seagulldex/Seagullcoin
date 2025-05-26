@@ -120,15 +120,23 @@
     <label for="swap-amount" id="amount-label"><strong>amount</strong></label>
     <input type="number" id="swap-amount" placeholder="Amount" style="width: 90%; padding: 6px;" />
   </div>
+  
   <div style="flex: 1; min-width: 100px;">
-    <label for="swap-price" id="receive-label"><strong>Receive</strong></label>
-    <input type="number" id="swap-price" placeholder="Fetching..." style="width: 90%; padding: 6px;" readonly />
+  <label for="swap-price" id="receive-label"><strong> Selling </strong></label>
+  <input
+    type="number"
+    id="swap-price"
+    placeholder="Fetching..."
+    readonly
+    style="width: 90%; padding: 6px; background-color: black; color: white; border: 1px solid #444;" />
+</div>
+
 
   </div>
   <div style="flex: 0 0 auto; align-self: flex-end;">
     <button id="swap-btn" style="padding: 10px 20px; font-size: 1em; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Squak</button>
   </div>
-</div>
+
 
     <div id="orderbook">
       <div class="orderbook-header">Order Book</div>

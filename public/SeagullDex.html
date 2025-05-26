@@ -104,24 +104,20 @@
     <label for="swap-from"><strong>From</strong></label>
     <select id="swap-from" style="width: 100%; padding: 6px;">
       <option value="XRP">XRP</option>
-      <option value="SeagullCoin">SeagullCoin</option>
+      <option value="SeagullCoin">SGLCN</option>
       <option value="XAU">XAU</option>
     </select>
   </div>
   <div style="flex: 1; min-width: 120px;">
     <label for="swap-to"><strong>To</strong></label>
     <select id="swap-to" style="width: 100%; padding: 6px;">
-      <option value="SeagullCoin">SeagullCoin</option>
+      <option value="SeagullCoin">SGLCN</option>
       <option value="XRP">XRP</option>
       <option value="XAU">XAU</option>
     </select>
   </div>
-  <div style="flex: 1; min-width: 100px;">
-    <label for="swap-amount" id="amount-label"><strong>amount</strong></label>
-    <input type="number" id="swap-amount" placeholder="Amount" style="width: 90%; padding: 6px;" />
-  </div>
   
-  <div style="flex: 1; min-width: 100px;">
+    <div style="flex: 1; min-width: 100px;">
   <label for="swap-price" id="receive-label"><strong><span id='from-asset-label'>From</span> Cost</strong></label>
   <input
     type="number"
@@ -129,7 +125,12 @@
     placeholder="Fetching..."
     readonly
     style="width: 90%; padding: 6px; background-color: black; color: white; border: 1px solid #444;" />
-</div>
+  </div>
+  
+  <div style="flex: 1; min-width: 100px;">
+    <label for="swap-amount" id="amount-label"><strong>amount</strong></label>
+    <input type="number" id="swap-amount" placeholder="Amount" style="width: 90%; padding: 6px;" />
+  </div>
 
 
   </div>

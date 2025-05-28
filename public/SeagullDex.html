@@ -411,6 +411,31 @@
   console.log('Rate:', data.rate);
   return data.rate;
 }
+    
+    document.getElementById('swap-btn').onclick = async () => {
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) return alert("Please log in first.");
+
+  const from = document.getElementById('swap-from').value;
+  const to = document.getElementById('swap-to').value;
+  const amount = parseFloat(document.getElementById('swap-amount').value);
+
+  if (!amount || amount <= 0) return alert("Enter a valid amount");
+
+  const res = await fetch(`https://sglcn-x20-api.glitch.me/swap`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from, to, amount, wallet })
+  });
+
+  const result = await res.json();
+  if (result.payloadURL) {
+    window.open(result.payloadURL, "_blank");
+  } else {
+    alert("Swap failed: " + result.message);
+  }
+};
+
 
 async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
   const res = await fetch('/swap', {

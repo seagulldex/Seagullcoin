@@ -4670,7 +4670,8 @@ app.post('/swap', async (req, res) => {
       }
     };
 
-    const { uuid } = await xumm.payload.create(payload);
+    const result = await xumm.payload.create(payload);
+
 
     res.json({
       success: true,

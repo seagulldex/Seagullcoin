@@ -4647,8 +4647,9 @@ app.post('/swap', async (req, res) => {
     const rate = await getMarketRate(from_currency, to_currency, issuers);
     const fromAmt = parseFloat(amount);
     const toAmt = from_currency === 'SeagullCoin'
-      ? (fromAmt * rate).toFixed(6)
-      : (fromAmt / rate).toFixed(6);
+     ? (fromAmt * rate)
+     : (fromAmt / rate);
+
 
     const takerGets = getCurrencyObj(from_currency, fromAmt, issuers);
     const takerPays = getCurrencyObj(to_currency, toAmt, issuers);
@@ -4670,8 +4671,7 @@ app.post('/swap', async (req, res) => {
       }
     };
 
-    const result = await xumm.payload.create(payload);
-
+    const { uuid, next, refs } = await xumm.payload.create(payload);
 
     res.json({
       success: true,
@@ -4686,15 +4686,7 @@ app.post('/swap', async (req, res) => {
         to: {
           currency: to_currency,
           amount: parseFloat(toAmt),
-          issuer: to_currency === 'XRP' ? null : (to_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : to_currency === 'XAU' ? issuers.XAU_ISSUER : null)
-        }
-      }
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message || 'Swap failed.' });
-  }
-});
+      
 
 
 

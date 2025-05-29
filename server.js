@@ -4674,20 +4674,30 @@ app.post('/swap', async (req, res) => {
     const { uuid, next, refs } = await xumm.payload.create(payload);
 
     res.json({
-      success: true,
-      uuid,
-      rate,
-      swap_details: {
-        from: {
-          currency: from_currency,
-          amount: fromAmt,
-          issuer: from_currency === 'XRP' ? null : (from_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : from_currency === 'XAU' ? issuers.XAU_ISSUER : null)
-        },
-        to: {
-          currency: to_currency,
-          amount: parseFloat(toAmt),
-      
+  success: true,
+  uuid,
+  next,
+  qr: refs.qr_png,
+  rate,
+  swap_details: {
+    from: {
+      currency: from_currency,
+      amount: fromAmt,
+      issuer: from_currency === 'XRP' ? null : (from_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
+    },
+    to: {
+      currency: to_currency,
+      amount: toAmt,
+      issuer: to_currency === 'XRP' ? null : (to_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
+    }
+  }
+});
 
+} catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Swap failed.' });
+  }
+});
 
 
 

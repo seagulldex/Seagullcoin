@@ -79,13 +79,6 @@
     <div><strong>SGLCN/XRP:</strong> <span id="price-value">Loading...</span></div>
     <div style="font-size: 0.9em; color: #ccc;"><strong>SGLCN/XAU:</strong> <span id="price-xau">Loading...</span></div>
   </div>
-    <div id="amm-info" style="padding: 1em; font-family: sans-serif;">
-  <h3>🔁 SCL ↔ XAU Liquidity Pool</h3>
-  <p id="price"></p>
-  <p id="inverse-price"></p>
-  <p id="liquidity"></p>
-  <p id="fee"></p>
-    </div>
 </div>
 
 
@@ -148,7 +141,14 @@
   </div>
   <div id="swap-result" style="margin-top: 20px; text-align: center; color: white;"></div>
     </div>
-
+     
+    <div id="amm-info" style="padding: 1em; font-family: sans-serif;">
+  <h3>🪙 SCL ↔ XAU Liquidity Pool</h3>
+  <p id="price"></p>
+  <p id="inverse-price"></p>
+  <p id="liquidity"></p>
+  <p id="fee"></p>
+    </div>
 
     <div id="orderbook">
       <div class="orderbook-header">Order Book</div>
@@ -568,6 +568,8 @@ createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
     setInterval(fetchLiveSGLCNXAUPrice,30000);            // Fetch XAU price
     setInterval(fetchLiveSGLCNPrice, 30000);
     setInterval(updateCurrentPrice, 30000);
+    fetchAMMInfo();
+    setInterval(fetchAMMInfo, 15000); // auto-refresh every 15 seconds
     loadChartData();
     loadOrderBook();
     updateWalletStatus();

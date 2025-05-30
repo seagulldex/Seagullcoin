@@ -4947,48 +4947,40 @@ app.get('/rate-preview', async (req, res) => {
   }
 });
 
-app.get('/ammprice/scl-xau', async (req, res) => {
-  const client = new Client('wss://s.altnet.rippletest.net:51233');
-  const AMM_ACCOUNT = 'r3o5Nhv13KxMSHyceLSEy5GoFEnUnJ92hk';
 
-  try {
-    await client.connect();
+app.get('/amm/view/scl-xau', async (req, res) => {
+  const client = new xrpl.Client("wss://s2.ripple.com");
+  try {
+    await client.connect();
 
-    const ammInfo = await client.request({
-      command: 'amm_info',
-      amm_account: AMM_ACCOUNT
-    });
+    const response = await client.request({
+      command: "amm_info",
+      amm: "r3o5Nhv13KxMSHyceLSEy5GoFEnUnJ92hk"
+    });
 
-    const { amount, amount2, trading_fee } = ammInfo.result;
+    const amm = response.result.amm;
+    const base = parseFloat(amm.amount.value);
+    const quote = parseFloat(amm.amount2.value);
 
-    const parse = (amt) => (typeof amt === 'string')
-      ? Number(amt) / 1e6
-      : Number(amt?.value || 0);
+    const price_SCL_per_XAU = quote / base;
+    const price_XAU_per_SCL = base / quote;
 
-    const base = parse(amount);
-    const quote = parse(amount2);
+    res.json({
+      amm: amm.account,
+      price_SCL_per_XAU: price_SCL_per_XAU.toFixed(6),
+      price_XAU_per_SCL: price_XAU_per_SCL.toFixed(10),
+      liquidity: {
+        base: base.toFixed(4),
+        quote: quote.toFixed(4)
+      },
+      trading_fee: amm.trading_fee + '%'
+    });
 
-    const price = quote / base;
-    const inverse = base / quote;
-
-    await client.disconnect();
-
-    res.json({
-      amm: AMM_ACCOUNT,
-      price_SCL_per_XAU: price.toFixed(8),
-      price_XAU_per_SCL: inverse.toFixed(8),
-      liquidity: {
-        base: base.toFixed(2),
-        quote: quote.toFixed(2)
-      },
-      trading_fee: `${Number(trading_fee) / 1000}%`
-    });
-
-  } catch (err) {
-    console.error('AMM info fetch failed:', err);
-    if (client.isConnected()) await client.disconnect();
-    res.status(500).json({ error: 'Failed to fetch AMM info' });
-  }
+    await client.disconnect();
+  } catch (e) {
+    console.error("AMM fetch failed:", e);
+    res.status(500).json({ error: "Failed to fetch AMM info" });
+  }
 });
 
 

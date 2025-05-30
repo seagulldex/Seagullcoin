@@ -4996,7 +4996,6 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
 
 // Helper to create a currency object
 function getCurrencyObj2(code, issuer, value) {
-  // Convert currency code to hex if not 3-letter ISO
   const hexCode = /^[A-Z0-9]{3}$/.test(code)
     ? code
     : Buffer.from(code, 'utf8').toString('hex').padEnd(40, '0').slice(0, 40);
@@ -5016,11 +5015,14 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
       return res.status(400).json({ error: 'Missing Account or Amount in request body' });
     }
 
-    const takerGets = getCurrencyObj2(
-      'SeagullCoin',
-      'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-      Amount
-    );
+    const amountValue = typeof Amount === 'object' && Amount.value ? Amount.value : Amount;
+
+    const takerGets = getCurrencyObj(
+    'SeagullCoin',
+    'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+     amountValue
+   );
+
 
     const takerPays = getCurrencyObj2(
       'XAU',
@@ -5050,11 +5052,9 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
     const result = await xumm.payload.create(payload);
 
     if (!result || !result.uuid || !result.next) {
-      console.error('XUMM payload creation failed:', result);
-      return res.status(500).json({ error: 'Failed to create XUMM payload' });
-    }
+      console.error
 
-    re
+
 
 
 

@@ -79,6 +79,12 @@
     <div><strong>SGLCN/XRP:</strong> <span id="price-value">Loading...</span></div>
     <div style="font-size: 0.9em; color: #ccc;"><strong>SGLCN/XAU:</strong> <span id="price-xau">Loading...</span></div>
   </div>
+    <div id="amm-info" style="padding: 1em; font-family: sans-serif;">
+  <h3>🔁 SCL ↔ XAU Liquidity Pool</h3>
+  <p id="price"></p>
+  <p id="inverse-price"></p>
+  <p id="liquidity"></p>
+  <p id
 </div>
 
 
@@ -141,14 +147,7 @@
   </div>
   <div id="swap-result" style="margin-top: 20px; text-align: center; color: white;"></div>
     </div>
-     
-    <div id="amm-info" style="padding: 1em; font-family: sans-serif;">
-  <h3>🪙 SCL ↔ XAU Liquidity Pool</h3>
-  <p id="price"></p>
-  <p id="inverse-price"></p>
-  <p id="liquidity"></p>
-  <p id="fee"></p>
-    </div>
+
 
     <div id="orderbook">
       <div class="orderbook-header">Order Book</div>
@@ -443,21 +442,27 @@
     alert("Swap failed: " + result.message);
   }
 };
-    
-    async function fetchAMMInfo() {
-    try {
-      const res = await fetch('/amm/view/scl-xau');
-      const data = await res.json();
 
-      document.getElementById('price').innerText = `1 XAU ≈ ${data.price_SCL_per_XAU} SCL`;
-      document.getElementById('inverse-price').innerText = `1 SCL ≈ ${data.price_XAU_per_SCL} XAU`;
-      document.getElementById('liquidity').innerText = `Liquidity: ${data.liquidity.base} XAU / ${data.liquidity.quote} SCL`;
-      document.getElementById('fee').innerText = `Trading Fee: ${data.trading_fee}`;
+async function loadAMMPrice() {
+    try {
+      const response = await fetch("/amm/view/scl-xau");
+      const data = await response.json();
+
+      document.getElementById("amm-info").innerHTML = `
+        <p><strong>AMM Account:</strong> ${data.amm}</p>
+        <p><strong>1 XAU =</strong> ${data.price_SCL_per_XAU} SCL</p>
+        <p><strong>1 SCL =</strong> ${data.price_XAU_per_SCL} XAU</p>
+        <p><strong>Liquidity (XAU):</strong> ${data.liquidity.base}</p>
+        <p><strong>Liquidity (SCL):</strong> ${data.liquidity.quote}</p>
+        <p><strong>Trading Fee:</strong> ${data.trading_fee}</p>
+      `;
     } catch (err) {
-      console.error("Error loading AMM info:", err);
-      document.getElementById('amm-info').innerText = "⚠️ Error loading AMM data";
+      document.getElementById("amm-info").innerText = "Error loading AMM info.";
+      console.error("Error fetching AMM data:", err);
     }
-    }
+  }
+
+  window.onload = loadAMMPrice;
 
 
 async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
@@ -568,11 +573,21 @@ createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
     setInterval(fetchLiveSGLCNXAUPrice,30000);            // Fetch XAU price
     setInterval(fetchLiveSGLCNPrice, 30000);
     setInterval(updateCurrentPrice, 30000);
-    fetchAMMInfo();
-    setInterval(fetchAMMInfo, 15000); // auto-refresh every 15 seconds
     loadChartData();
     loadOrderBook();
     updateWalletStatus();
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+  
+

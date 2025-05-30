@@ -4995,14 +4995,14 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
 
 
 
+
 // Helper to create a currency object
-function getCurrencyObjtwo(code, issuer, value) {
-  const isISO = /^[A-Z0-9]{3}$/.test(code);
-  const currency = isISO
+function getCurrencyObjs(code, issuer, value) {
+  const hexCode = /^[A-Z0-9]{3}$/.test(code)
     ? code
     : Buffer.from(code, 'utf8').toString('hex').padEnd(40, '0').slice(0, 40);
   return {
-    currency,
+    currency: hexCode,
     issuer,
     value: String(value),
   };
@@ -5018,8 +5018,51 @@ app.post('/swap/amm/dynamic', async (req, res) => {
       });
     }
 
-    const takerGetsObj = getCurrencyObjtwo(
-      TakerGets
+    const takerGetsObj = getCurrencyObjs(
+      TakerGets.currency,
+      TakerGets.issuer,
+      TakerGets.value
+    );
+
+    const takerPaysObj = getCurrencyObjs(
+      TakerPays.currency,
+      TakerPays.issuer,
+      TakerPays.value
+    );
+
+    const payload = {
+      txjson: {
+        TransactionType: 'OfferCreate',
+        Account: Account,
+        TakerGets: { ...takerGetsObj },
+        TakerPays: { ...takerPaysObj },
+        Flags: 0x00020000, // ImmediateOrCancel
+      },
+      options: {
+        submit: true,
+        return_url: {
+          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
+          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
+        },
+      },
+    };
+
+    console.log('XUMM Payload:', JSON.stringify(payload, null, 2));
+
+    const result = await xumm.payload.create(payload);
+
+    if (!result?.uuid || !result?.next?.always) {
+      console.error('XUMM payload creation failed:', result);
+      return res.status(500).json({ error: 'Failed to create XUMM payload', details: result });
+    }
+
+    return res.status(200).json({
+      uuid: result.uuid,
+      next: result.next.always,
+    });
+  } catch (error) {
+    console.error('Error during /swap/amm/dynamic:', error);
+    return res.status(500).json({ err
 
 
 

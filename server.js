@@ -4949,41 +4949,50 @@ app.get('/rate-preview', async (req, res) => {
 
 
 app.get('/amm/view/scl-xau', async (req, res) => {
-  const client = new Client("wss://s2.ripple.com"); // Use mainnet if needed
+  const client = new Client("wss://s2.ripple.com");
 
-  try {
-    await client.connect();
+  try {
+    await client.connect();
 
-    const { result } = await client.request({
-      command: "amm_info",
-      asset: {
-        currency: "XAU",
-        issuer: "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ"
-      },
-      asset2: {
-        currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
-        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-      }
-    });
+    const { result } = await client.request({
+      command: "amm_info",
+      asset: {
+        currency: "XAU",
+        issuer: "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ"
+      },
+      asset2: {
+        currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin (hex)
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+      }
+    });
 
-    const amm = result.amm;
-    const base = parseFloat(amm.amount?.value || "0");
-    const quote = parseFloat(amm.amount2?.value || "0");
+    const amm = result.amm;
+    const base = parseFloat(amm.amount?.value || "0");
+    const quote = parseFloat(amm.amount2?.value || "0");
 
-    const price_SCL_per_XAU = base > 0 ? quote / base : 0;
-    const price_XAU_per_SCL = quote > 0 ? base / quote : 0;
+    const price_SCL_per_XAU = base > 0 ? quote / base : 0;
+    const price_XAU_per_SCL = quote > 0 ? base / quote : 0;
 
-    await client.disconnect();
+    await client.disconnect();
 
-    res.json({
-      amm: amm.account,
-      price_SCL_per_XAU: price_SCL_per_XAU.toFixed(6),
-      price_XAU_per_SCL: price_XAU_per_SCL.toFixed(10),
-      liquidity: {
-        base: base.toFixed(4),
-        quote: quote.toFixed(4)
-      },
-      trading_fee: `$
+    res.json({
+      amm: amm.account,
+      price_SCL_per_XAU: price_SCL_per_XAU.toFixed(6),
+      price_XAU_per_SCL: price_XAU_per_SCL.toFixed(10),
+      liquidity: {
+        base: base.toFixed(4),
+        quote: quote.toFixed(4)
+      },
+      trading_fee: `${amm.trading_fee}%`
+    });
+
+  } catch (e) {
+    console.error("AMM info error:", e);
+    try { await client.disconnect(); } catch {}
+    res.status(500).json({ error: e?.data?.error_message || e?.message || "Unknown error" });
+  }
+});
+
 
 
 

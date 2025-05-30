@@ -79,6 +79,13 @@
     <div><strong>SGLCN/XRP:</strong> <span id="price-value">Loading...</span></div>
     <div style="font-size: 0.9em; color: #ccc;"><strong>SGLCN/XAU:</strong> <span id="price-xau">Loading...</span></div>
   </div>
+    <div id="amm-info" style="padding: 1em; font-family: sans-serif;">
+  <h3>🔁 SCL ↔ XAU Liquidity Pool</h3>
+  <p id="price"></p>
+  <p id="inverse-price"></p>
+  <p id="liquidity"></p>
+  <p id="fee"></p>
+    </div>
 </div>
 
 
@@ -436,6 +443,21 @@
     alert("Swap failed: " + result.message);
   }
 };
+    
+    async function fetchAMMInfo() {
+    try {
+      const res = await fetch('/amm/view/scl-xau');
+      const data = await res.json();
+
+      document.getElementById('price').innerText = `1 XAU ≈ ${data.price_SCL_per_XAU} SCL`;
+      document.getElementById('inverse-price').innerText = `1 SCL ≈ ${data.price_XAU_per_SCL} XAU`;
+      document.getElementById('liquidity').innerText = `Liquidity: ${data.liquidity.base} XAU / ${data.liquidity.quote} SCL`;
+      document.getElementById('fee').innerText = `Trading Fee: ${data.trading_fee}`;
+    } catch (err) {
+      console.error("Error loading AMM info:", err);
+      document.getElementById('amm-info').innerText = "⚠️ Error loading AMM data";
+    }
+    }
 
 
 async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {

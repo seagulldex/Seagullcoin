@@ -2,6 +2,11 @@
   "history": [
     {
       "sglcn_to_xau": "0.000002",
+      "xau_to_sglcn": "533330.31",
+      "timestamp": "2025-05-30T15:53:45.685Z"
+    },
+    {
+      "sglcn_to_xau": "0.000002",
       "xau_to_sglcn": "534612.70",
       "timestamp": "2025-05-30T06:26:27.151Z"
     },

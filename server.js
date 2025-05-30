@@ -4981,7 +4981,7 @@ app.get('/amm/view/scl-xau', async (req, res) => {
     console.error("AMM fetch failed:", e);
     res.status(500).json({ error: "Failed to fetch AMM info" });
   }
-});
+})
 
 
 

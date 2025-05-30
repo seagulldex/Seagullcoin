@@ -79,8 +79,18 @@
     <div><strong>SGLCN/XRP:</strong> <span id="price-value">Loading...</span></div>
     <div style="font-size: 0.9em; color: #ccc;"><strong>SGLCN/XAU:</strong> <span id="price-xau">Loading...</span></div>
   </div>
-</div>
+    
+    </div>
+  <h2>Swap SeagullCoin (SGLCN) → Gold (XAU)</h2>
 
+  <label for="sglcnAmount">Amount to swap:</label><br>
+  <input type="number" id="sglcnAmount" placeholder="e.g., 1000"><br><br>
+
+  <button onclick="swapNow()">Swap</button>
+
+  <p id="swap-status"></p>
+    <div>
+    </div>
 
 
     <h2>Price Chart SGLCN/XRP:XAU</h2>
@@ -142,13 +152,6 @@
   <div id="swap-result" style="margin-top: 20px; text-align: center; color: white;"></div>
     </div>
 
-    <div>
-  <label for="sclAmount">Enter SCL amount to swap for XAU:</label><br>
-  <input type="number" id="sclAmount" placeholder="e.g., 1000"><br><br>
-  <button onclick="swapNow()">Swap SCL → XAU</button>
-
-  <p id="swap-status"></p>
-    </div>
 
     <div id="orderbook">
       <div class="orderbook-header">Order Book</div>
@@ -444,38 +447,20 @@
   }
 };
 
-  async function loadAMMPrice() {
-    try {
-      const response = await fetch("/amm/view/scl-xau");
-      const data = await response.json();
-
-      document.getElementById("amm-info").innerHTML = `
-        <p><strong>1 XAU =</strong> ${data.price_SCL_per_XAU} SCL</p>
-        <p><strong>1 SCL =</strong> ${data.price_XAU_per_SCL} XAU</p>
-        <p><strong>Liquidity (XAU):</strong> ${data.liquidity.base}</p>
-        <p><strong>Liquidity (SCL):</strong> ${data.liquidity.quote}</p>
-        <p><strong>Trading Fee:</strong> ${data.trading_fee}</p>
-      `;
-    } catch (err) {
-      document.getElementById("amm-info").innerText = "Error loading AMM info.";
-      console.error("Error fetching AMM data:", err);
-    }
-  }
-
-  async function swapNow() {
-    const sclAmount = document.getElementById("sclAmount").value;
-    if (!sclAmount || isNaN(sclAmount) || parseFloat(sclAmount) <= 0) {
-      document.getElementById("swap-status").innerText = "Enter a valid SCL amount.";
+async function swapNow() {
+    const sglcnAmount = document.getElementById("sglcnAmount").value;
+    if (!sglcnAmount || isNaN(sglcnAmount) || parseFloat(sglcnAmount) <= 0) {
+      document.getElementById("swap-status").innerText = "Enter a valid SeagullCoin amount.";
       return;
     }
 
     document.getElementById("swap-status").innerText = "Swapping... please wait.";
 
     try {
-      const res = await fetch("/amm/swap", {
+      const res = await fetch("/swap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: sclAmount })
+        body: JSON.stringify({ amount: sglcnAmount })
       });
 
       const data = await res.json();
@@ -490,9 +475,7 @@
     }
   }
 
-  window.onload = l
-
-
+    
 async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
   const res = await fetch('/swap', {
     method: 'POST',
@@ -617,5 +600,4 @@ createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
 
 
 
-  
 

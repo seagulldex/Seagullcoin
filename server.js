@@ -4993,102 +4993,78 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
   }
 });
 
-app.post('/swap/amm/sglcn-xau', async (req, res) => {
-  const { from_currency, to_currency, amount, wallet_address } = req.body;
 
-  if (!from_currency || !to_currency || !amount || !wallet_address) {
-    return res.status(400).json({ error: 'Missing required fields.' });
-  }
+// Helper to create a currency object
+function getCurrencyObj2(code, issuer, value) {
+  // Convert currency code to hex if not 3-letter ISO
+  const hexCode = /^[A-Z0-9]{3}$/.test(code)
+    ? code
+    : Buffer.from(code, 'utf8').toString('hex').padEnd(40, '0').slice(0, 40);
+  return {
+    currency: hexCode,
+    issuer,
+    value: String(value),
+  };
+}
 
-  if (from_currency === to_currency) {
-    return res.status(400).json({ error: 'Currencies must differ.' });
-  }
-
-  const validCurrencies = ['SeagullCoin', 'XAU'];
-  if (!validCurrencies.includes(from_currency) || !validCurrencies.includes(to_currency)) {
-    return res.status(400).json({ error: 'Only SeagullCoin and XAU swaps supported in this endpoint.' });
-  }
-
-  const client = new Client("wss://s2.ripple.com");
+router.post('/swap/amm/sglcn-xau', async (req, res) => {
   try {
-    await client.connect();
+    const { Account, Amount } = req.body;
+    console.log('Received swap request:', { Account, Amount });
 
-    // Fetch current AMM pool info
-    const { result } = await client.request({
-      command: "amm_info",
-      asset: {
-        currency: from_currency === 'SeagullCoin' ? "53656167756C6C436F696E000000000000000000" : "XAU",
-        issuer: from_currency === 'SeagullCoin' ? "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno" : "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ"
+    if (!Account || !Amount) {
+      return res.status(400).json({ error: 'Missing Account or Amount in request body' });
+    }
+
+    const takerGets = getCurrencyObj2(
+      'SeagullCoin',
+      'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+      Amount
+    );
+
+    const takerPays = getCurrencyObj2(
+      'XAU',
+      'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
+      0.003
+    );
+
+    const payload = {
+      txjson: {
+        TransactionType: 'OfferCreate',
+        Account,
+        TakerGets: takerGets,
+        TakerPays: takerPays,
+        Flags: 0x00020000, // ImmediateOrCancel
       },
-      asset2: {
-        currency: to_currency === 'SeagullCoin' ? "53656167756C6C436F696E000000000000000000" : "XAU",
-        issuer: to_currency === 'SeagullCoin' ? "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno" : "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ"
-      }
+      options: {
+        submit: true,
+        return_url: {
+          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
+          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
+        },
+      },
+    };
+
+    console.log('Sending XUMM payload:', JSON.stringify(payload, null, 2));
+
+    const result = await xumm.payload.create(payload);
+
+    if (!result || !result.uuid || !result.next) {
+      console.error('XUMM payload creation failed:', result);
+      return res.status(500).json({ error: 'Failed to create XUMM payload' });
+    }
+
+    return res.status(200).json({
+      uuid: result.uuid,
+      next: result.next.always,
     });
+  } catch (error) {
+    console.error('Error during /swap/amm/sglcn-xau:', error);
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
 
-    const amm = result.amm;
-
-    // Parse pool balances as floats
-    const poolBase = parseFloat(amm.amount.value);
-    const poolQuote = parseFloat(amm.amount2.value);
-
-    // Define which side is base/quote based on from_currency
-    // We want consistent base = from_currency amount in pool, quote = to_currency amount
-    let base, quote;
-    if (from_currency === amm.amount.currency) {
-      base = poolBase;
-      quote = poolQuote;
-    } else {
-      // If reversed, swap them
-      base = poolQuote;
-      quote = poolBase;
-    }
-
-    const x = base;
-    const y = quote;
-    const k = x * y;
-
-    const inputAmount = parseFloat(amount);
-
-    // Calculate output amount with AMM formula and 0.3% fee deducted from input
-    const feeRate = 0.003;
-    const inputAfterFee = inputAmount * (1 - feeRate);
-    const newX = x + inputAfterFee;
-    const newY = k / newX;
-    const outputAmount = y - newY;
-
-    if (outputAmount <= 0) {
-      await client.disconnect();
-      return res.status(400).json({ error: 'Swap amount too small or pool insufficient liquidity.' });
-    }
-
-    // Construct the takerGets (what you send) and takerPays (what you receive)
-    // Based on the pool asset order in the AMM, and from/to currencies
-    let takerGets, takerPays;
-    if (from_currency === amm.amount.currency) {
-      // From is amount, to is amount2
-      takerGets = {
-        currency: amm.amount.currency,
-        issuer: amm.amount.issuer,
-        value: inputAmount.toFixed(16)
-      };
-      takerPays = {
-        currency: amm.amount2.currency,
-        issuer: amm.amount2.issuer,
-        value: outputAmount.toFixed(16)
-      };
-    } else {
-      // Reversed
-      takerGets = {
-        currency: amm.amount2.currency,
-        issuer: amm.amount2.issuer,
-        value: inputAmount.toFixed(16)
-      };
-      takerPays = {
-        currency: amm.amount.currency,
-        issuer: amm.amount.issuer,
-        val
-
+export default router;
 
 
 

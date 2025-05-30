@@ -4363,7 +4363,7 @@ app.post('/orderbook/scl-xau', async (req, res) => {
         ledger_index: "current"
       };
 
-      const client = new xrpl.Client("wss://s1.ripple.com"); // or your preferred endpoint
+      const client = new xrpl.Client("wss://s2.ripple.com"); // or your preferred endpoint
       await client.connect();
       const orderbook = await client.request(orderbookRequest);
       await client.disconnect();
@@ -4405,41 +4405,135 @@ app.post('/orderbook/scl-xau', async (req, res) => {
 });
 
 app.get('/orderbook/view/scl-xau', async (req, res) => {
-  const { rippleApi } = require('xrpl');
-  const api = new rippleApi.Client('wss://s1.ripple.com'); // Change to mainnet if needed
-  await api.connect();
+  const client = new Client('wss://s1.ripple.com'); // Use mainnet URL if deploying to production
 
-  try {
-    const SCL = {
-      currency: 'SeagullCoin',
-      issuer: issuers.SGLCN_ISSUER
-    };
+  const withTimeout = (promise, ms) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('XRPL timeout')), ms)),
+    ]);
 
-    const XAU = {
-      currency: 'XAU',
-      issuer: issuers.XAU_ISSUER
-    };
+  const TIMEOUT_CONNECT = 4000;
+  const TIMEOUT_REQUEST = 10000;
 
-    // Fetch both directions
-    const [sclToXau, xauToScl] = await Promise.all([
-      api.getOrderbook(issuers.SGLCN_WALLET, { currency: XAU.currency, issuer: XAU.issuer }),
-      api.getOrderbook(issuers.XAU_WALLET, { currency: SCL.currency, issuer: SCL.issuer })
-    ]);
+  const SCL = {
+    currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (hex)
+    issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+  };
 
-    res.json({
-      success: true,
-      orderbook: {
-        sell_SCL_buy_XAU: sclToXau.asks,
-        sell_XAU_buy_SCL: xauToScl.asks
-      }
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch orderbook.' });
-  } finally {
-    api.disconnect();
-  }
+  const XAU = {
+    currency: 'XAU',
+    issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
+  };
+
+  try {
+    await withTimeout(client.connect(), TIMEOUT_CONNECT);
+
+    const [sclToXauRes, xauToSclRes] = await Promise.all([
+      withTimeout(client.request({
+        command: 'book_offers',
+        taker_gets: SCL,
+        taker_pays: XAU,
+        limit: 100
+      }), TIMEOUT_REQUEST),
+      withTimeout(client.request({
+        command: 'book_offers',
+        taker_gets: XAU,
+        taker_pays: SCL,
+        limit: 100
+      }), TIMEOUT_REQUEST)
+    ]);
+
+    const parseAmount = (amt) => {
+      if (typeof amt === 'string') return Number(amt) / 1e6;
+      if (amt?.value) return Number(amt.value);
+      return 0;
+    };
+
+    const parseOffer = (offer) => {
+      const get = offer.TakerGets;
+      const pay = offer.TakerPays;
+
+      const getsValue = parseAmount(get);
+      const paysValue = parseAmount(pay);
+
+      let price, amount;
+
+      if (typeof get === 'object' && typeof pay === 'object') {
+        price = paysValue / getsValue;
+        amount = getsValue;
+      } else {
+        return null; // skip XRP-based offers
+      }
+
+      if (!Number.isFinite(price) || !Number.isFinite(amount)) return null;
+
+      return {
+        price: Number(price.toFixed(8)),
+        amount: Number(amount.toFixed(2)),
+        offerAccount: offer.Account
+      };
+    };
+
+    const asksRaw = (sclToXauRes.result.offers || []).map(parseOffer).filter(Boolean);
+    const bidsRaw = (xauToSclRes.result.offers || []).map(parseOffer).filter(Boolean);
+
+    const aggregateOffers = (offers, isAsc) => {
+      const grouped = offers.reduce((acc, { price, amount }) => {
+        const key = price.toFixed(7);
+        acc[key] = (acc[key] || 0) + amount;
+        return acc;
+      }, {});
+
+      let cumSum = 0;
+      const result = Object.entries(grouped).map(([price, amount]) => {
+        const p = parseFloat(price);
+        const a = amount;
+        const value = p * a;
+        cumSum += a;
+        return { price: p, amount: a, value, cumSum };
+      });
+
+      result.sort((a, b) => (isAsc ? a.price - b.price : b.price - a.price));
+      return result;
+    };
+
+    const bids = aggregateOffers(bidsRaw, false);
+    const asks = aggregateOffers(asksRaw, true);
+
+    const highestBidPrice = bids.length ? bids[0].price : null;
+    const lowestAskPrice = asks.length ? asks[0].price : null;
+
+    const spread =
+      highestBidPrice !== null && lowestAskPrice !== null
+        ? Number((lowestAskPrice - highestBidPrice).toFixed(7))
+        : null;
+
+    const lastTradedPrice =
+      highestBidPrice && lowestAskPrice
+        ? Number(((highestBidPrice + lowestAskPrice) / 2).toFixed(7))
+        : 0;
+
+    await client.disconnect();
+
+    res.json({
+      bids,
+      asks,
+      summary: {
+        spread,
+        highestBidPrice,
+        lowestAskPrice,
+        lastTradedPrice
+      }
+    });
+
+  } catch (error) {
+    console.error('Orderbook fetch failed:', error.message || error);
+    if (client.isConnected()) await client.disconnect();
+    res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
+  }
 });
+
 
 
 

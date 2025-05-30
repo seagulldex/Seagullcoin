@@ -5015,13 +5015,16 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
       return res.status(400).json({ error: 'Missing Account or Amount in request body' });
     }
 
-    const amountValue = typeof Amount === 'object' && Amount.value ? Amount.value : Amount;
+    // Extract numeric/string value from Amount if it is an object
+    const amountValue = (typeof Amount === 'object' && Amount.value) ? Amount.value : Amount;
 
-    const takerGets = getCurrencyObj(
-    'SeagullCoin',
-    'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-     amountValue
-   );
+    console.log('Using amount value:', amountValue);
+
+    const takerGets = getCurrencyObj2(
+  'SeagullCoin',
+  'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+  typeof Amount === 'object' ? Amount.value : Amount
+);
 
 
     const takerPays = getCurrencyObj2(
@@ -5052,7 +5055,20 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
     const result = await xumm.payload.create(payload);
 
     if (!result || !result.uuid || !result.next) {
-      console.error
+      console.error('XUMM payload creation failed:', result);
+      return res.status(500).json({ error: 'Failed to create XUMM payload' });
+    }
+
+    return res.status(200).json({
+      uuid: result.uuid,
+      next: result.next.always,
+    });
+  } catch (error) {
+    console.error('Error during /swap/amm/sglcn-xau:', error);
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
 
 
 

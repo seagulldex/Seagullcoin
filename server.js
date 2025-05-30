@@ -5006,40 +5006,35 @@ function getCurrencyObj2(code, issuer, value) {
   };
 }
 
-app.post('/swap/amm/sglcn-xau', async (req, res) => {
+app.post('/swap/amm/dynamic', async (req, res) => {
   try {
-    const { Account, Amount } = req.body;
-    console.log('Received swap request:', { Account, Amount });
+    const { Account, TakerGets, TakerPays } = req.body;
 
-    if (!Account || !Amount) {
-      return res.status(400).json({ error: 'Missing Account or Amount in request body' });
+    if (!Account || !TakerGets || !TakerPays) {
+      return res.status(400).json({
+        error: 'Missing required fields: Account, TakerGets, TakerPays',
+      });
     }
 
-    // Extract numeric/string value from Amount if it is an object
-    const amountValue = (typeof Amount === 'object' && Amount.value) ? Amount.value : Amount;
+    // Extract and sanitize values
+    const takerGetsObj = getCurrencyObj2(
+      TakerGets.currency,
+      TakerGets.issuer,
+      TakerGets.value
+    );
 
-    console.log('Using amount value:', amountValue);
-
-    const takerGets = getCurrencyObj2(
-  'SeagullCoin',
-  'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-  typeof Amount === 'object' ? Amount.value : Amount
-);
-
-
-    const takerPays = getCurrencyObj(
-  'XAU',
-  'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
-  typeof Amount2 === 'object' ? Amount2.value : Amount2
-);
-
+    const takerPaysObj = getCurrencyObj2(
+      TakerPays.currency,
+      TakerPays.issuer,
+      TakerPays.value
+    );
 
     const payload = {
       txjson: {
         TransactionType: 'OfferCreate',
         Account,
-        TakerGets: takerGets,
-        TakerPays: takerPays,
+        TakerGets: takerGetsObj,
+        TakerPays: takerPaysObj,
         Flags: 0x00020000, // ImmediateOrCancel
       },
       options: {
@@ -5051,7 +5046,22 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
       },
     };
 
-    console.log('Sending XUMM payload:', JSON
+    const result = await xumm.payload.create(payload);
+
+    if (!result?.uuid || !result?.next?.always) {
+      console.error('XUMM payload creation failed:', result);
+      return res.status(500).json({ error: 'Failed to create XUMM payload' });
+    }
+
+    return res.status(200).json({
+      uuid: result.uuid,
+      next: result.next.always,
+    });
+  } catch (error) {
+    console.error('Error during /swap/amm/dynamic:', error);
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
 
 
 

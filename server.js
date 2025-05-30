@@ -4993,6 +4993,63 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
   }
 });
 
+app.post('/swap/amm/sglcn-xau', async (req, res) => {
+  try {
+    const { Account, Amount } = req.body;
+
+    if (!Account || !Amount) {
+      return res.status(400).json({ error: 'Missing Account or Amount in request body' });
+    }
+
+    const value = typeof Amount === 'object' && Amount.value ? Amount.value : Amount;
+
+    const asset1 = {
+      currency: '53656167756C6C436F696E000000000000000000',
+      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+    };
+
+    const asset2 = {
+      currency: '5841550000000000000000000000000000000000',
+      issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
+    };
+
+    const payload = {
+      txjson: {
+        TransactionType: 'AMMDeposit',
+        Account,
+        Asset: asset1,
+        Asset2: asset2,
+        Amount: String(value), // amount of SeagullCoin to deposit
+        Flags: 0x00080000 // lp_token not specified, default
+      },
+      options: {
+        submit: true,
+        return_url: {
+          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
+          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
+        },
+      },
+    };
+
+    const result = await xumm.payload.create(payload);
+
+    if (!result?.uuid || !result?.next?.always) {
+      console.error('XUMM payload creation failed:', result);
+      return res.status(500).json({ error: 'Failed to create XUMM payload' });
+    }
+
+    return res.status(200).json({
+      uuid: result.uuid,
+      next: result.next.always,
+    });
+
+  } catch (error) {
+    console.error('AMM swap error:', error);
+    return res.status(500).json({ error: 'Internal error', details: error.message });
+  }
+});
+
+
 
 
 // Call the XRPL ping when the server starts

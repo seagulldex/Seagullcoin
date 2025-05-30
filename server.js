@@ -4983,15 +4983,7 @@ app.get('/amm/view/scl-xau', async (req, res) => {
         base: base.toFixed(4),
         quote: quote.toFixed(4)
       },
-      trading_fee: `${amm.trading_fee}%`
-    });
-
-  } catch (e) {
-    console.error("AMM info error:", e);
-    try { await client.disconnect(); } catch {}
-    res.status(500).json({ error: e?.data?.error_message || e?.message || "Unknown error" });
-  }
-});
+      trading_fee: `$
 
 
 

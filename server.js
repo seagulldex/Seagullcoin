@@ -5027,11 +5027,12 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
 );
 
 
-    const takerPays = getCurrencyObj2(
-      'XAU',
-      'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
-      0.003
-    );
+    const takerPays = getCurrencyObj(
+  'XAU',
+  'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
+  typeof Amount2 === 'object' ? Amount2.value : Amount2
+);
+
 
     const payload = {
       txjson: {
@@ -5050,24 +5051,7 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
       },
     };
 
-    console.log('Sending XUMM payload:', JSON.stringify(payload, null, 2));
-
-    const result = await xumm.payload.create(payload);
-
-    if (!result || !result.uuid || !result.next) {
-      console.error('XUMM payload creation failed:', result);
-      return res.status(500).json({ error: 'Failed to create XUMM payload' });
-    }
-
-    return res.status(200).json({
-      uuid: result.uuid,
-      next: result.next.always,
-    });
-  } catch (error) {
-    console.error('Error during /swap/amm/sglcn-xau:', error);
-    return res.status(500).json({ error: 'Internal server error', details: error.message });
-  }
-});
+    console.log('Sending XUMM payload:', JSON
 
 
 

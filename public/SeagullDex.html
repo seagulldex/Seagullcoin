@@ -79,12 +79,6 @@
     <div><strong>SGLCN/XRP:</strong> <span id="price-value">Loading...</span></div>
     <div style="font-size: 0.9em; color: #ccc;"><strong>SGLCN/XAU:</strong> <span id="price-xau">Loading...</span></div>
   </div>
-    <div id="amm-info" style="padding: 1em; font-family: sans-serif;">
-  <h3>🔁 SCL ↔ XAU Liquidity Pool</h3>
-  <p id="price"></p>
-  <p id="inverse-price"></p>
-  <p id="liquidity"></p>
-  <p id
 </div>
 
 
@@ -147,6 +141,10 @@
   </div>
   <div id="swap-result" style="margin-top: 20px; text-align: center; color: white;"></div>
     </div>
+
+    <div id="amm-info">
+  Loading AMM info...
+</div>
 
 
     <div id="orderbook">
@@ -443,13 +441,12 @@
   }
 };
 
-async function loadAMMPrice() {
+  async function loadAMMPrice() {
     try {
       const response = await fetch("/amm/view/scl-xau");
       const data = await response.json();
 
       document.getElementById("amm-info").innerHTML = `
-        <p><strong>AMM Account:</strong> ${data.amm}</p>
         <p><strong>1 XAU =</strong> ${data.price_SCL_per_XAU} SCL</p>
         <p><strong>1 SCL =</strong> ${data.price_XAU_per_SCL} XAU</p>
         <p><strong>Liquidity (XAU):</strong> ${data.liquidity.base}</p>
@@ -462,7 +459,35 @@ async function loadAMMPrice() {
     }
   }
 
-  window.onload = loadAMMPrice;
+  async function swapNow() {
+    const sclAmount = document.getElementById("sclAmount").value;
+    if (!sclAmount || isNaN(sclAmount) || parseFloat(sclAmount) <= 0) {
+      document.getElementById("swap-status").innerText = "Enter a valid SCL amount.";
+      return;
+    }
+
+    document.getElementById("swap-status").innerText = "Swapping... please wait.";
+
+    try {
+      const res = await fetch("/amm/swap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: sclAmount })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById("swap-status").innerText = `Swap complete! TX hash: ${data.txHash}`;
+      } else {
+        document.getElementById("swap-status").innerText = `Swap failed: ${data.error || "Unknown error"}`;
+      }
+    } catch (err) {
+      document.getElementById("swap-status").innerText = "Swap failed (network error).";
+      console.error("Swap error:", err);
+    }
+  }
+
+  window.onload = l
 
 
 async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {

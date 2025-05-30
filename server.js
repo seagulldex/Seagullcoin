@@ -4948,7 +4948,7 @@ app.get('/rate-preview', async (req, res) => {
 });
 
 
-app.get('/amm/view/scl-xau', async (req, res) => {
+app.get('/amm/view/sglcn-xau', async (req, res) => {
   const client = new Client("wss://s2.ripple.com");
 
   try {
@@ -4970,15 +4970,15 @@ app.get('/amm/view/scl-xau', async (req, res) => {
     const base = parseFloat(amm.amount?.value || "0");
     const quote = parseFloat(amm.amount2?.value || "0");
 
-    const price_SCL_per_XAU = base > 0 ? quote / base : 0;
-    const price_XAU_per_SCL = quote > 0 ? base / quote : 0;
+    const price_SGLCN_per_XAU = base > 0 ? quote / base : 0;
+    const price_XAU_per_SGLCN = quote > 0 ? base / quote : 0;
 
     await client.disconnect();
 
     res.json({
       amm: amm.account,
-      price_SCL_per_XAU: price_SCL_per_XAU.toFixed(6),
-      price_XAU_per_SCL: price_XAU_per_SCL.toFixed(10),
+      price_SGLCN_per_XAU: price_SGLCN_per_XAU.toFixed(6),
+      price_XAU_per_SGLCN: price_XAU_per_SGLCN.toFixed(10),
       liquidity: {
         base: base.toFixed(4),
         quote: quote.toFixed(4)

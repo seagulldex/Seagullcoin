@@ -4337,7 +4337,7 @@ app.get('/api/sglcn-xrp', (req, res) => {
 });
 
 app.post('/orderbook/scl-xau', async (req, res) => {
-  const { side, amount, rate, wallet_address } = req.body;
+  const { side, amount, rate, wallet_address, mode = 'passive' } = req.body;
 
   if (!side || !['buy', 'sell'].includes(side) || !amount || !rate || !wallet_address) {
     return res.status(400).json({ error: 'Missing or invalid parameters.' });
@@ -4351,13 +4351,40 @@ app.post('/orderbook/scl-xau', async (req, res) => {
     ? getCurrencyObj('SeagullCoin', amount * rate, issuers)
     : getCurrencyObj('XAU', amount * rate, issuers);
 
+  const Flags = mode === 'ioc' ? 0x00020000 : 0x00000000; // tfImmediateOrCancel or none
+
+  // If mode is "ioc", check if liquidity exists before proceeding
+  if (mode === 'ioc') {
+    try {
+      const orderbookRequest = {
+        command: "book_offers",
+        taker_gets: takerGets,
+        taker_pays: takerPays,
+        ledger_index: "current"
+      };
+
+      const client = new xrpl.Client("wss://s1.ripple.com"); // or your preferred endpoint
+      await client.connect();
+      const orderbook = await client.request(orderbookRequest);
+      await client.disconnect();
+
+      const offers = orderbook.result.offers;
+      if (!offers || offers.length === 0) {
+        return res.status(400).json({ error: 'No matching offers available for immediate swap (liquidity too low).' });
+      }
+    } catch (err) {
+      console.error('Orderbook check failed:', err);
+      return res.status(500).json({ error: 'Failed to check orderbook liquidity.' });
+    }
+  }
+
   const payload = {
     txjson: {
       TransactionType: 'OfferCreate',
       Account: wallet_address,
       TakerGets: takerGets,
       TakerPays: takerPays,
-      Flags: 0x00020000 // tfImmediateOrCancel
+      Flags
     },
     options: {
       submit: true,
@@ -4372,10 +4399,11 @@ app.post('/orderbook/scl-xau', async (req, res) => {
     const { uuid, next } = await xumm.payload.create(payload);
     res.json({ success: true, uuid, next });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Failed to seed orderbook' });
+    console.error('XUMM Payload creation failed:', e);
+    res.status(500).json({ error: 'Failed to submit offer to orderbook.' });
   }
 });
+
 
 
 

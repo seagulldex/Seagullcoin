@@ -5019,50 +5019,7 @@ app.post('/swap/amm/dynamic', async (req, res) => {
     }
 
     const takerGetsObj = getCurrencyObjtwo(
-      TakerGets.currency,
-      TakerGets.issuer,
-      TakerGets.value
-    );
-
-    const takerPaysObj = getCurrencyObjtwo(
-      TakerPays.currency,
-      TakerPays.issuer,
-      TakerPays.value
-    );
-
-    const payload = {
-      txjson: {
-        TransactionType: 'OfferCreate',
-        Account,
-        TakerGets: takerGetsObj,
-        TakerPays: takerPaysObj,
-        Flags: 0x00020000, // tfImmediateOrCancel
-      },
-      options: {
-        submit: true,
-        return_url: {
-          app: 'https://yourapp.com/return',
-          web: 'https://yourapp.com/return',
-        },
-      },
-    };
-
-    const result = await xumm.payload.create(payload);
-
-    if (!result?.uuid || !result?.next?.always) {
-      console.error('XUMM payload creation failed:', result);
-      return res.status(500).json({ error: 'Failed to create XUMM payload' });
-    }
-
-    return res.status(200).json({
-      uuid: result.uuid,
-      next: result.next.always,
-    });
-  } catch (error) {
-    console.error('Error during /swap/amm/dynamic:', error);
-    return res.status(500).json({ error: 'Internal server error', details: error.message });
-  }
-});
+      TakerGets
 
 
 

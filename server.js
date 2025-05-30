@@ -4336,6 +4336,44 @@ app.get('/api/sglcn-xrp', (req, res) => {
   }
 });
 
+app.post('/orderbook/scl-xau', async (req, res) => {
+  const { side, amount, rate, wallet_address } = req.body;
+  // side = "buy" (XAU -> SCL) or "sell" (SCL -> XAU)
+
+  const takerGets = side === "buy"
+    ? getCurrencyObj("XAU", amount, issuers)
+    : getCurrencyObj("SeagullCoin", amount, issuers);
+
+  const takerPays = side === "buy"
+    ? getCurrencyObj("SeagullCoin", amount * rate, issuers)
+    : getCurrencyObj("XAU", amount * rate, issuers);
+
+  const payload = {
+    txjson: {
+      TransactionType: 'OfferCreate',
+      Account: wallet_address,
+      TakerGets: takerGets,
+      TakerPays: takerPays,
+      Flags: 0x00020000 // tfImmediateOrCancel
+    },
+    options: {
+      submit: true,
+      return_url: {
+        app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
+        web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html'
+      }
+    }
+  };
+
+  try {
+    const { uuid, next } = await xumm.payload.create(payload);
+    res.json({ success: true, uuid, next });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to seed orderbook' });
+  }
+});
+
 
 
 app.get('/api/orderbook', async (req, res) => {

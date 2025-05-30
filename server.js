@@ -4404,6 +4404,42 @@ app.post('/orderbook/scl-xau', async (req, res) => {
   }
 });
 
+app.get('/orderbook/view/scl-xau', async (req, res) => {
+  const { rippleApi } = require('xrpl');
+  const api = new rippleApi.Client('wss://s1.ripple.com'); // Change to mainnet if needed
+  await api.connect();
+
+  try {
+    const SCL = {
+      currency: 'SeagullCoin',
+      issuer: issuers.SGLCN_ISSUER
+    };
+
+    const XAU = {
+      currency: 'XAU',
+      issuer: issuers.XAU_ISSUER
+    };
+
+    // Fetch both directions
+    const [sclToXau, xauToScl] = await Promise.all([
+      api.getOrderbook(issuers.SGLCN_WALLET, { currency: XAU.currency, issuer: XAU.issuer }),
+      api.getOrderbook(issuers.XAU_WALLET, { currency: SCL.currency, issuer: SCL.issuer })
+    ]);
+
+    res.json({
+      success: true,
+      orderbook: {
+        sell_SCL_buy_XAU: sclToXau.asks,
+        sell_XAU_buy_SCL: xauToScl.asks
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch orderbook.' });
+  } finally {
+    api.disconnect();
+  }
+});
 
 
 

@@ -142,10 +142,13 @@
   <div id="swap-result" style="margin-top: 20px; text-align: center; color: white;"></div>
     </div>
 
-    <div id="amm-info">
-  Loading AMM info...
-</div>
+    <div>
+  <label for="sclAmount">Enter SCL amount to swap for XAU:</label><br>
+  <input type="number" id="sclAmount" placeholder="e.g., 1000"><br><br>
+  <button onclick="swapNow()">Swap SCL → XAU</button>
 
+  <p id="swap-status"></p>
+    </div>
 
     <div id="orderbook">
       <div class="orderbook-header">Order Book</div>

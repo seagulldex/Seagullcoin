@@ -5007,7 +5007,7 @@ function getCurrencyObj2(code, issuer, value) {
   };
 }
 
-router.post('/swap/amm/sglcn-xau', async (req, res) => {
+app.post('/swap/amm/sglcn-xau', async (req, res) => {
   try {
     const { Account, Amount } = req.body;
     console.log('Received swap request:', { Account, Amount });
@@ -5054,17 +5054,7 @@ router.post('/swap/amm/sglcn-xau', async (req, res) => {
       return res.status(500).json({ error: 'Failed to create XUMM payload' });
     }
 
-    return res.status(200).json({
-      uuid: result.uuid,
-      next: result.next.always,
-    });
-  } catch (error) {
-    console.error('Error during /swap/amm/sglcn-xau:', error);
-    return res.status(500).json({ error: 'Internal server error', details: error.message });
-  }
-});
-
-export default router;
+    re
 
 
 

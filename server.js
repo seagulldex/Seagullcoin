@@ -4994,13 +4994,15 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
 });
 
 
+
 // Helper to create a currency object
-function getCurrencyObj2(code, issuer, value) {
-  const hexCode = /^[A-Z0-9]{3}$/.test(code)
+function getCurrencyObjtwo(code, issuer, value) {
+  const isISO = /^[A-Z0-9]{3}$/.test(code);
+  const currency = isISO
     ? code
     : Buffer.from(code, 'utf8').toString('hex').padEnd(40, '0').slice(0, 40);
   return {
-    currency: hexCode,
+    currency,
     issuer,
     value: String(value),
   };
@@ -5016,14 +5018,13 @@ app.post('/swap/amm/dynamic', async (req, res) => {
       });
     }
 
-    // Extract and sanitize values
-    const takerGetsObj = getCurrencyObj2(
+    const takerGetsObj = getCurrencyObjtwo(
       TakerGets.currency,
       TakerGets.issuer,
       TakerGets.value
     );
 
-    const takerPaysObj = getCurrencyObj2(
+    const takerPaysObj = getCurrencyObjtwo(
       TakerPays.currency,
       TakerPays.issuer,
       TakerPays.value
@@ -5035,13 +5036,13 @@ app.post('/swap/amm/dynamic', async (req, res) => {
         Account,
         TakerGets: takerGetsObj,
         TakerPays: takerPaysObj,
-        Flags: 0x00020000, // ImmediateOrCancel
+        Flags: 0x00020000, // tfImmediateOrCancel
       },
       options: {
         submit: true,
         return_url: {
-          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
+          app: 'https://yourapp.com/return',
+          web: 'https://yourapp.com/return',
         },
       },
     };

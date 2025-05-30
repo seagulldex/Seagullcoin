@@ -5087,57 +5087,7 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
       takerPays = {
         currency: amm.amount.currency,
         issuer: amm.amount.issuer,
-        value: outputAmount.toFixed(16)
-      };
-    }
-
-    // Build the XUMM payload for immediate offer creation and execution
-    const payload = {
-      txjson: {
-        TransactionType: "OfferCreate",
-        Account: wallet_address,
-        TakerGets: takerGets,
-        TakerPays: takerPays,
-        Flags: 0x00020000 // tfImmediateOrCancel: execute immediately or fail
-      },
-      options: {
-        submit: true,
-        return_url: {
-          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html'
-        }
-      }
-    };
-
-    const { uuid, next, refs } = await xumm.payload.create(payload);
-
-    await client.disconnect();
-
-    return res.json({
-      success: true,
-      uuid,
-      next,
-      swap: {
-        from: {
-          currency: from_currency,
-          amount: inputAmount,
-          issuer: takerGets.issuer
-        },
-        to: {
-          currency: to_currency,
-          amount: outputAmount,
-          issuer: takerPays.issuer
-        },
-        fee_percent: (feeRate * 100).toFixed(2)
-      }
-    });
-
-  } catch (err) {
-    console.error('AMM swap error:', err);
-    try { await client.disconnect(); } catch {}
-    return res.status(500).json({ error: err.message || 'Swap failed.' });
-  }
-});
+        val
 
 
 

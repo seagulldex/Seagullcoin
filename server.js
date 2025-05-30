@@ -4338,15 +4338,18 @@ app.get('/api/sglcn-xrp', (req, res) => {
 
 app.post('/orderbook/scl-xau', async (req, res) => {
   const { side, amount, rate, wallet_address } = req.body;
-  // side = "buy" (XAU -> SCL) or "sell" (SCL -> XAU)
 
-  const takerGets = side === "buy"
-    ? getCurrencyObj("XAU", amount, issuers)
-    : getCurrencyObj("SeagullCoin", amount, issuers);
+  if (!side || !['buy', 'sell'].includes(side) || !amount || !rate || !wallet_address) {
+    return res.status(400).json({ error: 'Missing or invalid parameters.' });
+  }
 
-  const takerPays = side === "buy"
-    ? getCurrencyObj("SeagullCoin", amount * rate, issuers)
-    : getCurrencyObj("XAU", amount * rate, issuers);
+  const takerGets = side === 'buy'
+    ? getCurrencyObj('XAU', amount, issuers)
+    : getCurrencyObj('SeagullCoin', amount, issuers);
+
+  const takerPays = side === 'buy'
+    ? getCurrencyObj('SeagullCoin', amount * rate, issuers)
+    : getCurrencyObj('XAU', amount * rate, issuers);
 
   const payload = {
     txjson: {

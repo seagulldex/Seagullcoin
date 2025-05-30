@@ -4677,7 +4677,6 @@ app.post('/swap', async (req, res) => {
   success: true,
   uuid,
   next,
-  qr: refs.qr_png,
   rate,
   swap_details: {
     from: {

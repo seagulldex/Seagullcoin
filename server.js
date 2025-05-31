@@ -4767,12 +4767,13 @@ app.get('/api/sglcn-xau', async (req, res) => {
 
 
 
-// Currency issuers
+// --- Currency issuers ---
 const issuers = {
   SGLCN_ISSUER: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
   XAU_ISSUER: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
 };
 
+// --- Utility to get currency object for XRPL transactions ---
 function getCurrencyObj(currency, amount, { SGLCN_ISSUER, XAU_ISSUER }) {
   if (currency === 'XRP') {
     // XRP amount in drops as string
@@ -4798,6 +4799,7 @@ function getCurrencyObj(currency, amount, { SGLCN_ISSUER, XAU_ISSUER }) {
   throw new Error('Unsupported currency');
 }
 
+// --- Utility to get book currency for orderbook request ---
 function getBookCurrency(symbol, { SGLCN_ISSUER, XAU_ISSUER }) {
   if (symbol === 'XRP') return { currency: 'XRP' };
   if (symbol === 'SeagullCoin') return { currency: '53656167756C6C436F696E000000000000000000', issuer: SGLCN_ISSUER };
@@ -4805,11 +4807,115 @@ function getBookCurrency(symbol, { SGLCN_ISSUER, XAU_ISSUER }) {
   throw new Error('Unsupported currency in book');
 }
 
+// --- Fetch the best market rate from XRPL orderbook ---
 async function getMarketRate(from, to, issuers) {
   await client.connect();
 
   const taker_gets = getBookCurrency(to, issuers); // what the user wants to receive
-  const taker_pays = getBookCurrency(from, issuers); // what the us
+  const taker_pays = getBookCurrency(from, issuers); // what the user gives
+
+  const orderbook = await client.request({
+    command: 'book_offers',
+    taker_gets,
+    taker_pays,
+    limit: 1
+  });
+
+  await client.disconnect();
+
+  const bestOffer = orderbook.result.offers?.[0];
+  if (!bestOffer) throw new Error('No offers found.');
+
+  // Parse amounts - can be string (XRP drops) or object (issued currency)
+  const gets = parseFloat(bestOffer.TakerGets?.value ?? bestOffer.TakerGets);
+  const pays = parseFloat(bestOffer.TakerPays?.value ?? bestOffer.TakerPays);
+
+  const rate = pays / gets;
+
+  if (!isFinite(rate) || rate <= 0) {
+    throw new Error('Invalid market rate.');
+  }
+
+  return parseFloat(rate.toFixed(6));
+}
+
+// --- Express route to create swap offer via XUMM ---
+app.post('/swap', async (req, res) => {
+  const { from_currency, to_currency, amount, wallet_address } = req.body;
+
+  if (!from_currency || !to_currency || !amount || !wallet_address) {
+    return res.status(400).json({ error: 'Missing required fields.' });
+  }
+
+  if (from_currency === to_currency) {
+    return res.status(400).json({ error: 'Currencies must differ.' });
+  }
+
+  // Allow only the supported currencies
+  const supported = ['SeagullCoin', 'XRP', 'XAU'];
+  if (!supported.includes(from_currency) || !supported.includes(to_currency)) {
+    return res.status(400).json({ error: 'Unsupported currencies.' });
+  }
+
+  try {
+    const rate = await getMarketRate(from_currency, to_currency, issuers);
+    const fromAmt = parseFloat(amount);
+    // Calculate amount to receive
+    const toAmt = from_currency === 'SeagullCoin'
+     ? (fromAmt * rate)
+     : (fromAmt / rate);
+
+    // Compose currency objects for the transaction
+    const takerGets = getCurrencyObj(from_currency, fromAmt, issuers);
+    const takerPays = getCurrencyObj(to_currency, toAmt, issuers);
+
+    // XUMM payload to create the OfferCreate transaction
+    const payload = {
+      txjson: {
+        TransactionType: 'OfferCreate',
+        Account: wallet_address,
+        TakerGets: takerGets,
+        TakerPays: takerPays,
+        Flags: 0x00020000 // tfImmediateOrCancel
+      },
+      options: {
+        submit: true,
+        return_url: {
+          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
+          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html'
+        }
+      }
+    };
+
+    // Create payload on XUMM and get UUID + URLs
+    const { uuid, next } = await xumm.payload.create(payload);
+
+    // Respond with payload info and swap details
+    res.json({
+      success: true,
+      uuid,
+      next,
+      rate,
+      swap_details: {
+        from: {
+          currency: from_currency,
+          amount: fromAmt,
+          issuer: from_currency === 'XRP' ? null : (from_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
+        },
+        to: {
+          currency: to_currency,
+          amount: toAmt,
+          issuer: to_currency === 'XRP' ? null : (to_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
+        }
+      }
+    });
+
+  } catch (err) {
+    console.error('Swap error:', err);
+    res.status(500).json({ error: err.message || 'Swap failed.' });
+  }
+});
+
 
 
 

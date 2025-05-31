@@ -5003,24 +5003,29 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
 
     const value = typeof Amount === 'object' && Amount.value ? Amount.value : Amount;
 
-    const asset1 = {
-      currency: '53656167756C6C436F696E000000000000000000',
-      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+    const seagullCoin = {
+      currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (hex)
+      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
     };
 
-    const asset2 = {
-      currency: '5841550000000000000000000000000000000000',
-      issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
+    const xau = {
+      currency: '5841550000000000000000000000000000000000', // XAU (hex)
+      issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
     };
 
     const payload = {
       txjson: {
-        TransactionType: 'AMMDeposit',
+        TransactionType: 'AMMSwap',
         Account,
-        Asset: asset1,
-        Asset2: asset2,
-        Amount: String(value), // amount of SeagullCoin to deposit
-        Flags: 0x00080000 // lp_token not specified, default
+        Asset: seagullCoin,
+        Asset2: xau,
+        Amount: {
+          currency: seagullCoin.currency,
+          issuer: seagullCoin.issuer,
+          value: String(value),
+        },
+        // You can optionally set `Amount2` if you want to specify what to receive
+        Flags: 0,
       },
       options: {
         submit: true,
@@ -5044,10 +5049,7 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('AMM swap error:', error);
-    return res.status(500).json({ error: 'Internal error', details: error.message });
-  }
-});
+    console.error('AMM swap error:', 
 
 
 

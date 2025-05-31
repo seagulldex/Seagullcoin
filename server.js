@@ -4826,8 +4826,7 @@ async function getMarketRate(from, to, issuers) {
   const gets = parseFloat(bestOffer.TakerGets.value ?? bestOffer.TakerGets);
   const pays = parseFloat(bestOffer.TakerPays.value ?? bestOffer.TakerPays);
 
-  return parseFloat((pays / gets).toFixed(6));
-}
+  return parseFloat((pays / gets).toFixed(
 
 app.post('/swap', async (req, res) => {
   const { from_currency, to_currency, amount, wallet_address } = req.body;

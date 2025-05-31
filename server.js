@@ -4994,6 +4994,7 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
 });
 
 
+
 app.post('/swap/amm/sglcn-xau', async (req, res) => {
   try {
     const { Account, Amount } = req.body;
@@ -5018,11 +5019,7 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
         Account,
         Asset: seagullCoin,
         Asset2: xau,
-        Amount: {
-          currency: seagullCoin.currency,
-          issuer: seagullCoin.issuer,
-          value: String(Amount.value)
-        },
+        Amount: String(Amount.value), // ✅ Correct format for swap input
         Flags: 0
       },
       options: {
@@ -5051,7 +5048,6 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
     return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
-
 
 
 

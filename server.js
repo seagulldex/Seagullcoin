@@ -68,6 +68,8 @@ import { promisify } from 'util'; //
 import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
+import Stripe from 'stripe';
+
 
 // ===== Init App and Env =====
 dotenv.config();

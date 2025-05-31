@@ -4808,14 +4808,14 @@ function getBookCurrency(symbol, { SGLCN_ISSUER, XAU_ISSUER }) {
 async function getMarketRate(from, to, issuers) {
   await client.connect();
 
-  const takerGets = getBookCurrency(from, issuers);
-  const takerPays = getBookCurrency(to, issuers);
+  const taker_gets = getBookCurrency(to, issuers); // what the user wants to receive
+  const taker_pays = getBookCurrency(from, issuers); // what the user gives
 
   const orderbook = await client.request({
     command: 'book_offers',
-    taker_gets: takerGets,
-    taker_pays: takerPays,
-    limit: 5
+    taker_gets,
+    taker_pays,
+    limit: 1
   });
 
   await client.disconnect();
@@ -4823,10 +4823,18 @@ async function getMarketRate(from, to, issuers) {
   const bestOffer = orderbook.result.offers?.[0];
   if (!bestOffer) throw new Error('No offers found.');
 
-  const gets = parseFloat(bestOffer.TakerGets.value ?? bestOffer.TakerGets);
-  const pays = parseFloat(bestOffer.TakerPays.value ?? bestOffer.TakerPays);
+  const gets = parseFloat(bestOffer.TakerGets?.value ?? bestOffer.TakerGets);
+  const pays = parseFloat(bestOffer.TakerPays?.value ?? bestOffer.TakerPays);
 
-  return parseFloat((pays / gets).toFixed(
+  const rate = pays / gets;
+
+  if (!isFinite(rate) || rate <= 0) {
+    throw new Error('Invalid market rate.');
+  }
+
+  return parseFloat(rate.toFixed(6));
+}
+
 
 app.post('/swap', async (req, res) => {
   const { from_currency, to_currency, amount, wallet_address } = req.body;

@@ -5049,6 +5049,25 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
   }
 });
 
+app.post('/create-payment-intent', async (req, res) => {
+  try {
+    const { amount, currency } = req.body;
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency,
+      automatic_payment_methods: { enabled: true },
+    });
+
+    res.send({
+      clientSecret: paymentIntent.client_secret,
+    });
+  } catch (err) {
+    console.error('Stripe error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 // Call the XRPL ping when the server starts

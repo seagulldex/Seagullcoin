@@ -5051,25 +5051,57 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
   }
 });
 
-app.post('/create-payment-intent', async (req, res) => {
+async function performAMMSwap(account, amount) {
+  await client.connect();
+
+  const wallet = xrpl.Wallet.fromSeed(SERVICE_WALLET_SEED);
+
+  const seagullCoin = {
+    currency: '53656167756C6C436F696E000000000000000000',
+    issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+  };
+
+  const xau = {
+    currency: '5841550000000000000000000000000000000000',
+    issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
+  };
+
+  const swapTx = {
+    TransactionType: 'AMMSwap',
+    Account: account,
+    Asset: seagullCoin,
+    Asset2: xau,
+    Amount: {
+      currency: seagullCoin.currency,
+      issuer: seagullCoin.issuer,
+      value: String(amount),
+    },
+    Flags: 0,
+  };
+
+  const prepared = await client.autofill(swapTx);
+  const signed = wallet.sign(prepared);
+  const tx = await client.submitAndWait(signed.tx_blob);
+
+  await client.disconnect();
+
+  return tx;
+}
+
+app.post('/swaps/amm/sglcn-xau', async (req, res) => {
+  const { Account, Amount } = req.body;
+
+  if (!Account || !Amount) {
+    return res.status(400).json({ error: 'Missing Account or Amount' });
+  }
+
   try {
-    const { amount, currency } = req.body;
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency,
-      automatic_payment_methods: { enabled: true },
-    });
-
-    res.send({
-      clientSecret: paymentIntent.client_secret,
-    });
-  } catch (err) {
-    console.error('Stripe error:', err);
-    res.status(500).json({ error: err.message });
+    const txResult = await performAMMSwap(Account, Amount.value || Amount);
+    res.json({ success: true, txResult });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
-
 
 
 // Call the XRPL ping when the server starts

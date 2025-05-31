@@ -4859,6 +4859,7 @@ app.post('/swap', async (req, res) => {
      : (fromAmt / rate);
 
 
+
     const takerGets = getCurrencyObj(from_currency, fromAmt, issuers);
     const takerPays = getCurrencyObj(to_currency, toAmt, issuers);
 

@@ -4832,6 +4832,7 @@ async function getMarketRate(from, to, issuers) {
 
   const rate = pays / gets;
 
+
   if (!isFinite(rate) || rate <= 0) {
     throw new Error('Invalid market rate.');
   }

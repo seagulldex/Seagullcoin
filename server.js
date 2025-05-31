@@ -4993,24 +4993,23 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
   }
 });
 
+
 app.post('/swap/amm/sglcn-xau', async (req, res) => {
   try {
     const { Account, Amount } = req.body;
 
-    if (!Account || !Amount) {
-      return res.status(400).json({ error: 'Missing Account or Amount in request body' });
+    if (!Account || !Amount || typeof Amount !== 'object' || !Amount.value) {
+      return res.status(400).json({ error: 'Missing or invalid Account or Amount' });
     }
 
-    const value = typeof Amount === 'object' && Amount.value ? Amount.value : Amount;
-
     const seagullCoin = {
-      currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (hex)
-      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+      currency: '53656167756C6C436F696E000000000000000000', // "SeagullCoin"
+      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
     };
 
     const xau = {
-      currency: '5841550000000000000000000000000000000000', // XAU (hex)
-      issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
+      currency: '5841550000000000000000000000000000000000', // "XAU"
+      issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
     };
 
     const payload = {
@@ -5022,34 +5021,36 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
         Amount: {
           currency: seagullCoin.currency,
           issuer: seagullCoin.issuer,
-          value: String(value),
+          value: String(Amount.value)
         },
-        // You can optionally set `Amount2` if you want to specify what to receive
-        Flags: 0,
+        Flags: 0
       },
       options: {
         submit: true,
         return_url: {
           app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-        },
-      },
+          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html'
+        }
+      }
     };
 
     const result = await xumm.payload.create(payload);
 
     if (!result?.uuid || !result?.next?.always) {
       console.error('XUMM payload creation failed:', result);
-      return res.status(500).json({ error: 'Failed to create XUMM payload' });
+      return res.status(500).json({ error: 'Failed to create XUMM payload', details: result });
     }
 
     return res.status(200).json({
       uuid: result.uuid,
-      next: result.next.always,
+      next: result.next.always
     });
 
   } catch (error) {
-    console.error('AMM swap error:', 
+    console.error('AMM swap error:', error);
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
 
 
 

@@ -5088,51 +5088,7 @@ async function performAMMSwap(account, amount) {
   return tx;
 }
 
-app.post('/swaping/amm/sglcn-xau', async (req, res) => {
-  try {
-    const { Account, Amount, Destination, DeliverMin } = req.body;
 
-    if (!Account || !Amount || !Destination || !DeliverMin) {
-      return res.status(400).json({ error: 'Missing required fields: Account, Amount, Destination, DeliverMin' });
-    }
-
-    const paymentTx = {
-      TransactionType: 'Payment',
-      Account,
-      Destination,
-      Amount: Amount,          // Amount can be a string (XRP drops) or an object for issued currency
-      DeliverMin: DeliverMin,  // Protects against slippage (optional but recommended)
-      Flags: 0,
-    };
-
-    const payload = {
-      txjson: paymentTx,
-      options: {
-        submit: true,
-        return_url: {
-          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-        },
-      },
-    };
-
-    const result = await xumm.payload.create(payload);
-
-    if (!result?.uuid || !result?.next?.always) {
-      console.error('XUMM payload creation failed:', result);
-      return res.status(500).json({ error: 'Failed to create XUMM payload', details: result });
-    }
-
-    return res.status(200).json({
-      uuid: result.uuid,
-      next: result.next.always,
-    });
-
-  } catch (error) {
-    console.error('AMM swap error:', error);
-    return res.status(500).json({ error: 'Internal server error', details: error.message });
-  }
-});
 
 
 // Call the XRPL ping when the server starts

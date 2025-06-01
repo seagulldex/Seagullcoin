@@ -4808,38 +4808,63 @@ function getBookCurrency(symbol, { SGLCN_ISSUER, XAU_ISSUER }) {
 }
 
 // --- Fetch the best market rate from XRPL orderbook ---
-async function getMarketRate(from, to, issuers) {
-  await client.connect();
+const getMarketRate = async (from_currency, to_currency, issuers) => {
+  const client = new xrpl.Client('wss://s1.ripple.com');
 
-  // For SELLING, we want highest BID (someone buying what we're selling)
-  const takerGets = getBookCurrency(to, issuers); // What WE want to receive
-  const takerPays = getBookCurrency(from, issuers); // What WE are selling
+  const getCurrencyObj = (currency) => {
+    if (currency === 'XRP') return { currency: 'XRP' };
+    return {
+      currency:
+        currency === 'SeagullCoin'
+          ? '53656167756C6C436F696E000000000000000000'
+          : 'XAU',
+      issuer: currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER,
+    };
+  };
 
-  const orderbook = await client.request({
-    command: 'book_offers',
-    taker_gets: takerGets, // e.g., XRP
-    taker_pays: takerPays, // e.g., SGLCN
-    limit: 1,
-    taker: 'rrrrrrrrrrrrrrrrrrrrrhoLvTp' // neutral account to avoid own offers
-  });
+  const withTimeout = (promise, ms) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('XRPL timeout')), ms)
+      ),
+    ]);
 
-  await client.disconnect();
+  try {
+    await withTimeout(client.connect(), 5000);
 
-  const offer = orderbook.result.offers?.[0];
-  if (!offer) throw new Error('No offers found.');
+    const taker_gets = getCurrencyObj(to_currency);
+    const taker_pays = getCurrencyObj(from_currency);
 
-  const gets = parseFloat(offer.TakerGets?.value ?? offer.TakerGets);
-  const pays = parseFloat(offer.TakerPays?.value ?? offer.TakerPays);
+    const response = await withTimeout(
+      client.request({
+        command: 'book_offers',
+        taker_gets,
+        taker_pays,
+        limit: 1,
+      }),
+      8000
+    );
 
-  // When selling, we get 'gets' in return for giving 'pays'
-  const rate = gets / pays;
+    await client.disconnect();
 
-  if (!isFinite(rate) || rate <= 0) {
-    throw new Error('Invalid market rate.');
+    const topOffer = response.result.offers[0];
+    if (!topOffer) throw new Error('No liquidity in orderbook');
+
+    const parseAmount = (amt) => {
+      if (typeof amt === 'string') return parseFloat(amt) / 1e6;
+      if (amt.value) return parseFloat(amt.value);
+      return 0;
+    };
+
+    const price =
+      parseAmount(topOffer.TakerPays) / parseAmount(topOffer.TakerGets);
+    return price;
+  } catch (err) {
+    if (client.isConnected()) await client.disconnect();
+    throw new Error(`Market rate fetch failed: ${err.message}`);
   }
-
-  return parseFloat(rate.toFixed(6));
-}
+};
 
 
 

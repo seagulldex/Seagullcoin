@@ -4811,27 +4811,31 @@ function getBookCurrency(symbol, { SGLCN_ISSUER, XAU_ISSUER }) {
 async function getMarketRate(from, to, issuers) {
   await client.connect();
 
-  const taker_gets = getBookCurrency(to, issuers); // what the user wants to receive
-  const taker_pays = getBookCurrency(from, issuers); // what the user gives
+  const takerGets = getBookCurrency(to, issuers); // What user wants
+  const takerPays = getBookCurrency(from, issuers); // What user gives
 
   const orderbook = await client.request({
     command: 'book_offers',
-    taker_gets,
-    taker_pays,
+    taker_gets: takerGets,
+    taker_pays: takerPays,
     limit: 1
   });
 
   await client.disconnect();
 
-  const bestOffer = orderbook.result.offers?.[0];
-  if (!bestOffer) throw new Error('No offers found.');
+  const offer = orderbook.result.offers?.[0];
+  if (!offer) throw new Error('No offers found.');
 
-  // Parse amounts - can be string (XRP drops) or object (issued currency)
-  const gets = parseFloat(bestOffer.TakerGets?.value ?? bestOffer.TakerGets);
-  const pays = parseFloat(bestOffer.TakerPays?.value ?? bestOffer.TakerPays);
+  const gets = parseFloat(offer.TakerGets?.value ?? offer.TakerGets);
+  const pays = parseFloat(offer.TakerPays?.value ?? offer.TakerPays);
 
-  const rate = pays / gets;
+  // Calculate the rate based on trade direction
+  // If you want 'to', you need to give 'from'
+  // So you're effectively paying "from" to get "to"
 
+  const rate = from === 'XRP' || from === 'SeagullCoin' || from === 'XAU'
+    ? pays / gets // selling 'from' to buy 'to'
+    : gets / pays; // fallback
 
   if (!isFinite(rate) || rate <= 0) {
     throw new Error('Invalid market rate.');
@@ -4839,6 +4843,7 @@ async function getMarketRate(from, to, issuers) {
 
   return parseFloat(rate.toFixed(6));
 }
+
 
 // --- Express route to create swap offer via XUMM ---
 app.post('/swap', async (req, res) => {

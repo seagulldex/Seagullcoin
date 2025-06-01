@@ -68,8 +68,6 @@ import { promisify } from 'util'; //
 import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
-import Stripe from 'stripe';
-
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -211,8 +209,6 @@ const getUserAddressesFromDatabase = async () => {
     });
   });
 };
-
-
 
 // Fetch user addresses from the database and get their balances
 const fetchAndCheckUserBalances = async () => {
@@ -462,7 +458,7 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'http://sglcn-x20-api.glitch.me', // Change this URL when deploying
+      url: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/', // Change this URL when deploying
     },
   ],
 };
@@ -513,7 +509,7 @@ app.use(session({
 
 // Now, apply other middleware
 app.use(limiter);
-app.use(cors({ origin: 'https://sglcn-x20-api.glitch.me', credentials: true }));
+app.use(cors({ origin: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -1160,9 +1156,9 @@ router.post('/mint', async (req, res) => {
     success: false,
     message: 'Error confirming the payment.',
   });
-}
+ }
 
-  // NFT data validation
+    // NFT data validation
   try {
     Buffer.from(nftData.fileBase64, 'base64');
   } catch (e) {
@@ -1488,7 +1484,6 @@ app.post('/list', async (req, res) => {
  *       200:
  *         description: NFT data retrieved
  */
-
 
 app.get('/listings', async (req, res) => {
   const listings = await getAllNFTListings();
@@ -1995,6 +1990,7 @@ app.post('/like-nft',
  *       400:
  *         description: Invalid data or already liked
  */
+
 async function getTotalCollections() {
   return new Promise((resolve, reject) => {
     db.get('SELECT COUNT(*) AS total FROM collections', (err, row) => {
@@ -2373,7 +2369,7 @@ app.get('/authenticate', async (req, res) => {
   try {
     const payload = {
       "TransactionType": "SignIn",
-      "Destination": "https://sglcn-x20-api.glitch.me/login",
+      "Destination": "https://seagullcoin-dex-uaj3x.ondigitalocean.app/login",
       "Account": req.session.walletAddress // Optional: can pass existing wallet if user is logged in
     };
 
@@ -3090,7 +3086,7 @@ async function loadActiveOffers(wallet) {
   container.innerHTML = '<h3>Active Offers</h3>';
 
   try {
-    const res = await fetch(`https://sglcn-x20-api.glitch.me/active-offers/${wallet}`);
+    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/active-offers/${wallet}`);
     const { sellOffers, buyOffers } = await res.json();
 
     sellOffers.forEach(offer => {
@@ -3116,13 +3112,13 @@ async function loadActiveOffers(wallet) {
   } catch (err) {
     console.error("Error loading active offers:", err);
   }
-}
+   }
 
 async function cancelOffer(offerId) {
   const confirmCancel = confirm("Cancel this offer?");
   if (!confirmCancel) return;
 
-  const res = await fetch("https://sglcn-x20-api.glitch.me/cancel-offer", {
+  const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/cancel-offer", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -3553,7 +3549,6 @@ app.post('/accept-offer', async (req, res) => {
   }
 });
 
-
 app.get('/payload-status/:uuid', async (req, res) => {
   try {
     const { uuid } = req.params;
@@ -3925,9 +3920,6 @@ app.get('/check-payment', async (req, res) => {
   }
 });
 
-
-
-
 // Endpoint to mint and send NFTs
 // 1. Create payment payload endpoint
 //POST /create-trustline
@@ -4142,8 +4134,8 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
     submit: true,
     expire: 300,
     return_url: {
-      app: "https://sglcn-x20-api.glitch.me",
-      web: "https://sglcn-x20-api.glitch.me"
+      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
+      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
     }
   }
 };
@@ -4199,8 +4191,8 @@ app.post("/backup-pay-three", async (req, res) => {
     submit: true,
     expire: 300,
     return_url: {
-      app: "https://sglcn-x20-api.glitch.me",
-      web: "https://sglcn-x20-api.glitch.me"
+      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
+      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
     }
   }
 };
@@ -4391,8 +4383,8 @@ app.post('/orderbook/scl-xau', async (req, res) => {
     options: {
       submit: true,
       return_url: {
-        app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-        web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html'
+        app: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
+        web: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
       }
     }
   };
@@ -4675,9 +4667,6 @@ app.get('/api/orderbook', async (req, res) => {
 });
  // In-memory history (lost on restart)
 
-
-
-
 const HISTORY_FILE = './sglcn_xau_history.json';
 
 
@@ -4767,13 +4756,12 @@ app.get('/api/sglcn-xau', async (req, res) => {
 
 
 
-// --- Currency issuers ---
+// Currency issuers
 const issuers = {
   SGLCN_ISSUER: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
   XAU_ISSUER: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
 };
 
-// --- Utility to get currency object for XRPL transactions ---
 function getCurrencyObj(currency, amount, { SGLCN_ISSUER, XAU_ISSUER }) {
   if (currency === 'XRP') {
     // XRP amount in drops as string
@@ -4799,7 +4787,6 @@ function getCurrencyObj(currency, amount, { SGLCN_ISSUER, XAU_ISSUER }) {
   throw new Error('Unsupported currency');
 }
 
-// --- Utility to get book currency for orderbook request ---
 function getBookCurrency(symbol, { SGLCN_ISSUER, XAU_ISSUER }) {
   if (symbol === 'XRP') return { currency: 'XRP' };
   if (symbol === 'SeagullCoin') return { currency: '53656167756C6C436F696E000000000000000000', issuer: SGLCN_ISSUER };
@@ -4807,68 +4794,30 @@ function getBookCurrency(symbol, { SGLCN_ISSUER, XAU_ISSUER }) {
   throw new Error('Unsupported currency in book');
 }
 
-// --- Fetch the best market rate from XRPL orderbook ---
-const getMarketRate = async (from_currency, to_currency, issuers) => {
-  const client = new xrpl.Client('wss://s1.ripple.com');
+async function getMarketRate(from, to, issuers) {
+  await client.connect();
 
-  const getCurrencyObj = (currency) => {
-    if (currency === 'XRP') return { currency: 'XRP' };
-    return {
-      currency:
-        currency === 'SeagullCoin'
-          ? '53656167756C6C436F696E000000000000000000'
-          : 'XAU',
-      issuer: currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER,
-    };
-  };
+  const takerGets = getBookCurrency(from, issuers);
+  const takerPays = getBookCurrency(to, issuers);
 
-  const withTimeout = (promise, ms) =>
-    Promise.race([
-      promise,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('XRPL timeout')), ms)
-      ),
-    ]);
+  const orderbook = await client.request({
+    command: 'book_offers',
+    taker_gets: takerGets,
+    taker_pays: takerPays,
+    limit: 5
+  });
 
-  try {
-    await withTimeout(client.connect(), 5000);
+  await client.disconnect();
 
-    const taker_gets = getCurrencyObj(to_currency);
-    const taker_pays = getCurrencyObj(from_currency);
+  const bestOffer = orderbook.result.offers?.[0];
+  if (!bestOffer) throw new Error('No offers found.');
 
-    const response = await withTimeout(
-      client.request({
-        command: 'book_offers',
-        taker_gets,
-        taker_pays,
-        limit: 1,
-      }),
-      8000
-    );
+  const gets = parseFloat(bestOffer.TakerGets.value ?? bestOffer.TakerGets);
+  const pays = parseFloat(bestOffer.TakerPays.value ?? bestOffer.TakerPays);
 
-    await client.disconnect();
+  return parseFloat((pays / gets).toFixed(6));
+}
 
-    const topOffer = response.result.offers[0];
-    if (!topOffer) throw new Error('No liquidity in orderbook');
-
-    const parseAmount = (amt) => {
-      if (typeof amt === 'string') return parseFloat(amt) / 1e6;
-      if (amt.value) return parseFloat(amt.value);
-      return 0;
-    };
-
-    const price =
-      parseAmount(topOffer.TakerPays) / parseAmount(topOffer.TakerGets);
-    return price;
-  } catch (err) {
-    if (client.isConnected()) await client.disconnect();
-    throw new Error(`Market rate fetch failed: ${err.message}`);
-  }
-};
-
-
-
-// --- Express route to create swap offer via XUMM ---
 app.post('/swap', async (req, res) => {
   const { from_currency, to_currency, amount, wallet_address } = req.body;
 
@@ -4880,25 +4829,21 @@ app.post('/swap', async (req, res) => {
     return res.status(400).json({ error: 'Currencies must differ.' });
   }
 
-  // Allow only the supported currencies
-  const supported = ['SeagullCoin', 'XRP', 'XAU'];
-  if (!supported.includes(from_currency) || !supported.includes(to_currency)) {
+  if (from_currency !== 'SeagullCoin' && to_currency !== 'SeagullCoin' && from_currency !== 'XRP' && to_currency !== 'XRP' && from_currency !== 'XAU' && to_currency !== 'XAU') {
     return res.status(400).json({ error: 'Unsupported currencies.' });
   }
 
   try {
     const rate = await getMarketRate(from_currency, to_currency, issuers);
     const fromAmt = parseFloat(amount);
-    // Calculate amount to receive
     const toAmt = from_currency === 'SeagullCoin'
      ? (fromAmt * rate)
      : (fromAmt / rate);
 
-    // Compose currency objects for the transaction
+
     const takerGets = getCurrencyObj(from_currency, fromAmt, issuers);
     const takerPays = getCurrencyObj(to_currency, toAmt, issuers);
 
-    // XUMM payload to create the OfferCreate transaction
     const payload = {
       txjson: {
         TransactionType: 'OfferCreate',
@@ -4910,41 +4855,38 @@ app.post('/swap', async (req, res) => {
       options: {
         submit: true,
         return_url: {
-          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html'
+          app: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
+          web: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
         }
       }
     };
 
-    // Create payload on XUMM and get UUID + URLs
-    const { uuid, next } = await xumm.payload.create(payload);
+    const { uuid, next, refs } = await xumm.payload.create(payload);
 
-    // Respond with payload info and swap details
     res.json({
-      success: true,
-      uuid,
-      next,
-      rate,
-      swap_details: {
-        from: {
-          currency: from_currency,
-          amount: fromAmt,
-          issuer: from_currency === 'XRP' ? null : (from_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
-        },
-        to: {
-          currency: to_currency,
-          amount: toAmt,
-          issuer: to_currency === 'XRP' ? null : (to_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
-        }
-      }
-    });
-
-  } catch (err) {
-    console.error('Swap error:', err);
-    res.status(500).json({ error: err.message || 'Swap failed.' });
+  success: true,
+  uuid,
+  next,
+  rate,
+  swap_details: {
+    from: {
+      currency: from_currency,
+      amount: fromAmt,
+      issuer: from_currency === 'XRP' ? null : (from_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
+    },
+    to: {
+      currency: to_currency,
+      amount: toAmt,
+      issuer: to_currency === 'XRP' ? null : (to_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
+    }
   }
 });
 
+} catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Swap failed.' });
+  }
+});
 
 
 
@@ -5042,98 +4984,6 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
   }
 });
 
-
-
-app.post('/swap/amm/sglcn-xau', async (req, res) => {
-  try {
-    const { Account, Amount } = req.body;
-
-    if (!Account || !Amount || typeof Amount !== 'object' || !Amount.value) {
-      return res.status(400).json({ error: 'Missing or invalid Account or Amount' });
-    }
-
-    const seagullCoin = {
-      currency: '53656167756C6C436F696E000000000000000000', // "SeagullCoin"
-      issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
-    };
-
-    const xau = {
-      currency: '5841550000000000000000000000000000000000', // "XAU"
-      issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
-    };
-
-    const payload = {
-      txjson: {
-        TransactionType: 'AMMSwap',
-        Account,
-        Asset: seagullCoin,
-        Asset2: xau,
-        Amount: String(Amount.value), // ✅ Correct format for swap input
-        Flags: 0
-      },
-      options: {
-        submit: true,
-        return_url: {
-          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html'
-        }
-      }
-    };
-
-    const result = await xumm.payload.create(payload);
-
-    if (!result?.uuid || !result?.next?.always) {
-      console.error('XUMM payload creation failed:', result);
-      return res.status(500).json({ error: 'Failed to create XUMM payload', details: result });
-    }
-
-    return res.status(200).json({
-      uuid: result.uuid,
-      next: result.next.always
-    });
-
-  } catch (error) {
-    console.error('AMM swap error:', error);
-    return res.status(500).json({ error: 'Internal server error', details: error.message });
-  }
-});
-
-async function performAMMSwap(account, amount) {
-  await client.connect();
-
-  const wallet = xrpl.Wallet.fromSeed(SERVICE_WALLET_SEED);
-
-  const seagullCoin = {
-    currency: '53656167756C6C436F696E000000000000000000',
-    issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-  };
-
-  const xau = {
-    currency: '5841550000000000000000000000000000000000',
-    issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
-  };
-
-  const swapTx = {
-    TransactionType: 'AMMSwap',
-    Account: account,
-    Asset: seagullCoin,
-    Asset2: xau,
-    Amount: {
-      currency: seagullCoin.currency,
-      issuer: seagullCoin.issuer,
-      value: String(amount),
-    },
-    Flags: 0,
-  };
-
-  const prepared = await client.autofill(swapTx);
-  const signed = wallet.sign(prepared);
-  const tx = await client.submitAndWait(signed.tx_blob);
-
-  await client.disconnect();
-
-  return tx;
-}
 
 
 

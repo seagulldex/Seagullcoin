@@ -88,7 +88,7 @@
         <li><a href="index.html">Home</a></li>
         <li><a href="SeagullDex.html">Trading</a></li>
         <li><a href="stake.html">Stake</a></li>
-        <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
+        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
       </ul>
     </nav>
   </header>
@@ -151,7 +151,7 @@
       // Since you currently call your backend, update backend to accept raw txjson OR do it here:
 
       // For example, call your backend that creates the payload:
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/create-trustline`, {
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ txjson: trustlinePayload })
@@ -216,12 +216,12 @@
 
     async function startLoginFlow() {
       try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
         const data = await res.json();
         window.location.href = data.payloadURL;
 
         const interval = setInterval(async () => {
-          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+          const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
           const loginStatus = await check.json();
           if (loginStatus.loggedIn) {
             clearInterval(interval);
@@ -260,7 +260,7 @@
 
         try {
           // Call backend API to create trustline payload for this account
-          const res = await fetch(`https://sglcn-x20-api.glitch.me/add-trustline?account=${wallet}`);
+          const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/add-trustline?account=${wallet}`);
           const trustlineData = await res.json();
 
           if(trustlineData.payloadURL){

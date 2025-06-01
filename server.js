@@ -4811,14 +4811,16 @@ function getBookCurrency(symbol, { SGLCN_ISSUER, XAU_ISSUER }) {
 async function getMarketRate(from, to, issuers) {
   await client.connect();
 
-  const takerGets = getBookCurrency(to, issuers); // What user wants
-  const takerPays = getBookCurrency(from, issuers); // What user gives
+  // For SELLING, we want highest BID (someone buying what we're selling)
+  const takerGets = getBookCurrency(to, issuers); // What WE want to receive
+  const takerPays = getBookCurrency(from, issuers); // What WE are selling
 
   const orderbook = await client.request({
     command: 'book_offers',
-    taker_gets: takerGets,
-    taker_pays: takerPays,
-    limit: 1
+    taker_gets: takerGets, // e.g., XRP
+    taker_pays: takerPays, // e.g., SGLCN
+    limit: 1,
+    taker: 'rrrrrrrrrrrrrrrrrrrrrhoLvTp' // neutral account to avoid own offers
   });
 
   await client.disconnect();
@@ -4829,13 +4831,8 @@ async function getMarketRate(from, to, issuers) {
   const gets = parseFloat(offer.TakerGets?.value ?? offer.TakerGets);
   const pays = parseFloat(offer.TakerPays?.value ?? offer.TakerPays);
 
-  // Calculate the rate based on trade direction
-  // If you want 'to', you need to give 'from'
-  // So you're effectively paying "from" to get "to"
-
-  const rate = from === 'XRP' || from === 'SeagullCoin' || from === 'XAU'
-    ? pays / gets // selling 'from' to buy 'to'
-    : gets / pays; // fallback
+  // When selling, we get 'gets' in return for giving 'pays'
+  const rate = gets / pays;
 
   if (!isFinite(rate) || rate <= 0) {
     throw new Error('Invalid market rate.');
@@ -4843,6 +4840,7 @@ async function getMarketRate(from, to, issuers) {
 
   return parseFloat(rate.toFixed(6));
 }
+
 
 
 // --- Express route to create swap offer via XUMM ---

@@ -33,6 +33,7 @@ import swaggerJSDoc from 'swagger-jsdoc';
 import { processXummMinting } from './confirmPaymentXumm.js';
 import { confirmPayment } from './confirmPaymentXumm.js';
 import mime from 'mime';
+import NFT from './models/NFT.js';
 import { xummApi } from './xrplClient.js';
 import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the path is correct
 import { requireLogin } from './xummLogin.js';  // Adjust the path if needed
@@ -2776,13 +2777,15 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
-  // Check cache
-  const cached = nftCache.get(wallet);
-  if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
-    return res.json({ nfts: cached.data });
-  }
-
   try {
+    // Try loading from MongoDB first
+    const dbNFTs = await NFT.find({ wallet }).sort({ updatedAt: -1 });
+
+    if (dbNFTs.length > 0) {
+      return res.json({ nfts: dbNFTs });
+    }
+
+    // Else: fetch from ledger + IPFS, then store
     const rawNFTs = await fetchAllNFTs(wallet);
 
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
@@ -2792,7 +2795,6 @@ app.get('/nfts/:wallet', async (req, res) => {
       if (uri.startsWith('ipfs://')) {
         const ipfsUrl = uri.replace('ipfs://', '');
         try {
-          // Fetch metadata with retry mechanism
           metadata = await fetchMetadataWithRetry(ipfsUrl);
           if (metadata) {
             collection = metadata.collection || metadata.name || null;
@@ -2803,6 +2805,21 @@ app.get('/nfts/:wallet', async (req, res) => {
         }
       }
 
+      // Save to DB
+      await NFT.findOneAndUpdate(
+        { wallet, NFTokenID: nft.NFTokenID },
+        {
+          wallet,
+          NFTokenID: nft.NFTokenID,
+          URI: uri,
+          collection,
+          icon,
+          metadata,
+          updatedAt: new Date()
+        },
+        { upsert: true, new: true }
+      );
+
       return {
         NFTokenID: nft.NFTokenID,
         URI: uri,
@@ -2812,58 +2829,16 @@ app.get('/nfts/:wallet', async (req, res) => {
       };
     }));
 
-    // Cache the result
-    nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
-
     res.json({ nfts: parsed });
+
   } catch (err) {
     console.error('NFT fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
 
-// Helper to fetch all NFTs for a wallet with proper caching
-async function fetchAllNFTs(wallet) {
-  let allNFTs = [];
-  let marker = null;
 
-  try {
-    do {
-      const requestBody = {
-        method: 'account_nfts',
-        params: [{
-          account: wallet,
-          ledger_index: 'validated',
-          ...(marker && { marker })
-        }]
-      };
-
-      const response = await fetch(xrplApiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      const data = await response.json();
-
-      if (data.result?.error) {
-        throw new Error(data.result.error_message);
-      }
-
-      allNFTs.push(...(data.result.account_nfts || []));
-      marker = data.result.marker || null;
-
-    } while (marker);
-
-    // Cache full result
-    nftCache.set(wallet, { data: allNFTs, timestamp: Date.now() });
-    return allNFTs;
-
-  } catch (error) {
-    console.error('Error fetching NFTs:', error);
-    throw new Error('Failed to fetch NFTs');
-  }
-}
+      
 
 // /transfer-nft — direct transfer to another wallet
 app.post('/transfer-nft', async (req, res) => {

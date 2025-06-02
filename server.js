@@ -68,6 +68,7 @@ import { promisify } from 'util'; //
 import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
+import mongoose from 'mongoose';
 
 // ===== Init App and Env =====
 dotenv.config();

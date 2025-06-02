@@ -310,7 +310,7 @@
 
     async function updateCurrentPrice() {
       try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/api/orderbook');
+        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/orderbook');
         const data = await res.json();
         const bids = Array.isArray(data.bids) ? data.bids.slice(0, 100) : [];
         const asks = Array.isArray(data.asks) ? data.asks.slice(0, 100) : [];
@@ -346,7 +346,7 @@
 
     async function fetchLiveSGLCNPrice() {
       try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
+        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xrp');
         const data = await res.json();
         if (data && data.sglcn_to_xrp) {
           const latestPrice = parseFloat(data.sglcn_to_xrp).toFixed(6);
@@ -362,7 +362,7 @@
     
     async function fetchLiveSGLCNXAUPrice() {
   try {
-    const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xau');
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau');
     const data = await res.json();
     if (data && data.sglcn_to_xau) {
       const latestPriceXAU = parseFloat(data.sglcn_to_xau).toFixed(6);
@@ -386,7 +386,7 @@
       }
 
       try {
-        const res = await fetch("https://sglcn-x20-api.glitch.me/place-buy-offer", {
+        const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/place-buy-offer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ wallet, price, amount })
@@ -421,7 +421,7 @@
 
   if (!amount || amount <= 0) return alert("Enter a valid amount");
 
-  const res = await fetch(`https://sglcn-x20-api.glitch.me/swap`, {
+  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ from, to, amount, wallet })
@@ -533,7 +533,7 @@ createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
   }
 
   try {
-    const res = await fetch('https://sglcn-x20-api.glitch.me/swap', {
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ from, to, amount, wallet })

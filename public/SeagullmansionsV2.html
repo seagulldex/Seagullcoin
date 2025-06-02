@@ -119,12 +119,12 @@
     }
 
     async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
       const data = await res.json();
       window.open(data.payloadURL, "_blank");
 
       const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+        const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
         const loginStatus = await check.json();
         if (loginStatus.loggedIn) {
           clearInterval(interval);
@@ -152,7 +152,7 @@
       }
 
       try {
-        const res = await fetch("https://sglcn-x20-api.glitch.me/pays", {
+        const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/pays", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userAddress: wallet })
@@ -182,7 +182,7 @@
       }
 
       try {
-        const res = await fetch("https://sglcn-x20-api.glitch.me/create-trustline", {
+        const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userAddress: wallet })

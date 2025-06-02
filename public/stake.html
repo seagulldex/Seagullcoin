@@ -85,7 +85,7 @@
         <li><a href="index.html">Home</a></li>
         <li><a href="SeagullDex.html">Trading</a></li>
         <li><a href="profile.html">Profile</a></li>
-        <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
+        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
       </ul>
     </nav>
   </header>
@@ -204,12 +204,12 @@
   }
 
   async function startLoginFlow() {
-    const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
     const data = await res.json();
     window.open(data.payloadURL, "_blank");
 
     const interval = setInterval(async () => {
-      const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+      const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
       const loginStatus = await check.json();
       if (loginStatus.loggedIn) {
         clearInterval(interval);
@@ -280,7 +280,7 @@
 
       try {
         // Fetch rewards history
-        const rewardsRes = await fetch(`https://sglcn-x20-api.glitch.me/stake-rewards/${wallet}`);
+        const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-rewards/${wallet}`);
         const rewardsData = await rewardsRes.json();
         const rewardsList = document.getElementById('rewards-list');
         rewardsList.innerHTML = '';
@@ -296,7 +296,7 @@
         }
 
         // Optionally, you can fetch current staking status here and show it
-        const statusRes = await fetch(`https://sglcn-x20-api.glitch.me/stake-status/latest/${wallet}`);
+        const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
         if (statusRes.ok) {
           const statusData = await statusRes.json();
           document.getElementById('staking-status').textContent = `Currently Staked: ${statusData.stakedAmount || 0} SeagullCoin`;
@@ -332,7 +332,7 @@
       const statusEl = document.getElementById('staking-status');
       pollInterval = setInterval(async () => {
         try {
-          const statusRes = await fetch(`https://sglcn-x20-api.glitch.me/stake-status/${uuid}`);
+          const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
           const statusData = await statusRes.json();
 
           if (statusData.signed) {
@@ -363,7 +363,7 @@
     const qr = document.getElementById('qr-code-2');
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-status/${uuid}`);
+        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
         const json = await res.json();
         if (json.signed) {
           clearInterval(interval);
@@ -392,7 +392,7 @@
     const qr = document.getElementById('qr-code-3');
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-status/${uuid}`);
+        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
         const json = await res.json();
         if (json.signed) {
           clearInterval(interval);
@@ -458,7 +458,7 @@
       return;
     }
     try {
-      const rewardsRes = await fetch(`https://sglcn-x20-api.glitch.me/stake-rewards/${wallet}`);
+      const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-rewards/${wallet}`);
       const rewards = await rewardsRes.json();
       const rewardsList = document.getElementById('rewards-list-2');
       rewardsList.innerHTML = '';
@@ -471,7 +471,7 @@
           rewardsList.appendChild(li);
         });
       }
-      const statusRes = await fetch(`https://sglcn-x20-api.glitch.me/stake-status/latest/${wallet}`);
+      const statusRes = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
       if (statusRes.ok) {
         const status = await statusRes.json();
         document.getElementById('staking-status-2').textContent = `Currently Staked: ${status.stakedAmount || 0} SeagullCoin`;
@@ -520,7 +520,7 @@
         return;
       }
       try {
-        const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-payload/${wallet}`);
+        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-payload/${wallet}`);
         const data = await res.json();
         if (!data.uuid) {
           alert('Error getting stake payload.');
@@ -548,7 +548,7 @@
     }
     try {
       // Call your existing stake API (same as first section)
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-payload-two/${wallet}`);
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-payload-two/${wallet}`);
       const data = await res.json();
       if (!data.uuid) {
         alert('Error getting stake payload.');
@@ -574,7 +574,7 @@
     }
     try {
       // Call your existing stake API (same as first section)
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/stake-payload-three/${wallet}`);
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-payload-three/${wallet}`);
       const data = await res.json();
       if (!data.uuid) {
         alert('Error getting stake payload.');

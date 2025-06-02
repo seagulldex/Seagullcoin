@@ -129,6 +129,7 @@ async function fetchIPFSMetadata(uri) {
   }
 }
 
+
 (async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
@@ -136,6 +137,7 @@ async function fetchIPFSMetadata(uri) {
       useUnifiedTopology: true,
     });
     console.log('✅ MongoDB connected');
+    mongoose.connection.close(); // Cleanly close
   } catch (err) {
     console.error('❌ MongoDB connection error:', err.message);
   }

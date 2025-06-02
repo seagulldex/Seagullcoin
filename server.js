@@ -2778,14 +2778,13 @@ app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
   try {
-    // Try loading from MongoDB first
+    // 1. Try loading from MongoDB cache
     const dbNFTs = await NFT.find({ wallet }).sort({ updatedAt: -1 });
-
     if (dbNFTs.length > 0) {
       return res.json({ nfts: dbNFTs });
     }
 
-    // Else: fetch from ledger + IPFS, then store
+    // 2. Fetch from XRPL and IPFS if not in DB
     const rawNFTs = await fetchAllNFTs(wallet);
 
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
@@ -2796,37 +2795,35 @@ app.get('/nfts/:wallet', async (req, res) => {
         const ipfsUrl = uri.replace('ipfs://', '');
         try {
           metadata = await fetchMetadataWithRetry(ipfsUrl);
-          if (metadata) {
-            collection = metadata.collection || metadata.name || null;
-            icon = metadata.image || null;
-          }
+          collection = metadata?.collection || metadata?.name || null;
+          icon = metadata?.image || null;
         } catch (err) {
           console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
         }
       }
 
-      // Save to DB
-      await NFT.findOneAndUpdate(
-        { wallet, NFTokenID: nft.NFTokenID },
-        {
-          wallet,
-          NFTokenID: nft.NFTokenID,
-          URI: uri,
-          collection,
-          icon,
-          metadata,
-          updatedAt: new Date()
-        },
-        { upsert: true, new: true }
-      );
-
-      return {
+      const nftDoc = {
+        wallet,
         NFTokenID: nft.NFTokenID,
         URI: uri,
         collection,
         icon,
-        metadata
+        metadata,
+        updatedAt: new Date()
       };
+
+      // 3. Save or update in DB (upsert ensures it's inserted if not found)
+      try {
+        await NFT.findOneAndUpdate(
+          { wallet, NFTokenID: nft.NFTokenID },
+          nftDoc,
+          { upsert: true, new: true }
+        );
+      } catch (dbErr) {
+        console.warn(`DB save error for ${nft.NFTokenID}: ${dbErr.message}`);
+      }
+
+      return nftDoc;
     }));
 
     res.json({ nfts: parsed });
@@ -2836,6 +2833,8 @@ app.get('/nfts/:wallet', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+ 
+          
 
 
       

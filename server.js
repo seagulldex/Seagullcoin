@@ -2773,6 +2773,45 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
   return metadata;
 };
 
+
+// After parsing NFT metadata...
+const parsed = await Promise.all(rawNFTs.map(async (nft) => {
+  const uri = hexToUtf8(nft.URI);
+  let metadata = null, collection = null, icon = null;
+
+  if (uri.startsWith('ipfs://')) {
+    const ipfsUrl = uri.replace('ipfs://', '');
+    try {
+      metadata = await fetchMetadataWithRetry(ipfsUrl);
+      collection = metadata?.collection || metadata?.name || null;
+      icon = metadata?.image || null;
+    } catch (err) {
+      console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
+    }
+  }
+
+  const nftDoc = {
+    wallet,
+    NFTokenID: nft.NFTokenID,
+    URI: uri,
+    collection,
+    icon,
+    metadata,
+    timestamp: new Date()
+  };
+
+  // Save to DB if not already saved
+  try {
+    const exists = await NFT.findOne({ NFTokenID: nft.NFTokenID });
+    if (!exists) await NFT.create(nftDoc);
+  } catch (dbErr) {
+    console.warn(`DB save error for ${nft.NFTokenID}:`, dbErr.message);
+  }
+
+  return nftDoc;
+}));
+
+
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;

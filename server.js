@@ -868,6 +868,26 @@ app.get('/signed-payloads', (req, res) => {
   });
 });
 
+app.get('/api/dbtest', async (req, res) => {
+  try {
+    const mongooseStatus = mongoose.connection.readyState; // 1 = connected
+    const statusText = {
+      0: '❌ Disconnected',
+      1: '✅ Connected',
+      2: '⏳ Connecting',
+      3: '⚠️ Disconnecting',
+    };
+
+    res.json({
+      mongoURI: process.env.MONGO_URI ? '✅ Set' : '❌ Missing',
+      status: mongooseStatus,
+      statusText: statusText[mongooseStatus] || 'Unknown',
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to check DB connection', details: err.message });
+  }
+});
+
 
 
 

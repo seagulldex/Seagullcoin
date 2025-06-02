@@ -75,7 +75,7 @@
         <li><a href="index.html">Home</a></li>
         <li><a href="SeagullDex.html">Trading</a></li>
         <li><a href="stake.html">Stake</a></li>
-        <li><a href="https://sglcn-x20-api.glitch.me/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
+        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
       </ul>
     </nav>
   </header>
@@ -158,12 +158,12 @@ async function updateWalletStatus() {
 }
 
 async function startLoginFlow() {
-  const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
   const data = await res.json();
   window.open(data.payloadURL, "_blank");
 
   const interval = setInterval(async () => {
-    const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
+    const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
     const loginStatus = await check.json();
 
     if (loginStatus.loggedIn) {
@@ -180,7 +180,7 @@ async function fetchNFTs(wallet) {
     document.getElementById('loading-spinner').style.display = 'block';
     document.getElementById('nft-container').style.display = 'none';
 
-    const res = await fetch(`https://sglcn-x20-api.glitch.me/nfts/${wallet}`);
+    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/nfts/${wallet}`);
     const data = await res.json();
     allNFTs = data.nfts || [];
     currentIndex = 0;
@@ -238,7 +238,7 @@ function displayNFTs() {
       }
 
       try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/transfer-nft', {
+        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/transfer-nft', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -287,7 +287,7 @@ function displayNFTs() {
   if (!confirmBurn) return;
 
   try {
-    const res = await fetch('https://sglcn-x20-api.glitch.me/burn-nft', {
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/burn-nft', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ walletAddress: wallet, nftId })
@@ -350,7 +350,7 @@ function displayNFTs() {
   buyButton.textContent = 'Buy with SeagullCoin';
   buyButton.onclick = async () => {
     try {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/buy-nft', {
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/buy-nft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -385,7 +385,7 @@ function displayNFTs() {
 
       const sender = localStorage.getItem("xumm_wallet_address");
       try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/burn-nft', {
+        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/burn-nft', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

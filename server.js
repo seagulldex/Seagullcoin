@@ -870,26 +870,32 @@ app.get('/signed-payloads', (req, res) => {
   });
 });
 
+// /api/dbtest endpoint for MongoDB connection test
 app.get('/api/dbtest', async (req, res) => {
-  try {
-    const mongooseStatus = mongoose.connection.readyState; // 1 = connected
-    const statusText = {
-      0: '❌ Disconnected',
-      1: '✅ Connected',
-      2: '⏳ Connecting',
-      3: '⚠️ Disconnecting',
-    };
+  const uri = process.env.MONGO_URI;
 
-    res.json({
-      mongoURI: process.env.MONGO_URI ? '✅ Set' : '❌ Missing',
-      status: mongooseStatus,
-      statusText: statusText[mongooseStatus] || 'Unknown',
-    });
+  if (!uri) {
+    return res.json({ mongoURI: '❌ Not set', status: 0, statusText: 'Missing URI' });
+  }
+
+  const client = new MongoClient(uri, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    }
+  });
+
+  try {
+    await client.connect();
+    await client.db('admin').command({ ping: 1 });
+    res.json({ mongoURI: '✅ Set', status: 1, statusText: '✅ Connected via MongoClient' });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to check DB connection', details: err.message });
+    res.json({ mongoURI: '✅ Set', status: 0, statusText: `❌ Disconnected: ${err.message}` });
+  } finally {
+    await client.close();
   }
 });
-
 
 
 

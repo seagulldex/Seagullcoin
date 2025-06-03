@@ -4988,13 +4988,6 @@ const NFTSchema = new mongoose.Schema({
 // Prevent model overwrite errors
 const NFT = mongoose.connection.models['NFT'] || mongoose.model('NFT', NFTSchema, 'nft');
 
-
-// Utility: Convert hex URI to UTF-8
-function hexToUtf8(hex) {
-  if (!hex) return '';
-  return Buffer.from(hex, 'hex').toString('utf8').replace(/\0/g, '');
-}
-
 // Utility: Fetch IPFS metadata (basic version, can add retries)
 async function fetchMetadataWithRetry(ipfsCID) {
   const res = await fetch(`https://ipfs.io/ipfs/${ipfsCID}`);

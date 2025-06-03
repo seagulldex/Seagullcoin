@@ -33,7 +33,6 @@ import swaggerJSDoc from 'swagger-jsdoc';
 import { processXummMinting } from './confirmPaymentXumm.js';
 import { confirmPayment } from './confirmPaymentXumm.js';
 import mime from 'mime';
-import NFT from './models/NFT.js';
 import { xummApi } from './xrplClient.js';
 import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the path is correct
 import { requireLogin } from './xummLogin.js';  // Adjust the path if needed

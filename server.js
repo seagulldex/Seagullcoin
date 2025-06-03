@@ -5038,6 +5038,22 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
   }
 });
 
+app.get('/test-insert', async (req, res) => {
+  try {
+    const dummyNFT = await NFT.create({
+      wallet: 'rTestWallet123',
+      NFTokenID: '000123ABCDEF',
+      URI: 'ipfs://dummyuri',
+      collection: 'Test Collection',
+      icon: 'ipfs://iconurl',
+      metadata: { name: 'Test NFT' }
+    });
+    res.json({ success: true, nft: dummyNFT });
+  } catch (err) {
+    console.error('Insert failed:', err);
+    res.status(500).json({ error: 'Insert failed' });
+  }
+});
 
 
 

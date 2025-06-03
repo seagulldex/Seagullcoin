@@ -2812,70 +2812,6 @@ const parsed = await Promise.all(rawNFTs.map(async (nft) => {
 }));
 
 
-// Test route to fetch NFTs for a wallet (limit to 20 NFTs)
-app.get('/nfts/:wallet', async (req, res) => {
-  const wallet = req.params.wallet;
-
-  try {
-    // 1. Try loading from MongoDB cache
-    const dbNFTs = await NFT.find({ wallet }).sort({ updatedAt: -1 });
-    if (dbNFTs.length > 0) {
-      return res.json({ nfts: dbNFTs });
-    }
-
-    // 2. Fetch from XRPL and IPFS if not in DB
-    const rawNFTs = await fetchAllNFTs(wallet);
-
-    const parsed = await Promise.all(rawNFTs.map(async (nft) => {
-      const uri = hexToUtf8(nft.URI);
-      let metadata = null, collection = null, icon = null;
-
-      if (uri.startsWith('ipfs://')) {
-        const ipfsUrl = uri.replace('ipfs://', '');
-        try {
-          metadata = await fetchMetadataWithRetry(ipfsUrl);
-          collection = metadata?.collection || metadata?.name || null;
-          icon = metadata?.image || null;
-        } catch (err) {
-          console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
-        }
-      }
-
-      const nftDoc = {
-        wallet,
-        NFTokenID: nft.NFTokenID,
-        URI: uri,
-        collection,
-        icon,
-        metadata,
-        updatedAt: new Date()
-      };
-
-      // 3. Save or update in DB (upsert ensures it's inserted if not found)
-      try {
-        await NFT.findOneAndUpdate(
-          { wallet, NFTokenID: nft.NFTokenID },
-          nftDoc,
-          { upsert: true, new: true }
-        );
-      } catch (dbErr) {
-        console.warn(`DB save error for ${nft.NFTokenID}: ${dbErr.message}`);
-      }
-
-      return nftDoc;
-    }));
-
-    res.json({ nfts: parsed });
-
-  } catch (err) {
-    console.error('NFT fetch error:', err);
-    res.status(500).json({ error: 'Failed to fetch NFTs' });
-  }
-});
- 
-          
-
-
       
 
 // /transfer-nft — direct transfer to another wallet
@@ -5038,23 +4974,86 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
   }
 });
 
-app.get('/test-insert', async (req, res) => {
-  try {
-    const dummyNFT = await NFT.create({
-      wallet: 'rTestWallet123',
-      NFTokenID: '000123ABCDEF',
-      URI: 'ipfs://dummyuri',
-      collection: 'Test Collection',
-      icon: 'ipfs://iconurl',
-      metadata: { name: 'Test NFT' }
-    });
-    res.json({ success: true, nft: dummyNFT });
-  } catch (err) {
-    console.error('Insert failed:', err);
-    res.status(500).json({ error: 'Insert failed' });
-  }
+// Inline NFT schema + model
+const NFTSchema = new mongoose.Schema({
+  wallet: String,
+  NFTokenID: String,
+  URI: String,
+  collection: String,
+  icon: String,
+  metadata: Object,
+  updatedAt: { type: Date, default: Date.now },
 });
 
+// NOTE: Collection name explicitly set to 'nft'
+const NFT = mongoose.models.NFT || mongoose.model('NFT', NFTSchema, 'nft');
+
+// Utility: Convert hex URI to UTF-8
+function hexToUtf8(hex) {
+  if (!hex) return '';
+  return Buffer.from(hex, 'hex').toString('utf8').replace(/\0/g, '');
+}
+
+// Utility: Fetch IPFS metadata (basic version, can add retries)
+async function fetchMetadataWithRetry(ipfsCID) {
+  const res = await fetch(`https://ipfs.io/ipfs/${ipfsCID}`);
+  if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
+  return await res.json();
+}
+
+// Endpoint: Fetch NFTs by wallet
+app.get('/nfts/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+
+  try {
+    // Try from DB first
+    const dbNFTs = await NFT.find({ wallet }).sort({ updatedAt: -1 });
+    if (dbNFTs.length > 0) return res.json({ nfts: dbNFTs });
+
+    // Else: fetch from ledger (replace this with actual fetchAllNFTs logic)
+    const rawNFTs = await fetchAllNFTs(wallet); // You must define fetchAllNFTs
+
+    const parsed = await Promise.all(rawNFTs.map(async (nft) => {
+      const uri = hexToUtf8(nft.URI);
+      let metadata = null, collection = null, icon = null;
+
+      if (uri.startsWith('ipfs://')) {
+        try {
+          const ipfsCID = uri.replace('ipfs://', '');
+          metadata = await fetchMetadataWithRetry(ipfsCID);
+          collection = metadata.collection || metadata.name || null;
+          icon = metadata.image || null;
+        } catch (err) {
+          console.warn(`IPFS fetch failed for ${nft.NFTokenID}:`, err.message);
+        }
+      }
+
+      const nftDoc = {
+        wallet,
+        NFTokenID: nft.NFTokenID,
+        URI: uri,
+        collection,
+        icon,
+        metadata,
+        updatedAt: new Date()
+      };
+
+      await NFT.findOneAndUpdate(
+        { wallet, NFTokenID: nft.NFTokenID },
+        nftDoc,
+        { upsert: true, new: true }
+      );
+
+      return nftDoc;
+    }));
+
+    res.json({ nfts: parsed });
+
+  } catch (err) {
+    console.error('NFT fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch NFTs' });
+  }
+});
 
 
 

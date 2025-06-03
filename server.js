@@ -4977,16 +4977,18 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
 // Inline NFT schema + model
 const NFTSchema = new mongoose.Schema({
   wallet: String,
-  NFTokenID: String,
+  NFTokenID: { type: String, unique: true }, // Prevent duplicate inserts
   URI: String,
   collection: String,
   icon: String,
   metadata: Object,
-  updatedAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
-// NOTE: Collection name explicitly set to 'nft'
-const NFT = mongoose.models.NFT || mongoose.model('NFT', NFTSchema, 'nft');
+
+// Prevent model overwrite errors
+const NFT = mongoose.connection.models['NFT'] || mongoose.model('NFT', NFTSchema, 'nft');
+
 
 // Utility: Convert hex URI to UTF-8
 function hexToUtf8(hex) {
@@ -5043,6 +5045,7 @@ app.get('/nfts/:wallet', async (req, res) => {
         nftDoc,
         { upsert: true, new: true }
       );
+      console.log(`Saved to DB: ${nft.NFTokenID} | ${result?._id}`);
 
       return nftDoc;
     }));

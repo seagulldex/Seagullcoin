@@ -144,63 +144,14 @@ async function fetchIPFSMetadata(uri) {
 })();
 
 
-async function getStakes() {
-  const client = new xrpl.Client("wss://s1.ripple.com");
-  await client.connect();
-
-  const response = await client.request({
-    command: "account_tx",
-    account: STAKING_WALLET,
-    ledger_index_min: -1,
-    ledger_index_max: -1,
-    limit: 50
-  });
-
-  const stakes = response.result.transactions
-    .filter(tx => tx.tx.TransactionType === "Payment")
-    .filter(tx => tx.tx.Amount.currency === "53656167756C6C436F696E000000000000000000") // SeagullCoin
-    .filter(tx => {
-      const memo = tx.tx.Memos?.[0]?.Memo;
-      const type = Buffer.from(memo?.MemoType, 'hex').toString();
-      return type === "stake";
-    })
-    .map(tx => ({
-      from: tx.tx.Account,
-      amount: tx.tx.Amount.value,
-      duration: Buffer.from(tx.tx.Memos[0].Memo.MemoData, 'hex').toString(), // e.g. "30d"
-      txHash: tx.tx.hash,
-      timestamp: tx.tx.date
-    }));
-
-  await client.disconnect();
-  return stakes;
-}
 
 
 
-// Function to get balance for a single address
-const getBalance = async (address) => {
-  const url = `https://s2.ripple.com:51234/`;  // This is the public XRP ledger API URL (Ripple)
+
+
+
+
   
-  const requestData = {
-    "method": "account_lines",
-    "params": [{
-      "account": address
-    }]
-  };
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestData)
-  });
-
-  const data = await response.json();
-  console.log(`Balance data for ${address}:`, data);
-  return data;
-};
 
 // Function to get balance for all users
 const getAllUserBalances = async (userAddresses) => {
@@ -209,21 +160,7 @@ const getAllUserBalances = async (userAddresses) => {
   console.log('All user balances:', allBalances);
 };
 
-// Fetch user addresses from the SQLite database
-const getUserAddressesFromDatabase = async () => {
-  return new Promise((resolve, reject) => {
-    const addresses = [];
-    db.all('SELECT address FROM users', [], (err, rows) => {
-      if (err) {
-        reject(err);
-      }
-      rows.forEach((row) => {
-        addresses.push(row.address);
-      });
-      resolve(addresses);
-    });
-  });
-};
+
 
 // Fetch user addresses from the database and get their balances
 const fetchAndCheckUserBalances = async () => {
@@ -263,227 +200,6 @@ if (!fs.existsSync(uploadsDir)) {
 
 
 // Create the transactions table if it doesn't exist
-db.serialize(() => {
-  
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_address TEXT NOT NULL,
-        nft_id TEXT NOT NULL,
-        transaction_type TEXT NOT NULL,  -- (mint, buy, sell, transfer)
-        amount REAL NOT NULL,  -- SeagullCoin amount
-        status TEXT NOT NULL,  -- (success, failed)
-        transaction_hash TEXT,
-        date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-});
-
-db.serialize(() => {
-  db.run(`DROP TABLE IF EXISTS signed_payloads`);
-  db.run(`
-    CREATE TABLE signed_payloads (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      uuid TEXT,
-      txid TEXT,
-      signed_at TEXT,
-      wallet TEXT
-    )
-  `);
-});
-
-
-// 2. Then later insert/read as needed
-const uuid = 'some-uuid';
-const txid = 'some-txid';
-const wallet = 'rExampleWalletAddress';
-const signedAt = new Date().toISOString();
-
-db.run(
-  `INSERT INTO signed_payloads (uuid, txid, signed_at, wallet) VALUES (?, ?, ?, ?)`,
-  [uuid, txid, signedAt, wallet],
-  function(err) {
-    if (err) {
-      console.error('Insert error:', err);
-    } else {
-      console.log('Inserted row with id:', this.lastID);
-
-      db.get(
-        `SELECT * FROM signed_payloads WHERE id = ?`,
-        [this.lastID],
-        (err, row) => {
-          if (err) {
-            console.error('Select error:', err);
-          } else {
-            const signedAtDate = new Date(row.signed_at);
-            console.log('Parsed signed_at:', signedAtDate.toString());
-          }
-        }
-      );
-    }
-  }
-);
-
-
-
-// Initialize SQLite database
-const dbPromise = open({
-  filename: './payments.db', // Database file name
-  driver: sqlite3.Database
-});
-
-// Create a table for payments if it doesn't exist
-async function createPaymentTable() {
-  const db = await dbPromise;
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS payments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      payloadUUID TEXT UNIQUE,
-      senderAddress TEXT,
-      amount REAL,
-      currency TEXT,
-      status TEXT,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-}
-
-createPaymentTable().catch(console.error);
-
-// Create the Messages table if it doesn't exist
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      senderId TEXT NOT NULL,
-      receiverId TEXT NOT NULL,
-      content TEXT NOT NULL,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-      status TEXT DEFAULT 'unread'
-    )
-  `);
-});
-
-// Create the staking table if it doesn't exist
-db.run(`
-  CREATE TABLE IF NOT EXISTS staking (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    walletAddress TEXT NOT NULL,
-    amount REAL NOT NULL,
-    duration INTEGER NOT NULL,
-    startTime INTEGER NOT NULL,
-    endTime INTEGER NOT NULL,
-    status TEXT NOT NULL,
-    rewards REAL DEFAULT 0
-  )
-`);
-
-// Create the user_profiles table if it doesn't exist
-  db.run(`
-    CREATE TABLE IF NOT EXISTS user_profiles (
-        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT,
-        avatar_url TEXT,
-        email TEXT,
-        wallet_address TEXT UNIQUE NOT NULL
-    )
-  `);
-
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS nfts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      wallet_address TEXT NOT NULL,
-      name TEXT NOT NULL,
-      description TEXT NOT NULL,
-      metadata_uri TEXT NOT NULL
-    )
-  `);
-});
-
-// Initialize SQLite Database
-const initDB = async () => {
-  // Open the database asynchronously
-  db = await open({
-    filename: './payloads.db',
-    driver: sqlite3.Database,
-  });
-
-  // Create table if it doesn't exist
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS used_payloads (
-      uuid TEXT PRIMARY KEY,
-      used_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-};
-
-const start = async () => {
-  try {
-    // Correctly using await inside an async function
-    await initDB(); 
-    console.log('Database initialized');
-  } catch (err) {
-    console.error('Error initializing DB:', err);
-  }
-};
-
-// Call the start function
-start();
-
-
-// Cleanup expired or rejected payloads
-const cleanupExpiredPayloads = async () => {
-  try {
-    // Set the expiration threshold (e.g., 24 hours ago)
-    const expirationThreshold = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
-
-    // Delete expired payloads based on creation time or status
-    await db.run(
-      `DELETE FROM used_payloads WHERE createdAt < ? OR meta_signed = false`,
-      expirationThreshold
-    );
-
-    console.log('Expired or rejected payloads have been cleaned up.');
-  } catch (err) {
-    console.error('Error during payload cleanup:', err);
-  }
-};
-
-initDB();
-// Mark payload as used in the database
-const markPayloadUsed = async (uuid) => {
-  await db.run(`INSERT OR IGNORE INTO used_payloads (uuid) VALUES (?)`, uuid);
-};
-
-// Check if payload is already used
-const isPayloadUsed = async (uuid) => {
-  const row = await db.get(`SELECT 1 FROM used_payloads WHERE uuid = ?`, uuid);
-  return !!row;
-};
-
-// 1. **Swagger Definition** (Swagger configuration)
-const swaggerDefinition = {
-  openapi: '3.0.0',
-  info: {
-    title: 'SeagullCoin NFT Minting API',
-    version: '1.0.0',
-    description: 'API documentation for minting NFTs with SeagullCoin payment',
-  },
-  servers: [
-    {
-      url: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/', // Change this URL when deploying
-    },
-  ],
-};
-
-// 2. **Swagger Setup** (Create options and generate Swagger spec)
-const options = {
-  swaggerDefinition,
-  apis: ['./mint-endpoint.js'], // Point to your API files (mint-endpoint.js)
-};
-
 
 
 // ===== Multer Setup =====
@@ -590,41 +306,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // ===== SQLite Init =====
 
-// Ensure the tables for users and messages exist
-db.serialize(() => {
-  // Create users table if it doesn't exist
-  db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT)");
 
-  // Create messages table if it doesn't exist
-  db.run(`
-    CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      sender TEXT NOT NULL,
-      recipient TEXT NOT NULL,
-      message TEXT NOT NULL,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-  
-  const saveNFTToDatabase = (walletAddress, name, description, metadataUri) => {
-  const query = `
-    INSERT INTO nfts (walletAddress, name, description, metadataUri)
-    VALUES (?, ?, ?, ?)
-  `;
-  
-  db.run(query, [walletAddress, name, description, metadataUri], function(err) {
-    if (err) {
-      console.error('Error saving NFT to database:', err.message);
-    } else {
-      console.log(`NFT saved with ID: ${this.lastID}`);
-    }
-  });
-};// Insert a test user
-  const stmt = db.prepare("INSERT INTO users (name) VALUES (?)");
-  stmt.run('SeagullCoin User');
-  stmt.finalize();
-});
-
+      
 // 1. Get all posts (for the community board)
 app.get('/api/posts', (req, res) => {
   db.all('SELECT * FROM posts ORDER BY created_at DESC', [], (err, rows) => {
@@ -636,29 +319,7 @@ app.get('/api/posts', (req, res) => {
   });
 });
 
-// 2. Create a new post
-app.post('/api/posts', (req, res) => {
-  const { username, content } = req.body;
-  
-  if (!username || !content) {
-    return res.status(400).send('Username and content are required');
-  }
 
-  const stmt = db.prepare('INSERT INTO posts (username, content) VALUES (?, ?)');
-  stmt.run(username, content, function (err) {
-    if (err) {
-      return res.status(500).send('Error creating post');
-    }
-    // Respond with the newly created post's data (including auto-generated ID)
-    res.status(201).json({
-      id: this.lastID,
-      username,
-      content,
-      created_at: new Date().toISOString(),
-    });
-  });
-  stmt.finalize();
-});
 
 app.use('/api', mintRouter);  // Assuming mintRouter handles your mint-related endpoints
 
@@ -695,59 +356,9 @@ app.get('/login', async (req, res) => {
 });
 
 
-const STAKE_AMOUNT = 50000; // SeagullCoin
-const LOCK_PERIOD_DAYS = 30;
-const LOCK_PERIOD_MS = LOCK_PERIOD_DAYS * 24 * 60 * 60 * 1000;
-const DAILY_REWARD = 16.7;
 
-const stakedWallets = {};
 
-// Add stake
-async function addStake(wallet) {
-  const startTime = Date.now();
-  const endTime = startTime + LOCK_PERIOD_MS;
-  const duration = LOCK_PERIOD_DAYS;
 
-  await db.run(`
-    INSERT OR REPLACE INTO staking (wallet, amount, duration, startTime, endTime, status, rewards)
-    VALUES (?, ?, ?, ?, ?, 'active', 0)
-  `, [wallet, STAKE_AMOUNT, duration, startTime, endTime]);
-
-  stakedWallets[wallet] = { startTime, endTime, amount: STAKE_AMOUNT };
-}
-
-// Get stake by wallet
-async function getStake(wallet) {
-  return db.get(`SELECT * FROM staking WHERE wallet = ?`, [wallet]);
-}
-
-// Remove stake on unstake
-async function removeStake(wallet) {
-  return db.run(`DELETE FROM staking WHERE wallet = ?`, [wallet]);
-}
-
-// Insert stake (alias for addStake with more params)
-function insertStake(wallet, amount, duration, startTime, endTime) {
-  return db.run(`
-    INSERT INTO staking (wallet, amount, duration, startTime, endTime, status, rewards)
-    VALUES (?, ?, ?, ?, ?, 'active', 0)
-  `, [wallet, amount, duration, startTime, endTime]);
-}
-
-// Stake duration check
-function calculateDaysStaked(stake) {
-  const now = Date.now();
-  const elapsed = now - stake.startTime;
-  const durationMs = stake.duration * 24 * 60 * 60 * 1000;
-
-  const daysStakedSoFar = Math.min(
-    Math.floor(elapsed / (24 * 60 * 60 * 1000)),
-    stake.duration
-  );
-
-  const eligible = elapsed >= durationMs;
-  return { daysStakedSoFar, eligible };
-}
 
 
 // Test route
@@ -766,108 +377,6 @@ app.post('/stake', async (req, res) => {
 
   await addStake(wallet);
   res.json({ success: true, message: 'Stake registered', wallet });
-});
-
-
-app.get('/stake-payload/:walletAddress', async (req, res) => {
-  try {
-    const walletAddress = req.params.walletAddress;
-
-    if (!walletAddress || !walletAddress.startsWith('r')) {
-      return res.status(400).json({ error: 'Invalid or missing wallet address' });
-    }
-
-    const payloadResponse = await xumm.payload.create({
-      txjson: {
-        TransactionType: 'Payment',
-        Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Your staking service wallet
-        Amount: {
-          currency: '53656167756C6C436F696E000000000000000000', // Hex for "SeagullCoin"
-          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-          value: '50000'
-        },
-        Memos: [
-          {
-            Memo: {
-              MemoType: Buffer.from('Monthly', 'utf8').toString('hex').toUpperCase(),
-              MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
-            }
-          }
-        ]
-      },
-      options: {
-        submit: true,
-        expire: 10
-      }
-    });
-
-    if (!payloadResponse?.uuid) {
-      throw new Error('XUMM payload creation failed');
-    }
-
-    res.json(payloadResponse);
-
-  } catch (error) {
-    console.error('Error creating stake payload:', error);
-    res.status(500).json({ error: 'Failed to create stake payload' });
-  }
-});
-
-function msToTime(duration) {
-  const seconds = Math.floor((duration / 1000) % 60),
-        minutes = Math.floor((duration / (1000 * 60)) % 60),
-        hours = Math.floor((duration / (1000 * 60 * 60)) % 24),
-        days = Math.floor(duration / (1000 * 60 * 60 * 24));
-
-  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
-}
-
-app.get('/payload-status/:uuid', async (req, res) => {
-  try {
-    const { uuid } = req.params;
-    const result = await xumm.payload.get(uuid);
-
-    if (result.meta?.resolved === false) {
-      return res.json({ status: "pending" });
-    }
-
-    if (result.meta?.signed === true) {
-      const txid = result.response.txid;
-      const account = result.response.account;
-      const timestamp = new Date().toISOString();
-
-      // Save to SQLite
-      db.run(
-  `INSERT OR REPLACE INTO signed_payloads (uuid, txid, wallet, signed_at)
-   VALUES (?, ?, ?, ?)`,
-  [uuid, txid, account, timestamp],
-  function (err) {
-    if (err) {
-      console.error("SQLite insert error:", err);
-      return res.status(500).json({ error: "DB insert failed" });
-    }
-
-    console.log("Payload signed & saved:", txid);
-    return res.json({ status: "signed", txid });
-  }
-);
-    } else {
-      return res.json({ status: "rejected" });
-    }
-  } catch (err) {
-    console.error("Error checking payload status:", err);
-    res.status(500).json({ error: "Could not check payload status" });
-  }
-});
-
-app.get('/signed-payloads', (req, res) => {
-  db.all("SELECT * FROM signed_payloads ORDER BY signed_at DESC", (err, rows) => {
-    if (err) {
-      console.error("Signed payloads query error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.json(rows);
-  });
 });
 
 // /api/dbtest endpoint for MongoDB connection test

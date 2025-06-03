@@ -4988,13 +4988,6 @@ const NFTSchema = new mongoose.Schema({
 // Prevent model overwrite errors
 const NFT = mongoose.connection.models['NFT'] || mongoose.model('NFT', NFTSchema, 'nft');
 
-// Utility: Fetch IPFS metadata (basic version, can add retries)
-async function fetchMetadataWithRetry(ipfsCID) {
-  const res = await fetch(`https://ipfs.io/ipfs/${ipfsCID}`);
-  if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
-  return await res.json();
-}
-
 // Endpoint: Fetch NFTs by wallet
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;

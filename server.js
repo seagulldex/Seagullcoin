@@ -144,50 +144,6 @@ async function fetchIPFSMetadata(uri) {
 })();
 
 
-
-
-
-
-
-
-
-  
-
-// Function to get balance for all users
-const getAllUserBalances = async (userAddresses) => {
-  const balancePromises = userAddresses.map(address => getBalance(address));  // Iterate over addresses
-  const allBalances = await Promise.all(balancePromises);  // Wait for all balances to be fetched
-  console.log('All user balances:', allBalances);
-};
-
-
-
-// Fetch user addresses from the database and get their balances
-const fetchAndCheckUserBalances = async () => {
-  try {
-    const userAddressesFromDb = await getUserAddressesFromDatabase();
-    await getAllUserBalances(userAddressesFromDb);
-  } catch (err) {
-    console.error('Error fetching user addresses or balances:', err);
-  }
-};
-
-// Call the function to fetch and check balances for all users
-fetchAndCheckUserBalances();
-
-
-
-const payments = {};
-
-
-
-/**
- * Confirm a XUMM payment was signed and meets all SGLCN minting criteria.
- * @param {string} payloadUUID - The XUMM payload UUID from the client.
- * @param {string} expectedSigner - The wallet address of the user.
- * @returns {Promise<{ success: boolean, reason?: string }>}
- */
-
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

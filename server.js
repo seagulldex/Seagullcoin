@@ -221,6 +221,14 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((req, res, next) => {
+  if (req.headers.cookie) {
+    console.log('Global cookie filter: stripping cookie headers');
+    delete req.headers.cookie;
+  }
+  next();
+});
+
 
 
 const mintLimiter = rateLimit({
@@ -4309,15 +4317,21 @@ const NFT = mongoose.connection.models['NFT'] || mongoose.model('NFT', NFTSchema
 
 // Endpoint: Fetch NFTs by wallet
 app.get('/nfts/:wallet', async (req, res) => {
+  //  Strip large cookies (optional but helps avoid 431 errors)
+  if (req.headers.cookie) {
+    console.log('Stripping cookies from NFT fetch...');
+    delete req.headers.cookie; // Just ignoring them is fine too
+  }
+
   const wallet = req.params.wallet;
 
   try {
-    // Try from DB first
+    // 1. Try from DB first
     const dbNFTs = await NFT.find({ wallet }).sort({ updatedAt: -1 });
     if (dbNFTs.length > 0) return res.json({ nfts: dbNFTs });
 
-    // Else: fetch from ledger (replace this with actual fetchAllNFTs logic)
-    const rawNFTs = await fetchAllNFTs(wallet); // You must define fetchAllNFTs
+    // 2. Fallback: fetch from ledger
+    const rawNFTs = await fetchAllNFTs(wallet); // You must define this
 
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
@@ -4344,13 +4358,13 @@ app.get('/nfts/:wallet', async (req, res) => {
         updatedAt: new Date()
       };
 
-      await NFT.findOneAndUpdate(
+      const result = await NFT.findOneAndUpdate(
         { wallet, NFTokenID: nft.NFTokenID },
         nftDoc,
         { upsert: true, new: true }
       );
-      console.log(`Saved to DB: ${nft.NFTokenID} | ${result?._id}`);
 
+      console.log(`Saved to DB: ${nft.NFTokenID} | ${result?._id}`);
       return nftDoc;
     }));
 
@@ -4362,6 +4376,7 @@ app.get('/nfts/:wallet', async (req, res) => {
   }
 });
 
+      
 
 
 // Call the XRPL ping when the server starts

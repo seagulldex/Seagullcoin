@@ -200,6 +200,28 @@ app.use(cors({ origin: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/', cred
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+// 🧼 Middleware: Detect oversized cookies or headers
+app.use((req, res, next) => {
+  const MAX_HEADER_SIZE = 8192; // 8KB safe limit
+
+  const headersLength = Object.entries(req.headers).reduce((sum, [key, val]) => {
+    return sum + key.length + String(val).length;
+  }, 0);
+
+  if (headersLength > MAX_HEADER_SIZE) {
+    console.warn(`Request header too large (${headersLength} bytes)`);
+    return res.status(431).send('⚠️ Request headers too large');
+  }
+
+  // Optionally warn on cookie size specifically
+  if (req.headers.cookie && req.headers.cookie.length > 4096) {
+    console.warn(`Cookie too large: ${req.headers.cookie.length} bytes`);
+  }
+
+  next();
+});
+
+
 
 const mintLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes

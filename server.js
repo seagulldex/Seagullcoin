@@ -144,6 +144,50 @@ async function fetchIPFSMetadata(uri) {
 })();
 
 
+
+
+
+
+
+
+
+  
+
+// Function to get balance for all users
+const getAllUserBalances = async (userAddresses) => {
+  const balancePromises = userAddresses.map(address => getBalance(address));  // Iterate over addresses
+  const allBalances = await Promise.all(balancePromises);  // Wait for all balances to be fetched
+  console.log('All user balances:', allBalances);
+};
+
+
+
+// Fetch user addresses from the database and get their balances
+const fetchAndCheckUserBalances = async () => {
+  try {
+    const userAddressesFromDb = await getUserAddressesFromDatabase();
+    await getAllUserBalances(userAddressesFromDb);
+  } catch (err) {
+    console.error('Error fetching user addresses or balances:', err);
+  }
+};
+
+// Call the function to fetch and check balances for all users
+fetchAndCheckUserBalances();
+
+
+
+const payments = {};
+
+
+
+/**
+ * Confirm a XUMM payment was signed and meets all SGLCN minting criteria.
+ * @param {string} payloadUUID - The XUMM payload UUID from the client.
+ * @param {string} expectedSigner - The wallet address of the user.
+ * @returns {Promise<{ success: boolean, reason?: string }>}
+ */
+
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -200,16 +244,6 @@ app.use(cors({ origin: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/', cred
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
-
-app.use((req, res, next) => {
-  if (req.headers.cookie) {
-    console.log('Global cookie filter: stripping cookie headers');
-    delete req.headers.cookie;
-  }
-  next();
-});
-
-
 
 const mintLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
@@ -322,6 +356,29 @@ app.get('/login', async (req, res) => {
 });
 
 
+
+
+
+
+
+// Test route
+app.get('/db-test', (req, res) => {
+  db.all('SELECT * FROM staking', (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/stake', async (req, res) => {
+  const { wallet } = req.body;
+  if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });
+
+  await addStake(wallet);
+  res.json({ success: true, message: 'Stake registered', wallet });
+});
+
 // /api/dbtest endpoint for MongoDB connection test
 app.get('/api/dbtest', async (req, res) => {
   const uri = process.env.MONGO_URI;
@@ -346,6 +403,149 @@ app.get('/api/dbtest', async (req, res) => {
     res.json({ mongoURI: '✅ Set', status: 0, statusText: `❌ Disconnected: ${err.message}` });
   } finally {
     await client.close();
+  }
+});
+
+
+
+// Endpoint: Stake status by wallet
+app.get('/stake-status/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+  try {
+    const stake = await getStake(wallet);
+    if (!stake) return res.json({ staked: false, wallet });
+
+    const startTime = new Date(stake.staked_at);
+    const durationDays = 30; // Staking period
+    const endTime = new Date(startTime);
+    endTime.setDate(startTime.getDate() + durationDays);
+
+    res.json({
+      staked: true,
+      wallet: stake.wallet_address,
+      amount: '500.00', // Fixed stake amount in SeagullCoin
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      duration: `${durationDays} days`,
+      timeRemaining: msToTime(endTime - new Date())
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'DB error', details: err.message });
+  }
+});
+
+
+
+
+
+app.get('/stake-rewards/:walletAddress', async (req, res) => {
+  const wallet = req.params.walletAddress;
+
+  const stake = await getStake(wallet);
+  if (!stake) return res.json({ eligible: false, message: 'Wallet not staked' });
+
+  const now = Date.now();
+  const daysStaked = Math.floor((now - stake.stakedAt) / (1000 * 60 * 60 * 24));
+  const cappedDays = Math.min(daysStaked, 30); // Cap to 30 days max
+  const reward = (cappedDays * DAILY_REWARD).toFixed(2);
+
+  res.json({
+    wallet,
+    daysStaked: cappedDays,
+    reward: Number(reward),
+    unlocksAt: new Date(stake.unlocksAt).toISOString(),
+    eligible: now >= stake.unlocksAt
+  });
+});
+
+
+
+app.post('/claim-rewards/:walletAddress', async (req, res) => {
+  const wallet = req.params.walletAddress;
+  const stake = stakedWallets[wallet];
+  if (!stake) return res.status(400).json({ error: 'Wallet not staked' });
+
+  const stakedDays = Math.floor((Date.now() - stake.stakedAt) / (1000 * 60 * 60 * 24));
+  if (stakedDays < 1) return res.status(400).json({ error: 'No rewards available yet' });
+
+  const rewardAmount = (stakedDays * 16.7).toFixed(0); // total reward in whole SGLCN
+
+  // Create XUMM payload to send rewardAmount SeagullCoin to wallet
+  try {
+    const payload = await xumm.payload.create({
+      txjson: {
+        TransactionType: "Payment",
+        Destination: wallet,
+        Amount: {
+          currency: "53656167756C6C436F696E000000000000000000",
+          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+          value: rewardAmount
+        }
+      }
+    });
+
+    // Reset staking timer or update stakedAt after payout
+    stakedWallets[wallet].stakedAt = Date.now();
+
+    res.json({
+      message: `Reward payout payload created for ${rewardAmount} SeagullCoin`,
+      uuid: payload.uuid,
+      next: payload.next,
+      refs: payload.refs
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create payout payload', details: err.message });
+  }
+});
+
+
+app.get('/unstake-payload/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+
+  try {
+    const stake = await getStake(wallet);
+    if (!stake) {
+      return res.status(400).json({ error: 'Wallet is not staked' });
+    }
+
+    const now = Date.now();
+    if (now < stake.unlocksAt) {
+      return res.status(400).json({
+        error: 'Tokens are still locked',
+        unlocksAt: new Date(stake.unlocksAt).toISOString(),
+        message: `Tokens will be unlocked after ${new Date(stake.unlocksAt).toDateString()}`
+      });
+    }
+
+    // Build XUMM payload to send 52,400 SeagullCoin from service wallet to user
+    const payload = {
+      txjson: {
+        TransactionType: 'Payment',
+        Account: process.env.SERVICE_WALLET,
+        Destination: stake.walletAddress,
+        Amount: {
+          currency: 'SeagullCoin',
+          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+          value: '50500'
+        }
+      },
+      options: {
+        submit: true,
+        expire: 10
+      }
+    };
+
+    const created = await xumm.payload.create(payload);
+
+    res.json({
+      message: 'Unstake payload created',
+      payload: created,
+      unlocksAt: new Date(stake.unlocksAt).toISOString()
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create unstake payload', details: err.message });
   }
 });
 
@@ -1422,7 +1622,6 @@ async function getTotalNFTs() {
     });
   });
 }
-
 
 app.get('/metrics', async (req, res) => {
   try {
@@ -3824,9 +4023,6 @@ app.get('/orderbook/view/scl-xau', async (req, res) => {
   }
 });
 
-
-
-
 app.get('/api/orderbook', async (req, res) => {
   const client = new Client('wss://s1.ripple.com');
 
@@ -4297,21 +4493,15 @@ const NFT = mongoose.connection.models['NFT'] || mongoose.model('NFT', NFTSchema
 
 // Endpoint: Fetch NFTs by wallet
 app.get('/nfts/:wallet', async (req, res) => {
-  //  Strip large cookies (optional but helps avoid 431 errors)
-  if (req.headers.cookie) {
-    console.log('Stripping cookies from NFT fetch...');
-    delete req.headers.cookie; // Just ignoring them is fine too
-  }
-
   const wallet = req.params.wallet;
 
   try {
-    // 1. Try from DB first
+    // Try from DB first
     const dbNFTs = await NFT.find({ wallet }).sort({ updatedAt: -1 });
     if (dbNFTs.length > 0) return res.json({ nfts: dbNFTs });
 
-    // 2. Fallback: fetch from ledger
-    const rawNFTs = await fetchAllNFTs(wallet); // You must define this
+    // Else: fetch from ledger (replace this with actual fetchAllNFTs logic)
+    const rawNFTs = await fetchAllNFTs(wallet); // You must define fetchAllNFTs
 
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
@@ -4338,13 +4528,13 @@ app.get('/nfts/:wallet', async (req, res) => {
         updatedAt: new Date()
       };
 
-      const result = await NFT.findOneAndUpdate(
+      await NFT.findOneAndUpdate(
         { wallet, NFTokenID: nft.NFTokenID },
         nftDoc,
         { upsert: true, new: true }
       );
-
       console.log(`Saved to DB: ${nft.NFTokenID} | ${result?._id}`);
+
       return nftDoc;
     }));
 
@@ -4356,7 +4546,6 @@ app.get('/nfts/:wallet', async (req, res) => {
   }
 });
 
-      
 
 
 // Call the XRPL ping when the server starts

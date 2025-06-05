@@ -69,6 +69,7 @@ import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 
+
 // ===== Init App and Env =====
 dotenv.config();
 
@@ -209,8 +210,6 @@ const getUserAddressesFromDatabase = async () => {
     });
   });
 };
-
-
 
 // Fetch user addresses from the database and get their balances
 const fetchAndCheckUserBalances = async () => {
@@ -460,7 +459,7 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/', // Change this URL when deploying
+      url: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app', // Change this URL when deploying
     },
   ],
 };
@@ -511,7 +510,7 @@ app.use(session({
 
 // Now, apply other middleware
 app.use(limiter);
-app.use(cors({ origin: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/', credentials: true }));
+app.use(cors({ origin: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -735,7 +734,6 @@ function calculateDaysStaked(stake) {
   const eligible = elapsed >= durationMs;
   return { daysStakedSoFar, eligible };
 }
-
 
 // Test route
 app.get('/db-test', (req, res) => {
@@ -1289,6 +1287,7 @@ app.get('/auth', async (req, res) => {
         res.status(500).json({ error: 'Error initiating XUMM authentication.' });
     }
 });// ===== Listing NFT Route =====
+
 
 app.post('/login', async (req, res) => {
   const { xummPayload } = req.body;
@@ -2107,9 +2106,6 @@ app.get('/metrics', async (req, res) => {
 
 // ========= Messages =============
 
-
-// ========= Messages =============
-
 // POST endpoint to send a message
 app.post('/send-message', async (req, res) => {
   const { sender, recipient, messageContent } = req.body;
@@ -2487,6 +2483,8 @@ app.get('/get-balance/:address', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch balance', details: error.message });
   }
 });
+
+
 
 // Load all NFTs
 app.get('/all-nfts', (req, res) => {
@@ -2867,6 +2865,10 @@ app.post('/transfer-nft', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Internal error' });
   }
 });
+
+
+
+
 
 app.post('/sell-nft', async (req, res) => {
   const { walletAddress, nftId, price } = req.body;
@@ -3566,6 +3568,8 @@ app.get('/payload-status/:uuid', async (req, res) => {
   }
 });
 
+
+
 app.post('/mint-complete', async (req, res) => {
   const { offerPayloadUUID, acceptPayloadUUID } = req.body;
 
@@ -4131,8 +4135,8 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
     submit: true,
     expire: 300,
     return_url: {
-      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
-      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
+      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/",
+      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/"
     }
   }
 };
@@ -4188,8 +4192,8 @@ app.post("/backup-pay-three", async (req, res) => {
     submit: true,
     expire: 300,
     return_url: {
-      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
-      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
+      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/",
+      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/"
     }
   }
 };
@@ -4326,205 +4330,6 @@ app.get('/api/sglcn-xrp', (req, res) => {
     res.status(500).json({ error: "Failed to read price history." });
   }
 });
-
-app.post('/orderbook/scl-xau', async (req, res) => {
-  const { side, amount, rate, wallet_address, mode = 'passive' } = req.body;
-
-  if (!side || !['buy', 'sell'].includes(side) || !amount || !rate || !wallet_address) {
-    return res.status(400).json({ error: 'Missing or invalid parameters.' });
-  }
-
-  const takerGets = side === 'buy'
-    ? getCurrencyObj('XAU', amount, issuers)
-    : getCurrencyObj('SeagullCoin', amount, issuers);
-
-  const takerPays = side === 'buy'
-    ? getCurrencyObj('SeagullCoin', amount * rate, issuers)
-    : getCurrencyObj('XAU', amount * rate, issuers);
-
-  const Flags = mode === 'ioc' ? 0x00020000 : 0x00000000; // tfImmediateOrCancel or none
-
-  // If mode is "ioc", check if liquidity exists before proceeding
-  if (mode === 'ioc') {
-    try {
-      const orderbookRequest = {
-        command: "book_offers",
-        taker_gets: takerGets,
-        taker_pays: takerPays,
-        ledger_index: "current"
-      };
-
-      const client = new xrpl.Client("wss://s2.ripple.com"); // or your preferred endpoint
-      await client.connect();
-      const orderbook = await client.request(orderbookRequest);
-      await client.disconnect();
-
-      const offers = orderbook.result.offers;
-      if (!offers || offers.length === 0) {
-        return res.status(400).json({ error: 'No matching offers available for immediate swap (liquidity too low).' });
-      }
-    } catch (err) {
-      console.error('Orderbook check failed:', err);
-      return res.status(500).json({ error: 'Failed to check orderbook liquidity.' });
-    }
-  }
-
-  const payload = {
-    txjson: {
-      TransactionType: 'OfferCreate',
-      Account: wallet_address,
-      TakerGets: takerGets,
-      TakerPays: takerPays,
-      Flags
-    },
-    options: {
-      submit: true,
-      return_url: {
-        app: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
-        web: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
-      }
-    }
-  };
-
-  try {
-    const { uuid, next } = await xumm.payload.create(payload);
-    res.json({ success: true, uuid, next });
-  } catch (e) {
-    console.error('XUMM Payload creation failed:', e);
-    res.status(500).json({ error: 'Failed to submit offer to orderbook.' });
-  }
-});
-
-app.get('/orderbook/view/scl-xau', async (req, res) => {
-  const client = new Client('wss://s1.ripple.com'); // Use mainnet URL if deploying to production
-
-  const withTimeout = (promise, ms) =>
-    Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('XRPL timeout')), ms)),
-    ]);
-
-  const TIMEOUT_CONNECT = 4000;
-  const TIMEOUT_REQUEST = 10000;
-
-  const SCL = {
-    currency: '53656167756C6C436F696E000000000000000000', // SeagullCoin (hex)
-    issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
-  };
-
-  const XAU = {
-    currency: 'XAU',
-    issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
-  };
-
-  try {
-    await withTimeout(client.connect(), TIMEOUT_CONNECT);
-
-    const [sclToXauRes, xauToSclRes] = await Promise.all([
-      withTimeout(client.request({
-        command: 'book_offers',
-        taker_gets: SCL,
-        taker_pays: XAU,
-        limit: 100
-      }), TIMEOUT_REQUEST),
-      withTimeout(client.request({
-        command: 'book_offers',
-        taker_gets: XAU,
-        taker_pays: SCL,
-        limit: 100
-      }), TIMEOUT_REQUEST)
-    ]);
-
-    const parseAmount = (amt) => {
-      if (typeof amt === 'string') return Number(amt) / 1e6;
-      if (amt?.value) return Number(amt.value);
-      return 0;
-    };
-
-    const parseOffer = (offer) => {
-      const get = offer.TakerGets;
-      const pay = offer.TakerPays;
-
-      const getsValue = parseAmount(get);
-      const paysValue = parseAmount(pay);
-
-      let price, amount;
-
-      if (typeof get === 'object' && typeof pay === 'object') {
-        price = paysValue / getsValue;
-        amount = getsValue;
-      } else {
-        return null; // skip XRP-based offers
-      }
-
-      if (!Number.isFinite(price) || !Number.isFinite(amount)) return null;
-
-      return {
-        price: Number(price.toFixed(8)),
-        amount: Number(amount.toFixed(2)),
-        offerAccount: offer.Account
-      };
-    };
-
-    const asksRaw = (sclToXauRes.result.offers || []).map(parseOffer).filter(Boolean);
-    const bidsRaw = (xauToSclRes.result.offers || []).map(parseOffer).filter(Boolean);
-
-    const aggregateOffers = (offers, isAsc) => {
-      const grouped = offers.reduce((acc, { price, amount }) => {
-        const key = price.toFixed(7);
-        acc[key] = (acc[key] || 0) + amount;
-        return acc;
-      }, {});
-
-      let cumSum = 0;
-      const result = Object.entries(grouped).map(([price, amount]) => {
-        const p = parseFloat(price);
-        const a = amount;
-        const value = p * a;
-        cumSum += a;
-        return { price: p, amount: a, value, cumSum };
-      });
-
-      result.sort((a, b) => (isAsc ? a.price - b.price : b.price - a.price));
-      return result;
-    };
-
-    const bids = aggregateOffers(bidsRaw, false);
-    const asks = aggregateOffers(asksRaw, true);
-
-    const highestBidPrice = bids.length ? bids[0].price : null;
-    const lowestAskPrice = asks.length ? asks[0].price : null;
-
-    const spread =
-      highestBidPrice !== null && lowestAskPrice !== null
-        ? Number((lowestAskPrice - highestBidPrice).toFixed(7))
-        : null;
-
-    const lastTradedPrice =
-      highestBidPrice && lowestAskPrice
-        ? Number(((highestBidPrice + lowestAskPrice) / 2).toFixed(7))
-        : 0;
-
-    await client.disconnect();
-
-    res.json({
-      bids,
-      asks,
-      summary: {
-        spread,
-        highestBidPrice,
-        lowestAskPrice,
-        lastTradedPrice
-      }
-    });
-
-  } catch (error) {
-    console.error('Orderbook fetch failed:', error.message || error);
-    if (client.isConnected()) await client.disconnect();
-    res.status(504).json({ error: 'Orderbook fetch timeout or failure' });
-  }
-});
-
 
 
 
@@ -4711,7 +4516,6 @@ setInterval(async () => {
     if (client.isConnected()) await client.disconnect();
   }
 }, 1800000); // every 5 mins
-
 
 // Single endpoint with optional ?history=true
 app.get('/api/sglcn-xau', async (req, res) => {
@@ -4935,51 +4739,6 @@ app.get('/rate-preview', async (req, res) => {
       console.error('Both directions failed:', err1.message, '|', err2.message);
       res.status(404).json({ error: 'No offers found in either direction.' });
     }
-  }
-});
-
-app.get('/amm/view/sglcn-xau', async (req, res) => {
-  const client = new Client("wss://s2.ripple.com");
-
-  try {
-    await client.connect();
-
-    const { result } = await client.request({
-      command: "amm_info",
-      asset: {
-        currency: "XAU",
-        issuer: "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ"
-      },
-      asset2: {
-        currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin (hex)
-        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
-      }
-    });
-
-    const amm = result.amm;
-    const base = parseFloat(amm.amount?.value || "0");
-    const quote = parseFloat(amm.amount2?.value || "0");
-
-    const price_SGLCN_per_XAU = base > 0 ? quote / base : 0;
-    const price_XAU_per_SGLCN = quote > 0 ? base / quote : 0;
-
-    await client.disconnect();
-
-    res.json({
-      amm: amm.account,
-      price_SGLCN_per_XAU: price_SGLCN_per_XAU.toFixed(6),
-      price_XAU_per_SGLCN: price_XAU_per_SGLCN.toFixed(10),
-      liquidity: {
-        base: base.toFixed(4),
-        quote: quote.toFixed(4)
-      },
-      trading_fee: `${amm.trading_fee}%`
-    });
-
-  } catch (e) {
-    console.error("AMM info error:", e);
-    try { await client.disconnect(); } catch {}
-    res.status(500).json({ error: e?.data?.error_message || e?.message || "Unknown error" });
   }
 });
 

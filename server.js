@@ -4519,14 +4519,18 @@ app.get('/nfts/:wallet', async (req, res) => {
       }
 
       const nftDoc = {
-        wallet,
-        NFTokenID: nft.NFTokenID,
-        URI: uri,
-        collection,
-        icon,
-        metadata,
-        updatedAt: new Date()
-      };
+  wallet,
+  NFTokenID: nft.NFTokenID,
+  URI: uri,
+  collection,
+  icon,
+  metadata: {
+    name: metadata?.name,
+    image: metadata?.image,
+    description: metadata?.description
+  },
+  updatedAt: new Date()
+   };
 
       await NFT.findOneAndUpdate(
         { wallet, NFTokenID: nft.NFTokenID },

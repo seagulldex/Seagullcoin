@@ -735,16 +735,6 @@ function calculateDaysStaked(stake) {
   return { daysStakedSoFar, eligible };
 }
 
-// Test route
-app.get('/db-test', (req, res) => {
-  db.all('SELECT * FROM staking', (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(rows);
-  });
-});
-
 app.post('/stake', async (req, res) => {
   const { wallet } = req.body;
   if (!wallet) return res.status(400).json({ error: 'Missing wallet address' });

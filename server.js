@@ -2771,14 +2771,15 @@ app.get('/nfts/:wallet', async (req, res) => {
         updatedAt: new Date()
       };
 
-      await NFT.findOneAndUpdate(
-        { wallet, NFTokenID: nft.NFTokenID },
-        nftDoc,
-        { upsert: true, new: true }
-      );
+const result = await NFT.findOneAndUpdate(
+  { wallet, NFTokenID: nft.NFTokenID },
+  nftDoc,
+  { upsert: true, new: true }
+);
 
-      return nftDoc;
-    }));
+console.log(`Saved to DB: ${nft.NFTokenID} | ${result?._id}`);
+return nftDoc;
+
 
     // Return just current page (after saving all to DB)
     const paginated = parsed.slice(skip, skip + limit);

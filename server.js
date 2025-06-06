@@ -2718,55 +2718,83 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
   return metadata;
 };
 
-// Test route to fetch NFTs for a wallet (limit to 20 NFTs)
+// Endpoint: Paginated NFT fetch
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
-
-  // Check cache
-  const cached = nftCache.get(wallet);
-  if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
-    return res.json({ nfts: cached.data });
-  }
+  const page = parseInt(req.query.page) || 1; // Default to page 1
+  const limit = parseInt(req.query.limit) || 20; // Default 20 per page
+  const skip = (page - 1) * limit;
 
   try {
-    const rawNFTs = await fetchAllNFTs(wallet);
+    // Try paginated DB fetch first
+    const dbNFTs = await NFT.find({ wallet })
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalCount = await NFT.countDocuments({ wallet });
+
+    if (dbNFTs.length > 0) {
+      return res.json({
+        nfts: dbNFTs,
+        page,
+        totalPages: Math.ceil(totalCount / limit),
+        total: totalCount
+      });
+    }
+
+    // Fallback: Fetch from ledger if DB empty
+    const rawNFTs = await fetchAllNFTs(wallet); // You must define this
 
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
       let metadata = null, collection = null, icon = null;
 
       if (uri.startsWith('ipfs://')) {
-        const ipfsUrl = uri.replace('ipfs://', '');
         try {
-          // Fetch metadata with retry mechanism
-          metadata = await fetchMetadataWithRetry(ipfsUrl);
-          if (metadata) {
-            collection = metadata.collection || metadata.name || null;
-            icon = metadata.image || null;
-          }
+          const ipfsCID = uri.replace('ipfs://', '');
+          metadata = await fetchMetadataWithRetry(ipfsCID);
+          collection = metadata.collection || metadata.name || null;
+          icon = metadata.image || null;
         } catch (err) {
-          console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
+          console.warn(`IPFS fetch failed for ${nft.NFTokenID}:`, err.message);
         }
       }
 
-      return {
+      const nftDoc = {
+        wallet,
         NFTokenID: nft.NFTokenID,
         URI: uri,
         collection,
         icon,
-        metadata
+        metadata,
+        updatedAt: new Date()
       };
+
+      await NFT.findOneAndUpdate(
+        { wallet, NFTokenID: nft.NFTokenID },
+        nftDoc,
+        { upsert: true, new: true }
+      );
+
+      return nftDoc;
     }));
 
-    // Cache the result
-    nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
+    // Return just current page (after saving all to DB)
+    const paginated = parsed.slice(skip, skip + limit);
+    res.json({
+      nfts: paginated,
+      page,
+      totalPages: Math.ceil(parsed.length / limit),
+      total: parsed.length
+    });
 
-    res.json({ nfts: parsed });
   } catch (err) {
     console.error('NFT fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+
 
 // Helper to fetch all NFTs for a wallet with proper caching
 async function fetchAllNFTs(wallet) {

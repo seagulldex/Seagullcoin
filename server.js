@@ -68,6 +68,7 @@ import { promisify } from 'util'; //
 import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
+import NFT from './models/NFT.js'; // Adjust as needed
 
 
 // ===== Init App and Env =====

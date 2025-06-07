@@ -2725,7 +2725,7 @@ const fetchMetadataWithRetry = async (ipfsCID, retries = 3) => {
   return metadata;
 };
 
-// Endpoint: Paginated NFT fetch
+
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   const page = parseInt(req.query.page) || 1;
@@ -2733,7 +2733,7 @@ app.get('/nfts/:wallet', async (req, res) => {
   const skip = (page - 1) * limit;
 
   try {
-    // Try DB first
+    // DB lookup
     const dbNFTs = await NFT.find({ wallet })
       .sort({ updatedAt: -1 })
       .skip(skip)
@@ -2750,23 +2750,24 @@ app.get('/nfts/:wallet', async (req, res) => {
       });
     }
 
-    // Fallback: Ledger
+    // Ledger fetch
     const rawNFTs = await fetchAllNFTs(wallet);
+    console.log(`Fetched ${rawNFTs.length} NFTs from XRPL for ${wallet}`);
 
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
-      const uri = hexToUtf8(nft.URI);
-      console.log(`Decoded URI: ${uri}`);
+      let uri = '', metadata = null, collection = null, icon = null;
 
-      let metadata = null, collection = null, icon = null;
+      try {
+        uri = hexToUtf8(nft.URI);
+        console.log(`Parsed URI for ${nft.NFTokenID}: ${uri}`);
 
-      if (uri && uri.startsWith('ipfs://')) {
-        try {
+        if (uri && uri.startsWith('ipfs://')) {
           metadata = await fetchMetadataWithRetry(uri);
           collection = metadata?.collection || metadata?.name || null;
           icon = metadata?.image || null;
-        } catch (err) {
-          console.warn(`Metadata fetch failed for ${nft.NFTokenID}: ${err.message}`);
         }
+      } catch (innerErr) {
+        console.warn(`Error parsing metadata for NFT ${nft.NFTokenID}: ${innerErr.message}`);
       }
 
       const nftDoc = {
@@ -2779,14 +2780,18 @@ app.get('/nfts/:wallet', async (req, res) => {
         updatedAt: new Date()
       };
 
-      const result = await NFT.findOneAndUpdate(
-        { wallet, NFTokenID: nft.NFTokenID },
-        nftDoc,
-        { upsert: true, new: true }
-      );
-
-      console.log(`Saved to DB: ${nft.NFTokenID} | ${result?._id}`);
-      return nftDoc;
+      try {
+        const result = await NFT.findOneAndUpdate(
+          { wallet, NFTokenID: nft.NFTokenID },
+          nftDoc,
+          { upsert: true, new: true }
+        );
+        console.log(`Saved to DB: ${nft.NFTokenID} | ${result?._id}`);
+        return nftDoc;
+      } catch (mongoErr) {
+        console.error(`MongoDB error on ${nft.NFTokenID}:`, mongoErr.message);
+        return nftDoc; // still include broken ones
+      }
     }));
 
     const paginated = parsed.slice(skip, skip + limit);
@@ -2799,56 +2804,10 @@ app.get('/nfts/:wallet', async (req, res) => {
 
   } catch (err) {
     console.error('NFT fetch error:', err);
-    res.status(500).json({ error: 'Failed to fetch NFTs' });
+    res.status(500).json({ error: 'Failed to fetch NFTs', reason: err.message });
   }
 });
 
-// Fetch NFTs from XRPL with marker pagination
-async function fetchAllNFTs(wallet) {
-  let allNFTs = [];
-  let marker = null;
-
-  try {
-    do {
-      const requestBody = {
-        method: 'account_nfts',
-        params: [{
-          account: wallet,
-          ledger_index: 'validated',
-          ...(marker && { marker })
-        }]
-      };
-
-      const response = await fetch(xrplApiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      let data;
-      try {
-        data = await response.json();
-      } catch (e) {
-        throw new Error(`XRPL JSON parse error: ${e.message}`);
-      }
-
-      if (data.result?.error) {
-        throw new Error(data.result.error_message || data.result.error);
-      }
-
-      allNFTs.push(...(data.result.account_nfts || []));
-      marker = data.result.marker || null;
-
-    } while (marker);
-
-    nftCache.set(wallet, { data: allNFTs, timestamp: Date.now() });
-    return allNFTs;
-
-  } catch (error) {
-    console.error('Error fetching NFTs from XRPL:', error);
-    throw new Error('Failed to fetch NFTs');
-  }
-}
 
 
 

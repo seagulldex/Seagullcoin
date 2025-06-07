@@ -2656,10 +2656,8 @@ app.get('/user/balance', async (req, res) => {
     }
 });
 
-const xrplApiUrl = 'https://s1.ripple.com:51234'; // For Mainnet
-
-
-
+// XRPL node (fallback if env not defined)
+const xrplApiUrl = process.env.XRPL_API || 'https://s2.ripple.com:51234';
 
 // Helper to convert hex-encoded URI to UTF-8 string
 function hexToUtf8(hex) {
@@ -2670,6 +2668,11 @@ function hexToUtf8(hex) {
     console.error('Invalid hex string:', hex);
     return '';
   }
+}
+
+// Normalize IPFS CID from URI
+function normalizeIpfsCid(uri) {
+  return uri.replace('ipfs://', '').replace(/^ipfs\//, '');
 }
 
 // Helper for fetch with timeout
@@ -2688,7 +2691,7 @@ const fetchWithTimeout = (url, options = {}, timeout = 7000) => {
   });
 };
 
-// Define multiple IPFS gateways
+// IPFS gateways
 const ipfsGateways = [
   'https://nftstorage.link/ipfs/',
   'https://gateway.pinata.cloud/ipfs/',
@@ -2697,20 +2700,24 @@ const ipfsGateways = [
   'https://ipfs.io/ipfs/'
 ];
 
-// Helper to fetch metadata from IPFS with retries
-const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
+// Retry metadata fetch from IPFS gateways
+const fetchMetadataWithRetry = async (ipfsCID, retries = 3) => {
   let attempt = 0;
   let metadata = null;
 
   while (attempt < retries && !metadata) {
-    const gatewayUrl = ipfsGateways[attempt % ipfsGateways.length];  // Cycle through gateways
+    const gatewayUrl = ipfsGateways[attempt % ipfsGateways.length];
+    const url = gatewayUrl + normalizeIpfsCid(ipfsCID);
     try {
-      const res = await fetchWithTimeout(gatewayUrl + ipfsUrl.replace('ipfs://', ''), {}, 10000);  // 10 seconds
+      console.log(`Attempting IPFS fetch: ${url}`);
+      const res = await fetchWithTimeout(url, {}, 10000);
       if (res.ok) {
         metadata = await res.json();
+      } else {
+        console.warn(`IPFS response not OK: ${res.status} at ${url}`);
       }
     } catch (err) {
-      console.warn(`Retry attempt ${attempt + 1} failed with gateway ${gatewayUrl}: ${err.message}`);
+      console.warn(`Retry ${attempt + 1} failed: ${err.message}`);
     }
     attempt++;
   }
@@ -2721,12 +2728,12 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
 // Endpoint: Paginated NFT fetch
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
-  const page = parseInt(req.query.page) || 1; // Default to page 1
-  const limit = parseInt(req.query.limit) || 20; // Default 20 per page
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
   const skip = (page - 1) * limit;
 
   try {
-    // Try paginated DB fetch first
+    // Try DB first
     const dbNFTs = await NFT.find({ wallet })
       .sort({ updatedAt: -1 })
       .skip(skip)
@@ -2743,21 +2750,22 @@ app.get('/nfts/:wallet', async (req, res) => {
       });
     }
 
-    // Fallback: Fetch from ledger if DB empty
-    const rawNFTs = await fetchAllNFTs(wallet); // You must define this
+    // Fallback: Ledger
+    const rawNFTs = await fetchAllNFTs(wallet);
 
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
+      console.log(`Decoded URI: ${uri}`);
+
       let metadata = null, collection = null, icon = null;
 
-      if (uri.startsWith('ipfs://')) {
+      if (uri && uri.startsWith('ipfs://')) {
         try {
-          const ipfsCID = uri.replace('ipfs://', '');
-          metadata = await fetchMetadataWithRetry(ipfsCID);
-          collection = metadata.collection || metadata.name || null;
-          icon = metadata.image || null;
+          metadata = await fetchMetadataWithRetry(uri);
+          collection = metadata?.collection || metadata?.name || null;
+          icon = metadata?.image || null;
         } catch (err) {
-          console.warn(`IPFS fetch failed for ${nft.NFTokenID}:`, err.message);
+          console.warn(`Metadata fetch failed for ${nft.NFTokenID}: ${err.message}`);
         }
       }
 
@@ -2771,17 +2779,16 @@ app.get('/nfts/:wallet', async (req, res) => {
         updatedAt: new Date()
       };
 
-const result = await NFT.findOneAndUpdate(
-  { wallet, NFTokenID: nft.NFTokenID },
-  nftDoc,
-  { upsert: true, new: true }
-);
+      const result = await NFT.findOneAndUpdate(
+        { wallet, NFTokenID: nft.NFTokenID },
+        nftDoc,
+        { upsert: true, new: true }
+      );
 
-console.log(`Saved to DB: ${nft.NFTokenID} | ${result?._id}`);
-return nftDoc;
+      console.log(`Saved to DB: ${nft.NFTokenID} | ${result?._id}`);
+      return nftDoc;
+    }));
 
-
-    // Return just current page (after saving all to DB)
     const paginated = parsed.slice(skip, skip + limit);
     res.json({
       nfts: paginated,
@@ -2796,8 +2803,7 @@ return nftDoc;
   }
 });
 
-
-// Helper to fetch all NFTs for a wallet with proper caching
+// Fetch NFTs from XRPL with marker pagination
 async function fetchAllNFTs(wallet) {
   let allNFTs = [];
   let marker = null;
@@ -2819,10 +2825,15 @@ async function fetchAllNFTs(wallet) {
         body: JSON.stringify(requestBody)
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error(`XRPL JSON parse error: ${e.message}`);
+      }
 
       if (data.result?.error) {
-        throw new Error(data.result.error_message);
+        throw new Error(data.result.error_message || data.result.error);
       }
 
       allNFTs.push(...(data.result.account_nfts || []));
@@ -2830,62 +2841,14 @@ async function fetchAllNFTs(wallet) {
 
     } while (marker);
 
-    // Cache full result
     nftCache.set(wallet, { data: allNFTs, timestamp: Date.now() });
     return allNFTs;
 
   } catch (error) {
-    console.error('Error fetching NFTs:', error);
+    console.error('Error fetching NFTs from XRPL:', error);
     throw new Error('Failed to fetch NFTs');
   }
 }
-
-// /transfer-nft — direct transfer to another wallet
-app.post('/transfer-nft', async (req, res) => {
-  const { walletAddress, nftId, recipientAddress } = req.body;
-
-  if (!walletAddress || !nftId || !recipientAddress) {
-    return res.status(400).json({ success: false, message: 'Missing parameters' });
-  }
-
-  try {
-    const tx = {
-      TransactionType: 'NFTokenCreateOffer',
-      Account: walletAddress,
-      NFTokenID: nftId,
-      Destination: recipientAddress,
-      Amount: "0",
-      Flags: 1 // 512: tfTransferable (for gifting)
-      
-
-    };
-
-    // If you're using XUMM:
-    const xummPayload = {
-      txjson: tx,
-      options: {
-        submit: true,
-        expire: 5,
-      }
-    };
-
-    const { created } = await xumm.payload.createAndSubscribe(xummPayload, event => {
-      if (event.data.signed === true) return event.data;
-    });
-
-    return res.json({
-      success: true,
-      next: created.next,
-      message: `Transfer request created. Sign to complete.`,
-    });
-
-  } catch (err) {
-    console.error('Transfer NFT error:', err);
-    return res.status(500).json({ success: false, message: 'Internal error' });
-  }
-});
-
-
 
 
 

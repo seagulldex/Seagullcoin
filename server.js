@@ -2763,6 +2763,31 @@ app.get('/nfts/:wallet', async (req, res) => {
     // Cache the result
     nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
 
+    // Save each NFT to MongoDB
+for (const nft of parsed) {
+  const nftDoc = {
+    wallet,
+    NFTokenID: nft.NFTokenID,
+    URI: nft.URI,
+    collection: nft.collection,
+    icon: nft.icon,
+    metadata: nft.metadata,
+    updatedAt: new Date()
+  };
+
+  try {
+    await NFT.findOneAndUpdate(
+      { wallet, NFTokenID: nft.NFTokenID },
+      nftDoc,
+      { upsert: true, new: true }
+    );
+    console.log(`✅ Saved to DB: ${nft.NFTokenID}`);
+  } catch (err) {
+    console.warn(`⚠️ DB Save failed for ${nft.NFTokenID}: ${err.message}`);
+  }
+}
+
+
     res.json({ nfts: parsed });
   } catch (err) {
     console.error('NFT fetch error:', err);

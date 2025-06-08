@@ -4714,6 +4714,10 @@ app.get('/rate-preview', async (req, res) => {
   }
 });
 
+app.get('/db/nfts/:wallet', async (req, res) => {
+  const docs = await NFT.find({ wallet: req.params.wallet }).limit(100);
+  res.json({ count: docs.length, nfts: docs });
+});
 
 
 

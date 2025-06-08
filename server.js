@@ -2663,6 +2663,9 @@ const xrplApiUrl = 'https://s1.ripple.com:51234'; // For Mainnet
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const MAX_NFTS = 20;
 
+app.get('/nfts/:wallet', async (req, res) => {
+  const wallet = req.params.wallet;
+
 // Simple in-memory cache using Map
 const nftCache = new Map();
 

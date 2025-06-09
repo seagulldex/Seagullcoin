@@ -1619,17 +1619,6 @@ app.get('/login-status', async (req, res) => {
   }
 });
 
-app.get('/db-test', (req, res) => {
-  db.all('SELECT * FROM staking', (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    res.json(rows);
-  });
-});
-
-
 function calculateDaysStaked(stake) {
   const now = Date.now();
   const start = stake.startTime;

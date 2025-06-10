@@ -431,9 +431,10 @@ async function updateRatePreview() {
   const rateData = await getRatePreview(from, to);
 
   if (rateData && rateData.rate) {
-    document.getElementById('rate-preview').textContent = `Rate: 1 ${from} = ${rateData.rate} ${to}`;
+    // Update swap-price input
+    document.getElementById('swap-price').value = rateData.rate;
   } else {
-    document.getElementById('rate-preview').textContent = 'Failed to fetch rate preview.';
+    document.getElementById('swap-price').value = 'Unavailable';
   }
 }
 

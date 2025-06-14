@@ -1279,6 +1279,10 @@ app.get('/auth', async (req, res) => {
     }
 });// ===== Listing NFT Route =====
 
+app.get('/ping', (req, res) => {
+  res.send('pong');
+});
+
 
 app.post('/login', async (req, res) => {
   const { xummPayload } = req.body;

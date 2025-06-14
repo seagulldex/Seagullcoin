@@ -4725,16 +4725,14 @@ app.get('/db/nfts/:wallet', async (req, res) => {
   res.json({ count: docs.length, nfts: docs });
 });
 
-app.get('/buy/:walletAddress', async (req, res) => {
+
+app.post('/buying', async (req, res) => {
   try {
-    const walletAddress = req.params.walletAddress;
+    const { walletAddress, itemName, price, shipping, address } = req.body;
 
     if (!walletAddress || !walletAddress.startsWith('r')) {
       return res.status(400).json({ error: 'Invalid or missing wallet address' });
     }
-
-    // Example query: ?itemName=Mug&price=25&shipping=Express&address=123%20Ocean%20Ave
-    const { itemName, price, shipping, address } = req.query;
 
     if (!itemName || !price || !shipping || !address) {
       return res.status(400).json({ error: 'Missing required purchase details' });
@@ -4793,6 +4791,8 @@ app.get('/buy/:walletAddress', async (req, res) => {
     res.status(500).json({ error: 'Failed to create buy payload' });
   }
 });
+    
+      
 
 
 

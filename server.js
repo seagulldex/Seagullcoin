@@ -5207,7 +5207,7 @@ app.post('/create-giftcard-order', async (req, res) => {
         Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Your receiving wallet
         Amount: {
           currency: 'SGLCN',
-          value: price.toString(),
+          value: price.toFixed(6),
           issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
         },
         Flags: 2147483648 // tfFullyCanonicalSig flag recommended for issued currency payments

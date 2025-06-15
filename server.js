@@ -5246,6 +5246,30 @@ app.post("/create-giftcard-order", async (req, res) => {
   }
 });
 
+app.post('/xumm-webhook', async (req, res) => {
+  const data = req.body;
+
+  // Check the payload UUID & transaction result
+  console.log('Webhook received:', data);
+
+  if (data.signed === true) {
+    // Payment was signed and successfully submitted
+    const { identifier, blob } = data.payload.custom_meta || {};
+
+    // Extract gift card order info from blob
+    const { brand, amount, wallet, recipientEmail } = blob || {};
+
+    // TODO: Fulfill the order here (send gift card code, update DB, notify user, etc)
+    console.log(`Payment confirmed for gift card: ${brand} x${amount} to ${recipientEmail}`);
+
+    // Send 200 response to acknowledge webhook
+    res.status(200).send('OK');
+  } else {
+    // Payment rejected or not signed
+    console.log('Payment not signed or rejected.');
+    res.status(200).send('OK');
+  }
+});
 
 
 

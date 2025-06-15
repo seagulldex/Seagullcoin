@@ -5263,14 +5263,10 @@ console.log('Blob details:', JSON.stringify(blob, null, 2));
   }
 });
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
 app.get('/test-mongodb', async (req, res) => {
   try {
     await mongoose.connect(MONGODB_URI, {
-      dbName: 'nft_marketplace_nfts',
-      useNewUrlParser: true,
-      useUnifiedTopology: true
+      dbName: 'nft_marketplace_nfts'
     });
     await mongoose.connection.close();
     res.send('✅ MongoDB connected and closed successfully');

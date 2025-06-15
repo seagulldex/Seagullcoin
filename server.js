@@ -5130,58 +5130,56 @@ async function performAMMSwap(account, amount) {
   return tx;
 }
 
+
+
+
 app.post('/create-merch-order', async (req, res) => {
-  const { productName, priceSGLCN, wallet, shipping, address } = req.body;
+  const { productName, priceSGLCN, wallet, shipping, address } = req.body;
 
-  console.log('Received merch order:', {
-    productName,
-    priceSGLCN,
-    wallet,
-    shipping,
-    address
-  });
+  console.log('Received merch order:', { productName, priceSGLCN, wallet, shipping, address });
 
-  const payload = {
-    txjson: {
-      TransactionType: 'Payment',
-      Destination: 'YOUR_XRPL_WALLET_ADDRESS', // replace this!
-      Amount: (priceSGLCN * 1_000_000).toString(),
-    },
-    custom_meta: {
-      identifier: `MERCH-${Date.now()}-${productName}`,
-      blob: {
-        product: productName,
-        shipping,
-        wallet,
-        address
-      }
-    }
-  };
+  const payload = {
+    txjson: {
+      TransactionType: 'Payment',
+      Destination: 'rEXAMPLEDESTINATIONADDRESS', // Must be a real XRPL address!
+      Amount: (parseFloat(priceSGLCN) * 1_000_000).toString()
+    },
+    options: {
+      submit: true
+    },
+    custom_meta: {
+      identifier: `MERCH-${Date.now()}-${productName}`,
+      blob: {
+        product: productName,
+        shipping,
+        wallet,
+        address
+      }
+    }
+  };
 
-  try {
-    console.log('Sending payload to XUMM...');
-    const result = await xumm.payload.create(payload);
+  try {
+    const result = await xumm.payload.create(payload);
 
-    if (!result || !result.uuid || !result.next) {
-      throw new Error('Invalid response from XUMM: ' + JSON.stringify(result));
-    }
+    if (!result || !result.uuid || !result.next) {
+      throw new Error('Invalid response from XUMM: ' + JSON.stringify(result));
+    }
 
-    console.log('XUMM payload created:', result.uuid);
-
-    res.json({
-      success: true,
-      payloadUUID: result.uuid,
-      payloadURL: result.next.always
-    });
-  } catch (error) {
-    console.error('❌ Error creating XUMM payload:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create payment payload',
-      message: error.message
-    });
-  }
+    res.json({
+      success: true,
+      payloadUUID: result.uuid,
+      payloadURL: result.next.always
+    });
+  } catch (error) {
+    console.error('❌ XUMM Payload Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create payment payload',
+      message: error.message
+    });
+  }
 });
+
 
 
 

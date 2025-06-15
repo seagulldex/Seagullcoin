@@ -1002,21 +1002,6 @@ app.get('/unstake-payload/:wallet', async (req, res) => {
   }
 });
 
-const MONGODB_URI = process.env.MONGODB_URI || 'your-mongodb-uri-here';
-
-async function testConnection() {
-  try {
-    await mongoose.connect(MONGODB_URI);
-    console.log('✅ MongoDB connected successfully');
-    await mongoose.connection.close();
-    console.log('Connection closed');
-  } catch (err) {
-    console.error('❌ MongoDB connection error:', err);
-  }
-}
-
-testConnection();
-
 app.get('/user', async (req, res) => {
   const address = req.query.address;
   if (!address) return res.status(400).json({ error: 'Missing address' });
@@ -5278,13 +5263,19 @@ console.log('Blob details:', JSON.stringify(blob, null, 2));
   }
 });
 
+const MONGODB_URI = process.env.MONGODB_URI;
+
 app.get('/test-mongodb', async (req, res) => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(MONGODB_URI, {
+      dbName: 'nft_marketplace_nfts',
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
     await mongoose.connection.close();
     res.send('✅ MongoDB connected and closed successfully');
   } catch (err) {
-    res.status(500).send('❌ MongoDB connection failed: ' + err.message);
+    res.status(500).send(`❌ MongoDB connection failed: ${err.code} - ${err.message}`);
   }
 });
 

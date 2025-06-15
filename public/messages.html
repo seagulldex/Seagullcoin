@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Messages - SGLCN-X20 NFT Minter</title>
+  <title>Buy Gift Cards with SeagullCoin</title>
   <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="header.css"/>
   <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
@@ -33,7 +33,7 @@
       border: 2px solid #333;
       border-radius: 10px;
       padding: 6px 12px;
-      background-color: #fff; /* White background for the login container */
+      background-color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -46,129 +46,41 @@
       font-weight: bold;
     }
 
-    #wallet-indicator.red {
-      color: #ff4444;
-    }
-
-    #wallet-indicator.green {
-      color: #44ff44;
-    }
-
-    header {
-      margin-top: 60px;
-    }
-
-    nav ul {
-      display: flex;
-      list-style-type: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    nav ul li {
-      margin: 0 15px;
-    }
-
-    nav ul li a {
-      text-decoration: none;
-      color: white;
-      font-weight: bold;
-    }
-
-    nav ul li a:hover {
-      text-decoration: underline;
-    }
+    #wallet-indicator.red { color: #ff4444; }
+    #wallet-indicator.green { color: #44ff44; }
 
     main {
-      margin: 80px 20px 20px 20px;
+      margin: 80px 20px;
     }
 
-    .message-container {
+    .giftcard-container {
       display: flex;
+      flex-wrap: wrap;
       gap: 20px;
-      margin-top: 30px;
-      height: 500px;
     }
 
-    .inbox {
-      width: 250px;
+    .giftcard {
       background: #1a1a1a;
-      border-radius: 10px;
-      overflow-y: auto;
-      padding: 10px;
       border: 1px solid #333;
-    }
-
-    .inbox-message {
-      padding: 10px;
-      border-bottom: 1px solid #333;
-      cursor: pointer;
-    }
-
-    .inbox-message:hover {
-      background-color: #2a2a2a;
-    }
-
-    .chat-box {
-      flex: 1;
-      background: #1a1a1a;
       border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #333;
+      padding: 20px;
+      width: 200px;
+      text-align: center;
     }
 
-    .chat-log {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-    }
-
-    .chat-entry {
-      margin-bottom: 10px;
-    }
-
-    .chat-entry.you {
-      text-align: right;
-    }
-
-    .chat-entry.them {
-      text-align: left;
-    }
-
-    .chat-form {
-      display: flex;
-      border-top: 1px solid #333;
-    }
-
-    .chat-form textarea {
-      flex: 1;
-      height: 60px;
-      background: #000;
-      color: #fff;
-      border: none;
-      padding: 10px;
-      resize: none;
-    }
-
-    .chat-form button {
+    .giftcard button {
       background: #444;
       color: #fff;
       border: none;
-      padding: 0 20px;
+      padding: 10px;
       font-weight: bold;
+      margin-top: 10px;
       cursor: pointer;
     }
 
-    .chat-form button:disabled {
+    .giftcard button:disabled {
       background: #222;
       cursor: not-allowed;
-    }
-
-    footer {
-      text-align: center;
-      padding: 20px;
-      color: #888;
     }
   </style>
 </head>
@@ -181,43 +93,34 @@
     </div>
   </div>
 
-  <header>
-    <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="nfts.html">NFTs</a></li>
-        <li><a href="mint.html">Mint NFT</a></li>
-        <li><a href="messages.html">Messages</a></li>
-      </ul>
-    </nav>
-  </header>
-
   <main>
-    <h1>Messages</h1>
-    <div id="wallet-info" style="display:none;">Connected: <span id="wallet-address"></span></div>
+    <h1>Buy Gift Cards with SeagullCoin</h1>
+    <p>Select a gift card and complete payment using your SeagullCoin (SGLCN) wallet.</p>
 
-    <div class="message-container">
-      <div class="inbox" id="inbox"></div>
-      <div class="chat-box">
-        <div class="chat-log" id="chat-log"></div>
-        <div class="chat-form">
-          <textarea id="message-text" placeholder="Write a message..."></textarea>
-          <button id="send-button" onclick="sendMessage()" disabled>Send</button>
-        </div>
+    <div class="giftcard-container">
+      <div class="giftcard">
+        <h3>Amazon $25</h3>
+        <p>Price: 250 SGLCN</p>
+        <button onclick="buyGiftCard('Amazon', 25, 250)">Buy</button>
+      </div>
+
+      <div class="giftcard">
+        <h3>Steam $20</h3>
+        <p>Price: 200 SGLCN</p>
+        <button onclick="buyGiftCard('Steam', 20, 200)">Buy</button>
+      </div>
+
+      <div class="giftcard">
+        <h3>Walmart $50</h3>
+        <p>Price: 500 SGLCN</p>
+        <button onclick="buyGiftCard('Walmart', 50, 500)">Buy</button>
       </div>
     </div>
   </main>
 
-  <footer>
-    <p>&copy; 2025 SeagullCoin NFT Marketplace</p>
-  </footer>
-
   <script>
-    let currentChatWith = null;
-
     const walletStatus = document.getElementById('wallet-container');
     const walletIndicator = document.getElementById('wallet-indicator');
-    const sendButton = document.getElementById('send-button');
 
     window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
@@ -227,8 +130,6 @@
       const wallet = localStorage.getItem('xumm_wallet_address');
       if (!wallet) {
         startLoginFlow();
-      } else {
-        window.location.href = `/profile.html?uuid=${JSON.parse(localStorage.getItem('xumm_user')).uuid}`;
       }
     });
 
@@ -236,18 +137,13 @@
       const wallet = localStorage.getItem('xumm_wallet_address');
 
       if (wallet) {
-        document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wallet-address').innerText = wallet;
-        walletIndicator.textContent = '🟢 Profile';
+        walletIndicator.textContent = '🟢 Connected';
         walletIndicator.classList.remove('red');
         walletIndicator.classList.add('green');
-        sendButton.disabled = false;
-        loadInbox(wallet);
       } else {
         walletIndicator.textContent = '🔴 Login';
         walletIndicator.classList.remove('green');
         walletIndicator.classList.add('red');
-        sendButton.disabled = true;
       }
     }
 
@@ -271,58 +167,18 @@
       }, 3000);
     }
 
-    async function loadInbox(wallet) {
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/get-message?wallet=${wallet}`);
-      const messages = await res.json();
-      const inbox = document.getElementById('inbox');
-      inbox.innerHTML = '';
-
-      const contacts = [...new Set(messages.map(msg => msg.sender === wallet ? msg.recipient : msg.sender))];
-
-      contacts.forEach(addr => {
-        const div = document.createElement('div');
-        div.className = 'inbox-message';
-        div.innerText = addr;
-        div.onclick = () => loadConversation(wallet, addr);
-        inbox.appendChild(div);
-      });
-    }
-
-    async function loadConversation(user, other) {
-      currentChatWith = other;
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/get-message?wallet=${user}`);
-      const messages = await res.json();
-      const chatLog = document.getElementById('chat-log');
-      chatLog.innerHTML = '';
-
-      const conversation = messages.filter(m => (m.sender === other && m.recipient === user) || (m.sender === user && m.recipient === other));
-      conversation.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = `chat-entry ${msg.sender === user ? 'you' : 'them'}`;
-        div.innerText = msg.text;
-        chatLog.appendChild(div);
-      });
-
-      chatLog.scrollTop = chatLog.scrollHeight;
-    }
-
-    async function sendMessage() {
+    async function buyGiftCard(store, valueUSD, priceSGLCN) {
       const wallet = localStorage.getItem('xumm_wallet_address');
-      const text = document.getElementById('message-text').value.trim();
+      if (!wallet) return alert("Please connect your wallet first.");
 
-      if (!wallet || !currentChatWith || !text) {
-        alert("Missing information to send message.");
-        return;
-      }
-
-      await fetch("https://sglcn-x20-api.glitch.me/send-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sender: wallet, recipient: currentChatWith, text })
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/create-purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ store, valueUSD, priceSGLCN, wallet })
       });
 
-      document.getElementById('message-text').value = '';
-      loadConversation(wallet, currentChatWith);
+      const data = await res.json();
+      window.open(data.payloadURL, '_blank');
     }
   </script>
 </body>

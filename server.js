@@ -5133,8 +5133,6 @@ async function performAMMSwap(account, amount) {
 app.post('/create-merch-order', async (req, res) => {
   const { productName, priceSGLCN, wallet, shipping, address } = req.body;
 
-  console.log('Received merch order:', { productName, priceSGLCN, wallet, shipping, address });
-
   const price = parseFloat(priceSGLCN);
   if (isNaN(price) || price <= 0) {
     return res.status(400).json({ error: 'Invalid priceSGLCN value' });
@@ -5143,8 +5141,12 @@ app.post('/create-merch-order', async (req, res) => {
   const payload = {
     txjson: {
       TransactionType: 'Payment',
-      Destination: 'rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe', // Replace with your valid wallet
-      Amount: (price * 1_000_000).toString()
+      Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Your receiving wallet
+      Amount: {
+        currency: 'SGLCN',
+        value: price.toString(),
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+      }
     },
     custom_meta: {
       identifier: `MERCH-${Date.now()}-${productName}`,
@@ -5178,7 +5180,6 @@ app.post('/create-merch-order', async (req, res) => {
     });
   }
 });
-
 
 
 

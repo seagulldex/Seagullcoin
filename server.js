@@ -5130,30 +5130,46 @@ async function performAMMSwap(account, amount) {
   return tx;
 }
 
-app.post('/create-merch-order', async (req, res) => {
-  const { productName, priceSGLCN, wallet, shipping } = req.body;
 
-  // Generate a XUMM payment payload
+
+function timeoutPromise(ms) {
+  return new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('XUMM request timed out')), ms)
+  );
+}
+
+app.post('/create-merch-order', async (req, res) => {
+  const { productName, priceSGLCN, wallet, shipping, address } = req.body; // 👈 include address
+
   const payload = {
     txjson: {
       TransactionType: 'Payment',
       Destination: 'YOUR_XRPL_WALLET_ADDRESS',
-      Amount: (priceSGLCN * 1_000_000).toString(), // Adjust for drops
+      Amount: (priceSGLCN * 1_000_000).toString(),
     },
     custom_meta: {
       identifier: `MERCH-${Date.now()}-${productName}`,
       blob: {
         product: productName,
         shipping,
-        wallet
+        wallet,
+        address // 👈 add address here
       }
     }
   };
 
-  const { created, uuid, next } = await xumm.payload.create(payload);
-  res.json({ payloadUUID: uuid, payloadURL: next.always });
-});
+  try {
+    const { created, uuid, next } = await Promise.race([
+      xumm.payload.create(payload),
+      timeoutPromise(10000)
+    ]);
 
+    res.json({ payloadUUID: uuid, payloadURL: next.always });
+  } catch (error) {
+    console.error('XUMM error:', error.message);
+    res.status(504).json({ error: 'Failed to create payment request in time' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

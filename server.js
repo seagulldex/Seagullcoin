@@ -5130,6 +5130,29 @@ async function performAMMSwap(account, amount) {
   return tx;
 }
 
+app.post('/create-merch-order', async (req, res) => {
+  const { productName, priceSGLCN, wallet, shipping } = req.body;
+
+  // Generate a XUMM payment payload
+  const payload = {
+    txjson: {
+      TransactionType: 'Payment',
+      Destination: 'YOUR_XRPL_WALLET_ADDRESS',
+      Amount: (priceSGLCN * 1_000_000).toString(), // Adjust for drops
+    },
+    custom_meta: {
+      identifier: `MERCH-${Date.now()}-${productName}`,
+      blob: {
+        product: productName,
+        shipping,
+        wallet
+      }
+    }
+  };
+
+  const { created, uuid, next } = await xumm.payload.create(payload);
+  res.json({ payloadUUID: uuid, payloadURL: next.always });
+});
 
 
 

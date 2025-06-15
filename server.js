@@ -5181,6 +5181,48 @@ app.post('/create-merch-order', async (req, res) => {
   }
 });
 
+app.post('/create-giftcard-order', async (req, res) => {
+  const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
+
+  const price = parseFloat(priceSGLCN);
+  if (isNaN(price) || price <= 0) {
+    return res.status(400).json({ error: 'Invalid priceSGLCN value' });
+  }
+
+  const payload = {
+    txjson: {
+      TransactionType: 'Payment',
+      Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Your wallet
+      Amount: {
+        currency: 'SGLCN',
+        value: price.toString(),
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+      }
+    },
+    custom_meta: {
+      identifier: `GIFTCARD-${Date.now()}-${brand}-${amount}`,
+      blob: {
+        brand,
+        amount,
+        wallet,
+        recipientEmail
+      }
+    }
+  };
+
+  try {
+    const result = await xumm.payload.create(payload);
+
+    res.json({
+      success: true,
+      payloadUUID: result.uuid,
+      payloadURL: result.next.always
+    });
+  } catch (error) {
+    console.error('XUMM error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create payment payload' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

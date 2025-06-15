@@ -5196,7 +5196,7 @@ app.post('/create-merch-order', async (req, res) => {
   }
 });
 
-router.post("/create-giftcard-order", async (req, res) => {
+app.post("/create-giftcard-order", async (req, res) => {
   const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
 
   if (!brand || !amount || !priceSGLCN || !wallet || !recipientEmail) {

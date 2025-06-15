@@ -5181,48 +5181,65 @@ app.post('/create-merch-order', async (req, res) => {
   }
 });
 
+
 app.post('/create-giftcard-order', async (req, res) => {
-  const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
-
-  const price = parseFloat(priceSGLCN);
-  if (isNaN(price) || price <= 0) {
-    return res.status(400).json({ error: 'Invalid priceSGLCN value' });
-  }
-
-  const payload = {
-    txjson: {
-      TransactionType: 'Payment',
-      Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Your wallet
-      Amount: {
-        currency: 'SGLCN',
-        value: price.toString(),
-        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
-      }
-    },
-    custom_meta: {
-      identifier: `GIFTCARD-${Date.now()}-${brand}-${amount}`,
-      blob: {
-        brand,
-        amount,
-        wallet,
-        recipientEmail
-      }
-    }
-  };
-
   try {
+    const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
+
+    // Basic validation
+    if (!brand || !amount || !priceSGLCN || !wallet) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const price = parseFloat(priceSGLCN);
+    if (isNaN(price) || price <= 0) {
+      return res.status(400).json({ error: 'Invalid priceSGLCN value' });
+    }
+
+    // Sanity check on addresses (just logging here, consider adding regex validation)
+    console.log('Creating payload for wallet:', wallet);
+    console.log('Destination wallet:', 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U');
+    console.log('Issuer:', 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno');
+
+    const payload = {
+      txjson: {
+        TransactionType: 'Payment',
+        Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Your receiving wallet
+        Amount: {
+          currency: 'SGLCN',
+          value: price.toString(),
+          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+        },
+        Flags: 2147483648 // tfFullyCanonicalSig flag recommended for issued currency payments
+      },
+      custom_meta: {
+        identifier: `GIFTCARD-${Date.now()}-${brand}-${amount}`,
+        blob: { brand, amount, wallet, recipientEmail }
+      }
+    };
+
+    console.log('Payload:', JSON.stringify(payload, null, 2));
+
     const result = await xumm.payload.create(payload);
 
-    res.json({
+    console.log('XUMM payload result:', result);
+
+    if (!result || !result.uuid || !result.next || !result.next.always) {
+      return res.status(500).json({ error: 'Invalid response from XUMM' });
+    }
+
+    return res.json({
       success: true,
       payloadUUID: result.uuid,
       payloadURL: result.next.always
     });
   } catch (error) {
     console.error('XUMM error:', error);
-    res.status(500).json({ success: false, error: 'Failed to create payment payload' });
+    console.error(error.stack);
+    return res.status(500).json({ success: false, error: 'Failed to create payment payload' });
   }
 });
+
 
 
 // Call the XRPL ping when the server starts

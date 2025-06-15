@@ -462,7 +462,7 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'http://sglcn-x20-api.glitch.me', // Change this URL when deploying
+      url: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app', // Change this URL when deploying
     },
   ],
 };
@@ -513,7 +513,7 @@ app.use(session({
 
 // Now, apply other middleware
 app.use(limiter);
-app.use(cors({ origin: 'https://sglcn-x20-api.glitch.me', credentials: true }));
+app.use(cors({ origin: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -736,7 +736,6 @@ function calculateDaysStaked(stake) {
   const eligible = elapsed >= durationMs;
   return { daysStakedSoFar, eligible };
 }
-
 
 // Test route
 app.get('/db-test', (req, res) => {
@@ -1520,8 +1519,6 @@ app.get('/listings', async (req, res) => {
  *         description: Invalid data or insufficient SeagullCoin
  */
 
-
-
 // Accept an offer
 app.post('/accept-offer', async (req, res) => {
   const { offerId, userAddress, nftId } = req.body;
@@ -2004,6 +2001,7 @@ async function getTotalCollections() {
     });
   });
 }
+
 app.get('/gettotalcollections', async (req, res) => {
     // Logic to get the total number of collections
     const totalCollections = await getTotalCollections(); // Replace with actual logic
@@ -2372,7 +2370,7 @@ app.get('/authenticate', async (req, res) => {
   try {
     const payload = {
       "TransactionType": "SignIn",
-      "Destination": "https://sglcn-x20-api.glitch.me/login",
+      "Destination": "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
       "Account": req.session.walletAddress // Optional: can pass existing wallet if user is logged in
     };
 
@@ -3089,7 +3087,7 @@ async function loadActiveOffers(wallet) {
   container.innerHTML = '<h3>Active Offers</h3>';
 
   try {
-    const res = await fetch(`https://sglcn-x20-api.glitch.me/active-offers/${wallet}`);
+    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/active-offers/${wallet}`);
     const { sellOffers, buyOffers } = await res.json();
 
     sellOffers.forEach(offer => {
@@ -3121,7 +3119,7 @@ async function cancelOffer(offerId) {
   const confirmCancel = confirm("Cancel this offer?");
   if (!confirmCancel) return;
 
-  const res = await fetch("https://sglcn-x20-api.glitch.me/cancel-offer", {
+  const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -3193,7 +3191,6 @@ async function fetchOffersFromXRPL(walletAddress) {
     throw new Error('Failed to fetch offers from XRPL');
   }
 }
-
 
 app.get('/offers/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
@@ -3627,10 +3624,6 @@ app.post('/mint-complete', async (req, res) => {
     return res.status(500).json({ error: "Failed to finalize NFT minting", details: err.message });
   }
 });
-
-
-
-
 
 const usedNFTs = new Set(
 '00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C7B7ABA7F30405C658',
@@ -4104,7 +4097,7 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
   }
 });
 
-    app.post("/backup-pay-two", async (req, res) => {
+app.post("/backup-pay-two", async (req, res) => {
   const { destination } = req.body;
 
   // Validate address
@@ -4140,8 +4133,8 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
     submit: true,
     expire: 300,
     return_url: {
-      app: "https://sglcn-x20-api.glitch.me",
-      web: "https://sglcn-x20-api.glitch.me"
+      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
+      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
     }
   }
 };
@@ -4197,8 +4190,8 @@ app.post("/backup-pay-three", async (req, res) => {
     submit: true,
     expire: 300,
     return_url: {
-      app: "https://sglcn-x20-api.glitch.me",
-      web: "https://sglcn-x20-api.glitch.me"
+      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
+      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
     }
   }
 };
@@ -4389,8 +4382,8 @@ app.post('/orderbook/scl-xau', async (req, res) => {
     options: {
       submit: true,
       return_url: {
-        app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-        web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html'
+        app: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
+        web: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
       }
     }
   };
@@ -4718,7 +4711,6 @@ setInterval(async () => {
   }
 }, 1800000); // every 5 mins
 
-
 // Single endpoint with optional ?history=true
 app.get('/api/sglcn-xau', async (req, res) => {
   const showHistory = req.query.history === 'true';
@@ -4905,8 +4897,8 @@ app.post('/swap', async (req, res) => {
       options: {
         submit: true,
         return_url: {
-          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html'
+          app: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
+          web: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
         }
       }
     };
@@ -5069,8 +5061,8 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
       options: {
         submit: true,
         return_url: {
-          app: 'https://sglcn-x20-api.glitch.me/SeagullDex.html',
-          web: 'https://sglcn-x20-api.glitch.me/SeagullDex.html'
+          app: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
+          web: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
         }
       }
     };

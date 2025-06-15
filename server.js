@@ -70,7 +70,6 @@ import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
-import GiftCardOrder from './models/GiftCardOrder.js'; // adjust path as needed
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -176,6 +175,18 @@ async function getStakes() {
     console.error('❌ MongoDB connection error:', err.message);
   }
 })();
+
+const giftCardOrderSchema = new mongoose.Schema({
+  identifier: { type: String, required: true, unique: true },
+  brand: String,
+  amount: Number,
+  wallet: String,
+  recipientEmail: String,
+  status: { type: String, default: 'pending' },
+  fulfilledAt: Date,
+}, { timestamps: true });
+
+const GiftCardOrder = mongoose.model('GiftCardOrder', giftCardOrderSchema);
 
 
 // Function to get balance for a single address

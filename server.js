@@ -5141,7 +5141,7 @@ app.post('/create-merch-order', async (req, res) => {
   const payload = {
     txjson: {
       TransactionType: 'Payment',
-      Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U, // Your receiving wallet
+      Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Your receiving wallet
       Amount: {
         currency: 'SGLCN',
         value: price.toString(),

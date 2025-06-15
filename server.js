@@ -70,7 +70,7 @@ import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
-
+import GiftCardOrder from './models/GiftCardOrder.js'; // adjust path as needed
 
 // ===== Init App and Env =====
 dotenv.config();

@@ -530,6 +530,7 @@ app.use(cors({ origin: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app', crede
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+app.use(giftcardRoutes); // mounts the router
 
 const mintLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
@@ -5184,18 +5185,18 @@ app.post('/create-merch-order', async (req, res) => {
   }
 });
 
+router.post("/create-giftcard-order", async (req, res) => {
+  const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
 
-app.post("/create-giftcard-order", async (req, res) => {
-  const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
+  if (!brand || !amount || !priceSGLCN || !wallet || !recipientEmail) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
 
-  if (!brand || !amount || !priceSGLCN || !wallet || !recipientEmail) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  const price = parseFloat(priceSGLCN);
-  if (isNaN(price) || price <= 0) {
-    return res.status(400).json({ error: "Invalid priceSGLCN value" });
-  }
+  const price = parseFloat(priceSGLCN);
+  if (isNaN(price) || price <= 0) {
+    return res.status(400).json({ error: "Invalid priceSGLCN value" });
+  }
+const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
 
   try {
     const payload = {
@@ -5203,11 +5204,11 @@ app.post("/create-giftcard-order", async (req, res) => {
         TransactionType: "Payment",
         Destination: "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U",
         Amount: {
-          currency: "53656167756C6C436F696E000000000000000000", // HEX for SeagullCoin
+          currency: "53656167756C6C436F696E000000000000000000",
           issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
           value: price.toString()
         },
-        Memos: [
+Memos: [
           {
             Memo: {
               MemoType: Buffer.from("GiftcardOrder", "utf8").toString("hex"),
@@ -5216,7 +5217,7 @@ app.post("/create-giftcard-order", async (req, res) => {
           }
         ]
       },
-      options: {
+options: {
         submit: true,
         expire: 300,
         return_url: {
@@ -5225,7 +5226,7 @@ app.post("/create-giftcard-order", async (req, res) => {
         }
       },
       custom_meta: {
-        identifier: `GIFTCARD-${Date.now()}-${brand}-${amount}`,
+        identifier,
         blob: {
           brand,
           amount,
@@ -5237,17 +5238,30 @@ app.post("/create-giftcard-order", async (req, res) => {
 
     const created = await xumm.payload.create(payload);
 
-    res.json({
+// Save to DB
+    await GiftCardOrder.create({
+      identifier,
+      brand,
+      amount,
+      wallet,
+      recipientEmail,
+      priceSGLCN: price,
+      status: 'pending'
+    });
+
+res.json({
       success: true,
       uuid: created.uuid,
       next: created.next.always
     });
 
-  } catch (err) {
+} catch (err) {
     console.error("❌ XUMM Payload Error:", err.message || err);
     res.status(500).json({ error: "Failed to create giftcard payment." });
   }
 });
+
+export default router;
 
 app.post('/xumm-webhook', async (req, res) => {
   const data = req.body;

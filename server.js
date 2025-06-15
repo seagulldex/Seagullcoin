@@ -5248,6 +5248,7 @@ app.post('/xumm-webhook', async (req, res) => {
     // Payment was signed and successfully submitted
     const { identifier, blob } = data.payload.custom_meta || {};
 
+console.log('Blob details:', JSON.stringify(blob, null, 2));   
     // Extract gift card order info from blob
     const { brand, amount, wallet, recipientEmail } = blob || {};
 

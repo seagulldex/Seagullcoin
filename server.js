@@ -5252,28 +5252,40 @@ app.post("/create-giftcard-order", async (req, res) => {
 app.post('/xumm-webhook', async (req, res) => {
   const data = req.body;
 
-  // Check the payload UUID & transaction result
   console.log('Webhook received:', data);
 
   if (data.signed === true) {
-    // Payment was signed and successfully submitted
     const { identifier, blob } = data.payload.custom_meta || {};
-
-console.log('Blob details:', JSON.stringify(blob, null, 2));   
-    // Extract gift card order info from blob
     const { brand, amount, wallet, recipientEmail } = blob || {};
 
-    // TODO: Fulfill the order here (send gift card code, update DB, notify user, etc)
-    console.log(`Payment confirmed for gift card: ${brand} x${amount} to ${recipientEmail}`);
+    console.log(`✅ Payment confirmed: ${identifier}`);
 
-    // Send 200 response to acknowledge webhook
+    try {
+      // ✅ Update the order status in DB
+      const updated = await GiftCardOrder.findOneAndUpdate(
+        { identifier },
+        { status: 'paid', fulfilledAt: new Date() },
+        { new: true }
+      );
+
+      if (!updated) {
+        console.warn(`⚠️ No matching order found for identifier ${identifier}`);
+      } else {
+        // TODO: fulfill gift card logic (email code, mark as sent, etc.)
+        console.log(`🎁 Fulfilled gift card: ${brand} x${amount} to ${recipientEmail}`);
+      }
+
+    } catch (err) {
+      console.error("❌ Failed to update order:", err.message);
+    }
+
     res.status(200).send('OK');
   } else {
-    // Payment rejected or not signed
-    console.log('Payment not signed or rejected.');
+    console.log('❌ Payment not signed or rejected.');
     res.status(200).send('OK');
   }
 });
+
 
 const MONGODB_URI = process.env.MONGODB_URI;
 

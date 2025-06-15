@@ -164,6 +164,17 @@ async function getStakes() {
   return stakes;
 }
 
+(async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      dbName: 'nft_marketplace_nfts' // Optional if included in URI
+    });
+    console.log('✅ MongoDB connected');
+    await mongoose.connection.close(); // Cleanly close the connection
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err.message);
+  }
+})();
 
 
 // Function to get balance for a single address

@@ -5264,6 +5264,15 @@ console.log('Blob details:', JSON.stringify(blob, null, 2));
   }
 });
 
+app.get('/test-mongodb', async (req, res) => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connection.close();
+    res.send('✅ MongoDB connected and closed successfully');
+  } catch (err) {
+    res.status(500).send('❌ MongoDB connection failed: ' + err.message);
+  }
+});
 
 
 // Call the XRPL ping when the server starts

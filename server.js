@@ -5276,15 +5276,13 @@ console.log('Blob details:', JSON.stringify(blob, null, 2));
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
-app.get('/test-mongodb', async (req, res) => {
-  try {
-    await mongoose.connect(MONGODB_URI, {
-      dbName: 'nft_marketplace_nfts'
-    });
-    await mongoose.connection.close();
-    res.send('✅ MongoDB connected and closed successfully');
-  } catch (err) {
-    res.status(500).send(`❌ MongoDB connection failed: ${err.code} - ${err.message}`);
+// 2. Use existing connection in route
+app.get('/test-mongodb', (req, res) => {
+  const status = mongoose.connection.readyState; // 1 = connected
+  if (status === 1) {
+    res.send('✅ MongoDB is currently connected');
+  } else {
+    res.status(500).send('❌ MongoDB is NOT connected');
   }
 });
 

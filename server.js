@@ -1002,7 +1002,20 @@ app.get('/unstake-payload/:wallet', async (req, res) => {
   }
 });
 
+const MONGODB_URI = process.env.MONGODB_URI || 'your-mongodb-uri-here';
 
+async function testConnection() {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    console.log('✅ MongoDB connected successfully');
+    await mongoose.connection.close();
+    console.log('Connection closed');
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err);
+  }
+}
+
+testConnection();
 
 app.get('/user', async (req, res) => {
   const address = req.query.address;

@@ -148,14 +148,14 @@
     }
 
     async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
       const data = await res.json();
       const payloadUUID = data.payloadUUID;
 
       window.open(data.payloadURL, "_blank");
 
       const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+        const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${payloadUUID}`);
         const loginStatus = await check.json();
 
         if (loginStatus.loggedIn) {
@@ -175,7 +175,7 @@
   const shipping = prompt("Enter your shipping address (or email for digital delivery):");
   if (!shipping) return;
 
-  const res = await fetch(`https://sglcn-x20-api.glitch.me/create-merch-order`, {
+  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-merch-order`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -195,7 +195,7 @@
       const wallet = localStorage.getItem('xumm_wallet_address');
       if (!wallet) return alert("Please connect your wallet first.");
 
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/create-purchase`, {
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ store, valueUSD, priceSGLCN, wallet })

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Buy Gift Cards with SeagullCoin</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="header.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: #0e0e0e;
+      color: #eee;
+    }
+
+    #top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background-color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 20px;
+      z-index: 1000;
+    }
+
+    #wallet-container {
+      border: 2px solid #333;
+      border-radius: 10px;
+      padding: 6px 12px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 150px;
+      cursor: pointer;
+    }
+
+    #wallet-status {
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    #wallet-indicator.red { color: #ff4444; }
+    #wallet-indicator.green { color: #44ff44; }
+
+    main {
+      margin: 80px 20px;
+    }
+
+    .giftcard-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .giftcard {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 20px;
+      width: 200px;
+      text-align: center;
+    }
+
+    .giftcard button {
+      background: #444;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      font-weight: bold;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    .giftcard button:disabled {
+      background: #222;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div id="top-bar">
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <h1>Buy Gift Cards with SeagullCoin</h1>
+    <p>Select a gift card and complete payment using your SeagullCoin (SGLCN) wallet.</p>
+
+    <div class="giftcard-container">
+      <div class="giftcard">
+        <h3>Amazon $25</h3>
+        <p>Price: 250 SGLCN</p>
+        <button onclick="buyGiftCard('Amazon', 25, 250)">Buy</button>
+      </div>
+
+      <div class="giftcard">
+        <h3>Steam $20</h3>
+        <p>Price: 200 SGLCN</p>
+        <button onclick="buyGiftCard('Steam', 20, 200)">Buy</button>
+      </div>
+
+      <div class="giftcard">
+        <h3>Walmart $50</h3>
+        <p>Price: 500 SGLCN</p>
+        <button onclick="buyGiftCard('Walmart', 50, 500)">Buy</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const walletStatus = document.getElementById('wallet-container');
+    const walletIndicator = document.getElementById('wallet-indicator');
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletStatus();
+    });
+
+    walletStatus.addEventListener('click', () => {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      if (!wallet) {
+        startLoginFlow();
+      }
+    });
+
+    async function updateWalletStatus() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+
+      if (wallet) {
+        walletIndicator.textContent = '🟢 Connected';
+        walletIndicator.classList.remove('red');
+        walletIndicator.classList.add('green');
+      } else {
+        walletIndicator.textContent = '🔴 Login';
+        walletIndicator.classList.remove('green');
+        walletIndicator.classList.add('red');
+      }
+    }
+
+    async function startLoginFlow() {
+      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+      const data = await res.json();
+      const payloadUUID = data.payloadUUID;
+
+      window.open(data.payloadURL, "_blank");
+
+      const interval = setInterval(async () => {
+        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+        const loginStatus = await check.json();
+
+        if (loginStatus.loggedIn) {
+          clearInterval(interval);
+          localStorage.setItem('xumm_wallet_address', loginStatus.account);
+          localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+          updateWalletStatus();
+        }
+      }, 3000);
+    }
+
+    async function buyGiftCard(store, valueUSD, priceSGLCN) {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      if (!wallet) return alert("Please connect your wallet first.");
+
+      const res = await fetch(`https://sglcn-x20-api.glitch.me/create-purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ store, valueUSD, priceSGLCN, wallet })
+      });
+
+      const data = await res.json();
+      window.open(data.payloadURL, '_blank');
+    }
+  </script>
+</body>
+</html>

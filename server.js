@@ -5182,53 +5182,67 @@ app.post('/create-merch-order', async (req, res) => {
 });
 
 
-app.post('/create-giftcard-order', async (req, res) => {
+app.post("/create-giftcard-order", async (req, res) => {
+  const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
+
+  if (!brand || !amount || !priceSGLCN || !wallet || !recipientEmail) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const price = parseFloat(priceSGLCN);
+  if (isNaN(price) || price <= 0) {
+    return res.status(400).json({ error: "Invalid priceSGLCN value" });
+  }
+
   try {
-    const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
-
-    if (!brand || !amount || !priceSGLCN || !wallet) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    const price = parseFloat(priceSGLCN);
-    if (isNaN(price) || price <= 0) {
-      return res.status(400).json({ error: 'Invalid priceSGLCN value' });
-    }
-
     const payload = {
       txjson: {
-        TransactionType: 'Payment',
-        Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U',
+        TransactionType: "Payment",
+        Destination: "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U",
         Amount: {
-          currency: 'SGLCN',
-          value: price.toFixed(6),
-          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
+          currency: "53656167756C6C436F696E000000000000000000", // HEX for SeagullCoin
+          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+          value: price.toString()
+        },
+        Memos: [
+          {
+            Memo: {
+              MemoType: Buffer.from("GiftcardOrder", "utf8").toString("hex"),
+              MemoData: Buffer.from(`${brand}-${amount}`, "utf8").toString("hex")
+            }
+          }
+        ]
+      },
+      options: {
+        submit: true,
+        expire: 300,
+        return_url: {
+          app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
+          web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
         }
-        // Remove Flags for now
       },
       custom_meta: {
         identifier: `GIFTCARD-${Date.now()}-${brand}-${amount}`,
-        blob: { brand, amount, wallet, recipientEmail }
+        blob: {
+          brand,
+          amount,
+          wallet,
+          recipientEmail
+        }
       }
     };
 
-    console.log('Payload:', JSON.stringify(payload, null, 2));
+    const created = await xumm.payload.create(payload);
 
-    const result = await xumm.payload.create(payload);
-    console.log('XUMM payload result:', JSON.stringify(result, null, 2));
-
-    if (!result || !result.uuid || !result.next?.always) {
-      return res.status(500).json({ error: 'Invalid response from XUMM', details: result });
-    }
-
-    return res.json({
+    res.json({
       success: true,
-      payloadUUID: result.uuid,
-      payloadURL: result.next.always
+      uuid: created.uuid,
+      next: created.next.always
     });
-  } catch (error) {
-    console.error('XUMM error:', error);
-    return res.status(500).json({ success: false, error: 'Failed to create payment payload' });
+
+  } catch (err) {
+    console.error("❌ XUMM Payload Error:", err.message || err);
+    res.status(500).json({ error: "Failed to create giftcard payment." });
   }
 });
 

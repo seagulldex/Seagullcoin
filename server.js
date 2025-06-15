@@ -167,10 +167,11 @@ async function getStakes() {
 (async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
-      dbName: 'nft_marketplace_nfts' // Optional if included in URI
+      dbName: 'nft_marketplace_nfts'
     });
     console.log('✅ MongoDB connected');
-    await mongoose.connection.close(); // Cleanly close the connection
+    //
+    // await mongoose.connection.close(); 
   } catch (err) {
     console.error('❌ MongoDB connection error:', err.message);
   }

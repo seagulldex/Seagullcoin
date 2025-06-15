@@ -167,6 +167,30 @@
       }, 3000);
     }
 
+    async function buyMerch(productName, priceSGLCN) {
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) return alert("Please connect your wallet first.");
+
+  // Optional: collect shipping info before payment
+  const shipping = prompt("Enter your shipping address (or email for digital delivery):");
+  if (!shipping) return;
+
+  const res = await fetch(`https://sglcn-x20-api.glitch.me/create-merch-order`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      productName,
+      priceSGLCN,
+      wallet,
+      shipping
+    })
+  });
+
+  const data = await res.json();
+  window.open(data.payloadURL, '_blank');
+}
+
+
     async function buyGiftCard(store, valueUSD, priceSGLCN) {
       const wallet = localStorage.getItem('xumm_wallet_address');
       if (!wallet) return alert("Please connect your wallet first.");

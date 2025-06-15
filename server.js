@@ -49,12 +49,8 @@ import('rippled-ws-client').then(({ default: RippledWsClient }) => {
 });
     
 
-
 // Initialize the database tables
 createTables();
-
-
-
 
 // Import your business logic modules
 import { client, fetchNFTs } from './xrplClient.js';

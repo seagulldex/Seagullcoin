@@ -5263,6 +5263,8 @@ console.log('Blob details:', JSON.stringify(blob, null, 2));
   }
 });
 
+const MONGODB_URI = process.env.MONGODB_URI;
+
 app.get('/test-mongodb', async (req, res) => {
   try {
     await mongoose.connect(MONGODB_URI, {

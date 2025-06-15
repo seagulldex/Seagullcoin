@@ -4726,71 +4726,29 @@ app.get('/db/nfts/:wallet', async (req, res) => {
 });
 
 
-app.post('/buying', async (req, res) => {
-  try {
-    const { walletAddress, itemName, price, shipping, address } = req.body;
 
-    if (!walletAddress || !walletAddress.startsWith('r')) {
-      return res.status(400).json({ error: 'Invalid or missing wallet address' });
-    }
+app.post('/buy-item', async (req, res) => {
+  const { walletAddress, itemName, price, shipping, address } = req.body;
 
-    if (!itemName || !price || !shipping || !address) {
-      return res.status(400).json({ error: 'Missing required purchase details' });
-    }
+  if (!walletAddress || !itemName || !price || !shipping || !address) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
 
-    const payloadResponse = await xumm.payload.create({
-      txjson: {
-        TransactionType: 'Payment',
-        Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Your service wallet
-        Amount: {
-          currency: '53656167756C6C436F696E000000000000000000', // Hex for "SeagullCoin"
-          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-          value: price
-        },
-        Memos: [
-          {
-            Memo: {
-              MemoType: Buffer.from('ITEM', 'utf8').toString('hex').toUpperCase(),
-              MemoData: Buffer.from(itemName, 'utf8').toString('hex').toUpperCase()
-            }
-          },
-          {
-            Memo: {
-              MemoType: Buffer.from('SHIPPING', 'utf8').toString('hex').toUpperCase(),
-              MemoData: Buffer.from(shipping, 'utf8').toString('hex').toUpperCase()
-            }
-          },
-          {
-            Memo: {
-              MemoType: Buffer.from('ADDRESS', 'utf8').toString('hex').toUpperCase(),
-              MemoData: Buffer.from(address, 'utf8').toString('hex').toUpperCase()
-            }
-          },
-          {
-            Memo: {
-              MemoType: Buffer.from('BUYER', 'utf8').toString('hex').toUpperCase(),
-              MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
-            }
-          }
-        ]
-      },
-      options: {
-        submit: true,
-        expire: 10
-      }
-    });
+  const payload = await xumm.payload.create({
+    txjson: {
+      TransactionType: "Payment",
+      Destination: "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U",
+      Amount: {
+        currency: "53656167756C6C436F696E000000000000000000",
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+        value: price
+      }
+    }
+  });
 
-    if (!payloadResponse?.uuid) {
-      throw new Error('XUMM payload creation failed');
-    }
-
-    res.json(payloadResponse);
-
-  } catch (error) {
-    console.error('Error creating buy payload:', error);
-    res.status(500).json({ error: 'Failed to create buy payload' });
-  }
+  res.json(payload);
 });
+
     
       
 

@@ -1275,10 +1275,6 @@ app.get('/auth', async (req, res) => {
     }
 });// ===== Listing NFT Route =====
 
-app.get('/ping', (req, res) => {
-  res.send('pong');
-});
-
 
 app.post('/login', async (req, res) => {
   const { xummPayload } = req.body;
@@ -4673,58 +4669,6 @@ app.get('/rate-preview', async (req, res) => {
     }
   }
 });
-
-app.get('/db/nfts/:wallet', async (req, res) => {
-  const docs = await Napp.get('/rate-preview', async (req, res) => {
-  const { from, to } = req.query;
-
-  const validCurrencies = ['XRP', 'SeagullCoin', 'XAU'];
-  if (!from || !to || !validCurrencies.includes(from) || !validCurrencies.includes(to)) {
-    return res.status(400).json({ error: 'Invalid from/to parameters.' });
-  }
-
-  if (from === to) {
-    return res.status(400).json({ error: 'From and To currencies must differ.' });
-  }
-
-  try {
-    const rate = await getMarketRate(from, to, issuers);
-
-    res.json({
-      from: {
-        currency: from,
-        issuer: from === 'XRP' ? null : (from === 'SeagullCoin' ? issuers.SGLCN_ISSUER : from === 'XAU' ? issuers.XAU_ISSUER : null)
-      },
-      to: {
-        currency: to,
-        issuer: to === 'XRP' ? null : (to === 'SeagullCoin' ? issuers.SGLCN_ISSUER : to === 'XAU' ? issuers.XAU_ISSUER : null)
-      },
-      rate
-    });
-  } catch (err1) {
-    // Try the reverse direction
-    try {
-      const reverseRate = await getMarketRate(to, from, issuers);
-      res.json({
-        from: {
-          currency: from,
-          issuer: from === 'XRP' ? null : (from === 'SeagullCoin' ? issuers.SGLCN_ISSUER : from === 'XAU' ? issuers.XAU_ISSUER : null)
-        },
-        to: {
-          currency: to,
-          issuer: to === 'XRP' ? null : (to === 'SeagullCoin' ? issuers.SGLCN_ISSUER : to === 'XAU' ? issuers.XAU_ISSUER : null)
-        },
-        rate: 1 / reverseRate
-      });
-    } catch (err2) {
-      console.error('Both directions failed:', err1.message, '|', err2.message);
-      res.status(404).json({ error: 'No offers found in either direction.' });
-    }
-  }
-});FT.find({ wallet: req.params.wallet }).limit(100);
-  res.json({ count: docs.length, nfts: docs });
-});
-
 
 
 app.post('/buy-item', async (req, res) => {

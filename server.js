@@ -69,7 +69,7 @@ import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
-
+import nodemailer from 'nodemailer';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -5238,37 +5238,84 @@ app.post("/create-giftcard-order", async (req, res) => {
 });
 
 app.post('/xumm-webhook', async (req, res) => {
-  const data = req.body;
+  const data = req.body;
 
-  // Check the payload UUID & transaction result
-  console.log('Webhook received:', data);
+  console.log('Webhook received:', data);
 
-  if (data.signed === true) {
-    // Payment was signed and successfully submitted
-    const { identifier, blob } = data.payload.custom_meta || {};
+  if (data.signed === true) {
+    const { identifier, blob } = data.payload.custom_meta || {};
+    const { brand, amount, wallet, recipientEmail } = blob || {};
 
-    // Extract gift card order info from blob
-    const { brand, amount, wallet, recipientEmail } = blob || {};
+    console.log(`✅ Payment confirmed: ${identifier}`);
 
-    // TODO: Fulfill the order here (send gift card code, update DB, notify user, etc)
-    console.log(`Payment confirmed for gift card: ${brand} x${amount} to ${recipientEmail}`);
+    // Log to check exact identifier string (helps catch invisible chars)
+    console.log('Looking for order with identifier:', JSON.stringify(identifier));
+    try {
+      const updated = await GiftCardOrder.findOneAndUpdate(
+        { identifier },
+        { status: 'paid', fulfilledAt: new Date() },
+        { new: true }
+      );
 
-    // Send 200 response to acknowledge webhook
-    res.status(200).send('OK');
-  } else {
-    // Payment rejected or not signed
-    console.log('Payment not signed or rejected.');
-    res.status(200).send('OK');
-  }
+      if (!updated) {
+        console.warn(`⚠️ No matching order found for identifier ${identifier}`);
+        
+        // Optional: log all identifiers in DB to debug
+        const allOrders = await GiftCardOrder.find({}, { identifier: 1, _id: 0 });
+        console.log('All identifiers in DB:', allOrders.map(o => o.identifier));
+        
+      } else {
+        // ✅ Send confirmation email
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+
+        const mailOptions = {
+          from: `"SeagullCoin" <${process.env.EMAIL_USER}>`,
+          to: recipientEmail,
+          subject: `🎁 Your ${brand} Gift Card`,
+          html: `
+            <h2>✅ Payment Received</h2>
+            <p>Hi! We’ve received your payment for a <strong>${brand}</strong> gift card worth <strong>${amount}</strong>.</p>
+            <p>You’ll receive the code shortly. Thanks for using SeagullCoin!</p>
+          `,
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`📧 Email sent to ${recipientEmail}`);
+      }
+
+    } catch (err) {
+      console.error("❌ Failed to update order or send email:", err.message);
+    }
+
+    res.status(200).send('OK');
+  } else {
+    console.log('❌ Payment not signed or rejected.');
+    res.status(200).send('OK');
+  }
 });
 
+const MONGODB_URI = process.env.MONGODB_URI;
 
+// 2. Use existing connection in route
+app.get('/test-mongodb', (req, res) => {
+  const status = mongoose.connection.readyState; // 1 = connected
+  if (status === 1) {
+    res.send('✅ MongoDB is currently connected');
+  } else {
+    res.status(500).send('❌ MongoDB is NOT connected');
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");
 });
-
 
 xumm.ping().then(response => {
     console.log("XUMM connection successful", response);

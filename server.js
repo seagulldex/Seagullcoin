@@ -5111,6 +5111,6 @@ setInterval(cleanupExpiredPayloads, 48 * 60 * 60 * 1000); // Every 24 hours
     
     console.log("XRPL client connected");
  // Start the server
-app.listen(process.env.PORT || 8080, () => {
+app.listen(process.env.PORT || 3000, () => {
   console.log('Server running on port ' + (process.env.PORT || 3000));
 });

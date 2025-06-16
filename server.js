@@ -4616,6 +4616,8 @@ app.post('/xumm-webhook', async (req, res) => {
 
     console.log(`✅ Payment confirmed: ${identifier}`);
 
+    // Log to check exact identifier string (helps catch invisible chars)
+    console.log('Looking for order with identifier:', JSON.stringify(identifier));
     try {
       const updated = await GiftCardOrder.findOneAndUpdate(
         { identifier },
@@ -4625,6 +4627,11 @@ app.post('/xumm-webhook', async (req, res) => {
 
       if (!updated) {
         console.warn(`⚠️ No matching order found for identifier ${identifier}`);
+        
+        // Optional: log all identifiers in DB to debug
+        const allOrders = await GiftCardOrder.find({}, { identifier: 1, _id: 0 });
+        console.log('All identifiers in DB:', allOrders.map(o => o.identifier));
+        
       } else {
         // ✅ Send confirmation email
         const transporter = nodemailer.createTransport({

@@ -188,19 +188,31 @@
       }, 3000);
     }
 
-    async function buyGiftCard(store, valueUSD, priceSGLCN) {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet) return alert("Please connect your wallet first.");
+    async function buyGiftCard(brand, amount, priceSGLCN) {
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) return alert("Please connect your wallet first.");
 
-      const res = await fetch(`https://sglcn-x20-api.glitch.me/create-purchase`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ store, valueUSD, priceSGLCN, wallet })
-      });
+  const recipientEmail = prompt("Enter your email address for delivery:");
 
-      const data = await res.json();
-      window.open(data.payloadURL, '_blank');
-    }
+  if (!recipientEmail || !recipientEmail.includes('@')) {
+    return alert("A valid email is required to proceed.");
+  }
+
+  const res = await fetch(`https://sglcn-x20-api.glitch.me/create-giftcard-order`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ brand, amount, priceSGLCN, wallet, recipientEmail })
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    return alert("Something went wrong. Try again later.");
+  }
+
+  window.open(data.next, '_blank');
+}
+
   </script>
 </body>
 </html>

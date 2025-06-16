@@ -5172,7 +5172,7 @@ app.post('/create-merch-order', async (req, res) => {
   }
 });
 
-
+// ✅ Gift card creation endpoint
 app.post("/create-giftcard-order", async (req, res) => {
   const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
 
@@ -5184,6 +5184,7 @@ app.post("/create-giftcard-order", async (req, res) => {
   if (isNaN(price) || price <= 0) {
     return res.status(400).json({ error: "Invalid priceSGLCN value" });
   }
+const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
 
   try {
     const payload = {
@@ -5212,8 +5213,8 @@ app.post("/create-giftcard-order", async (req, res) => {
           web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
         }
       },
-      custom_meta: {
-        identifier: `GIFTCARD-${Date.now()}-${brand}-${amount}`,
+    custom_meta: {
+        identifier,
         blob: {
           brand,
           amount,
@@ -5224,6 +5225,17 @@ app.post("/create-giftcard-order", async (req, res) => {
     };
 
     const created = await xumm.payload.create(payload);
+
+    // ✅ Save order to DB
+    await GiftCardOrder.create({
+      identifier,
+      brand,
+      amount,
+      wallet,
+      recipientEmail,
+      priceSGLCN: price,
+      status: 'pending'
+    });
 
     res.json({
       success: true,

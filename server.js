@@ -69,7 +69,6 @@ import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
-import nodemailer from 'nodemailer';
 
 // ===== Init App and Env =====
 dotenv.config();

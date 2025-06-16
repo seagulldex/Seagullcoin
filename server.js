@@ -176,10 +176,13 @@ async function getStakes() {
   }
 })();
 
+
+// ✅ Define the schema + model at the top
 const giftCardOrderSchema = new mongoose.Schema({
   identifier: { type: String, required: true, unique: true },
   brand: String,
   amount: Number,
+  priceSGLCN: Number,
   wallet: String,
   recipientEmail: String,
   status: { type: String, default: 'pending' },

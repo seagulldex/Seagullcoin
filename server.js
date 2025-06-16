@@ -404,40 +404,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 
 
-// 1. Get all posts (for the community board)
-app.get('/api/posts', (req, res) => {
-  db.all('SELECT * FROM posts ORDER BY created_at DESC', [], (err, rows) => {
-    if (err) {
-      res.status(500).send('Error retrieving posts');
-      return;
-    }
-    res.json(rows); // Return all posts as JSON
-  });
-});
 
-// 2. Create a new post
-app.post('/api/posts', (req, res) => {
-  const { username, content } = req.body;
-  
-  if (!username || !content) {
-    return res.status(400).send('Username and content are required');
-  }
-
-  const stmt = db.prepare('INSERT INTO posts (username, content) VALUES (?, ?)');
-  stmt.run(username, content, function (err) {
-    if (err) {
-      return res.status(500).send('Error creating post');
-    }
-    // Respond with the newly created post's data (including auto-generated ID)
-    res.status(201).json({
-      id: this.lastID,
-      username,
-      content,
-      created_at: new Date().toISOString(),
-    });
-  });
-  stmt.finalize();
-});
 
 app.use('/api', mintRouter);  // Assuming mintRouter handles your mint-related endpoints
 
@@ -473,69 +440,11 @@ app.get('/login', async (req, res) => {
   }
 });
 
-const STAKE_AMOUNT = 50000; // SeagullCoin
-const LOCK_PERIOD_DAYS = 30;
-const LOCK_PERIOD_MS = LOCK_PERIOD_DAYS * 24 * 60 * 60 * 1000;
-const DAILY_REWARD = 16.7;
 
-const stakedWallets = {};
 
-// Add stake
-async function addStake(wallet) {
-  const startTime = Date.now();
-  const endTime = startTime + LOCK_PERIOD_MS;
-  const duration = LOCK_PERIOD_DAYS;
-
-  await db.run(`
-    INSERT OR REPLACE INTO staking (wallet, amount, duration, startTime, endTime, status, rewards)
-    VALUES (?, ?, ?, ?, ?, 'active', 0)
-  `, [wallet, STAKE_AMOUNT, duration, startTime, endTime]);
-
-  stakedWallets[wallet] = { startTime, endTime, amount: STAKE_AMOUNT };
-}
 
 // Get stake by wallet
-async function getStake(wallet) {
-  return db.get(`SELECT * FROM staking WHERE wallet = ?`, [wallet]);
-}
 
-// Remove stake on unstake
-async function removeStake(wallet) {
-  return db.run(`DELETE FROM staking WHERE wallet = ?`, [wallet]);
-}
-
-// Insert stake (alias for addStake with more params)
-function insertStake(wallet, amount, duration, startTime, endTime) {
-  return db.run(`
-    INSERT INTO staking (wallet, amount, duration, startTime, endTime, status, rewards)
-    VALUES (?, ?, ?, ?, ?, 'active', 0)
-  `, [wallet, amount, duration, startTime, endTime]);
-}
-
-// Stake duration check
-function calculateDaysStaked(stake) {
-  const now = Date.now();
-  const elapsed = now - stake.startTime;
-  const durationMs = stake.duration * 24 * 60 * 60 * 1000;
-
-  const daysStakedSoFar = Math.min(
-    Math.floor(elapsed / (24 * 60 * 60 * 1000)),
-    stake.duration
-  );
-
-  const eligible = elapsed >= durationMs;
-  return { daysStakedSoFar, eligible };
-}
-
-// Test route
-app.get('/db-test', (req, res) => {
-  db.all('SELECT * FROM staking', (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(rows);
-  });
-});
 
 app.post('/stake', async (req, res) => {
   const { wallet } = req.body;
@@ -1308,27 +1217,7 @@ app.get('/listings', async (req, res) => {
  */
 
 // Accept an offer
-app.post('/accept-offer', async (req, res) => {
-  const { offerId, userAddress, nftId } = req.body;
 
-  if (!offerId || !userAddress || !nftId) {
-    return res.status(400).json({ error: 'Offer ID, user address, and NFT ID are required.' });
-  }
-
-  try {
-    const result = await acceptOffer(offerId);
-
-    db.run("UPDATE nfts SET owner_address = ? WHERE id = ?", [userAddress, nftId], (err) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json({ success: true, message: 'Offer accepted and NFT ownership updated.' });
-    });
-  } catch (err) {
-    console.error('Error accepting offer:', err);
-    res.status(500).json({ error: 'Failed to accept offer.', message: err.message });
-  }
-});
 /**
  * @swagger
  * /accept-offer:
@@ -1416,84 +1305,11 @@ app.get('/login-status', async (req, res) => {
   }
 });
 
-app.get('/db-test', (req, res) => {
-  db.all('SELECT * FROM staking', (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    res.json(rows);
-  });
-});
 
 
-function calculateDaysStaked(stake) {
-  const now = Date.now();
-  const start = stake.startTime;
-  const durationMs = stake.duration * 24 * 60 * 60 * 1000; // duration in ms
-  const elapsed = now - start;
-  const daysStakedSoFar = Math.min(Math.floor(elapsed / (24 * 60 * 60 * 1000)), stake.duration);
-  const eligible = elapsed >= durationMs;
-  return { daysStakedSoFar, eligible };
-}
 
 
-// Open SQLite DB (async/await friendly)
-(async () => {
-  db = await open({
-    filename: './staking.db',
-    driver: sqlite3.Database
-  });
-const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table';");
-console.log(tables);
-
-  
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS staking (
-      wallet TEXT PRIMARY KEY,
-      stakedAt INTEGER,
-      unlocksAt INTEGER,
-      amount INTEGER
-    )
-  `);
-})();
-
-(async () => {
-  const rows = await db.all('SELECT wallet, stakedAt, unlocksAt, amount FROM staking');
-  rows.forEach(row => {
-    stakedWallets[row.wallet] = {
-      stakedAt: row.stakedAt,
-      unlocksAt: row.unlocksAt,
-      amount: row.amount
-    };
-  });
-})();
-
-
-// Constants
-const STAKE_AMOUNT = 50000;           // 50000 SeagullCoin staked
-const LOCK_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;  // 30 days in ms
-const DAILY_REWARD = 80;            // 80 SeagullCoin per day reward
-
-// Add stake (called after successful stake signed)
-async function addStake(wallet) {
-  const stakedAt = Date.now();
-  const unlocksAt = stakedAt + LOCK_PERIOD_MS;
-  const amount = STAKE_AMOUNT;
-
-  await db.run(`
-    INSERT OR REPLACE INTO staking (wallet, stakedAt, unlocksAt, amount)
-    VALUES (?, ?, ?, ?)
-  `, [wallet, stakedAt, unlocksAt, amount]);
-}
-
-// Get stake by wallet
-async function getStake(wallet) {
-  return db.get(`SELECT * FROM staking WHERE wallet = ?`, [wallet]);
-}
-    // Example: Return success or failure (replace with actual logic)
-  return { success: true, message: 'Purchase successful' };
-}app.post('/buy-nft', async (req, res) => {
+app.post('/buy-nft', async (req, res) => {
   const { userAddress, nftId, price } = req.body;
 
   try {
@@ -1655,140 +1471,8 @@ app.post('/upload-avatar', (req, res) => {
     const avatarPath = `/uploads/${req.file.filename}`;  // Path to the uploaded file
     const walletAddress = req.body.wallet_address;  // Assuming the wallet address is passed in the body
 
-    // Save avatar path and wallet address in user_profiles table
-    db.run(
-      `UPDATE user_profiles SET avatar_url = ? WHERE wallet_address = ?`,
-      [avatarPath, walletAddress],
-      function (err) {
-        if (err) {
-          return res.status(500).json({ error: 'Database update failed', details: err.message });
-        }
-        res.json({ message: 'Avatar uploaded successfully', avatarUrl: avatarPath });
-      }
-    );
-  });
-});
+    
 
-// Endpoint to update username
-
-async function updateUserProfile(walletAddress, newProfileData) {
-  // Replace this with actual DB logic
-  // Example: Update user in your database
-  console.log(`Updating profile for ${walletAddress}:`, newProfileData);
-
-  // Simulate successful update
-  return { success: true, message: 'Profile updated' };
-}app.post('/update-username', async (req, res) => {
-  const { walletAddress } = req.session;
-  const { username } = req.body;
-
-  if (!username) return res.status(400).json({ error: 'Username is required.' });
-
-  try {
-    // Save to user profile in your DB (or session storage)
-    await updateUserProfile(walletAddress, { username });
-
-    res.json({ success: true, username });
-  } catch (err) {
-    console.error('Error updating username:', err);
-    res.status(500).json({ error: 'Failed to update username.' });
-  }
-});
-/**
- * @swagger
- * /update-username:
- *   post:
- *     summary: Update a user's display name
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               walletAddress:
- *                 type: string
- *               username:
- *                 type: string
- *     responses:
- *       200:
- *         description: Username updated successfully
- */
-// Like an NFT
-async function likeNFT(walletAddress, nftId) {
-  return new Promise((resolve, reject) => {
-    db.get('SELECT * FROM nft_likes WHERE walletAddress = ? AND nftId = ?', [walletAddress, nftId], (err, row) => {
-      if (err) {
-        return reject(err);
-      }
-      if (row) {
-        return reject(new Error('NFT already liked by this user.'));
-      }
-      // Insert new like
-    });
-  });
-}// Insert new// Like NFT endpoint
-app.post('/like-nft',
-  body('nftokenId').isString().isLength({ min: 10 }).withMessage('Invalid NFT ID'),
-  async (req, res) => {
-    // Validate input
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
-    const { nftokenId } = req.body;
-    const walletAddress = req.session?.walletAddress;
-
-    // Ensure wallet is connected
-    if (!walletAddress) return res.status(401).json({ error: 'Wallet not connected.' });
-
-    try {
-      // Perform the database operation wrapped in a promise
-      const result = await new Promise((resolve, reject) => {
-        // Insert new like into the database
-        db.run('INSERT INTO nft_likes (walletAddress, nftId) VALUES (?, ?)', [walletAddress, nftokenId], function(err) {
-          if (err) return reject(err);  // Reject if there's an error
-          resolve({ success: true });   // Resolve on success
-        });
-      });// Return the success result to the client
-      res.status(200).json(result);
-
-    } catch (error) {
-      // Handle any errors
-      console.error(error);
-      res.status(500).json({ error: 'An error occurred while liking the NFT' });
-    }
-  });/**
- * @swagger
- * /api/like-nft:
- *   post:
- *     summary: Like an NFT
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               nftId:
- *                 type: string
- *               userAddress:
- *                 type: string
- *     responses:
- *       200:
- *         description: NFT liked successfully
- *       400:
- *         description: Invalid data or already liked
- */
-async function getTotalCollections() {
-  return new Promise((resolve, reject) => {
-    db.get('SELECT COUNT(*) AS total FROM collections', (err, row) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(row.total);
-    });
-  });
-}
 
 app.get('/gettotalcollections', async (req, res) => {
     // Logic to get the total number of collections
@@ -1939,16 +1623,8 @@ app.get('/recent', async (req, res) => {
 
 // Get all NFTs for the logged-in user
 
-async function getUserNFTs(walletAddress) {
-  return new Promise((resolve, reject) => {
-    db.all('SELECT * FROM nfts WHERE walletAddress = ? ORDER BY mintDate DESC', [walletAddress], (err, rows) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(rows);
-    });
-  });
-}app.get('/user-nfts', async (req, res) => {
+
+app.get('/user-nfts', async (req, res) => {
   const { walletAddress } = req.session;
 
   try {
@@ -1995,46 +1671,7 @@ app.get('/getusernfts',
 // Get a list of all collections
 
 // Example for MongoDB:
-// Example for SQLite:
-async function getAllCollections() {
-  return new Promise((resolve, reject) => {
-    db.all('SELECT DISTINCT collection_name FROM nfts', (err, rows) => {  // Adjust the query based on your database structure
-      if (err) return reject(err);
- 
-      resolve(rows.map(row => row.collection_name)); // Assuming collection_name is the column that stores collection names
-    });
-  });
-}
-
-app.get('/collections', async (req, res) => {
-  try {
-    const collections = await getAllCollections(); // Function to fetch all collections
-    res.json({ collections });
-  } catch (err) {
-    console.error('Error fetching collections:', err);
-    res.status(500).json({ error: 'Failed to fetch collections.' });
-  }
-});
-/**
- * @swagger
- * /collections:
- *   get:
- *     summary: Get public NFT collections
- *     responses:
- *       200:
- *         description: Public collections retrieved
- */
-
-
-// Get all collections
-app.get('/getallcollections', async (req, res) => {
-  db.all("SELECT * FROM collections", [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(rows);
-  });
-});
+// Example for SQLite
 
 /**
  * @swagger
@@ -2047,53 +1684,7 @@ app.get('/getallcollections', async (req, res) => {
  */
 
 // Create a collection
-app.post('/create-collection',
-  body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Collection name is required'),
-  body('description').optional().isString().isLength({ max: 300 }),
-  body('icon').isURL().withMessage('Collection icon must be a valid URL'),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { name, description, icon } = req.body;
-
-    try {
-      db.run("INSERT INTO collections (name, description, icon) VALUES (?, ?, ?)",
-        [name, description || '', icon],
-        function (err) {
-          if (err) {
-            return res.status(500).json({ error: 'Database insert failed.' });
-          }
-          res.json({ success: true, collectionId: this.lastID });
-        });
-    } catch (err) {
-      console.error('Error creating collection:', err);
-      res.status(500).json({ error: 'Failed to create collection.' });
-    }
-});
-
-// Endpoint to verify signed payload
- app.post('/verify-authentication', async (req, res) => {
-  const { signedPayload } = req.body;
-
-  if (!signedPayload) {
-    return res.status(400).json({ error: 'Missing signed payload' });
-  }
-
-  try {
-    // Decode the signed payload to get user information
-    const response = await xummSDK.payload.decode(signedPayload);
-    const { account } = response;
-
-    // Store account in session for future API calls
-    req.session.walletAddress = account;
-
-    res.json({ success: true, walletAddress: account });
-  } catch (error) {
-    console.error('Error verifying signed payload:', error);
-    res.status(500).json({ error: 'Failed to verify authentication' });
-  }
-});
 // XUMM OAuth callback route
 app.get('/xumm/callback', async (req, res) => {
   const { code } = req.query;
@@ -2207,14 +1798,7 @@ app.post('/user', async (req, res) => {
 
     if (userData?.sub) {
       const account = userData.sub;
-
-      // Store the wallet address and sessionToken in the database
-      db.run(`INSERT OR REPLACE INTO users (walletAddress, sessionToken) VALUES (?, ?)`, [account, 'your-session-token'], function(err) {
-        if (err) {
-          console.error("Error storing user data:", err);
-          return res.status(500).json({ success: false, error: 'Database error' });
-        }
-
+      
         console.log('User stored successfully:', account);
         res.json({ success: true, account });
       });

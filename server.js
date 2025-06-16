@@ -129,6 +129,34 @@ async function fetchIPFSMetadata(uri) {
   }
 }
 
+(async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      dbName: 'nft_marketplace_nfts'
+    });
+    console.log('✅ MongoDB connected');
+    //
+    // await mongoose.connection.close(); 
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err.message);
+  }
+})();
+
+
+// ✅ Define the schema + model at the top
+const giftCardOrderSchema = new mongoose.Schema({
+  identifier: { type: String, required: true, unique: true },
+  brand: String,
+  amount: Number,
+  priceSGLCN: Number,
+  wallet: String,
+  recipientEmail: String,
+  status: { type: String, default: 'pending' },
+  fulfilledAt: Date,
+}, { timestamps: true });
+
+const GiftCardOrder = mongoose.model('GiftCardOrder', giftCardOrderSchema);
+
 
 async function getStakes() {
   const client = new xrpl.Client("wss://s1.ripple.com");

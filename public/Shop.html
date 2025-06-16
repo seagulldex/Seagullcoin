@@ -169,14 +169,14 @@
     }
 
     async function startLoginFlow() {
-      const res = await fetch('https://sglcn-x20-api.glitch.me/login');
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
       const data = await res.json();
       const payloadUUID = data.payloadUUID;
 
       window.open(data.payloadURL, "_blank");
 
       const interval = setInterval(async () => {
-        const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${payloadUUID}`);
+        const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${payloadUUID}`);
         const loginStatus = await check.json();
 
         if (loginStatus.loggedIn) {
@@ -198,7 +198,7 @@
     return alert("A valid email is required to proceed.");
   }
 
-  const res = await fetch(`https://sglcn-x20-api.glitch.me/create-giftcard-order`, {
+  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-giftcard-order`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ brand, amount, priceSGLCN, wallet, recipientEmail })

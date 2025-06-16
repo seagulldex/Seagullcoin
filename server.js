@@ -544,7 +544,6 @@ app.use(cors({ origin: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app', crede
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
-app.use(giftcardRoutes); // mounts the router
 
 const mintLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes

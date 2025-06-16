@@ -4603,37 +4603,64 @@ const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
   }
 });
 
+
+
 app.post('/xumm-webhook', async (req, res) => {
-  const data = req.body;
-  console.log('📩 Webhook received:', data);
+  const data = req.body;
 
-  if (data.signed === true) {
-    const { identifier, blob } = data.payload.custom_meta || {};
-    const { brand, amount, wallet, recipientEmail } = blob || {};
+  console.log('Webhook received:', data);
 
-    try {
-      const updated = await GiftCardOrder.findOneAndUpdate(
-        { identifier },
-        { status: 'paid', fulfilledAt: new Date() },
-        { new: true }
-      );
+  if (data.signed === true) {
+    const { identifier, blob } = data.payload.custom_meta || {};
+    const { brand, amount, wallet, recipientEmail } = blob || {};
 
-      if (!updated) {
-        console.warn(`⚠️ No matching order found for identifier ${identifier}`);
-      } else {
-        // ✅ Fulfill gift card (e.g. send email)
-        console.log(`🎁 Gift card sent to ${recipientEmail} — ${brand} x${amount}`);
-      }
-    } catch (err) {
-      console.error('❌ DB update failed:', err.message);
-    }
+    console.log(`✅ Payment confirmed: ${identifier}`);
 
-    res.status(200).send('OK');
-  } else {
-    console.log('❌ Payment rejected or not signed.');
-    res.status(200).send('OK');
-  }
+    try {
+      const updated = await GiftCardOrder.findOneAndUpdate(
+        { identifier },
+        { status: 'paid', fulfilledAt: new Date() },
+        { new: true }
+      );
+
+      if (!updated) {
+        console.warn(`⚠️ No matching order found for identifier ${identifier}`);
+      } else {
+        // ✅ Send confirmation email
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+
+        const mailOptions = {
+          from: `"SeagullCoin" <${process.env.EMAIL_USER}>`,
+          to: recipientEmail,
+          subject: `🎁 Your ${brand} Gift Card`,
+          html: `
+            <h2>✅ Payment Received</h2>
+            <p>Hi! We’ve received your payment for a <strong>${brand}</strong> gift card worth <strong>${amount}</strong>.</p>
+            <p>You’ll receive the code shortly. Thanks for using SeagullCoin!</p>
+          `,
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`📧 Email sent to ${recipientEmail}`);
+      }
+
+    } catch (err) {
+      console.error("❌ Failed to update order or send email:", err.message);
+    }
+
+    res.status(200).send('OK');
+  } else {
+    console.log('❌ Payment not signed or rejected.');
+    res.status(200).send('OK');
+  }
 });
+
 
 
 

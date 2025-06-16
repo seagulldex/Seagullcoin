@@ -7,7 +7,6 @@ import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import fs from 'fs';
-import mongoose from 'mongoose';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import rateLimit from 'express-rate-limit';
@@ -17,6 +16,7 @@ import { NFTStorage, File } from 'nft.storage';
 import xrpl from 'xrpl';
 import NodeCache from 'node-cache';
 import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 import axios from 'axios';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
@@ -36,7 +36,9 @@ import mime from 'mime';
 import { xummApi } from './xrplClient.js';
 import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the path is correct
 import { requireLogin } from './xummLogin.js';  // Adjust the path if needed
+import { createTables, addOwnerWalletAddressToNFTsTable } from './dbsetup.js';
 import { Buffer } from 'buffer';
+import { insertMintedNFT } from './dbsetup.js';
 import sanitizeHtml from 'sanitize-html';
 import rippleAddressCodec from 'ripple-address-codec';
 const { isValidAddress } = rippleAddressCodec;
@@ -67,7 +69,7 @@ import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
-import nodemailer from 'nodemailer';
+
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -161,33 +163,6 @@ async function getStakes() {
   return stakes;
 }
 
-(async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      dbName: 'nft_marketplace_nfts'
-    });
-    console.log('✅ MongoDB connected');
-    //
-    // await mongoose.connection.close(); 
-  } catch (err) {
-    console.error('❌ MongoDB connection error:', err.message);
-  }
-})();
-
-
-// ✅ Define the schema + model at the top
-const giftCardOrderSchema = new mongoose.Schema({
-  identifier: { type: String, required: true, unique: true },
-  brand: String,
-  amount: Number,
-  priceSGLCN: Number,
-  wallet: String,
-  recipientEmail: String,
-  status: { type: String, default: 'pending' },
-  fulfilledAt: Date,
-}, { timestamps: true });
-
-const GiftCardOrder = mongoose.model('GiftCardOrder', giftCardOrderSchema);
 
 
 // Function to get balance for a single address
@@ -276,7 +251,206 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 
+// Create the transactions table if it doesn't exist
+db.serialize(() => {
+  
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_address TEXT NOT NULL,
+        nft_id TEXT NOT NULL,
+        transaction_type TEXT NOT NULL,  -- (mint, buy, sell, transfer)
+        amount REAL NOT NULL,  -- SeagullCoin amount
+        status TEXT NOT NULL,  -- (success, failed)
+        transaction_hash TEXT,
+        date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+});
+
+db.serialize(() => {
+  db.run(`DROP TABLE IF EXISTS signed_payloads`);
+  db.run(`
+    CREATE TABLE signed_payloads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uuid TEXT,
+      txid TEXT,
+      signed_at TEXT,
+      wallet TEXT
+    )
+  `);
+});
+
+
+// 2. Then later insert/read as needed
+const uuid = 'some-uuid';
+const txid = 'some-txid';
+const wallet = 'rExampleWalletAddress';
+const signedAt = new Date().toISOString();
+
+db.run(
+  `INSERT INTO signed_payloads (uuid, txid, signed_at, wallet) VALUES (?, ?, ?, ?)`,
+  [uuid, txid, signedAt, wallet],
+  function(err) {
+    if (err) {
+      console.error('Insert error:', err);
+    } else {
+      console.log('Inserted row with id:', this.lastID);
+
+      db.get(
+        `SELECT * FROM signed_payloads WHERE id = ?`,
+        [this.lastID],
+        (err, row) => {
+          if (err) {
+            console.error('Select error:', err);
+          } else {
+            const signedAtDate = new Date(row.signed_at);
+            console.log('Parsed signed_at:', signedAtDate.toString());
+          }
+        }
+      );
+    }
+  }
+);
+
+
+
+// Initialize SQLite database
+const dbPromise = open({
+  filename: './payments.db', // Database file name
+  driver: sqlite3.Database
+});
+
+// Create a table for payments if it doesn't exist
+async function createPaymentTable() {
+  const db = await dbPromise;
+  await db.run(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      payloadUUID TEXT UNIQUE,
+      senderAddress TEXT,
+      amount REAL,
+      currency TEXT,
+      status TEXT,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
+
+createPaymentTable().catch(console.error);
+
+// Create the Messages table if it doesn't exist
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      senderId TEXT NOT NULL,
+      receiverId TEXT NOT NULL,
+      content TEXT NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      status TEXT DEFAULT 'unread'
+    )
+  `);
+});
+
+// Create the staking table if it doesn't exist
+db.run(`
+  CREATE TABLE IF NOT EXISTS staking (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    walletAddress TEXT NOT NULL,
+    amount REAL NOT NULL,
+    duration INTEGER NOT NULL,
+    startTime INTEGER NOT NULL,
+    endTime INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    rewards REAL DEFAULT 0
+  )
+`);
+
+// Create the user_profiles table if it doesn't exist
+  db.run(`
+    CREATE TABLE IF NOT EXISTS user_profiles (
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        avatar_url TEXT,
+        email TEXT,
+        wallet_address TEXT UNIQUE NOT NULL
+    )
+  `);
+
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS nfts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      wallet_address TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      metadata_uri TEXT NOT NULL
+    )
+  `);
+});
+
+// Initialize SQLite Database
+const initDB = async () => {
+  // Open the database asynchronously
+  db = await open({
+    filename: './payloads.db',
+    driver: sqlite3.Database,
+  });
+
+  // Create table if it doesn't exist
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS used_payloads (
+      uuid TEXT PRIMARY KEY,
+      used_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+};
+
+const start = async () => {
+  try {
+    // Correctly using await inside an async function
+    await initDB(); 
+    console.log('Database initialized');
+  } catch (err) {
+    console.error('Error initializing DB:', err);
+  }
+};
+
+// Call the start function
+start();
+
+
+// Cleanup expired or rejected payloads
+const cleanupExpiredPayloads = async () => {
+  try {
+    // Set the expiration threshold (e.g., 24 hours ago)
+    const expirationThreshold = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
+
+    // Delete expired payloads based on creation time or status
+    await db.run(
+      `DELETE FROM used_payloads WHERE createdAt < ? OR meta_signed = false`,
+      expirationThreshold
+    );
+
+    console.log('Expired or rejected payloads have been cleaned up.');
+  } catch (err) {
+    console.error('Error during payload cleanup:', err);
+  }
+};
+
+initDB();
+// Mark payload as used in the database
+const markPayloadUsed = async (uuid) => {
+  await db.run(`INSERT OR IGNORE INTO used_payloads (uuid) VALUES (?)`, uuid);
+};
+
+// Check if payload is already used
+const isPayloadUsed = async (uuid) => {
+  const row = await db.get(`SELECT 1 FROM used_payloads WHERE uuid = ?`, uuid);
+  return !!row;
+};
 
 // 1. **Swagger Definition** (Swagger configuration)
 const swaggerDefinition = {
@@ -403,9 +577,77 @@ app.get("/tokens", (req, res) => {
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+// ===== SQLite Init =====
 
+// Ensure the tables for users and messages exist
+db.serialize(() => {
+  // Create users table if it doesn't exist
+  db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT)");
 
+  // Create messages table if it doesn't exist
+  db.run(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sender TEXT NOT NULL,
+      recipient TEXT NOT NULL,
+      message TEXT NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  
+  const saveNFTToDatabase = (walletAddress, name, description, metadataUri) => {
+  const query = `
+    INSERT INTO nfts (walletAddress, name, description, metadataUri)
+    VALUES (?, ?, ?, ?)
+  `;
+  
+  db.run(query, [walletAddress, name, description, metadataUri], function(err) {
+    if (err) {
+      console.error('Error saving NFT to database:', err.message);
+    } else {
+      console.log(`NFT saved with ID: ${this.lastID}`);
+    }
+  });
+};// Insert a test user
+  const stmt = db.prepare("INSERT INTO users (name) VALUES (?)");
+  stmt.run('SeagullCoin User');
+  stmt.finalize();
+});
 
+// 1. Get all posts (for the community board)
+app.get('/api/posts', (req, res) => {
+  db.all('SELECT * FROM posts ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) {
+      res.status(500).send('Error retrieving posts');
+      return;
+    }
+    res.json(rows); // Return all posts as JSON
+  });
+});
+
+// 2. Create a new post
+app.post('/api/posts', (req, res) => {
+  const { username, content } = req.body;
+  
+  if (!username || !content) {
+    return res.status(400).send('Username and content are required');
+  }
+
+  const stmt = db.prepare('INSERT INTO posts (username, content) VALUES (?, ?)');
+  stmt.run(username, content, function (err) {
+    if (err) {
+      return res.status(500).send('Error creating post');
+    }
+    // Respond with the newly created post's data (including auto-generated ID)
+    res.status(201).json({
+      id: this.lastID,
+      username,
+      content,
+      created_at: new Date().toISOString(),
+    });
+  });
+  stmt.finalize();
+});
 
 app.use('/api', mintRouter);  // Assuming mintRouter handles your mint-related endpoints
 
@@ -441,11 +683,70 @@ app.get('/login', async (req, res) => {
   }
 });
 
+const STAKE_AMOUNT = 50000; // SeagullCoin
+const LOCK_PERIOD_DAYS = 30;
+const LOCK_PERIOD_MS = LOCK_PERIOD_DAYS * 24 * 60 * 60 * 1000;
+const DAILY_REWARD = 16.7;
 
+const stakedWallets = {};
 
+// Add stake
+async function addStake(wallet) {
+  const startTime = Date.now();
+  const endTime = startTime + LOCK_PERIOD_MS;
+  const duration = LOCK_PERIOD_DAYS;
+
+  await db.run(`
+    INSERT OR REPLACE INTO staking (wallet, amount, duration, startTime, endTime, status, rewards)
+    VALUES (?, ?, ?, ?, ?, 'active', 0)
+  `, [wallet, STAKE_AMOUNT, duration, startTime, endTime]);
+
+  stakedWallets[wallet] = { startTime, endTime, amount: STAKE_AMOUNT };
+}
 
 // Get stake by wallet
+async function getStake(wallet) {
+  return db.get(`SELECT * FROM staking WHERE wallet = ?`, [wallet]);
+}
 
+// Remove stake on unstake
+async function removeStake(wallet) {
+  return db.run(`DELETE FROM staking WHERE wallet = ?`, [wallet]);
+}
+
+// Insert stake (alias for addStake with more params)
+function insertStake(wallet, amount, duration, startTime, endTime) {
+  return db.run(`
+    INSERT INTO staking (wallet, amount, duration, startTime, endTime, status, rewards)
+    VALUES (?, ?, ?, ?, ?, 'active', 0)
+  `, [wallet, amount, duration, startTime, endTime]);
+}
+
+// Stake duration check
+function calculateDaysStaked(stake) {
+  const now = Date.now();
+  const elapsed = now - stake.startTime;
+  const durationMs = stake.duration * 24 * 60 * 60 * 1000;
+
+  const daysStakedSoFar = Math.min(
+    Math.floor(elapsed / (24 * 60 * 60 * 1000)),
+    stake.duration
+  );
+
+  const eligible = elapsed >= durationMs;
+  return { daysStakedSoFar, eligible };
+}
+
+
+// Test route
+app.get('/db-test', (req, res) => {
+  db.all('SELECT * FROM staking', (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(rows);
+  });
+});
 
 app.post('/stake', async (req, res) => {
   const { wallet } = req.body;
@@ -701,6 +1002,8 @@ app.get('/unstake-payload/:wallet', async (req, res) => {
   }
 });
 
+
+
 app.get('/user', async (req, res) => {
   const address = req.query.address;
   if (!address) return res.status(400).json({ error: 'Missing address' });
@@ -942,7 +1245,6 @@ router.get('/mint-history/:wallet', async (req, res) => {
     res.json({ success: true, nfts: rows });
   });
 });
-
 
 app.get('/health', async (req, res) => {
   try {
@@ -1217,8 +1519,30 @@ app.get('/listings', async (req, res) => {
  *         description: Invalid data or insufficient SeagullCoin
  */
 
-// Accept an offer
 
+
+// Accept an offer
+app.post('/accept-offer', async (req, res) => {
+  const { offerId, userAddress, nftId } = req.body;
+
+  if (!offerId || !userAddress || !nftId) {
+    return res.status(400).json({ error: 'Offer ID, user address, and NFT ID are required.' });
+  }
+
+  try {
+    const result = await acceptOffer(offerId);
+
+    db.run("UPDATE nfts SET owner_address = ? WHERE id = ?", [userAddress, nftId], (err) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ success: true, message: 'Offer accepted and NFT ownership updated.' });
+    });
+  } catch (err) {
+    console.error('Error accepting offer:', err);
+    res.status(500).json({ error: 'Failed to accept offer.', message: err.message });
+  }
+});
 /**
  * @swagger
  * /accept-offer:
@@ -1306,11 +1630,84 @@ app.get('/login-status', async (req, res) => {
   }
 });
 
+app.get('/db-test', (req, res) => {
+  db.all('SELECT * FROM staking', (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json(rows);
+  });
+});
 
 
+function calculateDaysStaked(stake) {
+  const now = Date.now();
+  const start = stake.startTime;
+  const durationMs = stake.duration * 24 * 60 * 60 * 1000; // duration in ms
+  const elapsed = now - start;
+  const daysStakedSoFar = Math.min(Math.floor(elapsed / (24 * 60 * 60 * 1000)), stake.duration);
+  const eligible = elapsed >= durationMs;
+  return { daysStakedSoFar, eligible };
+}
 
 
-app.post('/buy-nft', async (req, res) => {
+// Open SQLite DB (async/await friendly)
+(async () => {
+  db = await open({
+    filename: './staking.db',
+    driver: sqlite3.Database
+  });
+const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table';");
+console.log(tables);
+
+  
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS staking (
+      wallet TEXT PRIMARY KEY,
+      stakedAt INTEGER,
+      unlocksAt INTEGER,
+      amount INTEGER
+    )
+  `);
+})();
+
+(async () => {
+  const rows = await db.all('SELECT wallet, stakedAt, unlocksAt, amount FROM staking');
+  rows.forEach(row => {
+    stakedWallets[row.wallet] = {
+      stakedAt: row.stakedAt,
+      unlocksAt: row.unlocksAt,
+      amount: row.amount
+    };
+  });
+})();
+
+
+// Constants
+const STAKE_AMOUNT = 50000;           // 50000 SeagullCoin staked
+const LOCK_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;  // 30 days in ms
+const DAILY_REWARD = 80;            // 80 SeagullCoin per day reward
+
+// Add stake (called after successful stake signed)
+async function addStake(wallet) {
+  const stakedAt = Date.now();
+  const unlocksAt = stakedAt + LOCK_PERIOD_MS;
+  const amount = STAKE_AMOUNT;
+
+  await db.run(`
+    INSERT OR REPLACE INTO staking (wallet, stakedAt, unlocksAt, amount)
+    VALUES (?, ?, ?, ?)
+  `, [wallet, stakedAt, unlocksAt, amount]);
+}
+
+// Get stake by wallet
+async function getStake(wallet) {
+  return db.get(`SELECT * FROM staking WHERE wallet = ?`, [wallet]);
+}
+    // Example: Return success or failure (replace with actual logic)
+  return { success: true, message: 'Purchase successful' };
+}app.post('/buy-nft', async (req, res) => {
   const { userAddress, nftId, price } = req.body;
 
   try {
@@ -1472,8 +1869,140 @@ app.post('/upload-avatar', (req, res) => {
     const avatarPath = `/uploads/${req.file.filename}`;  // Path to the uploaded file
     const walletAddress = req.body.wallet_address;  // Assuming the wallet address is passed in the body
 
-    
+    // Save avatar path and wallet address in user_profiles table
+    db.run(
+      `UPDATE user_profiles SET avatar_url = ? WHERE wallet_address = ?`,
+      [avatarPath, walletAddress],
+      function (err) {
+        if (err) {
+          return res.status(500).json({ error: 'Database update failed', details: err.message });
+        }
+        res.json({ message: 'Avatar uploaded successfully', avatarUrl: avatarPath });
+      }
+    );
+  });
+});
 
+// Endpoint to update username
+
+async function updateUserProfile(walletAddress, newProfileData) {
+  // Replace this with actual DB logic
+  // Example: Update user in your database
+  console.log(`Updating profile for ${walletAddress}:`, newProfileData);
+
+  // Simulate successful update
+  return { success: true, message: 'Profile updated' };
+}app.post('/update-username', async (req, res) => {
+  const { walletAddress } = req.session;
+  const { username } = req.body;
+
+  if (!username) return res.status(400).json({ error: 'Username is required.' });
+
+  try {
+    // Save to user profile in your DB (or session storage)
+    await updateUserProfile(walletAddress, { username });
+
+    res.json({ success: true, username });
+  } catch (err) {
+    console.error('Error updating username:', err);
+    res.status(500).json({ error: 'Failed to update username.' });
+  }
+});
+/**
+ * @swagger
+ * /update-username:
+ *   post:
+ *     summary: Update a user's display name
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               walletAddress:
+ *                 type: string
+ *               username:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Username updated successfully
+ */
+// Like an NFT
+async function likeNFT(walletAddress, nftId) {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT * FROM nft_likes WHERE walletAddress = ? AND nftId = ?', [walletAddress, nftId], (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      if (row) {
+        return reject(new Error('NFT already liked by this user.'));
+      }
+      // Insert new like
+    });
+  });
+}// Insert new// Like NFT endpoint
+app.post('/like-nft',
+  body('nftokenId').isString().isLength({ min: 10 }).withMessage('Invalid NFT ID'),
+  async (req, res) => {
+    // Validate input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { nftokenId } = req.body;
+    const walletAddress = req.session?.walletAddress;
+
+    // Ensure wallet is connected
+    if (!walletAddress) return res.status(401).json({ error: 'Wallet not connected.' });
+
+    try {
+      // Perform the database operation wrapped in a promise
+      const result = await new Promise((resolve, reject) => {
+        // Insert new like into the database
+        db.run('INSERT INTO nft_likes (walletAddress, nftId) VALUES (?, ?)', [walletAddress, nftokenId], function(err) {
+          if (err) return reject(err);  // Reject if there's an error
+          resolve({ success: true });   // Resolve on success
+        });
+      });// Return the success result to the client
+      res.status(200).json(result);
+
+    } catch (error) {
+      // Handle any errors
+      console.error(error);
+      res.status(500).json({ error: 'An error occurred while liking the NFT' });
+    }
+  });/**
+ * @swagger
+ * /api/like-nft:
+ *   post:
+ *     summary: Like an NFT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nftId:
+ *                 type: string
+ *               userAddress:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: NFT liked successfully
+ *       400:
+ *         description: Invalid data or already liked
+ */
+async function getTotalCollections() {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT COUNT(*) AS total FROM collections', (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(row.total);
+    });
+  });
+}
 
 app.get('/gettotalcollections', async (req, res) => {
     // Logic to get the total number of collections
@@ -1624,8 +2153,16 @@ app.get('/recent', async (req, res) => {
 
 // Get all NFTs for the logged-in user
 
-
-app.get('/user-nfts', async (req, res) => {
+async function getUserNFTs(walletAddress) {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM nfts WHERE walletAddress = ? ORDER BY mintDate DESC', [walletAddress], (err, rows) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(rows);
+    });
+  });
+}app.get('/user-nfts', async (req, res) => {
   const { walletAddress } = req.session;
 
   try {
@@ -1672,7 +2209,46 @@ app.get('/getusernfts',
 // Get a list of all collections
 
 // Example for MongoDB:
-// Example for SQLite
+// Example for SQLite:
+async function getAllCollections() {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT DISTINCT collection_name FROM nfts', (err, rows) => {  // Adjust the query based on your database structure
+      if (err) return reject(err);
+ 
+      resolve(rows.map(row => row.collection_name)); // Assuming collection_name is the column that stores collection names
+    });
+  });
+}
+
+app.get('/collections', async (req, res) => {
+  try {
+    const collections = await getAllCollections(); // Function to fetch all collections
+    res.json({ collections });
+  } catch (err) {
+    console.error('Error fetching collections:', err);
+    res.status(500).json({ error: 'Failed to fetch collections.' });
+  }
+});
+/**
+ * @swagger
+ * /collections:
+ *   get:
+ *     summary: Get public NFT collections
+ *     responses:
+ *       200:
+ *         description: Public collections retrieved
+ */
+
+
+// Get all collections
+app.get('/getallcollections', async (req, res) => {
+  db.all("SELECT * FROM collections", [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(rows);
+  });
+});
 
 /**
  * @swagger
@@ -1685,7 +2261,53 @@ app.get('/getusernfts',
  */
 
 // Create a collection
+app.post('/create-collection',
+  body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Collection name is required'),
+  body('description').optional().isString().isLength({ max: 300 }),
+  body('icon').isURL().withMessage('Collection icon must be a valid URL'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
+    const { name, description, icon } = req.body;
+
+    try {
+      db.run("INSERT INTO collections (name, description, icon) VALUES (?, ?, ?)",
+        [name, description || '', icon],
+        function (err) {
+          if (err) {
+            return res.status(500).json({ error: 'Database insert failed.' });
+          }
+          res.json({ success: true, collectionId: this.lastID });
+        });
+    } catch (err) {
+      console.error('Error creating collection:', err);
+      res.status(500).json({ error: 'Failed to create collection.' });
+    }
+});
+
+// Endpoint to verify signed payload
+ app.post('/verify-authentication', async (req, res) => {
+  const { signedPayload } = req.body;
+
+  if (!signedPayload) {
+    return res.status(400).json({ error: 'Missing signed payload' });
+  }
+
+  try {
+    // Decode the signed payload to get user information
+    const response = await xummSDK.payload.decode(signedPayload);
+    const { account } = response;
+
+    // Store account in session for future API calls
+    req.session.walletAddress = account;
+
+    res.json({ success: true, walletAddress: account });
+  } catch (error) {
+    console.error('Error verifying signed payload:', error);
+    res.status(500).json({ error: 'Failed to verify authentication' });
+  }
+});
 // XUMM OAuth callback route
 app.get('/xumm/callback', async (req, res) => {
   const { code } = req.query;
@@ -1791,6 +2413,33 @@ app.post('/xumm-login-callback', async (req, res) => {
   }
 });
 
+app.post('/user', async (req, res) => {
+  const { xummToken } = req.body;
+
+  try {
+    const userData = await xummSDK.getUserTokenData(xummToken); // Verify the XUMM token
+
+    if (userData?.sub) {
+      const account = userData.sub;
+
+      // Store the wallet address and sessionToken in the database
+      db.run(`INSERT OR REPLACE INTO users (walletAddress, sessionToken) VALUES (?, ?)`, [account, 'your-session-token'], function(err) {
+        if (err) {
+          console.error("Error storing user data:", err);
+          return res.status(500).json({ success: false, error: 'Database error' });
+        }
+
+        console.log('User stored successfully:', account);
+        res.json({ success: true, account });
+      });
+    } else {
+      res.status(400).json({ success: false, error: 'Invalid user' });
+    }
+  } catch (err) {
+    console.error('Error verifying XUMM token:', err);
+    res.status(500).json({ success: false });
+  }
+});
 
 app.get('/user/:walletAddress', (req, res) => {
   const { walletAddress } = req.params;
@@ -2545,6 +3194,7 @@ async function fetchOffersFromXRPL(walletAddress) {
   }
 }
 
+
 app.get('/offers/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   const client = new xrpl.Client(xrplApiUrl);
@@ -2581,8 +3231,6 @@ app.get('/offers/:wallet', async (req, res) => {
     client.disconnect();
   }
 });
-
-
 
 app.post('/nft-offers', async (req, res) => {
   const { walletAddress } = req.body;
@@ -2978,6 +3626,10 @@ app.post('/mint-complete', async (req, res) => {
   }
 });
 
+
+
+
+
 const usedNFTs = new Set(
 '00081F40FC69103C8AEBE206163BC88C42EA2ED6CEF190C7B7ABA7F30405C658',
   
@@ -3252,7 +3904,6 @@ const sERVICE_WALLET = "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV";
 const CURRENCY_HEX = '53656167756C6C4D616E73696F6E730000000000';
 const ISSUER = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 
-
 app.get('/check-payment', async (req, res) => {
   const { uuid } = req.query;
   try {
@@ -3450,7 +4101,7 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
   }
 });
 
-app.post("/backup-pay-two", async (req, res) => {
+    app.post("/backup-pay-two", async (req, res) => {
   const { destination } = req.body;
 
   // Validate address
@@ -3880,9 +4531,6 @@ app.get('/orderbook/view/scl-xau', async (req, res) => {
   }
 });
 
-
-
-
 app.get('/api/orderbook', async (req, res) => {
   const client = new Client('wss://s1.ripple.com');
 
@@ -4063,6 +4711,7 @@ setInterval(async () => {
     if (client.isConnected()) await client.disconnect();
   }
 }, 1800000); // every 5 mins
+
 
 // Single endpoint with optional ?history=true
 app.get('/api/sglcn-xau', async (req, res) => {
@@ -4284,9 +4933,6 @@ app.post('/swap', async (req, res) => {
     res.status(500).json({ error: err.message || 'Swap failed.' });
   }
 });
-
-
-
 
 app.get('/rate-preview', async (req, res) => {
   const { from, to } = req.query;
@@ -4526,7 +5172,7 @@ app.post('/create-merch-order', async (req, res) => {
   }
 });
 
-// ✅ Gift card creation endpoint
+
 app.post("/create-giftcard-order", async (req, res) => {
   const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
 
@@ -4538,7 +5184,6 @@ app.post("/create-giftcard-order", async (req, res) => {
   if (isNaN(price) || price <= 0) {
     return res.status(400).json({ error: "Invalid priceSGLCN value" });
   }
-const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
 
   try {
     const payload = {
@@ -4567,8 +5212,8 @@ const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
           web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
         }
       },
-    custom_meta: {
-        identifier,
+      custom_meta: {
+        identifier: `GIFTCARD-${Date.now()}-${brand}-${amount}`,
         blob: {
           brand,
           amount,
@@ -4579,17 +5224,6 @@ const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
     };
 
     const created = await xumm.payload.create(payload);
-
-    // ✅ Save order to DB
-    await GiftCardOrder.create({
-      identifier,
-      brand,
-      amount,
-      wallet,
-      recipientEmail,
-      priceSGLCN: price,
-      status: 'pending'
-    });
 
     res.json({
       success: true,
@@ -4603,85 +5237,31 @@ const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
   }
 });
 
-
-
 app.post('/xumm-webhook', async (req, res) => {
-  const data = req.body;
+  const data = req.body;
 
-  console.log('Webhook received:', data);
+  // Check the payload UUID & transaction result
+  console.log('Webhook received:', data);
 
-  if (data.signed === true) {
-    const { identifier, blob } = data.payload.custom_meta || {};
-    const { brand, amount, wallet, recipientEmail } = blob || {};
+  if (data.signed === true) {
+    // Payment was signed and successfully submitted
+    const { identifier, blob } = data.payload.custom_meta || {};
 
-    console.log(`✅ Payment confirmed: ${identifier}`);
+    // Extract gift card order info from blob
+    const { brand, amount, wallet, recipientEmail } = blob || {};
 
-    // Log to check exact identifier string (helps catch invisible chars)
-    console.log('Looking for order with identifier:', JSON.stringify(identifier));
-    try {
-      const updated = await GiftCardOrder.findOneAndUpdate(
-        { identifier },
-        { status: 'paid', fulfilledAt: new Date() },
-        { new: true }
-      );
+    // TODO: Fulfill the order here (send gift card code, update DB, notify user, etc)
+    console.log(`Payment confirmed for gift card: ${brand} x${amount} to ${recipientEmail}`);
 
-      if (!updated) {
-        console.warn(`⚠️ No matching order found for identifier ${identifier}`);
-        
-        // Optional: log all identifiers in DB to debug
-        const allOrders = await GiftCardOrder.find({}, { identifier: 1, _id: 0 });
-        console.log('All identifiers in DB:', allOrders.map(o => o.identifier));
-        
-      } else {
-        // ✅ Send confirmation email
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
-
-        const mailOptions = {
-          from: `"SeagullCoin" <${process.env.EMAIL_USER}>`,
-          to: recipientEmail,
-          subject: `🎁 Your ${brand} Gift Card`,
-          html: `
-            <h2>✅ Payment Received</h2>
-            <p>Hi! We’ve received your payment for a <strong>${brand}</strong> gift card worth <strong>${amount}</strong>.</p>
-            <p>You’ll receive the code shortly. Thanks for using SeagullCoin!</p>
-          `,
-        };
-
-        await transporter.sendMail(mailOptions);
-        console.log(`📧 Email sent to ${recipientEmail}`);
-      }
-
-    } catch (err) {
-      console.error("❌ Failed to update order or send email:", err.message);
-    }
-
-    res.status(200).send('OK');
-  } else {
-    console.log('❌ Payment not signed or rejected.');
-    res.status(200).send('OK');
-  }
-});
-
-
-
-
-const MONGODB_URI = process.env.MONGODB_URI;
-
-// 2. Use existing connection in route
-app.get('/test-mongodb', (req, res) => {
-  const status = mongoose.connection.readyState; // 1 = connected
-  if (status === 1) {
-    res.send('✅ MongoDB is currently connected');
+    // Send 200 response to acknowledge webhook
+    res.status(200).send('OK');
   } else {
-    res.status(500).send('❌ MongoDB is NOT connected');
+    // Payment rejected or not signed
+    console.log('Payment not signed or rejected.');
+    res.status(200).send('OK');
   }
 });
+
 
 
 // Call the XRPL ping when the server starts

@@ -5199,17 +5199,18 @@ app.post('/create-merch-order', async (req, res) => {
   }
 });
 
+// ✅ Gift card creation endpoint
 app.post("/create-giftcard-order", async (req, res) => {
-  const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
+  const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
 
-  if (!brand || !amount || !priceSGLCN || !wallet || !recipientEmail) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
+  if (!brand || !amount || !priceSGLCN || !wallet || !recipientEmail) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
 
-  const price = parseFloat(priceSGLCN);
-  if (isNaN(price) || price <= 0) {
-    return res.status(400).json({ error: "Invalid priceSGLCN value" });
-  }
+  const price = parseFloat(priceSGLCN);
+  if (isNaN(price) || price <= 0) {
+    return res.status(400).json({ error: "Invalid priceSGLCN value" });
+  }
 const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
 
   try {
@@ -5218,11 +5219,11 @@ const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
         TransactionType: "Payment",
         Destination: "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U",
         Amount: {
-          currency: "53656167756C6C436F696E000000000000000000",
+          currency: "53656167756C6C436F696E000000000000000000", // HEX for SeagullCoin
           issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
           value: price.toString()
         },
-Memos: [
+        Memos: [
           {
             Memo: {
               MemoType: Buffer.from("GiftcardOrder", "utf8").toString("hex"),
@@ -5231,7 +5232,7 @@ Memos: [
           }
         ]
       },
-options: {
+      options: {
         submit: true,
         expire: 300,
         return_url: {
@@ -5239,7 +5240,7 @@ options: {
           web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
         }
       },
-      custom_meta: {
+    custom_meta: {
         identifier,
         blob: {
           brand,
@@ -5252,7 +5253,7 @@ options: {
 
     const created = await xumm.payload.create(payload);
 
-// Save to DB
+    // ✅ Save order to DB
     await GiftCardOrder.create({
       identifier,
       brand,
@@ -5263,18 +5264,17 @@ options: {
       status: 'pending'
     });
 
-res.json({
+    res.json({
       success: true,
       uuid: created.uuid,
       next: created.next.always
     });
 
-} catch (err) {
+  } catch (err) {
     console.error("❌ XUMM Payload Error:", err.message || err);
     res.status(500).json({ error: "Failed to create giftcard payment." });
   }
 });
-
 
 app.post('/xumm-webhook', async (req, res) => {
   const data = req.body;

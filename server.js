@@ -17,7 +17,6 @@ import { NFTStorage, File } from 'nft.storage';
 import xrpl from 'xrpl';
 import NodeCache from 'node-cache';
 import { open } from 'sqlite';
-import sqlite3 from 'sqlite3';
 import axios from 'axios';
 import { acceptOffer, rejectOffer } from './mintingLogic.js';
 import { body, query, validationResult } from 'express-validator';
@@ -37,7 +36,6 @@ import mime from 'mime';
 import { xummApi } from './xrplClient.js';
 import { initiateLogin, verifyLogin } from './xummLogin.js';  // Assuming the path is correct
 import { requireLogin } from './xummLogin.js';  // Adjust the path if needed
-import { createTables, addOwnerWalletAddressToNFTsTable } from './dbsetup.js';
 import { Buffer } from 'buffer';
 import sanitizeHtml from 'sanitize-html';
 import rippleAddressCodec from 'ripple-address-codec';

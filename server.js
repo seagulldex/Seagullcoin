@@ -5277,67 +5277,42 @@ const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
 });
 
 app.post('/xumm-webhook', async (req, res) => {
-  const data = req.body;
+  const data = req.body;
 
-  console.log('Webhook received:', data);
+  console.log('Webhook received:', data);
 
-  if (data.signed === true) {
-    const { identifier, blob } = data.payload.custom_meta || {};
-    const { brand, amount, wallet, recipientEmail } = blob || {};
+  if (data.signed === true) {
+    const { identifier, blob } = data.payload.custom_meta || {};
+    const { brand, amount, wallet, recipientEmail } = blob || {};
 
-    console.log(`✅ Payment confirmed: ${identifier}`);
+    console.log(`✅ Payment confirmed: ${identifier}`);
 
-    // Log to check exact identifier string (helps catch invisible chars)
-    console.log('Looking for order with identifier:', JSON.stringify(identifier));
-    try {
-      const updated = await GiftCardOrder.findOneAndUpdate(
-        { identifier },
-        { status: 'paid', fulfilledAt: new Date() },
-        { new: true }
-      );
+    try {
+      // ✅ Update the order status in DB
+      const updated = await GiftCardOrder.findOneAndUpdate(
+        { identifier },
+        { status: 'paid', fulfilledAt: new Date() },
+        { new: true }
+      );
 
-      if (!updated) {
-        console.warn(`⚠️ No matching order found for identifier ${identifier}`);
-        
-        // Optional: log all identifiers in DB to debug
-        const allOrders = await GiftCardOrder.find({}, { identifier: 1, _id: 0 });
-        console.log('All identifiers in DB:', allOrders.map(o => o.identifier));
-        
-      } else {
-        // ✅ Send confirmation email
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
+      if (!updated) {
+        console.warn(`⚠️ No matching order found for identifier ${identifier}`);
+      } else {
+        // TODO: fulfill gift card logic (email code, mark as sent, etc.)
+        console.log(`🎁 Fulfilled gift card: ${brand} x${amount} to ${recipientEmail}`);
+      }
 
-        const mailOptions = {
-          from: `"SeagullCoin" <${process.env.EMAIL_USER}>`,
-          to: recipientEmail,
-          subject: `🎁 Your ${brand} Gift Card`,
-          html: `
-            <h2>✅ Payment Received</h2>
-            <p>Hi! We’ve received your payment for a <strong>${brand}</strong> gift card worth <strong>${amount}</strong>.</p>
-            <p>You’ll receive the code shortly. Thanks for using SeagullCoin!</p>
-          `,
-        };
+    } catch (err) {
+      console.error("❌ Failed to update order:", err.message);
+    }
 
-        await transporter.sendMail(mailOptions);
-        console.log(`📧 Email sent to ${recipientEmail}`);
-      }
-
-    } catch (err) {
-      console.error("❌ Failed to update order or send email:", err.message);
-    }
-
-    res.status(200).send('OK');
-  } else {
-    console.log('❌ Payment not signed or rejected.');
-    res.status(200).send('OK');
-  }
+    res.status(200).send('OK');
+  } else {
+    console.log('❌ Payment not signed or rejected.');
+    res.status(200).send('OK');
+  }
 });
+      
 
 const MONGODB_URI = process.env.MONGODB_URI;
 

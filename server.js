@@ -5272,7 +5272,6 @@ res.json({
   }
 });
 
-export default router;
 
 app.post('/xumm-webhook', async (req, res) => {
   const data = req.body;

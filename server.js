@@ -1790,26 +1790,6 @@ app.post('/xumm-login-callback', async (req, res) => {
   }
 });
 
-app.post('/user', async (req, res) => {
-  const { xummToken } = req.body;
-
-  try {
-    const userData = await xummSDK.getUserTokenData(xummToken); // Verify the XUMM token
-
-    if (userData?.sub) {
-      const account = userData.sub;
-      
-        console.log('User stored successfully:', account);
-        res.json({ success: true, account });
-      });
-    } else {
-      res.status(400).json({ success: false, error: 'Invalid user' });
-    }
-  } catch (err) {
-    console.error('Error verifying XUMM token:', err);
-    res.status(500).json({ success: false });
-  }
-});
 
 app.get('/user/:walletAddress', (req, res) => {
   const { walletAddress } = req.params;

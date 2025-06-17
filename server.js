@@ -5244,23 +5244,24 @@ app.post("/create-giftcard-order", async (req, res) => {
         ]
       },
       options: {
-        submit: true,
-        expire: 300,
-        return_url: {
-          app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=<secure_token_here>",
-          web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=<secure_token_here>"
-        }
-      },
-      custom_meta: {
-        identifier,
-        blob: {
-          brand,
-          amount,
-          wallet,
-          recipientEmail
-        }
-      }
-    };
+    submit: true,
+    expire: 300,
+    return_url: {
+      app: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=${token}`,
+      web: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=${token}`,
+    }
+  },
+  custom_meta: {
+    identifier,
+    blob: {
+      brand,
+      amount,
+      wallet,
+      recipientEmail,
+      token // optionally store token here too
+    }
+  }
+};
 
     // Create the payload on XUMM
     const created = await xumm.payload.create(payload);

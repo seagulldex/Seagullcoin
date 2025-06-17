@@ -25,6 +25,7 @@
     "nft.storage": "^3.4.0",
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
+    "resend": "^2.0.0",
     "ripple-address-codec": "^5.0.0",
     "ripple-lib": "^1.10.1",
     "rippled-ws-client": "^1.6.5",
@@ -47,7 +48,7 @@
     "nodemon": "^3.1.10"
   },
   "engines": {
-    "node": "16.x"
+    "node": "18.x"
   },
   "keywords": [
     "seagullcoin",

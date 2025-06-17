@@ -72,6 +72,7 @@ import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
 import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
+import { ec as EC } from 'elliptic';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -105,6 +106,14 @@ const token = randomBytes(32).toString('hex')
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
 
+const ec = new EC('secp256k1');
+
+const keyPair = ec.genKeyPair();
+const privateKey = keyPair.getPrivate('hex');
+const publicKey = keyPair.getPublic('hex');
+
+console.log("Private Key:", privateKey);
+console.log("Public Key:", publicKey);
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 

@@ -5273,8 +5273,9 @@ app.post("/create-giftcard-order", async (req, res) => {
       wallet,
       recipientEmail,
       priceSGLCN: price,
-      status: 'pending'
-    });
+      status: { type: String, default: 'pending' }, // pending, paid, delivered
+      giftCardCode: String  // <-- Add this
+}));
 
     // Generate secure token
     const token = randomBytes(32).toString('hex');

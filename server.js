@@ -5210,6 +5210,7 @@ const TokenModel = mongoose.model('Token', new mongoose.Schema({
   expiresAt: Date
 }));
 
+
 app.post("/create-giftcard-order", async (req, res) => {
   const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
 
@@ -5222,15 +5223,17 @@ app.post("/create-giftcard-order", async (req, res) => {
     return res.status(400).json({ error: "Invalid priceSGLCN value" });
   }
 
-  const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
-
   try {
+    const token = randomBytes(32).toString('hex');   // Generate token **first**
+    const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     const payload = {
       txjson: {
         TransactionType: "Payment",
         Destination: "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U",
         Amount: {
-          currency: "53656167756C6C436F696E000000000000000000", // HEX for SeagullCoin
+          currency: "53656167756C6F696E000000000000000000", // HEX for SeagullCoin (check spelling)
           issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
           value: price.toString()
         },
@@ -5244,26 +5247,20 @@ app.post("/create-giftcard-order", async (req, res) => {
         ]
       },
       options: {
-    submit: true,
-    expire: 300,
-    return_url: {
-      app: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=${token}`,
-      web: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=${token}`,
-    }
-  },
-  custom_meta: {
-    identifier,
-    blob: {
-      brand,
-      amount,
-      wallet,
-      recipientEmail,
-      token // optionally store token here too
-    }
-  }
-};
+        submit: true,
+        expire: 300,
+        return_url: {
+          app: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=${token}`,
+          web: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=${token}`,
+        }
+      },
+      custom_meta: {
+        identifier,
+        blob: { brand, amount, wallet, recipientEmail, token }
+      }
+    };
 
-    // Create the payload on XUMM
+    // Create payload on XUMM
     const created = await xumm.payload.create(payload);
 
     // Save order to DB
@@ -5274,14 +5271,12 @@ app.post("/create-giftcard-order", async (req, res) => {
       wallet,
       recipientEmail,
       priceSGLCN: price,
-      status: { type: String, default: 'pending' }, // pending, paid, delivered
-      giftCardCode: String  // <-- Add this
-}));
+      status: "pending",
+      giftCardCode: null, // will fill after fulfillment
+      token  // Save token for reference
+    });
 
-    // Generate secure token
-    const token = randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // expires in 24h
-
+    // Save token linked to order
     await TokenModel.create({
       token,
       orderIdentifier: identifier,
@@ -5289,7 +5284,7 @@ app.post("/create-giftcard-order", async (req, res) => {
       used: false
     });
 
-    // TODO: Send email with redeem link including token
+    // Optionally send email with redeem link (token)
     // sendGiftCardEmail({ recipientEmail, brand, amount, identifier, token });
 
     res.json({
@@ -5303,7 +5298,6 @@ app.post("/create-giftcard-order", async (req, res) => {
     res.status(500).json({ error: "Failed to create giftcard payment." });
   }
 });
-
     
 
 app.post('/xumm-webhook', async (req, res) => {

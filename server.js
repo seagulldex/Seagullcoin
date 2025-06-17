@@ -5417,6 +5417,24 @@ app.get("/redeem", async (req, res) => {
 });
 
 
+app.post('/api/wallets/generate', async (req, res) => {
+  try {
+    const uniquePart = randomBytes(12).toString('hex').toUpperCase();
+    const wallet = `SEAGULL${uniquePart}`;
+    const seed = randomBytes(32).toString('hex');
+
+    const newWallet = await Wallet.create({ wallet, seed });
+
+    res.json({
+      success: true,
+      wallet: newWallet.wallet,
+      seed: newWallet.seed,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
   
 
 

@@ -5358,20 +5358,16 @@ app.get('/test-mongodb', (req, res) => {
 app.get("/redeem", async (req, res) => {
   const token = req.query.token;
 
-  if (!token) {
-    return res.status(400).send("❌ Missing token.");
-  }
+  if (!token) return res.status(400).send("❌ Missing token.");
 
   const gift = await TokenModel.findOne({ token });
-
   if (!gift || gift.used || gift.expiresAt < new Date()) {
     return res.status(404).send("❌ Invalid or expired token.");
   }
 
   const order = await GiftCardOrder.findOne({ identifier: gift.orderIdentifier });
-
-  if (!order) {
-    return res.status(404).send("❌ Gift card not found.");
+  if (!order || order.status !== 'paid') {
+    return res.status(404).send("❌ Gift card not available yet.");
   }
 
   const cardDescription = `${order.amount} ${order.brand} gift card`;

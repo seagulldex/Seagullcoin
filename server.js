@@ -5247,8 +5247,8 @@ app.post("/create-giftcard-order", async (req, res) => {
         submit: true,
         expire: 300,
         return_url: {
-          app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
-          web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
+          app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=<secure_token_here>",
+          web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=<secure_token_here>"
         }
       },
       custom_meta: {

@@ -5201,6 +5201,14 @@ app.post('/create-merch-order', async (req, res) => {
 });
 
 // ✅ Gift card creation endpoint
+// Assuming you have a Mongoose model for tokens, e.g.:
+const TokenModel = mongoose.model('Token', new mongoose.Schema({
+  token: String,
+  orderIdentifier: String,
+  used: { type: Boolean, default: false },
+  expiresAt: Date
+}));
+
 app.post("/create-giftcard-order", async (req, res) => {
   const { brand, amount, priceSGLCN, wallet, recipientEmail } = req.body;
 
@@ -5212,49 +5220,22 @@ app.post("/create-giftcard-order", async (req, res) => {
   if (isNaN(price) || price <= 0) {
     return res.status(400).json({ error: "Invalid priceSGLCN value" });
   }
-const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
+
+  const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
 
   try {
     const payload = {
-      txjson: {
-        TransactionType: "Payment",
-        Destination: "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U",
-        Amount: {
-          currency: "53656167756C6C436F696E000000000000000000", // HEX for SeagullCoin
-          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-          value: price.toString()
-        },
-        Memos: [
-          {
-            Memo: {
-              MemoType: Buffer.from("GiftcardOrder", "utf8").toString("hex"),
-              MemoData: Buffer.from(`${brand}-${amount}`, "utf8").toString("hex")
-            }
-          }
-        ]
-      },
-      options: {
-        submit: true,
-        expire: 300,
-        return_url: {
-          app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
-          web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
-        }
-      },
-    custom_meta: {
+      txjson: { /*...*/ },
+      options: { /*...*/ },
+      custom_meta: {
         identifier,
-        blob: {
-          brand,
-          amount,
-          wallet,
-          recipientEmail
-        }
+        blob: { brand, amount, wallet, recipientEmail }
       }
     };
 
     const created = await xumm.payload.create(payload);
 
-    // ✅ Save order to DB
+    // Save order to DB
     await GiftCardOrder.create({
       identifier,
       brand,
@@ -5264,6 +5245,20 @@ const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
       priceSGLCN: price,
       status: 'pending'
     });
+
+    // Generate secure token
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // expires in 24h
+
+    await TokenModel.create({
+      token,
+      orderIdentifier: identifier,
+      expiresAt,
+      used: false
+    });
+
+    // Now send email with redeem link containing token (call your email sender here)
+    // e.g. sendGiftCardEmail({ recipientEmail, brand, amount, identifier, token })
 
     res.json({
       success: true,

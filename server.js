@@ -73,6 +73,7 @@ import Stripe from 'stripe';
 import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
 import { ec as EC } from 'elliptic';
+import { sign, verify, getPublicKey } from '@noble/ed25519';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -106,14 +107,7 @@ const token = randomBytes(32).toString('hex')
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
 
-const ec = new EC('secp256k1');
 
-const keyPair = ec.genKeyPair();
-const privateKey = keyPair.getPrivate('hex');
-const publicKey = keyPair.getPublic('hex');
-
-console.log("Private Key:", privateKey);
-console.log("Public Key:", publicKey);
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 
@@ -153,6 +147,18 @@ async function fetchIPFSMetadata(uri) {
     console.error('❌ MongoDB connection error:', err.message);
   }
 })();
+
+(async () => {
+  const privateKey = ...; // 32-byte private key Uint8Array
+  const message = new TextEncoder().encode('hello');
+
+  const signature = await sign(message, privateKey);
+  const publicKey = await getPublicKey(privateKey);
+  const isValid = await verify(signature, message, publicKey);
+
+  console.log('Signature valid?', isValid);
+})();
+
 
 // MongoDB Schema
 const UserWalletSchema = new mongoose.Schema({

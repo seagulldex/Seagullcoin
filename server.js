@@ -5438,12 +5438,12 @@ res.send(`
   <body>
     <div class="container">
       <h2>🎁 Gift Card Confirmation</h2>
-      <p>You've successfully ordered a <strong>$${order.amount} ${order.brand}</strong> gift card.</p>
+      <p>You've successfully ordered a <strong>${order.amount} ${order.brand}</strong> gift card.</p>
       <p>Your order ID is:</p>
       <p class="order-id">${order.identifier}</p>
       <p>We'll deliver the gift card to your email shortly. Between 5 minutes to 24 hours Max</p>
       <hr />
-      <p class="footer">If you have questions, reply to this email.</p>
+      <p class="footer">If you have questions, email boredseagulls@gmail.com.</p>
     </div>
   </body>
 </html>

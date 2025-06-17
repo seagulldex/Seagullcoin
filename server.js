@@ -70,7 +70,7 @@ import { RippleAPI } from 'ripple-lib';
 import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
-
+import { randomBytes } from 'crypto';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -99,7 +99,7 @@ const xrplClient = new Client('wss://xrplcluster.com');
 const nftCache = new Map(); // key: wallet address, value: { data, timestamp }
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking service wallet
-
+const token = randomBytes(32).toString('hex')
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }

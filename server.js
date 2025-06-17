@@ -5376,33 +5376,80 @@ app.get("/redeem", async (req, res) => {
   const cardDescription = `${order.amount} ${order.brand} gift card`;
   const orderId = order.identifier;
 
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="UTF-8" />
-        <title>Gift Card Confirmation</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; background-color: #f8f9fa; color: #333; padding: 20px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: auto; background-color: #ffffff; border: 1px solid #ddd; border-radius: 8px;">
-          <tr>
-            <td style="padding: 20px;">
-              <h2 style="margin-top: 0; color: #2d7dd2;">🎁 Gift Card Confirmation</h2>
-              <p style="font-size: 16px;">You've successfully ordered a <strong>${cardDescription}</strong>.</p>
-              <p style="font-size: 16px;">Your order ID is:</p>
-              <p style="background-color: #f1f1f1; padding: 10px; border-radius: 5px; font-family: monospace;">
-                ${orderId}
-              </p>
-              <p style="font-size: 14px; color: #666;">We'll deliver the gift card to your email shortly. Between 5 minutes to 24 hours Max</p>
-              <hr style="margin: 20px 0;" />
-              <p style="font-size: 12px; color: #999;">If you have questions, reply to this email.</p>
-            </td>
-          </tr>
-        </table>
-      </body>
-    </html>
-  `);
+res.send(`
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Gift Card Confirmation</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 40px 20px;
+        background-color: #121212; /* dark black */
+        color: #eee;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        background-color: #1e1e1e;
+        border-radius: 12px;
+        padding: 40px 30px;
+        max-width: 700px;
+        width: 100%;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      }
+      h2 {
+        color: #4fc3f7;
+        font-size: 2.5rem;
+        margin-top: 0;
+        margin-bottom: 24px;
+      }
+      p {
+        font-size: 1.25rem;
+        line-height: 1.6;
+        margin: 12px 0;
+      }
+      .order-id {
+        background-color: #333;
+        padding: 15px 20px;
+        border-radius: 8px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 1.2rem;
+        user-select: all;
+        margin: 16px 0;
+        color: #81d4fa;
+      }
+      hr {
+        border: 0;
+        border-top: 1px solid #444;
+        margin: 32px 0;
+      }
+      .footer {
+        font-size: 0.9rem;
+        color: #888;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>🎁 Gift Card Confirmation</h2>
+      <p>You've successfully ordered a <strong>$${order.amount} ${order.brand}</strong> gift card.</p>
+      <p>Your order ID is:</p>
+      <p class="order-id">${order.identifier}</p>
+      <p>We'll deliver the gift card to your email shortly. Between 5 minutes to 24 hours Max</p>
+      <hr />
+      <p class="footer">If you have questions, reply to this email.</p>
+    </div>
+  </body>
+</html>
+`);
 });
+
 
 
 // Call the XRPL ping when the server starts

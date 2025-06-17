@@ -5354,6 +5354,23 @@ app.get('/test-mongodb', (req, res) => {
   }
 });
 
+app.get("/redeem", async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) return res.status(400).send("Missing token");
+
+  const record = await TokenModel.findOne({ token });
+
+  if (!record || record.used || record.expiresAt < new Date()) {
+    return res.status(400).send("Invalid or expired token");
+  }
+
+  // ✅ Token is valid
+  // Proceed to show or deliver the gift card details
+  res.send(`🎁 Gift card for ${record.orderIdentifier} is valid and ready.`);
+});
+
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

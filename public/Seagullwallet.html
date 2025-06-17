@@ -83,7 +83,28 @@
   <main>
     <h1>Generate SGLCN-X20 wallet</h1>
     <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
- 
+
+    <h2>Wallet Generator</h2>
+<table id="wallet-table" border="1" style="margin: 20px auto; width: 80%; max-width: 500px; text-align: left; color: white; background: #222; border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th>Wallet Address</th>
+      <th>Seed</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td id="wallet-address">-</td>
+      <td id="wallet-seed">-</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="text-align: center;">
+  <button id="generate-wallet-btn">Generate Wallet & Seed</button>
+</div>
+
+      
   </main>
 
   <script>

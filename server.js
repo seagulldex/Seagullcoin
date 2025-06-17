@@ -71,6 +71,7 @@ import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
 import { randomBytes } from 'crypto';
+import Wallet from './models/Wallet.js';
 
 // ===== Init App and Env =====
 dotenv.config();

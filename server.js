@@ -144,6 +144,33 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
+// MongoDB Schema
+const UserWalletSchema = new mongoose.Schema({
+  wallet: { type: String, required: true, unique: true },
+  seed: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const UserWallet = mongoose.model('UserWallet', UserWalletSchema);
+
+// Generator Function
+export async function generateCustomWallet() {
+  // Generate a random wallet address that starts with SEAGULL
+  const uniquePart = randomBytes(12).toString('hex').toUpperCase();
+  const wallet = `SEAGULL${uniquePart}`;
+
+  // Generate a seed (can be used for login or signing, depending on your logic)
+  const seed = randomBytes(32).toString('hex');
+
+  // Save to MongoDB
+  const newWallet = new UserWallet({ wallet, seed });
+  await newWallet.save();
+
+  console.log("✅ Created wallet:", wallet);
+  return newWallet;
+}
+
+
 // ✅ Define the schema + model at the top
 const giftCardOrderSchema = new mongoose.Schema({
   identifier: { type: String, required: true, unique: true },

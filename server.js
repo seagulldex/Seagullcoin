@@ -5201,7 +5201,8 @@ app.post('/create-merch-order', async (req, res) => {
 });
 
 // ✅ Gift card creation endpoint
-// Assuming you have a Mongoose model for tokens, e.g.:
+
+// Define TokenModel
 const TokenModel = mongoose.model('Token', new mongoose.Schema({
   token: String,
   orderIdentifier: String,
@@ -5225,14 +5226,43 @@ app.post("/create-giftcard-order", async (req, res) => {
 
   try {
     const payload = {
-      txjson: { /*...*/ },
-      options: { /*...*/ },
+      txjson: {
+        TransactionType: "Payment",
+        Destination: "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U",
+        Amount: {
+          currency: "53656167756C6C436F696E000000000000000000", // HEX for SeagullCoin
+          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+          value: price.toString()
+        },
+        Memos: [
+          {
+            Memo: {
+              MemoType: Buffer.from("GiftcardOrder", "utf8").toString("hex"),
+              MemoData: Buffer.from(`${brand}-${amount}`, "utf8").toString("hex")
+            }
+          }
+        ]
+      },
+      options: {
+        submit: true,
+        expire: 300,
+        return_url: {
+          app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
+          web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
+        }
+      },
       custom_meta: {
         identifier,
-        blob: { brand, amount, wallet, recipientEmail }
+        blob: {
+          brand,
+          amount,
+          wallet,
+          recipientEmail
+        }
       }
     };
 
+    // Create the payload on XUMM
     const created = await xumm.payload.create(payload);
 
     // Save order to DB
@@ -5257,8 +5287,8 @@ app.post("/create-giftcard-order", async (req, res) => {
       used: false
     });
 
-    // Now send email with redeem link containing token (call your email sender here)
-    // e.g. sendGiftCardEmail({ recipientEmail, brand, amount, identifier, token })
+    // TODO: Send email with redeem link including token
+    // sendGiftCardEmail({ recipientEmail, brand, amount, identifier, token });
 
     res.json({
       success: true,
@@ -5271,6 +5301,8 @@ app.post("/create-giftcard-order", async (req, res) => {
     res.status(500).json({ error: "Failed to create giftcard payment." });
   }
 });
+
+    
 
 app.post('/xumm-webhook', async (req, res) => {
   const data = req.body;

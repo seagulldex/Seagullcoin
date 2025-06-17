@@ -144,6 +144,8 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 
 // ✅ Define the schema + model at the top
 const giftCardOrderSchema = new mongoose.Schema({

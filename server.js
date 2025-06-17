@@ -5370,82 +5370,33 @@ app.get("/redeem", async (req, res) => {
     return res.status(404).send("❌ Gift card not available yet.");
   }
 
-  const cardDescription = `${order.amount} ${order.brand} gift card`;
-  const orderId = order.identifier;
+  // Optional: Mark token as used now or later
+  // gift.used = true;
+  // await gift.save();
 
-res.send(`
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Gift Card Confirmation</title>
-    <style>
-      body {
-        margin: 0;
-        padding: 40px 20px;
-        background-color: #121212; /* dark black */
-        color: #eee;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-      }
-      .container {
-        background-color: #1e1e1e;
-        border-radius: 12px;
-        padding: 40px 30px;
-        max-width: 700px;
-        width: 100%;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-      }
-      h2 {
-        color: #4fc3f7;
-        font-size: 2.5rem;
-        margin-top: 0;
-        margin-bottom: 24px;
-      }
-      p {
-        font-size: 1.25rem;
-        line-height: 1.6;
-        margin: 12px 0;
-      }
-      .order-id {
-        background-color: #333;
-        padding: 15px 20px;
-        border-radius: 8px;
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 1.2rem;
-        user-select: all;
-        margin: 16px 0;
-        color: #81d4fa;
-      }
-      hr {
-        border: 0;
-        border-top: 1px solid #444;
-        margin: 32px 0;
-      }
-      .footer {
-        font-size: 0.9rem;
-        color: #888;
-        text-align: center;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h2>🎁 Gift Card Confirmation</h2>
-      <p>You've successfully ordered a <strong>${order.amount} ${order.brand}</strong> gift card.</p>
-      <p>Your order ID is:</p>
-      <p class="order-id">${order.identifier}</p>
-      <p>We'll deliver the gift card to your email shortly. Between 5 minutes to 24 hours Max</p>
-      <hr />
-      <p class="footer">If you have questions, email boredseagulls@gmail.com.</p>
-    </div>
-  </body>
-</html>
-`);
+  res.send(`
+    <html>
+      <head>
+        <title>🎁 Your Gift Card</title>
+      </head>
+      <body style="background-color: #000; color: #fff; font-family: Arial; padding: 40px;">
+        <div style="max-width: 600px; margin: auto; background: #111; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(255,255,255,0.2);">
+          <h1 style="color: #4CAF50;">🎉 Your ${order.brand} Gift Card</h1>
+          <p style="font-size: 18px;">Amount: <strong>$${order.amount}</strong></p>
+          <p style="font-size: 16px; margin-top: 20px;">Gift Card Code:</p>
+          <div style="background: #222; padding: 15px; font-size: 20px; font-family: monospace; border-radius: 5px;">
+            ${order.giftCardCode || '🔒 Not set yet'}
+          </div>
+          <p style="margin-top: 30px; font-size: 12px; color: #888;">This code has not been marked as redeemed yet.</p>
+        </div>
+      </body>
+    </html>
+  `);
 });
+
+
+  
+
 
 
 

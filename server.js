@@ -5355,19 +5355,53 @@ app.get('/test-mongodb', (req, res) => {
 });
 
 app.get("/redeem", async (req, res) => {
-  const { token } = req.query;
+  const token = req.query.token;
 
-  if (!token) return res.status(400).send("Missing token");
-
-  const record = await TokenModel.findOne({ token });
-
-  if (!record || record.used || record.expiresAt < new Date()) {
-    return res.status(400).send("Invalid or expired token");
+  if (!token) {
+    return res.status(400).send("❌ Missing token.");
   }
 
-  // ✅ Token is valid
-  // Proceed to show or deliver the gift card details
-  res.send(`🎁 Gift card for ${record.orderIdentifier} is valid and ready.`);
+  const gift = await TokenModel.findOne({ token });
+
+  if (!gift || gift.used || gift.expiresAt < new Date()) {
+    return res.status(404).send("❌ Invalid or expired token.");
+  }
+
+  const order = await GiftCardOrder.findOne({ identifier: gift.orderIdentifier });
+
+  if (!order) {
+    return res.status(404).send("❌ Gift card not found.");
+  }
+
+  const cardDescription = `${order.amount} ${order.brand} gift card`;
+  const orderId = order.identifier;
+
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8" />
+        <title>Gift Card Confirmation</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; background-color: #f8f9fa; color: #333; padding: 20px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: auto; background-color: #ffffff; border: 1px solid #ddd; border-radius: 8px;">
+          <tr>
+            <td style="padding: 20px;">
+              <h2 style="margin-top: 0; color: #2d7dd2;">🎁 Gift Card Confirmation</h2>
+              <p style="font-size: 16px;">You've successfully ordered a <strong>${cardDescription}</strong>.</p>
+              <p style="font-size: 16px;">Your order ID is:</p>
+              <p style="background-color: #f1f1f1; padding: 10px; border-radius: 5px; font-family: monospace;">
+                ${orderId}
+              </p>
+              <p style="font-size: 14px; color: #666;">We'll deliver the gift card to your email shortly. Between 5 minutes to 24 hours Max</p>
+              <hr style="margin: 20px 0;" />
+              <p style="font-size: 12px; color: #999;">If you have questions, reply to this email.</p>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `);
 });
 
 

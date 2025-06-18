@@ -8,6 +8,13 @@ const WalletSchema = new mongoose.Schema({
   xumm_uuid: { type: String, required: false },
 }, { timestamps: true });
 
+// ✅ New Token Metadata Fields
+  tokenName: { type: String, required: false },
+  tokenSymbol: { type: String, required: false },
+  tokenSupply: { type: Number, required: false },
+  isGenesisWallet: { type: Boolean, default: false },
+}, { timestamps: true });
+
 const Wallet = mongoose.model('UserWallet', WalletSchema);
 export default Wallet;
 

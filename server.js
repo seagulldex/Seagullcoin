@@ -5499,6 +5499,40 @@ app.get('/api/wallets/check-sign/:uuid', async (req, res) => {
 });
 
 
+app.get('/api/wallets/complete-signin/:uuid', async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const payload = await xumm.payload.get(uuid);
+
+    if (!payload.response?.signed) {
+      return res.json({ success: false, signed: false });
+    }
+
+    const xrpl_address = payload.response.account;
+    const uniquePart = randomBytes(12).toString('hex').toUpperCase();
+    const wallet = `SEAGULL${uniquePart}`;
+    const seed = randomBytes(32).toString('hex');
+
+    // Save wallet & XRPL address only
+    await UserWallet.create({
+      wallet,
+      xrpl_address,
+      xumm_uuid: uuid,
+    });
+
+    res.json({
+      success: true,
+      signed: true,
+      xrpl_address,
+      wallet,
+      seed, // shown once, not saved
+      warning: 'Save your seed securely. We cannot recover it later.',
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

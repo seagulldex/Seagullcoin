@@ -151,8 +151,11 @@ async function fetchIPFSMetadata(uri) {
 const UserWalletSchema = new mongoose.Schema({
   wallet: { type: String, required: true, unique: true },
   seed: { type: String, required: false },
+  xrpl_address: { type: String, required: false },
+  xumm_uuid: { type: String, required: false },
   createdAt: { type: Date, default: Date.now },
 });
+
 
 const UserWallet = mongoose.model('UserWallet', UserWalletSchema);
 

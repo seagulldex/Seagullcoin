@@ -41,3 +41,4 @@ const transactionSchema = new mongoose.Schema({
 });
 
 export default mongoose.model('Transaction', transactionSchema);
+console.log("Wallet model initialized as:", mongoose.modelNames());

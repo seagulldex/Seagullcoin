@@ -4,7 +4,7 @@ const transactionSchema = new mongoose.Schema({
   wallet: {
     type: String,
     required: true,
-    ref: 'UserWallet'
+    ref: 'UserWallet' // Optional: only helpful if you want to `populate` related wallet info
   },
   xrpl_address: {
     type: String,
@@ -30,7 +30,8 @@ const transactionSchema = new mongoose.Schema({
     default: 'PENDING'
   },
   metadata: {
-    type: mongoose.Schema.Types.Mixed // For custom data like NFT ID, token ID etc.
+    type: mongoose.Schema.Types.Mixed, // You can store additional data here
+    default: {}
   },
   createdAt: {
     type: Date,

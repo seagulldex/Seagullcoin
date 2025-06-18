@@ -74,6 +74,7 @@ import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
+import Transaction from './models/Transaction.js';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -148,19 +149,15 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
-
-// MongoDB Schema
 const UserWalletSchema = new mongoose.Schema({
   wallet: { type: String, required: true, unique: true },
   seed: { type: String, required: false },
   xrpl_address: { type: String, required: false },
   xumm_uuid: { type: String, required: false },
-  hashed_seed: { type: String, required: true }, // <-- Ensure this field exists
+  hashed_seed: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
 
-
-const UserWallet = mongoose.model('UserWallet', UserWalletSchema);
 
 // Generator Function
 export async function generateCustomWallet() {
@@ -328,6 +325,7 @@ const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
 
 // Create the transactions table if it doesn't exist
 db.serialize(() => {
@@ -966,6 +964,10 @@ app.get('/stake-status/:wallet', async (req, res) => {
   }
 });
 
+
+
+
+
 app.get('/stake-rewards/:walletAddress', async (req, res) => {
   const wallet = req.params.walletAddress;
 
@@ -1075,8 +1077,6 @@ app.get('/unstake-payload/:wallet', async (req, res) => {
     res.status(500).json({ error: 'Failed to create unstake payload', details: err.message });
   }
 });
-
-
 
 app.get('/user', async (req, res) => {
   const address = req.query.address;
@@ -1713,7 +1713,6 @@ app.get('/db-test', (req, res) => {
     res.json(rows);
   });
 });
-
 
 function calculateDaysStaked(stake) {
   const now = Date.now();
@@ -3268,6 +3267,7 @@ async function fetchOffersFromXRPL(walletAddress) {
   }
 }
 
+
 app.get('/offers/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   const client = new xrpl.Client(xrplApiUrl);
@@ -3993,6 +3993,9 @@ app.get('/check-payment', async (req, res) => {
   }
 });
 
+
+
+
 // Endpoint to mint and send NFTs
 // 1. Create payment payload endpoint
 //POST /create-trustline
@@ -4029,6 +4032,7 @@ app.post('/create-trustline', async (req, res) => {
     res.status(500).json({ error: 'Failed to create trustline payload' });
   }
 });
+
 
 // Issuer wallet and token details
 const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
@@ -5646,12 +5650,26 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
       const seed = randomBytes(32).toString('hex');
       const hashedSeed = hashSeed(seed);
       
+     
       const newWallet = await UserWallet.create({
         wallet,
         xrpl_address: xrplAddress,
         xumm_uuid: uuid,
         hashed_seed: hashedSeed,  // keys match schema, values are your variables
       });
+
+      // Create initial transaction record for wallet creation
+const txHash = randomBytes(16).toString('hex');
+
+await Transaction.create({
+  wallet: newWallet.wallet,       // the SEAGULL wallet string
+  xrpl_address: newWallet.xrpl_address,
+  type: 'WALLET_CREATION',                   // or 'WALLET_CREATION' if you want to define it
+  amount: 0,                     // or initial token amount if any
+  txHash,
+  status: 'CONFIRMED',
+  metadata: { origin: 'wallet_creation' },
+});
 
       return res.json({
         success: true,
@@ -5660,6 +5678,7 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
         wallet_id: newWallet._id,
         wallet,
         seed,
+        txHash, // <-- include the txHash here
         warning: "You will not see this seed again. Save it securely.",
       });
     } else {
@@ -5669,6 +5688,14 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
     console.error(err);
     return res.status(500).json({ success: false, error: 'Failed to retrieve payload status' });
   }
+});
+
+app.get('/api/wallets/:wallet/transactions', async (req, res) => {
+  const { wallet } = req.params;
+
+  const txs = await Transaction.find({ wallet }).sort({ createdAt: -1 });
+
+  return res.json({ success: true, transactions: txs });
 });
 
 

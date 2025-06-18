@@ -5450,11 +5450,12 @@ app.post('/api/wallets/generate', async (req, res) => {
     });
 
     // Store only non-sensitive wallet ID + payload UUID
-    await Wallet.create({
-      wallet,
-      xrpl_address: null,
-      xumm_uuid: payload.uuid,
-    });
+    await UserWallet.create({
+  wallet,
+  xrpl_address: null,  // set later when user links their XRPL address
+  xumm_uuid: payload.uuid,
+});
+
 
     res.json({
       success: true,

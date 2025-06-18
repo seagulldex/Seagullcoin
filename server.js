@@ -5503,20 +5503,22 @@ app.post('/api/wallets/init-signin', async (req, res) => {
     const payload = await xumm.payload.create({
       txjson: { TransactionType: 'SignIn' },
       custom_meta: {
-        identifier: 'wallet_setup_init',
+        identifier: 'wallet_setup',
       },
     });
 
     res.json({
       success: true,
-      uuid: payload.uuid,
-      link: payload.next.always,
+      xumm: {
+        link: payload.next.always,
+        uuid: payload.uuid,
+      },
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
+    res.status(500).json({ success: false, error: 'XUMM sign-in failed' });
   }
 });
+
 
 
 app.get('/api/wallets/complete-signin/:uuid', async (req, res) => {
@@ -5553,6 +5555,8 @@ app.get('/api/wallets/complete-signin/:uuid', async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
+
+
 
 
 // Call the XRPL ping when the server starts

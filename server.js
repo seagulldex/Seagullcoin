@@ -108,7 +108,7 @@ const token = randomBytes(32).toString('hex')
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
-
+const userId = req.user._id; // example: from your auth middleware
 
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });

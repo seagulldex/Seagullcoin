@@ -150,14 +150,7 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
-const UserWalletSchema = new mongoose.Schema({
-  wallet: { type: String, required: true, unique: true },
-  seed: { type: String, required: false },
-  xrpl_address: { type: String, required: false },
-  xumm_uuid: { type: String, required: false },
-  hashed_seed: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-});
+
 
 
 // Generator Function

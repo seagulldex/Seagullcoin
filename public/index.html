@@ -21,6 +21,34 @@
       padding: 0 20px;
       z-index: 1000;
     }
+    header nav {
+  background-color: #2e2e2e;  /* same grey as top-bar */
+  padding: 10px 30px;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+header nav ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 20px;  /* more consistent spacing */
+  flex-wrap: wrap; /* allow wrapping on small screens */
+}
+
+header nav ul li a {
+  color: white;
+  font-weight: bold;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+
+header nav ul li a:hover {
+  background-color: #444;
+}
+
     #wallet-container {
       border: 2px solid #000;
       border-radius: 10px;

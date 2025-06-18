@@ -40,4 +40,6 @@ const transactionSchema = new mongoose.Schema({
   }
 });
 
+const UserWallet = mongoose.model('UserWallet', WalletSchema);
+export default UserWallet;
 export default mongoose.model('Transaction', transactionSchema);

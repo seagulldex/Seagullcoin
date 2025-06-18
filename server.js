@@ -147,17 +147,6 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
-(async () => {
-  const privateKey = ...; // 32-byte private key Uint8Array
-  const message = new TextEncoder().encode('hello');
-
-  const signature = await sign(message, privateKey);
-  const publicKey = await getPublicKey(privateKey);
-  const isValid = await verify(signature, message, publicKey);
-
-  console.log('Signature valid?', isValid);
-})();
-
 
 // MongoDB Schema
 const UserWalletSchema = new mongoose.Schema({
@@ -184,6 +173,19 @@ export async function generateCustomWallet() {
   console.log("✅ Created wallet:", wallet);
   return newWallet;
 }
+
+async function main() {
+  const privateKey = new Uint8Array(32); // Example, replace with your key
+  const message = new TextEncoder().encode('hello');
+
+  const signature = await sign(message, privateKey);
+  const publicKey = await getPublicKey(privateKey);
+  const isValid = await verify(signature, message, publicKey);
+
+  console.log('Signature valid?', isValid);
+}
+
+main().catch(console.error);
 
 
 // ✅ Define the schema + model at the top

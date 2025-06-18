@@ -5625,6 +5625,45 @@ app.post('/api/wallets/complete', async (req, res) => {
   }
 });
 
+app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
+  const { uuid } = req.params;
+
+  try {
+    const result = await xumm.payload.get(uuid);
+
+    if (result.meta.signed === true) {
+      const xrplAddress = result.response.account;
+
+      // Generate wallet ID and seed
+      const uniquePart = randomBytes(12).toString('hex').toUpperCase();
+      const wallet = `SEAGULL${uniquePart}`;
+      const seed = randomBytes(32).toString('hex');
+
+      // Save to DB
+      const newWallet = await UserWallet.create({
+        wallet,
+        xrpl_address: xrplAddress,
+        xumm_uuid: uuid,
+      });
+
+      res.json({
+        success: true,
+        message: 'Wallet created after successful sign-in',
+        xrpl_address: xrplAddress,
+        wallet_id: newWallet._id,
+        wallet,
+        seed, // Show only once
+        warning: "You will not see this seed again. Save it securely.",
+      });
+    } else {
+      res.status(400).json({ success: false, error: 'User declined the sign request' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to retrieve payload status' });
+  }
+});
+
 
 
 // Call the XRPL ping when the server starts

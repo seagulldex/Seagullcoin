@@ -6,7 +6,6 @@ const WalletSchema = new mongoose.Schema({
   hashed_seed: { type: String, required: true },      // hashed seed should be required
   xrpl_address: { type: String, required: false },
   xumm_uuid: { type: String, required: false },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // <-- add this
 }, { timestamps: true });
 
 const Wallet = mongoose.model('UserWallet', WalletSchema);

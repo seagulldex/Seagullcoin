@@ -5684,6 +5684,7 @@ await Transaction.create({
         wallet_id: newWallet._id,
         wallet,
         seed,
+        txHash, // <-- include the txHash here
         warning: "You will not see this seed again. Save it securely.",
       });
     } else {

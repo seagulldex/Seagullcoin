@@ -5681,6 +5681,14 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
   }
 });
 
+app.get('/api/wallets/:wallet/transactions', async (req, res) => {
+  const { wallet } = req.params;
+
+  const txs = await Transaction.find({ wallet }).sort({ createdAt: -1 });
+
+  return res.json({ success: true, transactions: txs });
+});
+
 
 
 // Call the XRPL ping when the server starts

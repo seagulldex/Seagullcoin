@@ -170,7 +170,8 @@ export async function generateCustomWallet() {
 
   // Generate a seed (can be used for login or signing, depending on your logic)
   const seed = randomBytes(32).toString('hex');
-
+  const hashedSeed = hashSeed(seed);
+  
   // Save to MongoDB
   const newWallet = new UserWallet({ wallet, seed });
   await newWallet.save();
@@ -5652,11 +5653,13 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
       const uniquePart = randomBytes(12).toString('hex').toUpperCase();
       const wallet = `SEAGULL${uniquePart}`;
       const seed = randomBytes(32).toString('hex');
-
+      const hashedSeed = hashSeed(seed);
+      
       const newWallet = await UserWallet.create({
         wallet,
         xrpl_address: xrplAddress,
         xumm_uuid: uuid,
+        hashed_seed: hashedSeed,  // keys match schema, values are your variables
       });
 
       return res.json({

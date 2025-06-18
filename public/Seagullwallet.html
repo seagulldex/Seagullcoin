@@ -134,30 +134,6 @@ let currentTab = 'single'; // or 'collections'
 
 window.addEventListener('DOMContentLoaded', () => {
   updateWalletStatus();
-
-  document.getElementById('tab-single').addEventListener('click', () => {
-    currentTab = 'single';
-    switchTab();
-  });
-
-  document.getElementById('tab-collections').addEventListener('click', () => {
-    currentTab = 'collections';
-    switchTab();
-  });
-
-  document.getElementById('prev-page').addEventListener('click', () => {
-    if (currentIndex > 0) {
-      currentIndex -= nftsPerPage;
-      displayNFTs();
-    }
-  });
-
-  document.getElementById('next-page').addEventListener('click', () => {
-    if (currentIndex + nftsPerPage < allNFTs.length) {
-      currentIndex += nftsPerPage;
-      displayNFTs();
-    }
-  });
 });
 
 function switchTab() {

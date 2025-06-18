@@ -150,7 +150,7 @@ async function fetchIPFSMetadata(uri) {
 // MongoDB Schema
 const UserWalletSchema = new mongoose.Schema({
   wallet: { type: String, required: true, unique: true },
-  seed: { type: String, required: true },
+  seed: { type: String, required: false },
   createdAt: { type: Date, default: Date.now },
 });
 

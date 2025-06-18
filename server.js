@@ -5473,6 +5473,27 @@ app.post('/api/wallets/generate', async (req, res) => {
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
+
+app.get('/api/wallets/check-sign/:uuid', async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const payload = await xumm.payload.get(uuid);
+    
+    if (payload.response && payload.response.signed) {
+      const xrplAddress = payload.response.account;
+      await UserWallet.updateOne({ xumm_uuid: uuid }, { xrpl_address: xrplAddress });
+      return res.json({ signed: true, xrpl_address: xrplAddress });
+    } else {
+      return res.json({ signed: false });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to check signature status' });
+  }
+});
+
+
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

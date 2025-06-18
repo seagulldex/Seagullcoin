@@ -7,7 +7,7 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "@noble/ed25519": "^1.7.1",
+    "@noble/ed25519": "^2.3.0",
     "axios": "^1.9.0",
     "body-parser": "^1.20.1",
     "cors": "^2.8.5",

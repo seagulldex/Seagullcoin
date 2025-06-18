@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="header.css" />
   <style>
+    body {
+      background: #121212;
+      color: #eee;
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+    }
     .nft-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -31,18 +37,18 @@
     #logout-btn {
       display: none;
     }
-    .green { color: green; }
-    .red { color: red; }
+    .green { color: #00bfa5; }
+    .red { color: #ff3b3b; }
     .trait {
       font-size: 0.9em;
       text-align: left;
       margin: 2px 0;
     }
     .active-tab {
-  background: #00bfa5;
-  color: white;
-  font-weight: bold;
-}
+      background: #00bfa5;
+      color: white;
+      font-weight: bold;
+    }
     button {
       margin: 5px;
       padding: 6px 10px;
@@ -52,21 +58,54 @@
       color: white;
       cursor: pointer;
     }
-    .seagull-spinner {
-      width: 50px;
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    #top-bar {
+      background: #222;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: white;
+    }
+    header nav ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      gap: 15px;
+    }
+    header nav ul li a {
+      color: #eee;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    header nav ul li a:hover {
+      color: #00bfa5;
+    }
+    #wallet-status {
+      cursor: pointer;
+    }
+    #loading-spinner {
+      text-align: center;
+      font-size: 1.2em;
+      margin: 20px 0;
+      display: none;
     }
   </style>
 </head>
 <body>
   <div id="top-bar">
-    <div style="flex:1;">
+    <div>
       <button id="logout-btn">Logout</button>
     </div>
     <div id="wallet-container">
       <div id="wallet-status">
         <span id="wallet-indicator" class="red">🔴 Login</span>
       </div>
-    <div>
+    </div>
   </div>
 
   <header>
@@ -81,353 +120,302 @@
   </header>
 
   <main>
-    <h1>Generate SGLCN-X20 wallet</h1>
-    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
- 
+    <h1 style="text-align:center; margin-top: 20px;">Generate SGLCN-X20 wallet</h1>
+
+    <!-- Wallet Generate Button -->
+    <div style="text-align:center; margin-bottom: 20px;">
+      <button id="generate-wallet-btn">Generate Wallet</button>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+      <button id="tab-single" class="active-tab">Single NFTs</button>
+      <button id="tab-collections">Collections</button>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading-spinner">Loading NFTs...</div>
+
+    <!-- NFT Grid -->
+    <div id="nft-container" class="nft-grid"></div>
+
+    <!-- Pagination -->
+    <div style="display: flex; justify-content: center; gap: 10px; margin: 20px 0;">
+      <button id="prev-page" disabled>Previous</button>
+      <button id="next-page" disabled>Next</button>
+    </div>
   </main>
 
   <script>
-let allNFTs = [];
-let currentIndex = 0;
-const nftsPerPage = 20;
-let currentTab = 'single'; // or 'collections'
+    let allNFTs = [];
+    let currentIndex = 0;
+    const nftsPerPage = 20;
+    let currentTab = 'single'; // or 'collections'
 
-window.addEventListener('DOMContentLoaded', () => {
-  updateWalletStatus();
-
-  document.getElementById('tab-single').addEventListener('click', () => {
-    currentTab = 'single';
-    switchTab();
-  });
-
-  document.getElementById('tab-collections').addEventListener('click', () => {
-    currentTab = 'collections';
-    switchTab();
-  });
-
-  document.getElementById('prev-page').addEventListener('click', () => {
-    if (currentIndex > 0) {
-      currentIndex -= nftsPerPage;
-      displayNFTs();
-    }
-  });
-
-  document.getElementById('next-page').addEventListener('click', () => {
-    if (currentIndex + nftsPerPage < allNFTs.length) {
-      currentIndex += nftsPerPage;
-      displayNFTs();
-    }
-  });
-});
-
-function switchTab() {
-  document.getElementById('tab-single').classList.remove('active-tab');
-  document.getElementById('tab-collections').classList.remove('active-tab');
-  document.getElementById(`tab-${currentTab}`).classList.add('active-tab');
-  currentIndex = 0;
-  displayNFTs();
-}
-
-async function updateWalletStatus() {
-  const wallet = localStorage.getItem('xumm_wallet_address');
-  const indicator = document.getElementById('wallet-indicator');
-
-  if (wallet) {
-    indicator.textContent = '🟢 Connected';
-    indicator.classList.remove('red');
-    indicator.classList.add('green');
-    document.getElementById('logout-btn').style.display = 'inline-block';
-    fetchNFTs(wallet);
-  } else {
-    indicator.textContent = '🔴 Login';
-    indicator.classList.remove('green');
-    indicator.classList.add('red');
-    indicator.onclick = startLoginFlow;
-  }
-}
-
-async function startLoginFlow() {
-  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
-  const data = await res.json();
-  window.open(data.payloadURL, "_blank");
-
-  const interval = setInterval(async () => {
-    const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
-    const loginStatus = await check.json();
-
-    if (loginStatus.loggedIn) {
-      clearInterval(interval);
-      localStorage.setItem('xumm_wallet_address', loginStatus.account);
-      localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
+    window.addEventListener('DOMContentLoaded', () => {
       updateWalletStatus();
-    }
-  }, 2000);
-}
 
-async function fetchNFTs(wallet) {
-  try {
-    document.getElementById('loading-spinner').style.display = 'block';
-    document.getElementById('nft-container').style.display = 'none';
-
-    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/nfts/${wallet}`);
-    const data = await res.json();
-    allNFTs = data.nfts || [];
-    currentIndex = 0;
-    displayNFTs();
-  } catch (err) {
-    console.error("Error loading NFTs:", err);
-  } finally {
-    document.getElementById('loading-spinner').style.display = 'none';
-    document.getElementById('nft-container').style.display = 'grid';
-  }
-}
-
-function convertIPFSToURL(ipfsUrl) {
-  if (!ipfsUrl) return '';
-  return ipfsUrl.replace(/^ipfs:\/\//, 'https://ipfs.io/ipfs/');
-}
-
-function displayNFTs() {
-  const container = document.getElementById('nft-container');
-  container.innerHTML = '';
-
-  const items = allNFTs.slice(currentIndex, currentIndex + nftsPerPage);
-  for (const nft of items) {
-    const metadata = nft.metadata || {};
-    const card = document.createElement('div');
-    card.className = "nft-card";
-
-    const img = document.createElement('img');
-    img.src = convertIPFSToURL(metadata.image);
-    img.alt = metadata.name || "Unnamed NFT";
-    card.appendChild(img);
-
-    card.innerHTML += `
-      <h3>${metadata.name || "Unnamed NFT"}</h3>
-      <p>${metadata.description || "No description"}</p>
-      ${metadata.collection ? `<p><strong>Collection:</strong> ${metadata.collection.name}</p>` : ''}
-    `;
-
-    if (Array.isArray(metadata.attributes)) {
-      metadata.attributes.forEach(attr => {
-        const trait = document.createElement('div');
-        trait.className = "trait";
-        trait.textContent = `${attr.trait_type} : ${attr.value}`;
-        card.appendChild(trait);
+      document.getElementById('tab-single').addEventListener('click', () => {
+        currentTab = 'single';
+        switchTab();
       });
+
+      document.getElementById('tab-collections').addEventListener('click', () => {
+        currentTab = 'collections';
+        switchTab();
+      });
+
+      document.getElementById('prev-page').addEventListener('click', () => {
+        if (currentIndex > 0) {
+          currentIndex -= nftsPerPage;
+          displayNFTs();
+        }
+      });
+
+      document.getElementById('next-page').addEventListener('click', () => {
+        if (currentIndex + nftsPerPage < allNFTs.length) {
+          currentIndex += nftsPerPage;
+          displayNFTs();
+        }
+      });
+
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        localStorage.removeItem('xumm_wallet_address');
+        localStorage.removeItem('xumm_payload_uuid');
+        updateWalletStatus();
+      });
+
+      document.getElementById('generate-wallet-btn').addEventListener('click', async () => {
+        if (localStorage.getItem('xumm_wallet_address')) {
+          alert("You already have a wallet generated.");
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/wallets/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            localStorage.setItem('xumm_wallet_address', data.wallet);
+            localStorage.setItem('wallet_seed', data.seed);  // Store seed locally
+
+            alert(`Wallet generated!\n\nWallet: ${data.wallet}\n\n**IMPORTANT:** Save your seed securely:\n${data.seed}`);
+
+            updateWalletStatus();
+          } else {
+            alert("Failed to generate wallet.");
+          }
+        } catch (err) {
+          console.error('Error generating wallet:', err);
+          alert("Error generating wallet.");
+        }
+      });
+    });
+
+    function switchTab() {
+      document.getElementById('tab-single').classList.remove('active-tab');
+      document.getElementById('tab-collections').classList.remove('active-tab');
+      document.getElementById(`tab-${currentTab}`).classList.add('active-tab');
+      currentIndex = 0;
+      displayNFTs();
     }
 
+    async function updateWalletStatus() {
+      const wallet = localStorage.getItem('xumm_wallet_address');
+      const indicator = document.getElementById('wallet-indicator');
+      const logoutBtn = document.getElementById('logout-btn');
 
-
-    async function transferNFT(nftId) {
-      const recipient = prompt("Enter the wallet address to transfer this NFT to:");
-      const sender = localStorage.getItem("xumm_wallet_address");
-
-      if (!recipient || !sender) {
-        alert("Transfer cancelled or wallet not connected.");
-        return;
+      if (wallet) {
+        indicator.textContent = '🟢 Connected: ' + wallet;
+        indicator.classList.remove('red');
+        indicator.classList.add('green');
+        indicator.onclick = null;
+        logoutBtn.style.display = 'inline-block';
+        fetchNFTs(wallet);
+      } else {
+        indicator.textContent = '🔴 Login';
+        indicator.classList.remove('green');
+        indicator.classList.add('red');
+        indicator.onclick = startLoginFlow;
+        logoutBtn.style.display = 'none';
+        allNFTs = [];
+        displayNFTs();
       }
+    }
 
+    async function startLoginFlow() {
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
+      const data = await res.json();
+      window.open(data.payloadURL, "_blank");
+
+      const interval = setInterval(async () => {
+        const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
+        const loginStatus = await check.json();
+
+        if (loginStatus.loggedIn) {
+          clearInterval(interval);
+          localStorage.setItem('xumm_wallet_address', loginStatus.account);
+          localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
+          updateWalletStatus();
+        }
+      }, 2000);
+    }
+
+    async function fetchNFTs(wallet) {
       try {
-        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/transfer-nft', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            walletAddress: sender,
-            nftId,
-            recipientAddress: recipient
-          })
-        });
+        document.getElementById('loading-spinner').style.display = 'block';
+        document.getElementById('nft-container').style.display = 'none';
 
+        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/nfts/${wallet}`);
         const data = await res.json();
-
-        if (data.success) {
-          alert("Please sign the transfer in your XUMM app.");
-          window.open(data.next.always, "_blank");
-        } else {
-          alert("Transfer failed: " + data.message);
-        }
+        allNFTs = data.nfts || [];
+        currentIndex = 0;
+        displayNFTs();
       } catch (err) {
-        console.error("Transfer error:", err);
-        alert("An error occurred during transfer.");
+        console.error("Error loading NFTs:", err);
+        allNFTs = [];
+        displayNFTs();
+      } finally {
+        document.getElementById('loading-spinner').style.display = 'none';
+        document.getElementById('nft-container').style.display = 'grid';
       }
     }
 
-document.getElementById('generate-wallet-btn').addEventListener('click', async () => {
-  if (localStorage.getItem('xumm_wallet_address')) {
-    alert("You already have a wallet generated.");
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/wallets/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      localStorage.setItem('xumm_wallet_address', data.wallet);
-      localStorage.setItem('wallet_seed', data.seed);  // Store seed locally
-      
-      alert(`Wallet generated!\n\nWallet: ${data.wallet}\n\n**IMPORTANT:** Save your seed securely:\n${data.seed}`);
-
-      updateWalletStatus();
-    } else {
-      alert("Failed to generate wallet.");
+    function convertIPFSToURL(ipfsUrl) {
+      if (!ipfsUrl) return '';
+      return ipfsUrl.replace(/^ipfs:\/\//, 'https://ipfs.io/ipfs/');
     }
-  } catch (err) {
-    console.error('Error generating wallet:', err);
-    alert("Error generating wallet.");
-  }
-});
 
-    // Transfer Button
-    const transferButton = document.createElement('button');
-    transferButton.textContent = 'Transfer NFT';
-    transferButton.onclick = () => transferNFT(nft.NFTokenID);
-    card.appendChild(transferButton);
-    
-        // Burn Button
-    const burnButton = document.createElement('button');
-    burnButton.textContent = '🔥 Burn NFT';
-    burnButton.onclick = () => burnNFT(nft.NFTokenID);
-    card.appendChild(burnButton);
+    function displayNFTs() {
+      const container = document.getElementById('nft-container');
+      container.innerHTML = '';
 
-    
-    // Burn NFT function
-  async function burnNFT(nftId) {
-  const wallet = localStorage.getItem("xumm_wallet_address");
-  if (!wallet) {
-    alert("Please connect your wallet first.");
-    return;
-  }
+      const items = allNFTs.slice(currentIndex, currentIndex + nftsPerPage);
 
-  const confirmBurn = confirm("Are you sure you want to burn this NFT? This action cannot be undone.");
-  if (!confirmBurn) return;
+      if (items.length === 0) {
+        container.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color: #888;">No NFTs to display.</p>`;
+      }
 
-  try {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/burn-nft', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletAddress: wallet, nftId })
-    });
+      for (const nft of items) {
+        const metadata = nft.metadata || {};
+        const card = document.createElement('div');
+        card.className = "nft-card";
 
-    const data = await res.json();
-    if (data.success) {
-      alert("Please sign the burn transaction in your XUMM app.");
-      window.open(data.next.always, "_blank");
-    } else {
-      alert("Burn failed: " + data.message);
-    }
-  } catch (err) {
-    console.error("Burn error:", err);
-    alert("An error occurred during burn.");
-  }
-}
+        const img = document.createElement('img');
+        img.src = convertIPFSToURL(metadata.image);
+        img.alt = metadata.name || "Unnamed NFT";
+        card.appendChild(img);
 
+        const title = document.createElement('h3');
+        title.textContent = metadata.name || "Unnamed NFT";
+        card.appendChild(title);
 
-    // Sell Button
-    if (nft.listed || nft.sellOffer) {
-      const priceLabel = document.createElement('p');
-      priceLabel.textContent = `Price: ${nft.sellOffer || nft.listed.price} SeagullCoin`;
-      priceLabel.style.color = "green";
-      priceLabel.style.fontWeight = "bold";
-      card.appendChild(priceLabel);
-    } else {
-      const sellButton = document.createElement('button');
-      sellButton.textContent = 'Sell (SGLCN)';
-      sellButton.onclick = async () => {
-        const amount = prompt("Enter price in SeagullCoin:");
-        if (!amount) return;
+        const desc = document.createElement('p');
+        desc.textContent = metadata.description || "No description";
+        card.appendChild(desc);
 
-        const response = await fetch("/sell-nft", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            walletAddress: localStorage.getItem("xumm_wallet_address"),
-            nftId: nft.NFTokenID,
-            price: amount
-          }),
-        });
-
-        const result = await response.json();
-        if (result?.next?.always) {
-          window.open(result.next.always, "_blank");
-        } else {
-          alert("Error creating sell offer.");
+        if (metadata.collection) {
+          const col = document.createElement('p');
+          col.innerHTML = `<strong>Collection:</strong> ${metadata.collection.name}`;
+          card.appendChild(col);
         }
-      };
-      card.appendChild(sellButton);
+
+        if (Array.isArray(metadata.attributes)) {
+          metadata.attributes.forEach(attr => {
+            const trait = document.createElement('div');
+            trait.className = "trait";
+            trait.textContent = `${attr.trait_type} : ${attr.value}`;
+            card.appendChild(trait);
+          });
+        }
+
+        // Transfer Button
+        const transferButton = document.createElement('button');
+        transferButton.textContent = 'Transfer NFT';
+        transferButton.onclick = () => transferNFT(nft.NFTokenID);
+        card.appendChild(transferButton);
+
+        // Burn Button
+        const burnButton = document.createElement('button');
+        burnButton.textContent = '🔥 Burn NFT';
+        burnButton.style.background = '#ff3b3b';
+        burnButton.onclick = () => burnNFT(nft.NFTokenID);
+        card.appendChild(burnButton);
+
+        // Sell Button or Price Label
+        if (nft.listed || nft.sellOffer) {
+          const priceLabel = document.createElement('p');
+          priceLabel.textContent = nft.sellOffer ? `Price: ${nft.sellOffer.amount} XRP` : "Listed";
+          priceLabel.style.color = 'orange';
+          card.appendChild(priceLabel);
+        } else {
+          const sellButton = document.createElement('button');
+          sellButton.textContent = 'Sell NFT';
+          sellButton.style.background = '#ffaa00';
+          sellButton.onclick = () => sellNFT(nft.NFTokenID);
+          card.appendChild(sellButton);
+        }
+
+        container.appendChild(card);
+      }
+
+      // Update pagination buttons
+      document.getElementById('prev-page').disabled = currentIndex === 0;
+      document.getElementById('next-page').disabled = currentIndex + nftsPerPage >= allNFTs.length;
     }
 
-    container.appendChild(card);
-  }
-}
-      // Buying button logic  
-    if (nft.sellOffer && nft.sellOffer.owner !== localStorage.getItem('xumm_wallet_address')) {
-  const buyButton = document.createElement('button');
-  buyButton.textContent = 'Buy with SeagullCoin';
-  buyButton.onclick = async () => {
-    try {
-      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/buy-nft', {
+    function transferNFT(nftId) {
+      const receiver = prompt("Enter the receiver wallet address:");
+      if (!receiver) return alert("Receiver address is required.");
+
+      fetch('/api/nfts/transfer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletAddress: localStorage.getItem('xumm_wallet_address'),
-          nftId: nft.NFTokenID
-        })
+        body: JSON.stringify({ receiver, nftId })
+      }).then(res => res.json()).then(data => {
+        alert(data.message || 'Transfer request sent!');
+        fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+      }).catch(err => {
+        console.error(err);
+        alert("Failed to transfer NFT.");
       });
-
-      const data = await res.json();
-      if (data.success) {
-        alert("Please approve purchase in your XUMM app.");
-        window.open(data.next.always, "_blank");
-      } else {
-        alert("Purchase failed: " + data.message);
-      }
-    } catch (err) {
-      console.error("Buy error:", err);
-      alert("An error occurred during purchase.");
     }
-  };
-  card.appendChild(buyButton);
-}
 
-    
-    // Burn Button
-    const burnButton = document.createElement('button');
-    burnButton.textContent = '🔥 Burn NFT';
-    burnButton.style.background = '#ff3b3b';
-    burnButton.onclick = async () => {
-      const confirmBurn = confirm("Are you sure you want to permanently burn this NFT?");
-      if (!confirmBurn) return;
+    function burnNFT(nftId) {
+      if (!confirm("Are you sure you want to burn this NFT? This action cannot be undone.")) return;
 
-      const sender = localStorage.getItem("xumm_wallet_address");
-      try {
-        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/burn-nft', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            walletAddress: sender,
-            nftId: nft.NFTokenID
-          })
-        });
+      fetch('/api/nfts/burn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nftId })
+      }).then(res => res.json()).then(data => {
+        alert(data.message || 'Burn request sent!');
+        fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+      }).catch(err => {
+        console.error(err);
+        alert("Failed to burn NFT.");
+      });
+    }
 
-        const data = await res.json();
+    function sellNFT(nftId) {
+      const price = prompt("Enter the selling price in XRP:");
+      if (!price || isNaN(price)) return alert("Invalid price.");
 
-        if (data.success) {
-          alert("Please sign the burn request in your XUMM app.");
-          window.open(data.next.always, "_blank");
-        } else {
-          alert("Burn failed: " + data.message);
-        }
-      } catch (err) {
-        console.error("Burn error:", err);
-        alert("An error occurred while trying to burn the NFT.");
-      }
-    };
-    card.appendChild(burnButton);
-</script>
+      fetch('/api/nfts/sell', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nftId, price: Number(price) })
+      }).then(res => res.json()).then(data => {
+        alert(data.message || 'Sell request sent!');
+        fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+      }).catch(err => {
+        console.error(err);
+        alert("Failed to list NFT for sale.");
+      });
+    }
+  </script>
 </body>
-    </html>
+</html>

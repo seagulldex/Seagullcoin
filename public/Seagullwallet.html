@@ -121,7 +121,7 @@
 
   </div>
 
-  <button id="xumm-wallet-connect">Connect Wallet via XUMM</button>
+  <button id="generate-wallet-btn">Generate Wallet & Seed</button>
 </div>
 
   </main>
@@ -187,39 +187,22 @@ async function updateWalletStatus() {
 }
 
 async function startLoginFlow() {
-  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/wallets/init-signin');
+  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
   const data = await res.json();
-
-  if (!data.payloadURL || !data.payloadUUID) {
-    alert("Error initiating XUMM login.");
-    return;
-  }
-
   window.open(data.payloadURL, "_blank");
 
   const interval = setInterval(async () => {
-    const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/wallets/xumm-callback/${data.payloadUUID}`);
-    const result = await check.json();
+    const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
+    const loginStatus = await check.json();
 
-    if (result.success) {
+    if (loginStatus.loggedIn) {
       clearInterval(interval);
-
-      // Save everything you need locally
-      localStorage.setItem('xumm_wallet_address', result.xrpl_address);
-      localStorage.setItem('wallet_id', result.wallet_id);
-      localStorage.setItem('wallet_seed', result.seed);  // CAUTION: store only if safe
-
-      // Display on screen
-      document.getElementById('wallet-address').textContent = result.wallet;
-      document.getElementById('wallet-seed').textContent = result.seed;
-
+      localStorage.setItem('xumm_wallet_address', loginStatus.account);
+      localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
       updateWalletStatus();
-
-      alert(`Wallet created and linked!\n\nWallet: ${result.wallet}\n\nIMPORTANT: Save your seed securely:\n${result.seed}`);
     }
   }, 2000);
 }
-
 
 async function fetchNFTs(wallet) {
   try {

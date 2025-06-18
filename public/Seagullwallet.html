@@ -224,7 +224,7 @@ async function fetchNFTs(wallet) {
 
     document.getElementById('generate-wallet-btn').addEventListener('click', async () => {
   try {
-    const res = await fetch('/api/wallets/generate', {
+    const res = await fetch('/api/wallets/init-signin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -331,7 +331,7 @@ document.getElementById('generate-wallet-btn').addEventListener('click', async (
   }
 
   try {
-    const res = await fetch('/api/wallets/generate', {
+    const res = await fetch('/api/wallets/init-signin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });

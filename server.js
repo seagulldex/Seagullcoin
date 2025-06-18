@@ -73,6 +73,7 @@ import Stripe from 'stripe';
 import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
 import crypto from 'crypto';
+import { hashSeed } from './utils/hash.js';
 
 // ===== Init App and Env =====
 dotenv.config();

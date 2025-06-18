@@ -90,28 +90,26 @@
 
   <main>
     <h1>Generate SGLCN-X20 wallet</h1>
-  <div style="display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 20px;">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 20px; width: 100%; max-width: 500px;">
   <h2>Wallet Generator</h2>
 
-  <table style="color: white; background: #222; border-collapse: collapse; width: 100%; max-width: 500px;">
-    <tbody>
-      <tr>
-        <td style="padding: 10px; font-weight: bold; width: 100px;">Wallet:</td>
-        <td style="padding: 10px;"><span id="wallet-address">______________________</span></td>
-      </tr>
-      <tr>
-        <td style="padding: 10px; font-weight: bold;">Seed:</td>
-        <td style="padding: 10px;"><span id="wallet-seed">________________________</span></td>
-      </tr>
-    </tbody>
-  </table>
+  <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+
+    <div style="display: flex; flex-direction: row; justify-content: space-between; flex-wrap: wrap; color: white; background: #222; padding: 10px; border-radius: 6px;">
+      <strong style="min-width: 80px;">Wallet:</strong>
+      <span id="wallet-address" style="flex: 1; text-align: right;">______________________</span>
+    </div>
+
+    <div style="display: flex; flex-direction: row; justify-content: space-between; flex-wrap: wrap; color: white; background: #222; padding: 10px; border-radius: 6px;">
+      <strong style="min-width: 80px;">Seed:</strong>
+      <span id="wallet-seed" style="flex: 1; text-align: right;">________________________</span>
+    </div>
+
+  </div>
 
   <button id="generate-wallet-btn">Generate Wallet & Seed</button>
 </div>
 
-
-
-      
   </main>
 
   <script>

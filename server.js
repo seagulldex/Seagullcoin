@@ -72,6 +72,7 @@ import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
 import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
+console.log("Imported Wallet model:", Wallet?.modelName);
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
 import Transaction from './models/Transaction.js';

@@ -5628,42 +5628,34 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
     if (result.meta.signed === true) {
       const xrplAddress = result.response.account;
 
-      // ✅ Check if this uuid has already been used
-      const existingWallet = await UserWallet.findOne({ xumm_uuid: uuid });
-
+      const existingWallet = await Wallet.findOne({ xumm_uuid: uuid });
       if (existingWallet) {
-        return res.json({
-          success: false,
-          message: 'Wallet already generated for this sign-in',
-        });
+        return res.json({ success: false, message: 'Wallet already generated for this sign-in' });
       }
 
-      // 🔐 Generate only once
       const uniquePart = randomBytes(12).toString('hex').toUpperCase();
       const wallet = `SEAGULL${uniquePart}`;
       const seed = randomBytes(32).toString('hex');
       const hashedSeed = hashSeed(seed);
-      
-     
-      const newWallet = await UserWallet.create({
+
+      const newWallet = await Wallet.create({
         wallet,
         xrpl_address: xrplAddress,
         xumm_uuid: uuid,
-        hashed_seed: hashedSeed,  // keys match schema, values are your variables
+        hashed_seed: hashedSeed,
       });
 
-      // Create initial transaction record for wallet creation
-const txHash = randomBytes(16).toString('hex');
+      const txHash = randomBytes(16).toString('hex');
 
-await Transaction.create({
-  wallet: newWallet.wallet,       // the SEAGULL wallet string
-  xrpl_address: newWallet.xrpl_address,
-  type: 'WALLET_CREATION',                   // or 'WALLET_CREATION' if you want to define it
-  amount: 0,                     // or initial token amount if any
-  txHash,
-  status: 'CONFIRMED',
-  metadata: { origin: 'wallet_creation' },
-});
+      await Transaction.create({
+        wallet: newWallet.wallet,
+        xrpl_address: newWallet.xrpl_address,
+        type: 'WALLET_CREATION',
+        amount: 0,
+        txHash,
+        status: 'CONFIRMED',
+        metadata: { origin: 'wallet_creation' },
+      });
 
       return res.json({
         success: true,
@@ -5672,7 +5664,7 @@ await Transaction.create({
         wallet_id: newWallet._id,
         wallet,
         seed,
-        txHash, // <-- include the txHash here
+        txHash,
         warning: "You will not see this seed again. Save it securely.",
       });
     } else {

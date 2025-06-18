@@ -10,3 +10,4 @@ const WalletSchema = new mongoose.Schema({
 
 const Wallet = mongoose.model('UserWallet', WalletSchema);
 export default Wallet;
+console.log("Wallet model initialized as:", mongoose.modelNames());

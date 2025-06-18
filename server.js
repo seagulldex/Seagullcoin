@@ -5655,7 +5655,8 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
       const wallet = `SEAGULL${uniquePart}`;
       const seed = randomBytes(32).toString('hex');
       const hashedSeed = hashSeed(seed);
-      
+      const txHash = randomBytes(16).toString('hex');  // generate a unique txHash
+     
       const newWallet = await UserWallet.create({
         wallet,
         xrpl_address: xrplAddress,

@@ -222,6 +222,36 @@ async function fetchNFTs(wallet) {
   }
 }
 
+    document.getElementById('generate-wallet-btn').addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/wallets/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      // Update table cells
+      document.getElementById('wallet-address').textContent = data.wallet;
+      document.getElementById('wallet-seed').textContent = data.seed;
+
+      // Store in localStorage (optional)
+      localStorage.setItem('xumm_wallet_address', data.wallet);
+      localStorage.setItem('wallet_seed', data.seed);
+
+      // Also update the wallet status indicator
+      updateWalletStatus();
+
+      alert(`Wallet generated!\n\nWallet: ${data.wallet}\n\nIMPORTANT: Save your seed securely:\n${data.seed}`);
+    } else {
+      alert("Failed to generate wallet.");
+    }
+  } catch (err) {
+    console.error('Error generating wallet:', err);
+    alert("Error generating wallet.");
+  }
+});
+
 
 function convertIPFSToURL(ipfsUrl) {
   if (!ipfsUrl) return '';
@@ -301,7 +331,7 @@ document.getElementById('generate-wallet-btn').addEventListener('click', async (
   }
 
   try {
-    const res = await fetch('/api/wallets/init-signin', {
+    const res = await fetch('/api/wallets/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });

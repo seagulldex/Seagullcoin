@@ -5478,19 +5478,26 @@ app.get('/api/wallets/check-sign/:uuid', async (req, res) => {
   try {
     const { uuid } = req.params;
     const payload = await xumm.payload.get(uuid);
-    
-    if (payload.response && payload.response.signed) {
-      const xrplAddress = payload.response.account;
-      await UserWallet.updateOne({ xumm_uuid: uuid }, { xrpl_address: xrplAddress });
-      return res.json({ signed: true, xrpl_address: xrplAddress });
-    } else {
-      return res.json({ signed: false });
+
+    if (!payload) {
+      return res.status(404).json({ error: 'Payload not found' });
     }
+
+    const signed = payload.response?.signed || false;
+    const account = payload.response?.account || null;
+
+    if (signed && account) {
+      // Update DB if needed
+      await UserWallet.updateOne({ xumm_uuid: uuid }, { xrpl_address: account });
+    }
+
+    return res.json({ signed, xrpl_address: account });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to check signature status' });
+    console.error('Error fetching payload:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 

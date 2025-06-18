@@ -72,6 +72,7 @@ import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
 import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
+import crypto from 'crypto';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -188,6 +189,10 @@ async function main() {
 }
 
 main().catch(console.error);
+
+export function hashSeed(seed) {
+  return crypto.createHash('sha256').update(seed).digest('hex');
+}
 
 
 // ✅ Define the schema + model at the top

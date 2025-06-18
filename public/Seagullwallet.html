@@ -186,44 +186,23 @@ async function updateWalletStatus() {
   }
 }
 
-    async function startLoginFlow() {
-  try {
-    // Step 1: Initiate sign-in
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/wallets/init-signin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    const data = await res.json();
+async function startLoginFlow() {
+  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
+  const data = await res.json();
+  window.open(data.payloadURL, "_blank");
 
-    if (!data.success || !data.xumm?.link || !data.xumm?.uuid) {
-      alert("Failed to initiate sign-in.");
-      return;
+  const interval = setInterval(async () => {
+    const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
+    const loginStatus = await check.json();
+
+    if (loginStatus.loggedIn) {
+      clearInterval(interval);
+      localStorage.setItem('xumm_wallet_address', loginStatus.account);
+      localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
+      updateWalletStatus();
     }
-
-    // Open XUMM sign link
-    window.open(data.xumm.link, "_blank");
-
-    // Step 2: Poll for completion
-    const uuid = data.xumm.uuid;
-    const pollInterval = setInterval(async () => {
-      const checkRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/wallets/complete-signin/${uuid}`);
-      const checkData = await checkRes.json();
-
-      if (checkData.loggedIn && checkData.account) {
-        clearInterval(pollInterval);
-        localStorage.setItem('xumm_wallet_address', checkData.account);
-        localStorage.setItem('xumm_payload_uuid', uuid);
-        updateWalletStatus();
-        alert("Wallet connected successfully!");
-      }
-    }, 2000);
-  } catch (err) {
-    console.error("Login error:", err);
-    alert("Failed to start login process.");
-  }
+  }, 2000);
 }
-
-
 
 async function fetchNFTs(wallet) {
   try {
@@ -242,6 +221,36 @@ async function fetchNFTs(wallet) {
     document.getElementById('nft-container').style.display = 'grid';
   }
 }
+
+    document.getElementById('generate-wallet-btn').addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/wallets/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      // Update table cells
+      document.getElementById('wallet-address').textContent = data.wallet;
+      document.getElementById('wallet-seed').textContent = data.seed;
+
+      // Store in localStorage (optional)
+      localStorage.setItem('xumm_wallet_address', data.wallet);
+      localStorage.setItem('wallet_seed', data.seed);
+
+      // Also update the wallet status indicator
+      updateWalletStatus();
+
+      alert(`Wallet generated!\n\nWallet: ${data.wallet}\n\nIMPORTANT: Save your seed securely:\n${data.seed}`);
+    } else {
+      alert("Failed to generate wallet.");
+    }
+  } catch (err) {
+    console.error('Error generating wallet:', err);
+    alert("Error generating wallet.");
+  }
+});
 
 
 function convertIPFSToURL(ipfsUrl) {
@@ -316,53 +325,33 @@ function displayNFTs() {
     }
 
 document.getElementById('generate-wallet-btn').addEventListener('click', async () => {
+  if (localStorage.getItem('xumm_wallet_address')) {
+    alert("You already have a wallet generated.");
+    return;
+  }
+
   try {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/wallets/init-signin', {
+    const res = await fetch('/api/wallets/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
     const data = await res.json();
 
-    if (!data.success || !data.xumm?.link || !data.xumm?.uuid) {
-      alert("Failed to initiate wallet generation/signing.");
-      return;
+    if (data.success) {
+      localStorage.setItem('xumm_wallet_address', data.wallet);
+      localStorage.setItem('wallet_seed', data.seed);  // Store seed locally
+      
+      alert(`Wallet generated!\n\nWallet: ${data.wallet}\n\n**IMPORTANT:** Save your seed securely:\n${data.seed}`);
+
+      updateWalletStatus();
+    } else {
+      alert("Failed to generate wallet.");
     }
-
-    // This window.open must be inside the event handler without await or async between
-    window.open(data.xumm.link, '_blank');
-
-    // Poll for sign completion
-    const uuid = data.xumm.uuid;
-    const pollInterval = setInterval(async () => {
-      try {
-        const checkRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/wallets/complete-signin/${uuid}`);
-        const checkData = await checkRes.json();
-
-        if (checkData.signed) {
-          clearInterval(pollInterval);
-          localStorage.setItem('xumm_wallet_address', checkData.xrpl_address);
-          localStorage.setItem('wallet_seed', checkData.seed);
-
-          document.getElementById('wallet-address').textContent = checkData.wallet;
-          document.getElementById('wallet-seed').textContent = checkData.seed;
-
-          updateWalletStatus();
-
-          alert(`Wallet generated and connected!\n\nWallet: ${checkData.wallet}\nSeed: ${checkData.seed}\n\nSave your seed securely!`);
-        }
-      } catch (pollErr) {
-        console.error('Polling error:', pollErr);
-      }
-    }, 2000);
-
   } catch (err) {
-    console.error('Error initiating wallet generation/signing:', err);
-    alert("Failed to generate wallet and seed.");
+    console.error('Error generating wallet:', err);
+    alert("Error generating wallet.");
   }
 });
-
-
-
 
     // Transfer Button
     const transferButton = document.createElement('button');

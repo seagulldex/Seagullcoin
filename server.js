@@ -5670,7 +5670,7 @@ const txHash = randomBytes(16).toString('hex');
 await Transaction.create({
   wallet: newWallet.wallet,       // the SEAGULL wallet string
   xrpl_address: newWallet.xrpl_address,
-  type: 'MINT',                   // or 'WALLET_CREATION' if you want to define it
+  type: 'WALLET_CREATION',                   // or 'WALLET_CREATION' if you want to define it
   amount: 0,                     // or initial token amount if any
   txHash,
   status: 'CONFIRMED',

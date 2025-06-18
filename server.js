@@ -5520,41 +5520,46 @@ app.post('/api/wallets/init-signin', async (req, res) => {
 });
 
 
-
 app.get('/api/wallets/complete-signin/:uuid', async (req, res) => {
+  const { uuid } = req.params;
   try {
-    const { uuid } = req.params;
-    const payload = await xumm.payload.get(uuid);
+    const result = await xumm.payload.get(uuid);
+    console.log(`XUMM payload for ${uuid}:`, result);  // DEBUG
 
-    if (!payload.response?.signed) {
-      return res.json({ success: false, signed: false });
+    // Depending on XUMM version:
+    const signed = result.response?.signed || result.meta?.signed;
+    const account = result.response?.account || null;
+
+    if (!signed) {
+      return res.json({ success: true, signed: false });
     }
 
-    const xrpl_address = payload.response.account;
+    // Signed! Proceed to wallet creation
     const uniquePart = randomBytes(12).toString('hex').toUpperCase();
     const wallet = `SEAGULL${uniquePart}`;
     const seed = randomBytes(32).toString('hex');
 
-    // Save wallet & XRPL address only
     await UserWallet.create({
       wallet,
-      xrpl_address,
+      xrpl_address: account,
       xumm_uuid: uuid,
     });
 
-    res.json({
+    return res.json({
       success: true,
       signed: true,
-      xrpl_address,
+      xrpl_address: account,
       wallet,
-      seed, // shown once, not saved
+      seed,
       warning: 'Save your seed securely. We cannot recover it later.',
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
+    console.error('Error in complete-signin:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
+
+
 
 
 

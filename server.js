@@ -5432,48 +5432,41 @@ app.get("/redeem", async (req, res) => {
   `);
 });
 
-
-
 app.post('/api/wallets/generate', async (req, res) => {
   try {
-    // 1. Generate SEAGULL wallet and seed
     const uniquePart = randomBytes(12).toString('hex').toUpperCase();
     const wallet = `SEAGULL${uniquePart}`;
     const seed = randomBytes(32).toString('hex');
 
-    // 2. Create XUMM sign request (SignIn for simplicity)
     const payload = await xumm.payload.create({
-      txjson: {
-        TransactionType: 'SignIn',
-      },
+      txjson: { TransactionType: 'SignIn' },
       custom_meta: {
         identifier: 'wallet_setup',
-        blob: wallet, // Attach SEAGULL wallet so you know which user
+        blob: wallet,
       },
     });
 
-    // 3. Temporarily store this in DB with XUMM payload UUID
+    // Store only non-sensitive wallet ID + payload UUID
     await Wallet.create({
       wallet,
-      seed,
-      xumm_uuid: payload.uuid, // Add this to your schema if needed
-      xrpl_address: null,       // Will be filled after signing
+      xrpl_address: null,
+      xumm_uuid: payload.uuid,
     });
 
-    // 4. Return payload details to client
     res.json({
       success: true,
       wallet,
-      seed,
+      seed, // shown only once
       xumm: {
-        qr: payload.refs.qr_png,
         link: payload.next.always,
+        qr: payload.refs.qr_png,
         uuid: payload.uuid,
       },
+      warning: "You are the only one who will see this seed. Save it securely. If lost, your wallet cannot be recovered.",
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    console.error(err); // Avoid logging the seed!
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
   

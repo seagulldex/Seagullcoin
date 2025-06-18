@@ -17,7 +17,8 @@ const transactionSchema = new mongoose.Schema({
   },
   amount: {
     type: Number,
-    required: true
+    required: true,
+    min: [0, 'Amount must be non-negative'], // validation for non-negative
   },
   txHash: {
     type: String,

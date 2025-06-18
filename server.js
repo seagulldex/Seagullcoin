@@ -5433,18 +5433,43 @@ app.get("/redeem", async (req, res) => {
 });
 
 
+
 app.post('/api/wallets/generate', async (req, res) => {
   try {
+    // 1. Generate SEAGULL wallet and seed
     const uniquePart = randomBytes(12).toString('hex').toUpperCase();
     const wallet = `SEAGULL${uniquePart}`;
     const seed = randomBytes(32).toString('hex');
 
-    const newWallet = await Wallet.create({ wallet, seed });
+    // 2. Create XUMM sign request (SignIn for simplicity)
+    const payload = await xumm.payload.create({
+      txjson: {
+        TransactionType: 'SignIn',
+      },
+      custom_meta: {
+        identifier: 'wallet_setup',
+        blob: wallet, // Attach SEAGULL wallet so you know which user
+      },
+    });
 
+    // 3. Temporarily store this in DB with XUMM payload UUID
+    await Wallet.create({
+      wallet,
+      seed,
+      xumm_uuid: payload.uuid, // Add this to your schema if needed
+      xrpl_address: null,       // Will be filled after signing
+    });
+
+    // 4. Return payload details to client
     res.json({
       success: true,
-      wallet: newWallet.wallet,
-      seed: newWallet.seed,
+      wallet,
+      seed,
+      xumm: {
+        qr: payload.refs.qr_png,
+        link: payload.next.always,
+        uuid: payload.uuid,
+      },
     });
   } catch (err) {
     console.error(err);

@@ -4,7 +4,7 @@ const transactionSchema = new mongoose.Schema({
   wallet: {
     type: String,
     required: true,
-    ref: 'UserWallet' // Optional: only helpful if you want to `populate` related wallet info
+    ref: 'Wallet' // Optional: only helpful if you want to `populate` related wallet info
   },
   xrpl_address: {
     type: String,

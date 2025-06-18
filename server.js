@@ -155,7 +155,6 @@ const UserWalletSchema = new mongoose.Schema({
   xrpl_address: { type: String, required: false },
   xumm_uuid: { type: String, required: false },
   hashed_seed: { type: String, required: true },
-  creationTxHash: { type: String, required: false },  // optional field for wallet creation tx
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -1,44 +1,13 @@
 import mongoose from 'mongoose';
 
-const transactionSchema = new mongoose.Schema({
-  wallet: {
-    type: String,
-    required: true,
-    ref: 'UserWallet' // Optional: only helpful if you want to `populate` related wallet info
-  },
-  xrpl_address: {
-    type: String,
-    required: true
-  },
-  type: {
-    type: String,
-    enum: ['TRANSFER', 'MINT', 'BURN', 'STAKE', 'NFT_TRANSFER', 'L2_TX', 'NFT_SALE', 'ACCEPT_OFFER', 'CREATE_OFFER'],
-    required: true
-  },
-  amount: {
-    type: Number,
-    required: true,
-    min: [0, 'Amount must be non-negative'], // validation for non-negative
-  },
-  txHash: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  status: {
-    type: String,
-    enum: ['PENDING', 'CONFIRMED', 'FAILED'],
-    default: 'PENDING'
-  },
-  metadata: {
-    type: mongoose.Schema.Types.Mixed, // You can store additional data here
-    default: {}
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+const WalletSchema = new mongoose.Schema({
+  wallet: { type: String, required: true, unique: true },
+  seed: { type: String, required: false },            // optional, ideally don’t save plain seed
+  hashed_seed: { type: String, required: true },      // hashed seed should be required
+  xrpl_address: { type: String, required: false },
+  xumm_uuid: { type: String, required: false },
+}, { timestamps: true });
 
+const Wallet = mongoose.model('UserWallet', WalletSchema);
+export default Wallet;
 
-export default mongoose.model('Transaction', transactionSchema);

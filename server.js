@@ -191,9 +191,6 @@ async function main() {
 
 main().catch(console.error);
 
-export function hashSeed(seed) {
-  return crypto.createHash('sha256').update(seed).digest('hex');
-}
 
 
 // ✅ Define the schema + model at the top

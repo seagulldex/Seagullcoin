@@ -5683,6 +5683,41 @@ app.get('/api/wallets/:wallet/transactions', async (req, res) => {
   return res.json({ success: true, transactions: txs });
 });
 
+app.post('/api/genesis/create', async (req, res) => {
+  try {
+    const wallet = await UserWallet.findOne({ wallet: 'SEAGULL4A0DFD71A522C8C21B367B34' });
+    if (!wallet) return res.status(404).json({ error: 'Genesis wallet not found' });
+
+    const existingGenesis = await Token.findOne({ isGenesisToken: true });
+    if (existingGenesis) {
+      return res.status(400).json({ error: 'Genesis token already created' });
+    }
+
+    const token = await Token.create({
+      symbol: 'SEAGULL',
+      name: 'Seagull Coin',
+      owner_wallet: wallet.wallet,
+      max_supply: 100000000,
+      circulating_supply: 0,
+      decimals: 2,
+      isGenesisToken: true,
+      layer: 'L2',
+    });
+
+    wallet.tokenName = token.name;
+    wallet.tokenSymbol = token.symbol;
+    wallet.tokenSupply = token.max_supply;
+    wallet.isGenesisWallet = true;
+    await wallet.save();
+
+    res.json({ success: true, token });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create genesis token' });
+  }
+});
+
+export default app;
 
 
 // Call the XRPL ping when the server starts

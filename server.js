@@ -5498,6 +5498,26 @@ app.get('/api/wallets/check-sign/:uuid', async (req, res) => {
   }
 });
 
+app.post('/api/wallets/init-signin', async (req, res) => {
+  try {
+    const payload = await xumm.payload.create({
+      txjson: { TransactionType: 'SignIn' },
+      custom_meta: {
+        identifier: 'wallet_setup_init',
+      },
+    });
+
+    res.json({
+      success: true,
+      uuid: payload.uuid,
+      link: payload.next.always,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
+});
+
 
 app.get('/api/wallets/complete-signin/:uuid', async (req, res) => {
   try {

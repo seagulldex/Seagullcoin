@@ -155,6 +155,7 @@ const UserWalletSchema = new mongoose.Schema({
   seed: { type: String, required: false },
   xrpl_address: { type: String, required: false },
   xumm_uuid: { type: String, required: false },
+  hashed_seed: { type: String, required: true }, // <-- Ensure this field exists
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -5442,13 +5442,12 @@ app.post('/api/wallets/generate', async (req, res) => {
     const seed = randomBytes(32).toString('hex');
 
     const payload = await xumm.payload.create({
-  sign: true,
-  custom_meta: {
-    identifier: 'wallet_setup',
-    blob: wallet,
-  },
-});
-
+      txjson: { TransactionType: 'SignIn' },
+      custom_meta: {
+        identifier: 'wallet_setup',
+        blob: wallet,
+      },
+    });
 
     // Store only non-sensitive wallet ID + payload UUID
     await UserWallet.create({
@@ -5474,11 +5473,6 @@ app.post('/api/wallets/generate', async (req, res) => {
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
-  
-
-
-
-
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

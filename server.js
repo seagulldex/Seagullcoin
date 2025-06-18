@@ -5559,8 +5559,71 @@ app.get('/api/wallets/complete-signin/:uuid', async (req, res) => {
   }
 });
 
+// POST /api/wallets/signin-init
+app.post('/api/wallets/signin-seed', async (req, res) => {
+  try {
+    const payload = await xumm.payload.create({
+      txjson: { TransactionType: 'SignIn' },
+      custom_meta: {
+        identifier: 'wallet_setup_init',
+      },
+    });
+
+    // Save payload UUID, mark as pending
+    await WalletSignRequest.create({
+      xumm_uuid: payload.uuid,
+      status: 'pending',
+    });
+
+    res.json({
+      success: true,
+      xumm: {
+        link: payload.next.always,
+        qr: payload.refs.qr_png,
+        uuid: payload.uuid,
+      }
+    });
+  } catch (err) {
+    console.error('Init error:', err.message);
+    res.status(500).json({ success: false });
+  }
+});
 
 
+// POST /api/wallets/complete
+app.post('/api/wallets/complete', async (req, res) => {
+  const { uuid } = req.body;
+  try {
+    const payloadResult = await xumm.payload.get(uuid);
+    if (payloadResult.meta.signed !== true) {
+      return res.status(400).json({ success: false, error: 'Not signed yet' });
+    }
+
+    const xrpl_address = payloadResult.response.account;
+    const uniquePart = randomBytes(12).toString('hex').toUpperCase();
+    const wallet = `SEAGULL${uniquePart}`;
+    const seed = randomBytes(32).toString('hex');
+
+    // Save wallet
+    await UserWallet.create({
+      wallet,
+      seed,
+      xrpl_address,
+      xumm_uuid: uuid,
+    });
+
+    res.json({
+      success: true,
+      wallet,
+      seed,
+      xrpl_address,
+      warning: "This seed will not be shown again. Save it securely.",
+    });
+  } catch (err) {
+    console.error('Wallet complete error:', err.message);
+    res.status(500).json({ success: false });
+  }
+});
 
 
 

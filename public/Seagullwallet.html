@@ -245,7 +245,7 @@ async function fetchNFTs(wallet) {
 
     document.getElementById('generate-wallet-btn').addEventListener('click', async () => {
   try {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/wallets/init-signin', {
+    const res = await fetch('/api/wallets/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -522,4 +522,4 @@ document.getElementById('generate-wallet-btn').addEventListener('click', async (
     card.appendChild(burnButton);
 </script>
 </body>
-    </html>
+  </html>

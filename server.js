@@ -5442,12 +5442,13 @@ app.post('/api/wallets/generate', async (req, res) => {
     const seed = randomBytes(32).toString('hex');
 
     const payload = await xumm.payload.create({
-      txjson: { TransactionType: 'SignIn' },
-      custom_meta: {
-        identifier: 'wallet_setup',
-        blob: wallet,
-      },
-    });
+  sign: true,
+  custom_meta: {
+    identifier: 'wallet_setup',
+    blob: wallet,
+  },
+});
+
 
     // Store only non-sensitive wallet ID + payload UUID
     await UserWallet.create({

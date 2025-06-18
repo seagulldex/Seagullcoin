@@ -347,7 +347,6 @@ function displayNFTs() {
 
 document.getElementById('generate-wallet-btn').addEventListener('click', async () => {
   try {
-    // 1. Init sign-in to generate wallet + seed
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/wallets/init-signin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
@@ -359,41 +358,40 @@ document.getElementById('generate-wallet-btn').addEventListener('click', async (
       return;
     }
 
-    // 2. Open XUMM sign link in a new tab/window
+    // This window.open must be inside the event handler without await or async between
     window.open(data.xumm.link, '_blank');
 
-    // 3. Poll backend to check if signing is complete
+    // Poll for sign completion
     const uuid = data.xumm.uuid;
     const pollInterval = setInterval(async () => {
       try {
         const checkRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/wallets/complete-signin/${uuid}`);
         const checkData = await checkRes.json();
 
-        if (checkData.loggedIn && checkData.account && checkData.seed) {
+        if (checkData.signed) {
           clearInterval(pollInterval);
-
-          // 4. Update localStorage and UI
-          localStorage.setItem('xumm_wallet_address', checkData.account);
+          localStorage.setItem('xumm_wallet_address', checkData.xrpl_address);
           localStorage.setItem('wallet_seed', checkData.seed);
 
-          document.getElementById('wallet-address').textContent = checkData.account;
+          document.getElementById('wallet-address').textContent = checkData.wallet;
           document.getElementById('wallet-seed').textContent = checkData.seed;
 
-          // 5. Update wallet status indicator
           updateWalletStatus();
 
-          alert(`Wallet generated and connected!\n\nWallet: ${checkData.account}\nSeed: ${checkData.seed}\n\nSave your seed securely!`);
+          alert(`Wallet generated and connected!\n\nWallet: ${checkData.wallet}\nSeed: ${checkData.seed}\n\nSave your seed securely!`);
         }
       } catch (pollErr) {
-        console.error('Error polling sign-in completion:', pollErr);
+        console.error('Polling error:', pollErr);
       }
-    }, 2000); // poll every 2 seconds
+    }, 2000);
 
   } catch (err) {
     console.error('Error initiating wallet generation/signing:', err);
     alert("Failed to generate wallet and seed.");
   }
 });
+
+
 
 
     // Transfer Button

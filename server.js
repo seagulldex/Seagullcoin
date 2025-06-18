@@ -72,7 +72,6 @@ import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
 import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
-import { sign, verify, getPublicKey } from '@noble/ed25519';
 
 // ===== Init App and Env =====
 dotenv.config();

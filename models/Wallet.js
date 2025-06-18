@@ -6,15 +6,13 @@ const WalletSchema = new mongoose.Schema({
   hashed_seed: { type: String, required: true },      // hashed seed should be required
   xrpl_address: { type: String, required: false },
   xumm_uuid: { type: String, required: false },
-}, { timestamps: true });
 
-// ✅ New Token Metadata Fields
+  // ✅ New Token Metadata Fields (move inside the schema object)
   tokenName: { type: String, required: false },
   tokenSymbol: { type: String, required: false },
   tokenSupply: { type: Number, required: false },
   isGenesisWallet: { type: Boolean, default: false },
-}, { timestamps: true });
+}, { timestamps: true }); // <-- This stays outside the schema fields
 
 const Wallet = mongoose.model('UserWallet', WalletSchema);
 export default Wallet;
-

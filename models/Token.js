@@ -6,18 +6,16 @@ const tokenSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    uppercase: true,
-    trim: true
+    uppercase: true
   },
   name: {
     type: String,
-    required: true,
-    trim: true
+    required: true
   },
   owner_wallet: {
     type: String,
     required: true,
-    ref: 'UserWallet' // optional: for future population
+    ref: 'UserWallet'
   },
   max_supply: {
     type: Number,
@@ -33,12 +31,12 @@ const tokenSchema = new mongoose.Schema({
   },
   isGenesisToken: {
     type: Boolean,
-    default: true // the first Token created is likely the genesis token
+    default: false
   },
   layer: {
     type: String,
     enum: ['L1', 'L2'],
-    default: 'L2' // since this is your Layer 2 system
+    default: 'L2'
   },
   createdAt: {
     type: Date,

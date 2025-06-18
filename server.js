@@ -149,19 +149,16 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
-
-// MongoDB Schema
 const UserWalletSchema = new mongoose.Schema({
   wallet: { type: String, required: true, unique: true },
   seed: { type: String, required: false },
   xrpl_address: { type: String, required: false },
   xumm_uuid: { type: String, required: false },
-  hashed_seed: { type: String, required: true }, // <-- Ensure this field exists
+  hashed_seed: { type: String, required: true },
+  creationTxHash: { type: String, required: false },  // optional field for wallet creation tx
   createdAt: { type: Date, default: Date.now },
 });
 
-
-const UserWallet = mongoose.model('UserWallet', UserWalletSchema);
 
 // Generator Function
 export async function generateCustomWallet() {

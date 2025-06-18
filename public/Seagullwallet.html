@@ -325,34 +325,6 @@ function displayNFTs() {
       }
     }
 
-document.getElementById('generate-wallet-btn').addEventListener('click', async () => {
-  if (localStorage.getItem('xumm_wallet_address')) {
-    alert("You already have a wallet generated.");
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/wallets/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      localStorage.setItem('xumm_wallet_address', data.wallet);
-      localStorage.setItem('wallet_seed', data.seed);  // Store seed locally
-      
-      alert(`Wallet generated!\n\nWallet: ${data.wallet}\n\n**IMPORTANT:** Save your seed securely:\n${data.seed}`);
-
-      updateWalletStatus();
-    } else {
-      alert("Failed to generate wallet.");
-    }
-  } catch (err) {
-    console.error('Error generating wallet:', err);
-    alert("Error generating wallet.");
-  }
-});
 
     // Transfer Button
     const transferButton = document.createElement('button');

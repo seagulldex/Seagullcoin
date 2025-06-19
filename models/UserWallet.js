@@ -35,7 +35,7 @@ const WalletSchema = new mongoose.Schema({
   tokenName: { type: String, required: false, trim: true },
   tokenSymbol: { type: String, required: false, trim: true, uppercase: true },
   tokenSupply: { type: Number, required: false, min: 0 },
-  isGenesisWallet: { type: Boolean, default: false },
+  isGenesisWallet: { type: Boolean, default: false, unique: true, sparse: true },
 
   // Bridge & Interop Fields
   bridgedFromXrpl: { type: Boolean, default: false, index: true },  // For wallets created from XRPL events

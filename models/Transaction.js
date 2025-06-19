@@ -35,17 +35,7 @@ const transactionSchema = new mongoose.Schema({
     default: 'PENDING'
   },
 
-  // ✅ Fee and Token Tracking
-  fee: {
-    type: Number,
-    default: 0
-  },
-  tokenHex: {
-    type: String,
-    required: false // Only needed if token-specific TX
-  },
-
-  // ✅ XRPL ↔ L2 Bridge Fields
+  // ✅ XRPL ↔ Layer 2 bridge tracking
   layer: {
     type: String,
     enum: ['L1', 'L2'],
@@ -61,6 +51,16 @@ const transactionSchema = new mongoose.Schema({
     required: false
   },
 
+  // ✅ Token/fee specific
+  fee: {
+    type: Number,
+    default: 0
+  },
+  tokenHex: {
+    type: String,
+    required: false
+  },
+
   metadata: {
     type: mongoose.Schema.Types.Mixed,
     default: {}
@@ -70,3 +70,7 @@ const transactionSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+export default mongoose.model('Transaction', transactionSchema);
+
+console.log("Transaction model initialized:", mongoose.modelNames());

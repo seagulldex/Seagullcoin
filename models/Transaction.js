@@ -51,7 +51,7 @@ const transactionSchema = new mongoose.Schema({
     required: false
   },
 
-  // ✅ Token/fee specific
+    // ✅ Token/fee specific
   fee: {
     type: Number,
     default: 0
@@ -62,12 +62,14 @@ const transactionSchema = new mongoose.Schema({
   },
   currencyCode: {
     type: String,
-    required: true   // this helps identify which token this tx is for
+    required: true
   },
   issuer: {
     type: String,
-    required: true   // the XRPL issuer address for this token
+    required: true
   },
+
+  
   metadata: {
     type: mongoose.Schema.Types.Mixed,
     default: {}

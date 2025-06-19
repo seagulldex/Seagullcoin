@@ -108,7 +108,9 @@ const token = randomBytes(32).toString('hex')
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
-const nftId = uuidv4();  // random UUID string, e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+const metadataString = JSON.stringify(metadataObj);
+const nftId = crypto.createHash('sha256').update(metadataString).digest('hex');
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 

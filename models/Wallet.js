@@ -25,7 +25,7 @@ const WalletSchema = new mongoose.Schema({
       validator: function(v) {
         return !v || isValidXrplAddress(v);
       },
-      message: props => `${props.value} is not a valid XRPL address`
+      message: props => `${props.value} is not a valid address`
     }
   }, // rXXXXXXXXX
 

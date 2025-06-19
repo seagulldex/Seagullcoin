@@ -245,8 +245,9 @@ async function updateWalletStatus() {
       indicator.classList.add('red');
       indicator.onclick = startLoginFlow;
       document.getElementById('logout-menu').style.display = 'none';
-      generateBtn.style.display = 'inline-block';
-      enableWalletButton();
+      generateBtn.style.display = 'none';
+      disableWalletButton('Login to create SGLCN-X20 wallet');
+      break;
   }
 }
 

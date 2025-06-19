@@ -36,20 +36,21 @@ const WalletSchema = new mongoose.Schema({
   required: false,
   trim: true,
   uppercase: false,
+  default: null,
   validate: {
     validator: v => !v || isValidXrplAddress(v),
     message: props => `${props.value} is not a valid issuer address`
   }
 },
-
 currencyCode: {
   type: String,
   required: false,
   trim: true,
   uppercase: true,
   minlength: 3,
-  maxlength: 10
-},
+  maxlength: 10,
+  default: null
+}
 
   // Token Genesis Metadata
   tokenName: { type: String, required: false, trim: true },
@@ -66,7 +67,7 @@ currencyCode: {
 }, { timestamps: true });
 
 // Compound indexes:
-WalletSchema.index({ issuer: 1, currencyCode: 1 });
+WalletSchema.index({ issuer: 1, currencyCode: 1 }, { sparse: true });
 WalletSchema.index({ bridgedFromXrpl: 1, isCustodial: 1 });
 
 export default mongoose.model('UserWallet', WalletSchema);

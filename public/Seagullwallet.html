@@ -68,7 +68,14 @@
 <body>
   <div id="top-bar">
     <div style="flex:1;">
-      <button id="logout-btn">Logout</button>
+      <div id="logout-menu" style="display:none; position: relative;">
+  <button onclick="toggleLogoutOptions()">Logout ⬇️</button>
+  <div id="logout-options" style="display:none; position: absolute; top: 30px; background: #222; border: 1px solid #444; padding: 10px; border-radius: 6px; z-index: 100;">
+    <button onclick="logoutXRPL()">Logout XRPL</button>
+    <button onclick="logoutSeagull()">Logout SGLCN-X20</button>
+    <button onclick="logoutAll()">Logout All</button>
+  </div>
+</div>
     </div>
     <div id="wallet-container">
       <div id="wallet-status">

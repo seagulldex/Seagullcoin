@@ -230,7 +230,7 @@
             clearInterval(interval);
             wallet = loginStatus.account;
             localStorage.setItem('xumm_wallet_address', wallet);
-            
+            localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
             localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
             document.getElementById('wallet-address').textContent = wallet;
             updateWalletUI();

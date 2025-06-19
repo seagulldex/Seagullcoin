@@ -14,10 +14,10 @@ const transactionSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: [
-      'TRANSFER', 'WALLET_CREATION', 'MINT', 'BURN', 'STAKE',
-      'NFT_TRANSFER', 'L2_TX', 'NFT_SALE', 'ACCEPT_OFFER',
-      'CREATE_OFFER', 'BRIDGE_IN', 'BRIDGE_OUT', 'XRPL_PAYMENT'
-    ],
+    'TRANSFER', 'WALLET_CREATION', 'MINT', 'BURN', 'STAKE',
+    'NFT_TRANSFER', 'L2_TX', 'NFT_SALE', 'ACCEPT_OFFER', 'CREATE_OFFER',
+    'BRIDGE_IN', 'BRIDGE_OUT', 'XRPL_PAYMENT' // ✅ Add these
+  ],
     required: true
   },
   amount: {

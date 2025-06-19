@@ -55,15 +55,14 @@ currencyCode: {
   // Token Genesis Metadata
   tokenName: { type: String, required: false, trim: true },
   tokenSymbol: { type: String, required: false, trim: true, uppercase: true },
-  tokenSupply: { type: Number, required: false },
+  tokenSupply: { type: Number, required: false, min: 0 },
   isGenesisWallet: { type: Boolean, default: false },
 
   // Bridge & Interop Fields
   bridgedFromXrpl: { type: Boolean, default: false, index: true },  // For wallets created from XRPL events
   bridgeTxHash: { type: String, required: false, trim: true },      // To track origin
   isCustodial: { type: Boolean, default: false },                   // If owned by platform not user
-  l2Balance: { type: Number, default: 0 },                          // Optional tracked balance
-
+  l2Balance: { type: Number, default: 0, min: 0 },
 }, { timestamps: true });
 
 // Compound indexes:

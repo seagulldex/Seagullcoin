@@ -140,15 +140,16 @@ function switchTab() {
 }
 
 async function updateWalletStatus() {
-  const wallet = localStorage.getItem('xumm_wallet_address');
+  const xummWallet = localStorage.getItem('xumm_wallet_address');
+  const seagullWallet = localStorage.getItem('seagull_wallet');
   const indicator = document.getElementById('wallet-indicator');
 
-  if (wallet) {
+  if (xummWallet && seagullWallet) {
     indicator.textContent = '🟢 Connected';
     indicator.classList.remove('red');
     indicator.classList.add('green');
     document.getElementById('logout-btn').style.display = 'inline-block';
-    fetchNFTs(wallet);
+    fetchNFTs(xummWallet); // or seagullWallet depending on which one your NFTs are tied to
   } else {
     indicator.textContent = '🔴 Login';
     indicator.classList.remove('green');

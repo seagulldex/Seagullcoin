@@ -60,7 +60,14 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     required: false
   },
-
+  currencyCode: {
+    type: String,
+    required: true   // this helps identify which token this tx is for
+  },
+  issuer: {
+    type: String,
+    required: true   // the XRPL issuer address for this token
+  },
   metadata: {
     type: mongoose.Schema.Types.Mixed,
     default: {}

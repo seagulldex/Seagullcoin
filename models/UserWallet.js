@@ -25,45 +25,26 @@ const WalletSchema = new mongoose.Schema({
       validator: function(v) {
         return !v || isValidXrplAddress(v);
       },
-      message: props => `${props.value} is not a valid XRPL address`
+      message: props => `${props.value} is not a valid address`
     }
   }, // rXXXXXXXXX
 
   xumm_uuid: { type: String, required: false },
 
-  issuer: {
-  type: String,
-  required: false,
-  trim: true,
-  uppercase: false,
-  validate: {
-    validator: v => !v || isValidXrplAddress(v),
-    message: props => `${props.value} is not a valid XRPL issuer address`
-  }
-},
-
-currencyCode: {
-  type: String,
-  required: false,
-  trim: true,
-  uppercase: true,
-  minlength: 3,
-  maxlength: 10
-},
-
   // Token Genesis Metadata
   tokenName: { type: String, required: false, trim: true },
   tokenSymbol: { type: String, required: false, trim: true, uppercase: true },
-  tokenSupply: { type: Number, required: false },
-  isGenesisWallet: { type: Boolean, default: false, unique: true, sparse: true },
-
+  tokenSupply: { type: Number, required: false, min: 0 },
+  isGenesisWallet: { type: Boolean, default: false },
 
   // Bridge & Interop Fields
   bridgedFromXrpl: { type: Boolean, default: false, index: true },  // For wallets created from XRPL events
   bridgeTxHash: { type: String, required: false, trim: true },      // To track origin
   isCustodial: { type: Boolean, default: false },                   // If owned by platform not user
-  l2Balance: { type: Number, default: 0 },                          // Optional tracked balance
-
+  l2Balance: { type: Number, default: 0, min: 0 },
 }, { timestamps: true });
+
+// Compound indexes:
+WalletSchema.index({ bridgedFromXrpl: 1, isCustodial: 1 });
 
 export default mongoose.model('UserWallet', WalletSchema);

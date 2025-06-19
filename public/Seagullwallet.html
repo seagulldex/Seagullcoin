@@ -76,9 +76,9 @@
     <div id="login-menu" style="display: block; position: relative;">
       <button onclick="toggleLoginOptions()">Network</button>
       <div id="login-options" class="hidden" style="position: absolute; top: 30px; background: #222; border: 1px solid #444; padding: 10px; border-radius: 6px; z-index: 100;">
-        <button onclick="loginXRPL()">Login XRPL</button>
-        <button onclick="loginSeagull()">Login SGLCN-X20</button>
-        <button onclick="loginAll()">Login All</button>
+        <button onclick="loginXRPL()">XRPL</button>
+        <button onclick="loginSeagull()">SGLCN-X20</button>
+        <button onclick="loginAll()">Layer-2</button>
       </div>
     </div>
 
@@ -472,6 +472,24 @@ function disableWalletButton(message = 'Disabled') {
   btn.style.background = '#ccc';
   btn.style.cursor = 'not-allowed';
 }
+
+    function showMintMessage() {
+  const indicator = document.getElementById('wallet-indicator');
+  indicator.textContent = '⚠️ Mint SGLCN-X20 wallet';
+  indicator.classList.add('red');
+  indicator.onclick = () => alert('Please mint a SGLCN-X20 wallet to access this feature.');
+  document.getElementById('logout-menu').style.display = 'none';
+}
+
+function showLoggedOut() {
+  const indicator = document.getElementById('wallet-indicator');
+  indicator.textContent = '🔴 Logged Out';
+  indicator.classList.add('red');
+  indicator.onclick = startLoginFlow;
+  document.getElementById('logout-menu').style.display = 'none';
+  disableWalletButton('Login to create SGLCN-X20 wallet');
+}
+
     
     // Burn NFT function
   async function burnNFT(nftId) {

@@ -20,7 +20,7 @@ const WalletSchema = new mongoose.Schema({
     required: false,
     index: true,
     trim: true,
-    uppercase: true,
+    uppercase: false,
     validate: {
       validator: function(v) {
         return !v || isValidXrplAddress(v);
@@ -36,7 +36,7 @@ const WalletSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    uppercase: true,
+    uppercase: false,
     validate: {
       validator: isValidXrplAddress,
       message: props => `${props.value} is not a valid XRPL issuer address`

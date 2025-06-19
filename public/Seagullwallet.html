@@ -63,6 +63,9 @@
     #wallet-table {
       font-size: 0.45em;
     }
+   .hidden {
+  display: none;
+}
   </style>
 </head>
 <body>
@@ -347,7 +350,10 @@ document.getElementById('generate-wallet-btn').addEventListener('click', async (
   }
 });
 
-
+function toggleLogoutMenu() {
+    const menu = document.getElementById('logout-options');
+    menu.classList.toggle('hidden');
+}
 
 function convertIPFSToURL(ipfsUrl) {
   if (!ipfsUrl) return '';

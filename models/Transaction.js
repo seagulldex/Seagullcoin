@@ -61,13 +61,16 @@ const transactionSchema = new mongoose.Schema({
     required: false
   },
   currencyCode: {
-    type: String,
-    required: false
-  },
-  issuer: {
-    type: String,
-    required: false
-  },
+  type: String,
+  required: false,
+  trim: true,
+  uppercase: true
+},
+issuer: {
+  type: String,
+  required: false,
+  trim: true
+}
 
   // NFT-specific fields (optional)
   nftId: {

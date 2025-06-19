@@ -171,16 +171,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   // other event listeners ...
 });
 
-  
-const seagullWallet = localStorage.getItem('seagull_wallet');
-  const generateBtn = document.getElementById('generate-wallet-btn');
-  if (seagullWallet) {
-    generateBtn.disabled = true;
-    generateBtn.textContent = 'Wallet Already Created';
-    generateBtn.style.background = '#555';
-    generateBtn.style.cursor = 'not-allowed';
-  }
-  
   document.getElementById('tab-single').addEventListener('click', () => {
     currentTab = 'single';
     switchTab();

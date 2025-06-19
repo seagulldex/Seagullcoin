@@ -69,6 +69,19 @@ const transactionSchema = new mongoose.Schema({
     required: true
   },
 
+  // NFT-specific fields (optional)
+  nftId: {
+    type: String,
+    required: false
+  },
+  nftMetadataUri: {
+    type: String,
+    required: false
+  },
+  nftIssuer: {
+    type: String,
+    required: false
+  },
   
   metadata: {
     type: mongoose.Schema.Types.Mixed,

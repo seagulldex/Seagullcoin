@@ -182,36 +182,33 @@ async function updateWalletStatus() {
   const seagullWallet = localStorage.getItem('seagull_wallet');
   const indicator = document.getElementById('wallet-indicator');
 
-if (seagullWallet) {
-  indicator.textContent = '🟢 Connected';
-  indicator.classList.remove('red');
-  indicator.classList.add('green');
-  document.getElementById('logout-btn').style.display = 'inline-block';
+  if (xummWallet && seagullWallet) {
+    indicator.textContent = '🟢 Connected';
+    indicator.classList.remove('red');
+    indicator.classList.add('green');
+    document.getElementById('logout-btn').style.display = 'inline-block';
+    fetchNFTs(xummWallet); // or seagullWallet depending on which one your NFTs are tied to
 
-  // Use whichever wallet you prefer to fetch NFTs
-  fetchNFTs(seagullWallet || xummWallet);
+    // 🔒 Disable the wallet generator button
+    const generateBtn = document.getElementById('generate-wallet-btn');
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Wallet Already Created';
+    generateBtn.style.background = '#555';
+    generateBtn.style.cursor = 'not-allowed';
+  } else {
+    indicator.textContent = '🔴 Login';
+    indicator.classList.remove('green');
+    indicator.classList.add('red');
+    indicator.onclick = startLoginFlow;
 
-  // 🔒 Disable the wallet generator button
-  const generateBtn = document.getElementById('generate-wallet-btn');
-  generateBtn.disabled = true;
-  generateBtn.textContent = 'Wallet Already Created';
-  generateBtn.style.background = '#555';
-  generateBtn.style.cursor = 'not-allowed';
-
-} else {
-  indicator.textContent = '🔴 Login';
-  indicator.classList.remove('green');
-  indicator.classList.add('red');
-  indicator.onclick = startLoginFlow;
-
-  // Enable the button if no Seagull wallet exists
-  const generateBtn = document.getElementById('generate-wallet-btn');
-  generateBtn.disabled = false;
-  generateBtn.textContent = 'Generate Wallet & Seed';
-  generateBtn.style.background = '#00bfa5';
-  generateBtn.style.cursor = 'pointer';
+    // Enable the button if no wallet exists
+    const generateBtn = document.getElementById('generate-wallet-btn');
+    generateBtn.disabled = false;
+    generateBtn.textContent = 'Generate Wallet & Seed';
+    generateBtn.style.background = '#00bfa5';
+    generateBtn.style.cursor = 'pointer';
+  }
 }
-
 
 async function startLoginFlow() {
   const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');

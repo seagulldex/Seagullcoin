@@ -148,12 +148,6 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
-function stableStringify(obj) {
-  return JSON.stringify(obj, Object.keys(obj).sort());
-}
-
-const metadataString = stableStringify(metadataObj);
-const nftId = crypto.createHash('sha256').update(metadataString).digest('hex');
 
 
 // Generator Function

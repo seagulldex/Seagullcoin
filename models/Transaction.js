@@ -70,7 +70,7 @@ issuer: {
   type: String,
   required: false,
   trim: true
-}
+},
 
   // NFT-specific fields (optional)
   nftId: {

@@ -214,58 +214,28 @@ async function updateWalletStatus() {
   const indicator = document.getElementById('wallet-indicator');
   const generateBtn = document.getElementById('generate-wallet-btn');
 
+  // Reset color classes
   indicator.classList.remove('red', 'green', 'blue', 'purple');
 
-  const uuid = localStorage.getItem('xumm_payload_uuid');
-  if (!uuid) {
-    showLoggedOut();
-    return;
-  }
+  switch (getWalletState()) {
+    case 'layer2':
+      indicator.textContent = '🔵 Layer 2';
+      indicator.classList.add('blue');
+      indicator.onclick = null;
+      document.getElementById('logout-menu').style.display = 'inline-block';
+      fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+      generateBtn.style.display = 'none';
+      disableWalletButton('Wallet Already Created');
+      break;
 
-  try {
-    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${uuid}`);
-    const data = await res.json();
-
-    const seagullWallet = data.seagullWallet || null;
-    const xrplAccount = data.account || null;
-
-    if (!data.loggedIn || !seagullWallet) {
-      showMintMessage();
-      return;
-    }
-
-    localStorage.setItem('seagull_wallet', seagullWallet);
-
-    // 🟣 Default to SGLCN-X20
-    let label = '🟣 SGLCN-X20';
-    let colorClass = 'purple';
-
-    // 🔵 If on XRPL, show Layer 2
-    if (xrplAccount) {
-      label = '🔵 Layer 2';
-      colorClass = 'blue';
-    }
-
-    // 🔁 Fallback: if account is missing but seagullWallet matches known Layer 2 format
-    const layer2Prefix = 'r'; // Add a more specific condition if needed
-    if (!xrplAccount && seagullWallet.startsWith(layer2Prefix)) {
-      label = '🔵 Layer 2';
-      colorClass = 'blue';
-    }
-
-    indicator.textContent = label;
-    indicator.classList.add(colorClass);
-
-    document.getElementById('logout-menu').style.display = 'inline-block';
-    generateBtn.style.display = 'none';
-    disableWalletButton('Wallet Already Created');
-
-  } catch (error) {
-    console.error("Wallet check failed", error);
-    showLoggedOut();
-  }
-}
-
+    case 'seagull_only':
+      indicator.textContent = '🟣 SGLCN-X20';
+      indicator.classList.add('purple');
+      indicator.onclick = startLoginFlow; // ✅ Allow login trigger
+      document.getElementById('logout-menu').style.display = 'inline-block';
+      generateBtn.style.display = 'none';
+      disableWalletButton('Wallet Already Created');
+      break;
 
     case 'xumm_only':
      indicator.textContent = '🟢 Connected (XUMM)';

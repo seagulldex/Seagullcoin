@@ -1193,6 +1193,44 @@ app.get('/confirm-login', async (req, res) => {
   }
 });
 
+
+app.get('/verify-login', async (req, res) => {
+  try {
+    const uuid = req.session.payloadUUID;
+    if (!uuid) return res.status(400).json({ error: 'Missing session UUID' });
+
+    const result = await xumm.payload.get(uuid);
+
+    if (result.meta.signed !== true) {
+      return res.status(401).json({ status: 'Not signed yet' });
+    }
+
+    const xrpl_address = result.response.account;
+    const walletDoc = await UserWallet.findOne({ xrpl_address });
+
+    if (!walletDoc) {
+      return res.status(404).json({ error: 'Wallet not registered' });
+    }
+
+    // ✅ Store in session or JWT
+    req.session.user = {
+      wallet: walletDoc.wallet,             // SEAGULL...
+      xrpl_address: walletDoc.xrpl_address  // r...
+    };
+
+    res.status(200).json({
+      status: 'Signed',
+      wallet: walletDoc.wallet,
+      xrpl_address: walletDoc.xrpl_address
+    });
+
+  } catch (err) {
+    console.error('Error verifying login:', err);
+    res.status(500).json({ error: 'Login verification failed' });
+  }
+});
+
+
 // Protected route to check if the user is logged in before proceeding
 app.get('/dashboard', requireLogin, (req, res) => {
   // If this route is reached, the user is logged in (because of requireLogin middleware)

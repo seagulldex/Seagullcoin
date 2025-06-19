@@ -34,8 +34,8 @@ const WalletSchema = new mongoose.Schema({
   // ✅ Now required
   issuer: {
     type: String,
-    required: true,
-    trim: true,
+    required: false,
+    trim: false,
     uppercase: false,
     validate: {
       validator: isValidXrplAddress,
@@ -45,8 +45,8 @@ const WalletSchema = new mongoose.Schema({
 
   currencyCode: {
     type: String,
-    required: true,
-    trim: true,
+    required: false,
+    trim: false,
     uppercase: true,
     minlength: 3,
     maxlength: 10

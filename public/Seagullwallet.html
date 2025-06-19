@@ -195,9 +195,11 @@ const seagullWallet = localStorage.getItem('seagull_wallet');
   const hasXumm = !!localStorage.getItem('xumm_wallet_address');
   const hasSeagull = !!localStorage.getItem('seagull_wallet');
 
-  if (hasXumm) return 'xumm_only';
-if (hasSeagull) return 'seagull_only';
-return 'logged_out';
+  if (hasXumm && hasSeagull) return 'layer2';
+  if (hasSeagull && !hasXumm) return 'seagull_only';
+  if (hasXumm && !hasSeagull) return 'xumm_only';
+  return 'logged_out';
+    }
 
 
 

@@ -109,9 +109,6 @@ const token = randomBytes(32).toString('hex')
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
 
-const metadataString = JSON.stringify(metadataObj);
-const nftId = crypto.createHash('sha256').update(metadataString).digest('hex');
-
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 
 async function fetchIPFSMetadata(uri) {
@@ -151,7 +148,12 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
+function stableStringify(obj) {
+  return JSON.stringify(obj, Object.keys(obj).sort());
+}
 
+const metadataString = stableStringify(metadataObj);
+const nftId = crypto.createHash('sha256').update(metadataString).digest('hex');
 
 
 // Generator Function

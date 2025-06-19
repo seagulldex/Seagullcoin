@@ -244,6 +244,7 @@ document.getElementById('generate-wallet-btn').addEventListener('click', async (
           document.getElementById('wallet-seed').textContent = callbackData.seed;
 
           localStorage.setItem('xumm_wallet_address', callbackData.xrpl_address);
+          localStorage.setItem('seagull_wallet', callbackData.seagullWallet);
           localStorage.setItem('wallet_seed', callbackData.seed);
           updateWalletStatus();
 

@@ -31,6 +31,27 @@ const WalletSchema = new mongoose.Schema({
 
   xumm_uuid: { type: String, required: false },
 
+  // ✅ Now required
+  issuer: {
+    type: String,
+    required: true,
+    trim: true,
+    uppercase: true,
+    validate: {
+      validator: isValidXrplAddress,
+      message: props => `${props.value} is not a valid XRPL issuer address`
+    }
+  },
+
+  currencyCode: {
+    type: String,
+    required: true,
+    trim: true,
+    uppercase: true,
+    minlength: 3,
+    maxlength: 10
+  },
+
   // Token Genesis Metadata
   tokenName: { type: String, required: false, trim: true },
   tokenSymbol: { type: String, required: false, trim: true, uppercase: true },

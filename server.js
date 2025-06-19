@@ -1573,7 +1573,7 @@ app.get('/api/check-login', async (req, res) => {
 
 // server.js
 
-app.get('/check-login', async (req, res) 
+app.get('/check-login', async (req, res) => {
   const uuid = req.query.uuid;
   if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
 
@@ -1605,6 +1605,7 @@ app.get('/check-login', async (req, res)
     res.status(500).json({ error: 'Error checking login' });
   }
 });
+
 
 
 app.use('/fallback.png', express.static(path.join(__dirname, 'public/fallback.png')));

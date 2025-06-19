@@ -62,11 +62,11 @@ const transactionSchema = new mongoose.Schema({
   },
   currencyCode: {
     type: String,
-    required: true
+    required: false
   },
   issuer: {
     type: String,
-    required: true
+    required: false
   },
 
   // NFT-specific fields (optional)

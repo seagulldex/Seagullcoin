@@ -169,6 +169,7 @@ async function startLoginFlow() {
     if (loginStatus.loggedIn) {
       clearInterval(interval);
       localStorage.setItem('xumm_wallet_address', loginStatus.account);
+      localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
       localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
       updateWalletStatus();
     }

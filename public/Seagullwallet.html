@@ -362,6 +362,12 @@ document.getElementById('generate-wallet-btn').addEventListener('click', async (
   }
 });
 
+    function toggleLoginOptions() {
+  const loginOptions = document.getElementById('login-options');
+  loginOptions.classList.toggle('hidden');
+}
+
+
 function toggleLogoutMenu() {
     const menu = document.getElementById('logout-options');
     menu.classList.toggle('hidden');

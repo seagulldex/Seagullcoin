@@ -1175,6 +1175,24 @@ app.get('/confirm-login/:payloadUUID', async (req, res) => {
   }
 });
 
+app.get('/confirm-login', async (req, res) => {
+  try {
+    const { payloadUUID } = req.params;
+    const { data: payload } = await xummApi.payload.get(payloadUUID);
+
+    if (payload.meta.signed) {
+      const walletAddress = payload.response.account;
+      req.session.walletAddress = walletAddress;
+      res.json({ success: true, walletAddress });
+    } else {
+      res.json({ success: false, message: 'Payload not signed' });
+    }
+  } catch (error) {
+    console.error('Login confirmation failed:', error);
+    res.status(500).json({ error: 'Login confirmation error' });
+  }
+});
+
 // Protected route to check if the user is logged in before proceeding
 app.get('/dashboard', requireLogin, (req, res) => {
   // If this route is reached, the user is logged in (because of requireLogin middleware)

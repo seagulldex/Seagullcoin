@@ -77,6 +77,7 @@ import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
 import Transaction from './models/Transaction.js';
 
+
 // ===== Init App and Env =====
 dotenv.config();
 
@@ -1586,7 +1587,7 @@ app.get('/check-login', async (req, res) => {
       const xrplAddress = payload.response.account;
 
       // ✅ Look up the wallet
-      const userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress });
+      const Wallet = await Wallet.findOne({ xrpl_address: xrplAddress });
 
       if (!userWallet) {
         return res.status(404).json({ error: 'Wallet not found for this XRPL address' });
@@ -1595,8 +1596,8 @@ app.get('/check-login', async (req, res) => {
       res.json({
         loggedIn: true,
         account: xrplAddress,
-        seagullWallet: userWallet.wallet,
-        user: userWallet,
+        seagullWallet: Wallet.wallet,
+        user: Wallet,
         uuid
       });
     } else {

@@ -431,6 +431,21 @@ function displayNFTs() {
     burnButton.onclick = () => burnNFT(nft.NFTokenID);
     card.appendChild(burnButton);
 
+    function enableWalletButton() {
+  const btn = document.getElementById('generate-wallet-btn');
+  btn.disabled = false;
+  btn.textContent = 'Generate Wallet & Seed';
+  btn.style.background = '#00bfa5';
+  btn.style.cursor = 'pointer';
+}
+
+function disableWalletButton(message = 'Disabled') {
+  const btn = document.getElementById('generate-wallet-btn');
+  btn.disabled = true;
+  btn.textContent = message;
+  btn.style.background = '#ccc';
+  btn.style.cursor = 'not-allowed';
+}
     
     // Burn NFT function
   async function burnNFT(nftId) {

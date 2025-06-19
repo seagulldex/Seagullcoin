@@ -130,6 +130,9 @@
         if (loginStatus.loggedIn) {
           clearInterval(interval);
           localStorage.setItem('xumm_wallet_address', loginStatus.account);
+        if (loginStatus.seagullWallet) {
+          localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
+          }
           updateWalletStatus();
         }
       }, 3000);

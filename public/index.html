@@ -100,6 +100,9 @@
     </section>
 
     <div id="user-info">
+      <p>XUMM Wallet: <span id="xumm-wallet-address"></span></p>
+<p>SEAGULL Wallet: <span id="seagull-wallet-address"></span></p>
+
       <p id="user-balance">Loading balance...</p>
       <div id="user-nfts">Loading NFTs...</div>
     </div>
@@ -168,13 +171,19 @@
       setupTrustlineButton();
     });
 
+    
     function loadWalletFromStorage() {
-      wallet = localStorage.getItem('xumm_wallet_address');
-      if(wallet) {
-        document.getElementById('wallet-address').textContent = wallet;
-      }
-    }
+  const xummWallet = localStorage.getItem('xumm_wallet_address');
+  const seagullWallet = localStorage.getItem('seagull_wallet');
 
+  if (xummWallet) {
+    document.getElementById('xumm-wallet-address').textContent = xummWallet;
+  }
+
+  if (seagullWallet) {
+    document.getElementById('seagull-wallet-address').textContent = seagullWallet;
+  }
+}
     function updateWalletUI() {
       const indicator = document.getElementById('wallet-indicator');
       if(wallet) {
@@ -213,6 +222,7 @@
             clearInterval(interval);
             wallet = loginStatus.account;
             localStorage.setItem('xumm_wallet_address', wallet);
+            
             localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
             document.getElementById('wallet-address').textContent = wallet;
             updateWalletUI();

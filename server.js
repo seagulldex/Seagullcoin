@@ -1194,6 +1194,28 @@ app.get('/confirm-login', async (req, res) => {
   }
 });
 
+app.get('/check-login', async (req, res) => {
+  const uuid = req.query.uuid;
+  if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
+
+  try {
+    const payload = await xumm.payload.get(uuid);
+    if (payload.meta.signed && payload.response.account) {
+      res.json({
+        loggedIn: true,
+        account: payload.response.account,
+        uuid
+      });
+    } else {
+      res.json({ loggedIn: false });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error checking login' });
+  }
+});
+
+
 
 app.get('/verify-login', async (req, res) => {
   try {

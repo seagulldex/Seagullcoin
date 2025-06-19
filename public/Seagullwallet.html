@@ -220,7 +220,7 @@ async function updateWalletStatus() {
       indicator.textContent = '🟣 SGLCN-X20';
       indicator.classList.add('purple');
       indicator.onclick = null;
-      document.getElementById('logout-btn').style.display = 'inline-block';
+      document.getElementById('logout-menu').style.display = 'inline-block';
       generateBtn.style.display = 'none';
       disableWalletButton('Wallet Already Created');
       break;
@@ -229,7 +229,7 @@ async function updateWalletStatus() {
       indicator.textContent = '🟢 Connected (XUMM)';
       indicator.classList.add('green');
       indicator.onclick = null;
-      document.getElementById('logout-btn').style.display = 'inline-block';
+      document.getElementById('logout-menu').style.display = 'inline-block';
       generateBtn.style.display = 'inline-block';
       enableWalletButton();
       break;
@@ -238,7 +238,7 @@ async function updateWalletStatus() {
       indicator.textContent = '🔴 Login';
       indicator.classList.add('red');
       indicator.onclick = startLoginFlow;
-      document.getElementById('logout-btn').style.display = 'none';
+      document.getElementById('logout-menu').style.display = 'none';
       generateBtn.style.display = 'inline-block';
       enableWalletButton();
   }

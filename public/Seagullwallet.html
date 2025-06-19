@@ -254,7 +254,7 @@ async function updateWalletStatus() {
 
 
     default:
-      indicator.textContent = '🔴 Login';
+      indicator.textContent = '🔴 Logged Out';
       indicator.classList.add('red');
       indicator.onclick = startLoginFlow;
       document.getElementById('logout-menu').style.display = 'none';

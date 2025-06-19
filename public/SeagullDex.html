@@ -2,569 +2,509 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Trading - SGLCN-X20</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wallet and Secret - SGLCN-X20</title>
+  <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="header.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
   <style>
+    .nft-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      padding: 20px;
+    }
+    .nft-card {
+      border: 1px solid #444;
+      border-radius: 12px;
+      padding: 14px;
+      background: #1e1e1e;
+      color: #fff;
+      text-align: center;
+    }
+    .nft-card img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    #logout-btn {
+      display: none;
+    }
     .green { color: green; }
     .red { color: red; }
-    .orderbook-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
+    .trait {
+      font-size: 0.9em;
+      text-align: left;
+      margin: 2px 0;
     }
-    .orderbook-table th,
-    .orderbook-table td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: right;
-    }
-    .orderbook-header {
-      font-weight: bold;
-      margin-top: 20px;
-    }
-    .orderbook-scroll {
-      max-height: 400px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      margin-top: 10px;
-      border-radius: 4px;
-    
-    }
-    #price-value, #price-xau {
-  font-weight: bold;
-}
-    #logout-btn {
-  background-color: #ff4d4d;
+    .active-tab {
+  background: #00bfa5;
   color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
   font-weight: bold;
-  transition: background-color 0.3s ease;
 }
-#logout-btn:hover {
-  background-color: #e04343;
-}
-
-
+    button {
+      margin: 5px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      background: #00bfa5;
+      color: white;
+      cursor: pointer;
+    }
+    .seagull-spinner {
+      width: 50px;
+    }
+    #wallet-table td {
+    word-break: break-all; /* wrap long strings */
+    max-width: 600px;
+      }
+    @media screen and (max-width: 600px) {
+    #wallet-table {
+      font-size: 0.45em;
+    }
   </style>
 </head>
 <body>
-  <header style="padding: 10px;">
-    <span id="wallet-indicator" class="red" title="Click to login" onclick="startLoginFlow()">🔴 Login</span>
-    <button id="logout-btn" style="display:none; margin-left: 10px;">Logout</button>
-  </header>
+  <div id="top-bar">
+    <div style="flex:1;">
+      <button id="logout-btn">Logout</button>
+    </div>
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
+      </div>
+    <div>
+  </div>
 
   <header>
     <nav>
       <ul>
         <li><a href="index.html">Home</a></li>
+        <li><a href="SeagullDex.html">Trading</a></li>
         <li><a href="stake.html">Stake</a></li>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullmansionsV2.html" target="_blank">SGLMN V2 (mint)</a></li>
-        <li><a href="profile.html">Profile</a></li>
+        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
       </ul>
     </nav>
   </header>
 
-  <main style="padding: 20px;">
-    <h1> SeagullCoin Dex </h1>
-  <div style="display: flex; align-items: center; margin-bottom: 20px;">
-  <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" alt="SGLCN Logo" width="50" height="50" style="border-radius: 50%; margin-right: 12px;">
-  <div style="display: flex; flex-direction: column; font-size: 1.1em; line-height: 1.2;">
-    <div><strong>SGLCN/XRP:</strong> <span id="price-value">Loading...</span></div>
-    <div style="font-size: 0.9em; color: #ccc;"><strong>SGLCN/XAU:</strong> <span id="price-xau">Loading...</span></div>
+  <main>
+    <h1>Generate SGLCN-X20 wallet</h1>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 20px; width: 100%; max-width: 500px;">
+  <h2>Wallet Generator</h2>
+
+  <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+
+    <div style="display: flex; flex-direction: row; justify-content: space-between; flex-wrap: wrap; color: white; background: #222; padding: 10px; border-radius: 6px;">
+      <strong style="min-width: 80px;">Wallet:</strong>
+      <span id="wallet-address" style="
+  flex: 1;
+  text-align: right;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  white-space: normal;
+">SEAGULLxxxxxxxxxxxxx</span>
+
+
+    <div style="display: flex; flex-direction: row; justify-content: space-between; flex-wrap: wrap; color: white; background: #222; padding: 10px; border-radius: 6px;">
+      <strong style="min-width: 80px;">Seed:</strong>
+      <span id="wallet-seed" style="
+  flex: 1;
+  text-align: right;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  white-space: normal;
+">xxxxxxxxxxxxxxxxxxxx</span>
+
+
   </div>
 
-    </div>
-    <h2>Price Chart SGLCN/XRP:XAU</h2>
-<div>
-  <label for="timeframe">View:</label>
-  <select id="timeframe" onchange="loadChartData()">
-    <option value="1D">1 Day</option>
-    <option value="1W">1 Week</option>
-    <option value="1M" selected>1 Month</option>
-    <option value="ALL">All Time</option>
-  </select>
+  <button id="generate-wallet-btn">Generate Wallet & Seed</button>
 </div>
-<div style="width: 100%; max-width: 1000px; margin: auto;">
-  <canvas id="priceChart" height="350" style="width: 105%; margin-top: 20px;"></canvas>
-</div>
 
-<!-- Add this right below your chart container and above #orderbook -->
-<!-- Add this right below your chart container and above #orderbook -->
-<div id="swap-section" style="max-width: 900px; margin: 30px auto; border: 1px solid #000; border-radius: 8px; padding: 15px; background: #black; display: flex; flex-wrap: wrap; gap: 15px; color: white;">
-  <div style="flex: 1; min-width: 120px;">
-    <label for="swap-from"><strong>From</strong></label>
-    <select id="swap-from" style="width: 100%; padding: 6px; background-color: black; color: white; border: 1px solid #444;">
-      <option value="XRP">XRP</option>
-      <option value="SeagullCoin">SeagullCoin</option>
-      <option value="XAU">XAU</option>
-    </select>
-  </div>
-  <div style="flex: 1; min-width: 120px;">
-    <label for="swap-to"><strong>To</strong></label>
-    <select id="swap-to" style="width: 100%; padding: 6px; background-color: black; color: white; border: 1px solid #444;">
-      <option value="SeagullCoin">SeagullCoin</option>
-      <option value="XRP">XRP</option>
-      <option value="XAU">XAU</option>
-    </select>
-  </div>
-  
-    <div style="flex: 1; min-width: 100px;">
-  <label for="swap-price" id="receive-label"><strong><span id='from-asset-label'>From</span> Cost</strong></label>
-  <input
-    type="number"
-    id="swap-price"
-    placeholder="Fetching..."
-    readonly
-    style="width: 90%; padding: 6px; background-color: black; color: white; border: 1px solid #444;" />
-  </div>
-  
-  <div style="flex: 1; min-width: 100px;">
-   <label for="swap-amount" id="recieve-label"><strong>Receive</strong></label>
-    <input type="number" id="swap-amount" placeholder="Purchasing" style="width: 90%; padding: 6px; background-color: black; color: white; border: 1px solid #444;" />
-  </div>
-
-
-  <div style="width: 100%; text-align: center; margin-top: 20px;">
-    <button id="swap-btn"
-      style="padding: 10px 30px; font-size: 1.1em; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer;">
-      Squak
-    </button>
-  </div>
-  <div id="swap-result" style="margin-top: 20px; text-align: center; color: white;"></div>
-    </div>
-
-
-    <div id="orderbook">
-      <div class="orderbook-header">Order Book</div>
-      <div class="orderbook-scroll">
-        <table class="orderbook-table" aria-label="Order Book">
-          <thead>
-            <tr>
-              <th class="green">Bid Price (XRP)</th>
-              <th class="green">Bid Amount (SGLCN)</th>
-              <th class="red">Ask Price (XRP)</th>
-              <th class="red">Ask Amount (SGLCN)</th>
-            </tr>
-          </thead>
-          <tbody id="orderbook-body"></tbody>
-        </table>
-      </div>
-    </div>
-
-    
+  </main>
 
   <script>
-    function updateWalletStatus() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      const indicator = document.getElementById('wallet-indicator');
-      const logoutBtn = document.getElementById('logout-btn');
-      if (wallet) {
-        indicator.textContent = '🟢 Connected';
-        indicator.classList.remove('red');
-        indicator.classList.add('green');
-        indicator.title = 'Logged in';
-        indicator.onclick = null;
-        logoutBtn.style.display = 'inline-block';
-      } else {
-        indicator.textContent = '🔴 Login';
-        indicator.classList.remove('green');
-        indicator.classList.add('red');
-        indicator.title = 'Click to login';
-        indicator.onclick = startLoginFlow;
-        logoutBtn.style.display = 'none';
-      }
-    }
+let allNFTs = [];
+let currentIndex = 0;
+const nftsPerPage = 20;
+let currentTab = 'single'; // or 'collections'
 
-    async function startLoginFlow() {
-      try {
-        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
-        const data = await res.json();
-        window.open(data.payloadURL, "_blank");
-        const interval = setInterval(async () => {
-          const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
-          const loginStatus = await check.json();
-          if (loginStatus.loggedIn) {
-            clearInterval(interval);
-            localStorage.setItem('xumm_wallet_address', loginStatus.account);
-            updateWalletStatus();
-          }
-        }, 3000);
-      } catch (err) {
-        alert('Login failed: ' + err.message);
-      }
-    }
+window.addEventListener('DOMContentLoaded', () => {
+  updateWalletStatus();
+  
+const seagullWallet = localStorage.getItem('seagull_wallet');
+  const generateBtn = document.getElementById('generate-wallet-btn');
+  if (seagullWallet) {
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Wallet Already Created';
+    generateBtn.style.background = '#555';
+    generateBtn.style.cursor = 'not-allowed';
+  }
+  
+  document.getElementById('tab-single').addEventListener('click', () => {
+    currentTab = 'single';
+    switchTab();
+  });
 
-    document.getElementById('logout-btn').onclick = () => {
-      localStorage.removeItem('xumm_wallet_address');
+  document.getElementById('tab-collections').addEventListener('click', () => {
+    currentTab = 'collections';
+    switchTab();
+  });
+
+  document.getElementById('prev-page').addEventListener('click', () => {
+    if (currentIndex > 0) {
+      currentIndex -= nftsPerPage;
+      displayNFTs();
+    }
+  });
+
+  document.getElementById('next-page').addEventListener('click', () => {
+    if (currentIndex + nftsPerPage < allNFTs.length) {
+      currentIndex += nftsPerPage;
+      displayNFTs();
+    }
+  });
+});
+
+function switchTab() {
+  document.getElementById('tab-single').classList.remove('active-tab');
+  document.getElementById('tab-collections').classList.remove('active-tab');
+  document.getElementById(`tab-${currentTab}`).classList.add('active-tab');
+  currentIndex = 0;
+  displayNFTs();
+}
+
+async function updateWalletStatus() {
+  const xummWallet = localStorage.getItem('xumm_wallet_address');
+  const seagullWallet = localStorage.getItem('seagull_wallet');
+  const indicator = document.getElementById('wallet-indicator');
+
+  if (xummWallet && seagullWallet) {
+    indicator.textContent = '🟢 Connected';
+    indicator.classList.remove('red');
+    indicator.classList.add('green');
+    document.getElementById('logout-btn').style.display = 'inline-block';
+    fetchNFTs(xummWallet); // or seagullWallet depending on which one your NFTs are tied to
+
+    // 🔒 Disable the wallet generator button
+    const generateBtn = document.getElementById('generate-wallet-btn');
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Wallet Already Created';
+    generateBtn.style.background = '#555';
+    generateBtn.style.cursor = 'not-allowed';
+  } else {
+    indicator.textContent = '🔴 Login';
+    indicator.classList.remove('green');
+    indicator.classList.add('red');
+    indicator.onclick = startLoginFlow;
+
+    // Enable the button if no wallet exists
+    const generateBtn = document.getElementById('generate-wallet-btn');
+    generateBtn.disabled = false;
+    generateBtn.textContent = 'Generate Wallet & Seed';
+    generateBtn.style.background = '#00bfa5';
+    generateBtn.style.cursor = 'pointer';
+  }
+}
+
+async function startLoginFlow() {
+  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
+  const data = await res.json();
+  const payloadUUID = data.payloadUUID;
+
+  window.open(data.payloadURL, "_blank");
+
+  const interval = setInterval(async () => {
+    const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${payloadUUID}`);
+    const loginStatus = await check.json();
+
+    if (loginStatus.loggedIn) {
+      clearInterval(interval);
+
+      // 🔐 Save both XRPL and SEAGULL wallet info
+      localStorage.setItem('xumm_wallet_address', loginStatus.account);
+      localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
+      localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
+      localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
+
       updateWalletStatus();
-    };
+    }
+  }, 3000);
+}
 
-    function formatPrice(price) {
-      return !price || isNaN(price) ? '' : Number(price).toFixed(6);
+
+document.getElementById('generate-wallet-btn').addEventListener('click', async () => {
+  try {
+    // 1. Initialize XUMM sign-in
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/wallets/init-signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+
+    if (!data.success || !data.xumm?.uuid || !data.xumm?.link) {
+      alert("Failed to start wallet sign-in process.");
+      return;
     }
 
-    function formatAmount(amount) {
-      return !amount || isNaN(amount) ? '' : Number(amount).toLocaleString(undefined, {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
+    // 2. Open XUMM sign URL in new tab
+    window.open(data.xumm.link, "_blank");
+
+    // 3. Poll for completion
+    const uuid = data.xumm.uuid;
+    const interval = setInterval(async () => {
+      try {
+        const callbackRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/wallets/xumm-callback/${uuid}`);
+        const callbackData = await callbackRes.json();
+
+        if (callbackData.success && callbackData.wallet && callbackData.seed) {
+          clearInterval(interval);
+
+          // 4. Save and display wallet + seed
+          document.getElementById('wallet-address').textContent = callbackData.wallet;
+          document.getElementById('wallet-seed').textContent = callbackData.seed;
+
+          localStorage.setItem('xumm_wallet_address', callbackData.xrpl_address);
+          localStorage.setItem('seagull_wallet', callbackData.seagullWallet);
+          localStorage.setItem('wallet_seed', callbackData.seed);
+          updateWalletStatus();
+
+          alert(`Wallet Created!\n\nWallet: ${callbackData.wallet}\n\nIMPORTANT: Save your seed securely:\n${callbackData.seed}`);
+        }
+      } catch (pollErr) {
+        console.error("Polling error:", pollErr);
+      }
+    }, 2500);
+
+  } catch (err) {
+    console.error('Error generating wallet:', err);
+    alert("Error generating wallet.");
+  }
+});
+
+
+
+function convertIPFSToURL(ipfsUrl) {
+  if (!ipfsUrl) return '';
+  return ipfsUrl.replace(/^ipfs:\/\//, 'https://ipfs.io/ipfs/');
+}
+
+function displayNFTs() {
+  const container = document.getElementById('nft-container');
+  container.innerHTML = '';
+
+  const items = allNFTs.slice(currentIndex, currentIndex + nftsPerPage);
+  for (const nft of items) {
+    const metadata = nft.metadata || {};
+    const card = document.createElement('div');
+    card.className = "nft-card";
+
+    const img = document.createElement('img');
+    img.src = convertIPFSToURL(metadata.image);
+    img.alt = metadata.name || "Unnamed NFT";
+    card.appendChild(img);
+
+    card.innerHTML += `
+      <h3>${metadata.name || "Unnamed NFT"}</h3>
+      <p>${metadata.description || "No description"}</p>
+      ${metadata.collection ? `<p><strong>Collection:</strong> ${metadata.collection.name}</p>` : ''}
+    `;
+
+    if (Array.isArray(metadata.attributes)) {
+      metadata.attributes.forEach(attr => {
+        const trait = document.createElement('div');
+        trait.className = "trait";
+        trait.textContent = `${attr.trait_type} : ${attr.value}`;
+        card.appendChild(trait);
       });
     }
-    
-    let chart;
-    
-  async function loadChartData() {
-    const timeframe = document.getElementById('timeframe').value;
-    const resXRP = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xrp?range=${timeframe}`);
-    const resXAU = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau?range=${timeframe}`);
-    const dataXRP = await resXRP.json();
-    const dataXAU = await resXAU.json();
 
-    const format = (data) =>
-      data.map(point => ({
-        x: new Date(point.timestamp),
-        y: point.price
-      }));
 
-    const xrpData = format(dataXRP);
-    const xauData = format(dataXAU);
 
-    const ctx = document.getElementById('priceChart').getContext('2d');
+    async function transferNFT(nftId) {
+      const recipient = prompt("Enter the wallet address to transfer this NFT to:");
+      const sender = localStorage.getItem("xumm_wallet_address");
 
-    if (chart) chart.destroy(); // Clear previous chart
-
-    chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        datasets: [
-          {
-            label: 'SGLCN/XRP',
-            data: xrpData,
-            borderColor: 'rgba(0,123,255,1)',
-            yAxisID: 'y-xrp',
-            tension: 0.3
-          },
-          {
-            label: 'SGLCN/XAU',
-            data: xauData,
-            borderColor: 'rgba(255,193,7,1)',
-            yAxisID: 'y-xau',
-            tension: 0.3
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: {
-            type: 'time',
-            time: {
-              tooltipFormat: 'PPpp',
-              unit: timeframe === '1D' ? 'hour' : 'day'
-            },
-            title: {
-              display: true,
-              text: 'Date'
-            }
-          },
-          'y-xrp': {
-            type: 'linear',
-            position: 'left',
-            title: {
-              display: true,
-              text: 'XRP'
-            }
-          },
-          'y-xau': {
-            type: 'linear',
-            position: 'right',
-            grid: {
-              drawOnChartArea: false
-            },
-            title: {
-              display: true,
-              text: 'XAU'
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            display: true
-          }
-        }
+      if (!recipient || !sender) {
+        alert("Transfer cancelled or wallet not connected.");
+        return;
       }
-    });
+
+      try {
+        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/transfer-nft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: sender,
+            nftId,
+            recipientAddress: recipient
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          alert("Please sign the transfer in your XUMM app.");
+          window.open(data.next.always, "_blank");
+        } else {
+          alert("Transfer failed: " + data.message);
+        }
+      } catch (err) {
+        console.error("Transfer error:", err);
+        alert("An error occurred during transfer.");
+      }
+    }
+
+
+    // Transfer Button
+    const transferButton = document.createElement('button');
+    transferButton.textContent = 'Transfer NFT';
+    transferButton.onclick = () => transferNFT(nft.NFTokenID);
+    card.appendChild(transferButton);
+    
+        // Burn Button
+    const burnButton = document.createElement('button');
+    burnButton.textContent = '🔥 Burn NFT';
+    burnButton.onclick = () => burnNFT(nft.NFTokenID);
+    card.appendChild(burnButton);
+
+    
+    // Burn NFT function
+  async function burnNFT(nftId) {
+  const wallet = localStorage.getItem("xumm_wallet_address");
+  if (!wallet) {
+    alert("Please connect your wallet first.");
+    return;
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    updateWalletStatus();
-    loadChartData();
-  });
+  const confirmBurn = confirm("Are you sure you want to burn this NFT? This action cannot be undone.");
+  if (!confirmBurn) return;
 
-
-
-    async function updateCurrentPrice() {
-      try {
-        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/orderbook');
-        const data = await res.json();
-        const bids = Array.isArray(data.bids) ? data.bids.slice(0, 100) : [];
-        const asks = Array.isArray(data.asks) ? data.asks.slice(0, 100) : [];
-
-        asks.sort((a, b) => parseFloat(a.price) - parseFloat(b.price)).reverse();
-        bids.sort((a, b) => parseFloat(b.price) - parseFloat(a.price)).reverse();
-
-        const tbody = document.getElementById('orderbook-body');
-        tbody.innerHTML = '';
-
-        const maxRows = Math.max(asks.length, bids.length);
-        for (let i = 0; i < maxRows; i++) {
-          const ask = asks[i];
-          const bid = bids[i];
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td class="green">${ask ? formatPrice(ask.price) : ''}</td>
-            <td class="green">${ask ? formatAmount(ask.amount) : ''}</td>
-            <td class="red">${bid ? formatPrice(bid.price) : ''}</td>
-            <td class="red">${bid ? formatAmount(bid.amount) : ''}</td>
-          `;
-          tbody.appendChild(row);
-        }
-
-        if (tbody.children.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4">No orderbook data available</td></tr>`;
-        }
-      } catch (err) {
-        console.error('Orderbook error:', err);
-        document.getElementById('orderbook-body').innerHTML = `<tr><td colspan="4">Failed to load orderbook</td></tr>`;
-      }
-    }
-
-    async function fetchLiveSGLCNPrice() {
-      try {
-        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xrp');
-        const data = await res.json();
-        if (data && data.sglcn_to_xrp) {
-          const latestPrice = parseFloat(data.sglcn_to_xrp).toFixed(6);
-          document.getElementById('price-value').textContent = `${latestPrice} XRP`;
-        } else {
-          document.getElementById('price-value').textContent = 'Unavailable';
-        }
-      } catch (err) {
-        console.error('Failed to fetch live SGLCN price:', err);
-        document.getElementById('price-value').textContent = 'Error';
-      }
-    }
-    
-    async function fetchLiveSGLCNXAUPrice() {
   try {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau');
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/burn-nft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: wallet, nftId })
+    });
+
     const data = await res.json();
-    if (data && data.sglcn_to_xau) {
-      const latestPriceXAU = parseFloat(data.sglcn_to_xau).toFixed(6);
-      document.getElementById('price-xau').textContent = `${latestPriceXAU} XAU`;
+    if (data.success) {
+      alert("Please sign the burn transaction in your XUMM app.");
+      window.open(data.next.always, "_blank");
     } else {
-      document.getElementById('price-xau').textContent = 'Unavailable';
+      alert("Burn failed: " + data.message);
     }
   } catch (err) {
-    console.error('Error fetching SGLCN XAU price:', err);
-    document.getElementById('price-xau').textContent = 'Error';
+    console.error("Burn error:", err);
+    alert("An error occurred during burn.");
   }
 }
 
-    async function placeBuyOrder() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet) return alert("Please log in first.");
-      const price = parseFloat(document.getElementById('buy-price').value);
-      const amount = parseFloat(document.getElementById('buy-amount').value);
-      if (isNaN(price) || isNaN(amount) || price <= 0 || amount <= 0) {
-        return alert("Enter valid price and amount.");
-      }
 
-      try {
-        const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/place-buy-offer", {
+    // Sell Button
+    if (nft.listed || nft.sellOffer) {
+      const priceLabel = document.createElement('p');
+      priceLabel.textContent = `Price: ${nft.sellOffer || nft.listed.price} SeagullCoin`;
+      priceLabel.style.color = "green";
+      priceLabel.style.fontWeight = "bold";
+      card.appendChild(priceLabel);
+    } else {
+      const sellButton = document.createElement('button');
+      sellButton.textContent = 'Sell (SGLCN)';
+      sellButton.onclick = async () => {
+        const amount = prompt("Enter price in SeagullCoin:");
+        if (!amount) return;
+
+        const response = await fetch("/sell-nft", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet, price, amount })
+          body: JSON.stringify({
+            walletAddress: localStorage.getItem("xumm_wallet_address"),
+            nftId: nft.NFTokenID,
+            price: amount
+          }),
         });
-        const result = await res.json();
-        if (result.success) {
-          alert("Buy offer submitted successfully.");
-          updateCurrentPrice();
+
+        const result = await response.json();
+        if (result?.next?.always) {
+          window.open(result.next.always, "_blank");
         } else {
-          alert("Offer failed: " + (result.error || "Unknown error"));
+          alert("Error creating sell offer.");
+        }
+      };
+      card.appendChild(sellButton);
+    }
+
+    container.appendChild(card);
+  }
+}
+      // Buying button logic  
+    if (nft.sellOffer && nft.sellOffer.owner !== localStorage.getItem('xumm_wallet_address')) {
+  const buyButton = document.createElement('button');
+  buyButton.textContent = 'Buy with SeagullCoin';
+  buyButton.onclick = async () => {
+    try {
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/buy-nft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: localStorage.getItem('xumm_wallet_address'),
+          nftId: nft.NFTokenID
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert("Please approve purchase in your XUMM app.");
+        window.open(data.next.always, "_blank");
+      } else {
+        alert("Purchase failed: " + data.message);
+      }
+    } catch (err) {
+      console.error("Buy error:", err);
+      alert("An error occurred during purchase.");
+    }
+  };
+  card.appendChild(buyButton);
+}
+
+    
+    // Burn Button
+    const burnButton = document.createElement('button');
+    burnButton.textContent = '🔥 Burn NFT';
+    burnButton.style.background = '#ff3b3b';
+    burnButton.onclick = async () => {
+      const confirmBurn = confirm("Are you sure you want to permanently burn this NFT?");
+      if (!confirmBurn) return;
+
+      const sender = localStorage.getItem("xumm_wallet_address");
+      try {
+        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/burn-nft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: sender,
+            nftId: nft.NFTokenID
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          alert("Please sign the burn request in your XUMM app.");
+          window.open(data.next.always, "_blank");
+        } else {
+          alert("Burn failed: " + data.message);
         }
       } catch (err) {
-        alert("Error submitting offer: " + err.message);
+        console.error("Burn error:", err);
+        alert("An error occurred while trying to burn the NFT.");
       }
-    }
-    
-  async function getRatePreview(from, to) {
-  try {
-    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/rate-preview?from=${from}&to=${to}`);
-    if (!res.ok) {
-      throw new Error(`HTTP error! Status: ${res.status}`);
-    }
-    const data = await res.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching rate preview:", error);
-    return null;
-  }
-}
-
-async function updateRatePreview() {
-  const from = document.getElementById('swap-from').value;
-  const to = document.getElementById('swap-to').value;
-
-  if (!from || !to) {
-    document.getElementById('rate-preview').textContent = '';
-    return;
-  }
-
-  document.getElementById('rate-preview').textContent = 'Loading rate preview...';
-
-  const rateData = await getRatePreview(from, to);
-
-  if (rateData && rateData.rate) {
-    // Update swap-price input
-    document.getElementById('swap-price').value = rateData.rate;
-  } else {
-    document.getElementById('swap-price').value = 'Unavailable';
-  }
-}
-
-['swap-from', 'swap-to'].forEach(id => {
-  document.getElementById(id).addEventListener('change', updateRatePreview);
-});
-
-document.getElementById('swap-btn').onclick = async () => {
-  const wallet = localStorage.getItem('xumm_wallet_address');
-  if (!wallet) return alert("Please log in first.");
-
-  const from = document.getElementById('swap-from').value;
-  const to = document.getElementById('swap-to').value;
-  const amount = parseFloat(document.getElementById('swap-amount').value);
-
-  if (!amount || amount <= 0) return alert("Enter a valid amount");
-
-  const swapBtn = document.getElementById('swap-btn');
-  swapBtn.disabled = true;
-  swapBtn.textContent = 'Swapping...';
-
-  try {
-    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, amount, wallet })
-    });
-
-    const result = await res.json();
-
-    if (result.payloadURL) {
-      window.open(result.payloadURL, "_blank");
-    } else {
-      alert("Swap failed: " + result.message);
-    }
-  } catch (err) {
-    alert("Swap error: " + err.message);
-  } finally {
-    swapBtn.disabled = false;
-    swapBtn.textContent = 'Swap';
-  }
-};
-
-// Initialize preview on page load (if applicable)
-updateRatePreview();
-
-
-    const toCurrency = document.getElementById('swap-to');
-  const amountLabel = document.getElementById('amount-label');
-
-  function updateAmountLabel() {
-    const selected = toCurrency.value;
-    amountLabel.innerHTML = `<strong>${selected} Amount</strong>`;
-  }
-
-  toCurrency.addEventListener('change', updateAmountLabel);
-
-  // Initialize on load
-  window.addEventListener('DOMContentLoaded', updateAmountLabel);
-    
-    document.getElementById('swap-btn').addEventListener('click', async () => {
-  const from = document.getElementById('swap-from').value;
-  const to = document.getElementById('swap-to').value;
-  const amount = document.getElementById('swap-amount').value;
-  const wallet = localStorage.getItem('xumm_wallet_address');
-
-  if (!wallet) {
-    alert('Please connect your wallet first.');
-    return;
-  }
-
-  if (!amount || isNaN(amount) || amount <= 0) {
-    alert('Please enter a valid amount to swap.');
-    return;
-  }
-
-  try {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, amount, wallet })
-    });
-
-    const data = await res.json();
-
-    if (data.payloadURL) {
-      window.open(data.payloadURL, '_blank');
-    } else {
-      alert('Error initiating swap: ' + (data.error || 'Unknown error.'));
-    }
-  } catch (err) {
-    alert('Swap failed: ' + err.message);
-  }
-});
-
-  document.getElementById('swap-from').addEventListener('change', function () {
-    document.getElementById('from-asset-label').textContent = this.value;
-  });
-
-  // Trigger initial value
-  document.getElementById('from-asset-label').textContent = document.getElementById('swap-from').value;
-
-    function updateLabels() {
-  const fromAsset = document.getElementById('swap-from').value;
-  const toAsset = document.getElementById('swap-to').value;
-  document.getElementById('from-asset-label').textContent = fromAsset;
-  document.getElementById('amount-label').innerHTML = `<strong>You Will Receive (${toAsset})</strong>`;
-    }
-    
-    
-    fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
-    updateCurrentPrice();            // Orderbook data
-    fetchLiveSGLCNXAUPrice();  
-    setInterval(fetchLiveSGLCNXAUPrice,30000);            // Fetch XAU price
-    setInterval(fetchLiveSGLCNPrice, 30000);
-    setInterval(updateCurrentPrice, 30000);
-    loadChartData();
-    loadOrderBook();
-    updateWalletStatus();
-  </script>
+    };
+    card.appendChild(burnButton);
+</script>
 </body>
-</html>
-
-
-
-
-
-
-
-
-
-
-
+  </html>

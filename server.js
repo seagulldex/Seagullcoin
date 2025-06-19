@@ -1176,61 +1176,44 @@ app.get('/confirm-login/:payloadUUID', async (req, res) => {
   }
 });
 
-app.get('/confirm-login', async (req, res) => {
-  try {
-    const { payloadUUID } = req.params;
-    const { data: payload } = await xummApi.payload.get(payloadUUID);
-
-    if (payload.meta.signed) {
-      const walletAddress = payload.response.account;
-      req.session.walletAddress = walletAddress;
-      res.json({ success: true, walletAddress });
-    } else {
-      res.json({ success: false, message: 'Payload not signed' });
-    }
-  } catch (error) {
-    console.error('Login confirmation failed:', error);
-    res.status(500).json({ error: 'Login confirmation error' });
-  }
-});
-
 app.get('/check-login', async (req, res) => {
   const uuid = req.query.uuid;
   if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
 
   try {
     const payload = await xumm.payload.get(uuid);
-
+    
     if (payload.meta.signed && payload.response.account) {
       const xrplAddress = payload.response.account;
 
-      // 🔍 Check for existing SeagullWallet
-      const existingWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
+      // 🔍 Find wallet in DB using the XRPL address
+      const userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
 
-      // ❌ Block if SeagullWallet already exists
-      if (existingWallet && existingWallet.wallet) {
-        return res.status(409).json({
-          loggedIn: false,
+      if (!userWallet) {
+        return res.status(404).json({
+          loggedIn: true,
           account: xrplAddress,
-          error: 'A SeagullWallet already exists for this XRPL address.'
+          seagullWallet: null,
+          message: 'Wallet not found in DB'
         });
       }
 
-      // ✅ Continue if no Seagull wallet yet (allow creation)
-      return res.status(200).json({
+      // ✅ Return both XRPL address and SEAGULL wallet
+      res.json({
         loggedIn: true,
         account: xrplAddress,
-        seagullWallet: null,
+        seagullWallet: userWallet.wallet, // ← SEAGULLXXXXXXXX
         uuid
       });
     } else {
-      return res.status(401).json({ loggedIn: false });
+      res.json({ loggedIn: false });
     }
   } catch (err) {
     console.error('Login check error:', err);
-    return res.status(500).json({ error: 'Error checking login' });
+    res.status(500).json({ error: 'Error checking login' });
   }
 });
+
 
   
 

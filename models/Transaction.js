@@ -1,5 +1,3 @@
-import mongoose from 'mongoose';
-
 const transactionSchema = new mongoose.Schema({
   wallet: {
     type: String,
@@ -15,7 +13,7 @@ const transactionSchema = new mongoose.Schema({
     enum: [
       'TRANSFER', 'WALLET_CREATION', 'MINT', 'BURN', 'STAKE',
       'NFT_TRANSFER', 'L2_TX', 'NFT_SALE', 'ACCEPT_OFFER', 'CREATE_OFFER',
-      'BRIDGE_IN', 'BRIDGE_OUT', 'XRPL_PAYMENT' // ✅ Added bridge-aware types
+      'BRIDGE_IN', 'BRIDGE_OUT', 'XRPL_PAYMENT'
     ],
     required: true
   },
@@ -35,7 +33,17 @@ const transactionSchema = new mongoose.Schema({
     default: 'PENDING'
   },
 
-  // ✅ New Fields for XRPL ↔ Layer 2 bridge tracking
+  // ✅ Fee and Token Tracking
+  fee: {
+    type: Number,
+    default: 0
+  },
+  tokenHex: {
+    type: String,
+    required: false // Only needed if token-specific TX
+  },
+
+  // ✅ XRPL ↔ L2 Bridge Fields
   layer: {
     type: String,
     enum: ['L1', 'L2'],
@@ -60,7 +68,3 @@ const transactionSchema = new mongoose.Schema({
     default: Date.now
   }
 });
-
-export default mongoose.model('Transaction', transactionSchema);
-
-console.log("Transaction model initialized:", mongoose.modelNames());

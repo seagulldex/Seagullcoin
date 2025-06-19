@@ -50,7 +50,7 @@ currencyCode: {
   minlength: 3,
   maxlength: 10,
   default: null
-}
+},
 
   // Token Genesis Metadata
   tokenName: { type: String, required: false, trim: true },

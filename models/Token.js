@@ -13,9 +13,9 @@ const tokenSchema = new mongoose.Schema({
     required: true
   },
   owner_wallet: {
-    type: String,
-    required: true,
-    ref: 'UserWallet'
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'UserWallet',
+  required: true
   },
   max_supply: {
     type: Number,

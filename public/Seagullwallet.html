@@ -219,7 +219,7 @@ async function updateWalletStatus() {
     case 'seagull_only':
       indicator.textContent = '🟣 SGLCN-X20';
       indicator.classList.add('purple');
-      indicator.onclick = null;
+      indicator.onclick = startLoginFlow; // ✅ Allow login trigger
       document.getElementById('logout-menu').style.display = 'inline-block';
       generateBtn.style.display = 'none';
       disableWalletButton('Wallet Already Created');
@@ -228,7 +228,7 @@ async function updateWalletStatus() {
     case 'xumm_only':
       indicator.textContent = '🟢 Connected (XUMM)';
       indicator.classList.add('green');
-      indicator.onclick = null;
+      indicator.onclick = startLoginFlow; // ✅ Allow login trigger
       document.getElementById('logout-menu').style.display = 'inline-block';
       generateBtn.style.display = 'inline-block';
       enableWalletButton();

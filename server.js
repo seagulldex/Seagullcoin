@@ -1572,27 +1572,39 @@ app.get('/api/check-login', async (req, res) => {
 });
 
 // server.js
-app.get('/check-login', async (req, res) => {
+
+app.get('/check-login', async (req, res) 
   const uuid = req.query.uuid;
   if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
 
   try {
     const payload = await xumm.payload.get(uuid);
+
     if (payload.meta.signed && payload.response.account) {
+      const xrplAddress = payload.response.account;
+
+      // 🔍 Look up the wallet in the DB
+      const userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress });
+
+      if (!userWallet) {
+        return res.status(404).json({ error: 'Wallet not found for this XRPL address' });
+      }
+
       res.json({
         loggedIn: true,
-        account: payload.response.account,
+        account: xrplAddress,
+        seagullWallet: userWallet.wallet, // <- SEAGULLXXXXXXXXXXX
+        user: userWallet,
         uuid
       });
     } else {
       res.json({ loggedIn: false });
     }
   } catch (err) {
-    console.error(err);
+    console.error('Login check error:', err);
     res.status(500).json({ error: 'Error checking login' });
   }
 });
-
 
 
 app.use('/fallback.png', express.static(path.join(__dirname, 'public/fallback.png')));

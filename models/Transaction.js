@@ -1,10 +1,11 @@
+// models/Transaction.js
 import mongoose from 'mongoose';
 
 const transactionSchema = new mongoose.Schema({
   wallet: {
     type: String,
     required: true,
-    ref: 'UserWallet' // Optional: only helpful if you want to `populate` related wallet info
+    ref: 'UserWallet'
   },
   xrpl_address: {
     type: String,
@@ -12,13 +13,17 @@ const transactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['TRANSFER','WALLET_CREATION', 'MINT', 'BURN', 'STAKE', 'NFT_TRANSFER', 'L2_TX', 'NFT_SALE', 'ACCEPT_OFFER', 'CREATE_OFFER'],
+    enum: [
+      'TRANSFER', 'WALLET_CREATION', 'MINT', 'BURN', 'STAKE',
+      'NFT_TRANSFER', 'L2_TX', 'NFT_SALE', 'ACCEPT_OFFER',
+      'CREATE_OFFER', 'BRIDGE_IN', 'BRIDGE_OUT', 'XRPL_PAYMENT'
+    ],
     required: true
   },
   amount: {
     type: Number,
     required: true,
-    min: [0, 'Amount must be non-negative'], // validation for non-negative
+    min: [0, 'Amount must be non-negative'],
   },
   txHash: {
     type: String,
@@ -30,8 +35,24 @@ const transactionSchema = new mongoose.Schema({
     enum: ['PENDING', 'CONFIRMED', 'FAILED'],
     default: 'PENDING'
   },
+
+  // 🔁 Optional bridge-related fields
+  layer: {
+    type: String,
+    enum: ['L1', 'L2'],
+    default: 'L2'
+  },
+  bridged: {
+    type: Boolean,
+    default: false
+  },
+  bridgeDirection: {
+    type: String,
+    enum: ['IN', 'OUT'],
+    required: false
+  },
   metadata: {
-    type: mongoose.Schema.Types.Mixed, // You can store additional data here
+    type: mongoose.Schema.Types.Mixed,
     default: {}
   },
   createdAt: {
@@ -41,4 +62,3 @@ const transactionSchema = new mongoose.Schema({
 });
 
 export default mongoose.model('Transaction', transactionSchema);
-console.log("Wallet model initialized as:", mongoose.modelNames());

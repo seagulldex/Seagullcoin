@@ -1194,8 +1194,6 @@ app.get('/confirm-login', async (req, res) => {
   }
 });
 
-app.get('/check-login', async (req, res) => {
-  const uuid = req.query.uuid;
 
   app.get('/check-login', async (req, res) => {
   const uuid = req.query.uuid;

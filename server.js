@@ -1141,21 +1141,40 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views')); // Ensure views are stored in /views
 app.get('/confirm-login/:payloadUUID', async (req, res) => {
   try {
-    const { payloadUUID } = req.params;
-    const { data: payload } = await xummApi.payload.get(payloadUUID);
+    const uuid = req.session.payloadUUID;
+    if (!uuid) return res.status(400).json({ error: 'Missing session UUID' });
 
-    if (payload.meta.signed) {
-      const walletAddress = payload.response.account;
-      req.session.walletAddress = walletAddress;
-      res.json({ success: true, walletAddress });
-    } else {
-      res.json({ success: false, message: 'Payload not signed' });
+    const result = await xumm.payload.get(uuid);
+
+    if (result.meta.signed !== true) {
+      return res.status(401).json({ status: 'Not signed yet' });
     }
-  } catch (error) {
-    console.error('Login confirmation failed:', error);
-    res.status(500).json({ error: 'Login confirmation error' });
+
+    const xrpl_address = result.response.account;
+    const walletDoc = await UserWallet.findOne({ xrpl_address });
+
+    if (!walletDoc) {
+      return res.status(404).json({ error: 'Wallet not registered' });
+    }
+
+    // ✅ Store in session or JWT
+    req.session.user = {
+      wallet: walletDoc.wallet,             // SEAGULL...
+      xrpl_address: walletDoc.xrpl_address  // r...
+    };
+
+    res.status(200).json({
+      status: 'Signed',
+      wallet: walletDoc.wallet,
+      xrpl_address: walletDoc.xrpl_address
+    });
+
+  } catch (err) {
+    console.error('Error verifying login:', err);
+    res.status(500).json({ error: 'Login verification failed' });
   }
 });
+
 // Protected route to check if the user is logged in before proceeding
 app.get('/dashboard', requireLogin, (req, res) => {
   // If this route is reached, the user is logged in (because of requireLogin middleware)

@@ -140,6 +140,7 @@
 
     function logout() {
       localStorage.removeItem("xumm_wallet_address");
+      localStorage.removeItem("seagull_wallet");
       const indicator = document.getElementById("wallet-indicator");
       indicator.textContent = "🔴 Login";
       indicator.classList.remove("green");

@@ -67,7 +67,7 @@ currencyCode: {
 }, { timestamps: true });
 
 // Compound indexes:
-WalletSchema.index({ issuer: 1, currencyCode: 1 }, { sparse: true });
+WalletSchema.index({ issuer: 1, currencyCode: 1 }, { unique: true, sparse: true });
 WalletSchema.index({ bridgedFromXrpl: 1, isCustodial: 1 });
 
 export default mongoose.model('UserWallet', WalletSchema);

@@ -1573,6 +1573,8 @@ app.get('/api/check-login', async (req, res) => {
 
 // server.js
 
+
+
 app.get('/check-login', async (req, res) => {
   const uuid = req.query.uuid;
   if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
@@ -1583,7 +1585,7 @@ app.get('/check-login', async (req, res) => {
     if (payload.meta.signed && payload.response.account) {
       const xrplAddress = payload.response.account;
 
-      // 🔍 Look up the wallet in the DB
+      // ✅ Look up the wallet
       const userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress });
 
       if (!userWallet) {
@@ -1593,7 +1595,7 @@ app.get('/check-login', async (req, res) => {
       res.json({
         loggedIn: true,
         account: xrplAddress,
-        seagullWallet: userWallet.wallet, // <- SEAGULLXXXXXXXXXXX
+        seagullWallet: userWallet.wallet,
         user: userWallet,
         uuid
       });

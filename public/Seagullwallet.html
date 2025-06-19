@@ -226,13 +226,20 @@ async function updateWalletStatus() {
       break;
 
     case 'xumm_only':
-      indicator.textContent = '🟢 Connected (XUMM)';
-      indicator.classList.add('green');
-      indicator.onclick = startLoginFlow; // ✅ Allow login trigger
-      document.getElementById('logout-menu').style.display = 'inline-block';
-      generateBtn.style.display = 'inline-block';
-      enableWalletButton();
-      break;
+     indicator.textContent = '🟢 Connected (XUMM)';
+     indicator.classList.add('green');
+     indicator.onclick = startLoginFlow;
+     document.getElementById('logout-menu').style.display = 'inline-block';
+
+     if (localStorage.getItem('seagull_wallet')) {
+       generateBtn.style.display = 'none';
+       disableWalletButton('Wallet Already Created');
+     } else {
+       generateBtn.style.display = 'inline-block';
+       enableWalletButton();
+     }
+     break;
+
 
     default:
       indicator.textContent = '🔴 Login';

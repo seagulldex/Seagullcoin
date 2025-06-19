@@ -135,12 +135,7 @@ let currentTab = 'single'; // or 'collections'
 window.addEventListener('DOMContentLoaded', () => {
   updateWalletStatus();
 
-  // Insert this block here
-  const seagull = localStorage.getItem('seagull_wallet');
-  const seed = localStorage.getItem('wallet_seed');
-  if (seagull) document.getElementById('wallet-address').textContent = seagull;
-  if (seed) document.getElementById('wallet-seed').textContent = seed;
-
+  
   document.getElementById('tab-single').addEventListener('click', () => {
     currentTab = 'single';
     switchTab();

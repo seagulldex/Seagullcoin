@@ -191,21 +191,24 @@ async function updateWalletStatus() {
   const xummWallet = localStorage.getItem('xumm_wallet_address');
   const seagullWallet = localStorage.getItem('seagull_wallet');
   const indicator = document.getElementById('wallet-indicator');
+  const generateBtn = document.getElementById('generate-wallet-btn');
 
   // Reset all color classes first
   indicator.classList.remove('red', 'green', 'blue', 'purple');
 
   if (xummWallet && seagullWallet) {
-    // 🟦 Layer 2 (Both)
+    // 🔵 Layer 2
     indicator.textContent = '🔵 Layer 2';
     indicator.classList.add('blue');
     indicator.onclick = null;
 
     document.getElementById('logout-menu').style.display = 'inline-block';
-    fetchNFTs(xummWallet); // Or use logic to determine correct source
+    fetchNFTs(xummWallet);
 
-    // Disable wallet generator
+    // Disallow generating wallet
     disableWalletButton('Wallet Already Created');
+    generateBtn.style.display = 'none';
+
   } else if (seagullWallet && !xummWallet) {
     // 🟣 SGLCN-X20
     indicator.textContent = '🟣 SGLCN-X20';
@@ -214,43 +217,30 @@ async function updateWalletStatus() {
 
     document.getElementById('logout-btn').style.display = 'inline-block';
     disableWalletButton('Wallet Already Created');
+    generateBtn.style.display = 'none';
+
   } else if (xummWallet && !seagullWallet) {
-    // 🟢 Connected (Xumm)
+    // 🟢 Connected (XUMM only)
     indicator.textContent = '🟢 Connected (XUMM)';
     indicator.classList.add('green');
     indicator.onclick = null;
 
     document.getElementById('logout-btn').style.display = 'inline-block';
-    disableWalletButton('Wallet Already Created');
+    enableWalletButton();
+    generateBtn.style.display = 'inline-block';
+
   } else {
-    // 🔴 Login
+    // 🔴 Logged out
     indicator.textContent = '🔴 Login';
     indicator.classList.add('red');
     indicator.onclick = startLoginFlow;
 
     document.getElementById('logout-btn').style.display = 'none';
     enableWalletButton();
+    generateBtn.style.display = 'inline-block';
   }
 }
 
-// 🔒 Utility functions for button state
-function disableWalletButton(message) {
-  const generateBtn = document.getElementById('generate-wallet-btn');
-  if (!generateBtn) return;
-  generateBtn.disabled = true;
-  generateBtn.textContent = message || 'Wallet Already Created';
-  generateBtn.style.background = '#555';
-  generateBtn.style.cursor = 'not-allowed';
-}
-
-function enableWalletButton() {
-  const generateBtn = document.getElementById('generate-wallet-btn');
-  if (!generateBtn) return;
-  generateBtn.disabled = false;
-  generateBtn.textContent = 'Generate Wallet & Seed';
-  generateBtn.style.background = '#00bfa5';
-  generateBtn.style.cursor = 'pointer';
-}
 
     function toggleLogoutOptions() {
   const menu = document.getElementById('logout-options');

@@ -24,7 +24,7 @@
     #wallet-container {
       border: 2px solid #000;
       border-radius: 10px;
-      padding: 4px 10px;
+      padding: 6px 12px;
       background-color: #fff;
       display: flex;
       align-items: center;
@@ -73,7 +73,7 @@
          }
     header {
   margin-top: 60px;
-  width: 115%;
+  width: 113%;
   background-color: #2e2e2e; /* Match your top-bar */
 }
     nav ul {
@@ -93,9 +93,6 @@
   <div id="top-bar">
     <div id="wallet-container">
       <div id="wallet-status">
-        <div id="mint-row" style="margin-top: 1em; display: none;">
-  <span id="mint-status" style="font-weight: bold;"></span>
-</div>
         <span id="wallet-indicator" class="red">🔴 Login</span>
       </div>
     </div>
@@ -228,62 +225,49 @@
   }
 }
 
+
 function updateWalletUI() {
   const indicator = document.getElementById('wallet-indicator');
-  const walletInfo = document.getElementById('wallet-info');
   const state = getWalletState();
 
-  const xummAddress = localStorage.getItem('xumm_wallet_address');
-  const seagullAddress = localStorage.getItem('seagull_wallet');
-  const mintRow = document.getElementById('mint-row');
-  const mintStatus = document.getElementById('mint-status');
-
-  // Clear indicator styles
+  // Reset all color classes
   indicator.classList.remove('red', 'green', 'blue', 'purple');
 
-  const hasSeagullWallet = !!seagullAddress;
-  const isOfficialChain = seagullAddress?.startsWith('SEAGULL03');
+  switch (state) {
+    case 'layer2':
+      indicator.textContent = '🔵 Layer 2';
+      indicator.classList.add('blue');
+      indicator.onclick = null;
+      document.getElementById('wallet-info').style.display = 'block';
+      fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+      break;
 
-  const isMinted = hasSeagullWallet && isOfficialChain;
-  const mintAllowed = xummAddress && !hasSeagullWallet;
+    case 'seagull_only':
+      indicator.textContent = '🟣 SGLCN-X20';
+      indicator.classList.add('purple');
+      indicator.title = 'Click to login';
+      indicator.onclick = startLoginFlow;
+      document.getElementById('wallet-info').style.display = 'block';
+      break;
 
-  if (xummAddress && !hasSeagullWallet) {
-    // 🟢 Connected — eligible to mint
-    indicator.textContent = '🟢 Connected';
-    indicator.classList.add('green');
-    mintRow.style.display = 'block';
-    mintStatus.textContent = '✅ Minting is available.';
-    mintStatus.style.color = 'green';
-  } else if (xummAddress && isMinted) {
-    // 🟣 SGLCN-X20 — mint blocked
-    indicator.textContent = '🟣 SGLCN-X20';
-    indicator.classList.add('purple');
-    mintRow.style.display = 'block';
-    mintStatus.textContent = '❌ Minting blocked: Seagull Wallet already exists.';
-    mintStatus.style.color = 'red';
-  } else if (xummAddress && hasSeagullWallet && !isOfficialChain) {
-    // 🔵 Layer 2 — also mint blocked
-    indicator.textContent = '🔵 Layer 2';
-    indicator.classList.add('blue');
-    mintRow.style.display = 'block';
-    mintStatus.textContent = '❌ Minting blocked: Custom Seagull Wallet detected.';
-    mintStatus.style.color = 'red';
-  } else {
-    // 🔴 Not logged in
-    indicator.textContent = '🔴 Login';
-    indicator.classList.add('red');
-    mintRow.style.display = 'none';
-  }
+    case 'xumm_only':
+      indicator.textContent = '🟢 Connected';
+      indicator.classList.add('green');
+      indicator.title = 'Go to profile';
+      indicator.onclick = () => {
+        const user = JSON.parse(localStorage.getItem('xumm_user'));
+        if (user && user.uuid) {
+          window.location.href = `/profile.html?uuid=${user.uuid}`;
+        }
+      };
+      if (seagullAddress) {
+        walletInfo.style.display = 'block';
+        document.getElementById('xumm-wallet-address').textContent = xummAddress;
+        document.getElementById('seagull-wallet-address').textContent = seagullAddress;
+      } else {
+        walletInfo.style.display = 'none'; // hide if only XUMM with no seagull
+      }
 
-  // Show/hide wallet info
-  if (xummAddress) {
-    walletInfo.style.display = 'block';
-    document.getElementById('xumm-wallet-address').textContent = xummAddress;
-    document.getElementById('seagull-wallet-address').textContent = seagullAddress || 'Not connected';
-  } else {
-    walletInfo.style.display = 'none';
-  }
-}
       fetchSeagullCoinBalance(xummAddress);
       break;
 

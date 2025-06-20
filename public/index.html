@@ -199,6 +199,15 @@
     document.getElementById('seagull-wallet-address').textContent = 'Not connected';
   }
 }
+function getWalletState() {
+  const xumm = localStorage.getItem('xumm_wallet_address');
+  const seagull = localStorage.getItem('seagull_wallet');
+
+  if (xumm && seagull) return 'layer2';
+  if (seagull && !xumm) return 'seagull_only';
+  if (xumm && !seagull) return 'xumm_only';
+  return null;
+}
 
 
 

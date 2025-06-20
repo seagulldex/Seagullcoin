@@ -130,7 +130,7 @@
         TransactionType: "TrustSet",
         Account: wallet, // user's wallet
         LimitAmount: {
-          currency: "SseagullMansions", // replace with your token code exactly
+          currency: "SeagullMansions", // replace with your token code exactly
           issuer: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV", // replace with your actual issuer address
           value: "2"
         }
@@ -229,7 +229,7 @@ function updateWalletUI() {
       break;
 
     case 'xumm_only':
-      indicator.textContent = '🟢 Connected (XUMM)';
+      indicator.textContent = '🟢 Connected';
       indicator.classList.add('green');
       indicator.title = 'Go to profile';
       indicator.onclick = () => {

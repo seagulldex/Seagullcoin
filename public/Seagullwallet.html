@@ -70,36 +70,23 @@
 </head>
 <body>
   <div id="top-bar">
-  <div style="flex:1;">
-
-    <!-- LOGIN MENU (visible by default) -->
-    <div id="login-menu" style="display: block; position: relative;">
-      <button onclick="toggleLoginOptions()">Network</button>
-      <div id="login-options" class="hidden" style="position: absolute; top: 30px; background: #222; border: 1px solid #444; padding: 10px; border-radius: 6px; z-index: 100;">
-        <button onclick="loginXRPL()">XRPL</button>
-        <button onclick="loginSeagull()">SGLCN-X20</button>
-        <button onclick="loginAll()">Layer-2</button>
-      </div>
-    </div>
-
-    <!-- LOGOUT MENU (initially hidden) -->
-    <div id="logout-menu" style="display: none; position: relative;">
-      <button onclick="toggleLogoutOptions()">Logout ⬇️</button>
-      <div id="logout-options" class="hidden" style="position: absolute; top: 30px; background: #222; border: 1px solid #444; padding: 10px; border-radius: 6px; z-index: 100;">
-        <button onclick="logoutXRPL()">Logout XRPL</button>
-        <button onclick="logoutSeagull()">Logout SGLCN-X20</button>
-        <button onclick="logoutAll()">Logout All</button>
-      </div>
-    </div>
-
-  </div>
-
-  <div id="wallet-container">
-    <div id="wallet-status">
-      <span id="wallet-indicator" class="red">🔴 Login</span>
-    </div>
+    <div style="flex:1;">
+      <div id="logout-menu" style="display:none; position: relative;">
+  <button onclick="toggleLogoutOptions()">Logout ⬇️</button>
+  <div id="logout-options" class="hidden" style="position: absolute; top: 30px; background: #222; border: 1px solid #444; padding: 10px; border-radius: 6px; z-index: 100;">
+    <button onclick="logoutXRPL()">Logout XRPL</button>
+    <button onclick="logoutSeagull()">Logout SGLCN-X20</button>
+    <button onclick="logoutAll()">Logout All</button>
   </div>
 </div>
+    </div>
+    <div id="wallet-container">
+      <div id="wallet-status">
+        <span id="wallet-indicator" class="red">🔴 Login</span>
+      </div>
+    <div>
+  </div>
+
   <header>
     <nav>
       <ul>
@@ -201,12 +188,6 @@ const seagullWallet = localStorage.getItem('seagull_wallet');
   return 'logged_out';
 }
 
-    window.addEventListener('DOMContentLoaded', async () => {
-  await loadUserWallets();
-  updateWalletStatus();
-});
-
-
 
 function switchTab() {
   document.getElementById('tab-single').classList.remove('active-tab');
@@ -260,13 +241,12 @@ async function updateWalletStatus() {
 
 
     default:
-      indicator.textContent = '🔴 Logged Out';
+      indicator.textContent = '🔴 Login';
       indicator.classList.add('red');
       indicator.onclick = startLoginFlow;
       document.getElementById('logout-menu').style.display = 'none';
-      generateBtn.style.display = 'none';
-      disableWalletButton('Login to create SGLCN-X20 wallet');
-      break;
+      generateBtn.style.display = 'inline-block';
+      enableWalletButton();
   }
 }
 
@@ -367,12 +347,6 @@ document.getElementById('generate-wallet-btn').addEventListener('click', async (
     alert("Error generating wallet.");
   }
 });
-
-    function toggleLoginOptions() {
-  const loginOptions = document.getElementById('login-options');
-  loginOptions.classList.toggle('hidden');
-}
-
 
 function toggleLogoutMenu() {
     const menu = document.getElementById('logout-options');
@@ -478,38 +452,6 @@ function disableWalletButton(message = 'Disabled') {
   btn.style.background = '#ccc';
   btn.style.cursor = 'not-allowed';
 }
-
-    function showMintMessage() {
-  const indicator = document.getElementById('wallet-indicator');
-  indicator.textContent = '⚠️ Mint SGLCN-X20 wallet';
-  indicator.classList.add('red');
-  indicator.onclick = () => alert('Please mint a SGLCN-X20 wallet to access this feature.');
-  document.getElementById('logout-menu').style.display = 'none';
-}
-
-function showLoggedOut() {
-  const indicator = document.getElementById('wallet-indicator');
-  indicator.textContent = '🔴 Logged Out';
-  indicator.classList.add('red');
-  indicator.onclick = startLoginFlow;
-  document.getElementById('logout-menu').style.display = 'none';
-  disableWalletButton('Login to create SGLCN-X20 wallet');
-}
-    async function loadUserWallets() {
-  const xummAddress = localStorage.getItem('xumm_wallet_address');
-  if (!xummAddress) return;
-
-  const res = await fetch(`/api/get-wallets?xumm=${xummAddress}`);
-  if (res.ok) {
-    const data = await res.json();
-    if (data.seagullWallet) {
-      localStorage.setItem('seagull_wallet', data.seagullWallet);
-      updateWalletStatus();
-    }
-  }
-}
-
-
     
     // Burn NFT function
   async function burnNFT(nftId) {

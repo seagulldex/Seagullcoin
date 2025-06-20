@@ -115,6 +115,7 @@
   max-width: 100%;
   white-space: normal;
 ">SEAGULLxxxxxxxxxxxxx</span>
+</div>
 
 
     <div style="display: flex; flex-direction: row; justify-content: space-between; flex-wrap: wrap; color: white; background: #222; padding: 10px; border-radius: 6px;">
@@ -127,10 +128,10 @@
   max-width: 100%;
   white-space: normal;
 ">xxxxxxxxxxxxxxxxxxxx</span>
-
+</div>
 
   </div>
-<button id="generate-wallet-btn" style="display: none;">Generate Wallet & Seed</button>
+  <button id="generate-wallet-btn" style="display: none;">Generate Wallet & Seed</button>
 </div>
 
   </main>
@@ -141,8 +142,35 @@ let currentIndex = 0;
 const nftsPerPage = 20;
 let currentTab = 'single'; // or 'collections'
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   updateWalletStatus();
+  
+  try {
+    const xumm = localStorage.getItem('xumm_wallet_address');
+    if (xumm) await fetchNFTs(xumm);
+  } catch (e) {
+    console.error("Failed to fetch XUMM NFTs", e);
+  }
+
+  try {
+    const sgl = localStorage.getItem('seagull_wallet');
+    if (sgl) await fetchNFTs(sgl);
+  } catch (e) {
+    console.error("Failed to fetch Seagull NFTs", e);
+  }
+
+  const seagullWallet = localStorage.getItem('seagull_wallet');
+  const generateBtn = document.getElementById('generate-wallet-btn');
+  if (seagullWallet) {
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Wallet Already Created';
+    generateBtn.style.background = '#555';
+    generateBtn.style.cursor = 'not-allowed';
+  }
+
+  // other event listeners ...
+});
+
   
 const seagullWallet = localStorage.getItem('seagull_wallet');
   const generateBtn = document.getElementById('generate-wallet-btn');
@@ -246,7 +274,7 @@ async function updateWalletStatus() {
       indicator.onclick = startLoginFlow;
       document.getElementById('logout-menu').style.display = 'none';
       generateBtn.style.display = 'inline-block';
-      enableWalletButton();
+      disableWalletButton('Login to Generate Wallet');
   }
 }
 
@@ -588,4 +616,4 @@ function disableWalletButton(message = 'Disabled') {
     card.appendChild(burnButton);
 </script>
 </body>
-  </html>
+    </html>

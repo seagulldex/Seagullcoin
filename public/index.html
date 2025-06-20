@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -244,6 +245,15 @@
         }
         break;
 
+      default:
+        indicator.textContent = '🔴 Login';
+        indicator.classList.add('red');
+        indicator.onclick = startLoginFlow;
+        generateBtn.style.display = 'inline-block';
+        enableWalletButton();
+        break;
+    }
+
     if (walletAddr) {
       walletAddr.textContent = xumm || 'Not connected';
     }
@@ -408,12 +418,6 @@
         status.textContent = 'Invalid XRPL wallet address.';
       }
     }
-    
-    console.log('Stored:', {
-  xumm: localStorage.getItem('xumm_wallet_address'),
-  seagull: localStorage.getItem('seagull_wallet'),
-});
-
   </script>
 </body>
 </html>

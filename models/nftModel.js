@@ -1,18 +1,16 @@
-import mongoose from 'mongoose';
+// nftModel.js
+const mongoose = require('mongoose');
 
 const nftSchema = new mongoose.Schema({
   wallet: String,
   NFTokenID: String,
   URI: String,
-  icon: String,
-  collection: Object,
-  metadata: Object,
   image: String,
   name: String,
   traits: Array,
-  updatedAt: { type: Date, default: Date.now },
+  collection: String,
+  metadata: Object,
 });
 
-nftSchema.index({ wallet: 1, NFTokenID: 1 }, { unique: true });
-
-export default mongoose.models.NFT || mongoose.model('NFT', nftSchema);
+const NFTModel = mongoose.model('NFT', nftSchema);
+module.exports = { NFTModel }; // <- Named export

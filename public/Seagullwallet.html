@@ -130,8 +130,7 @@
 
 
   </div>
-
-  <button id="generate-wallet-btn">Generate Wallet & Seed</button>
+<button id="generate-wallet-btn" style="display: none;">Generate Wallet & Seed</button>
 </div>
 
   </main>
@@ -219,20 +218,27 @@ async function updateWalletStatus() {
     case 'seagull_only':
       indicator.textContent = '🟣 SGLCN-X20';
       indicator.classList.add('purple');
-      indicator.onclick = null;
+      indicator.onclick = startLoginFlow; // ✅ Allow login trigger
       document.getElementById('logout-menu').style.display = 'inline-block';
       generateBtn.style.display = 'none';
       disableWalletButton('Wallet Already Created');
       break;
 
     case 'xumm_only':
-      indicator.textContent = '🟢 Connected (XUMM)';
-      indicator.classList.add('green');
-      indicator.onclick = null;
-      document.getElementById('logout-menu').style.display = 'inline-block';
-      generateBtn.style.display = 'inline-block';
-      enableWalletButton();
-      break;
+     indicator.textContent = '🟢 Connected (XUMM)';
+     indicator.classList.add('green');
+     indicator.onclick = startLoginFlow;
+     document.getElementById('logout-menu').style.display = 'inline-block';
+
+     if (localStorage.getItem('seagull_wallet')) {
+       generateBtn.style.display = 'none';
+       disableWalletButton('Wallet Already Created');
+     } else {
+       generateBtn.style.display = 'inline-block';
+       enableWalletButton();
+     }
+     break;
+
 
     default:
       indicator.textContent = '🔴 Login';

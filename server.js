@@ -2912,38 +2912,33 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
   return metadata;
 };
 
-// Test route to fetch NFTs for a wallet (limit to 20 NFTs)
-app.get('/nfts/:wallet', async (req, res) => {
-  const wallet = req.params.wallet;
-
-  // Check cache
-  const cached = nftCache.get(wallet);
-  if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
-    return res.json({ nfts: cached.data });
-  }
+// ✅ The actual app.get route
+app.get('/api/nfts/:wallet', async (req, res) => {
+  const { wallet } = req.params;
 
   try {
-    const rawNFTs = await fetchAllNFTs(wallet);
+    const cached = await NFT.find({ wallet }).lean();
+    if (cached.length) {
+      return res.json({ source: 'db', nfts: cached });
+    }
 
+    const rawNFTs = await fetchAllNFTs(wallet);
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
       let metadata = null, collection = null, icon = null;
 
       if (uri.startsWith('ipfs://')) {
-        const ipfsUrl = uri.replace('ipfs://', '');
         try {
-          // Fetch metadata with retry mechanism
-          metadata = await fetchMetadataWithRetry(ipfsUrl);
-          if (metadata) {
-            collection = metadata.collection || metadata.name || null;
-            icon = metadata.image || null;
-          }
-        } catch (err) {
-          console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
+          metadata = await fetchMetadata(uri.replace('ipfs://', ''));
+          collection = metadata?.collection?.name || metadata?.name || null;
+          icon = metadata?.image || null;
+        } catch (e) {
+          console.warn(`Failed to fetch IPFS for ${nft.NFTokenID}: ${e.message}`);
         }
       }
 
       return {
+        wallet,
         NFTokenID: nft.NFTokenID,
         URI: uri,
         collection,
@@ -2952,13 +2947,19 @@ app.get('/nfts/:wallet', async (req, res) => {
       };
     }));
 
-    // Cache the result
-    nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
+    // Save to MongoDB with upsert
+    for (const item of parsed) {
+      await NFT.updateOne(
+        { wallet: item.wallet, NFTokenID: item.NFTokenID },
+        { $set: item },
+        { upsert: true }
+      );
+    }
 
-    res.json({ nfts: parsed });
+    res.json({ source: 'xrpl', nfts: parsed });
   } catch (err) {
-    console.error('NFT fetch error:', err);
-    res.status(500).json({ error: 'Failed to fetch NFTs' });
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch or save NFTs' });
   }
 });
 

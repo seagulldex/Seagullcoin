@@ -190,12 +190,10 @@
 
 function updateWalletUI() {
   const indicator = document.getElementById('wallet-indicator');
-  
+  const state = getWalletState();
 
   // Reset all color classes
   indicator.classList.remove('red', 'green', 'blue', 'purple');
-
-  const state = getWalletState();
 
   switch (state) {
     case 'layer2':
@@ -203,7 +201,6 @@ function updateWalletUI() {
       indicator.classList.add('blue');
       indicator.onclick = null;
       document.getElementById('wallet-info').style.display = 'block';
-      document.getElementById('logout-menu').style.display = 'inline-block';
       fetchNFTs(localStorage.getItem('xumm_wallet_address'));
       break;
 
@@ -213,7 +210,6 @@ function updateWalletUI() {
       indicator.title = 'Click to login';
       indicator.onclick = startLoginFlow;
       document.getElementById('wallet-info').style.display = 'block';
-      document.getElementById('logout-menu').style.display = 'inline-block';
       break;
 
     case 'xumm_only':
@@ -227,9 +223,6 @@ function updateWalletUI() {
         }
       };
       document.getElementById('wallet-info').style.display = 'block';
-      document.getElementById('logout-menu').style.display = 'inline-block';
-
-
       fetchSeagullCoinBalance(wallet);
       break;
 
@@ -239,11 +232,9 @@ function updateWalletUI() {
       indicator.title = 'Click to login';
       indicator.onclick = startLoginFlow;
       document.getElementById('wallet-info').style.display = 'none';
-      document.getElementById('logout-menu').style.display = 'none';
-      generateBtn.style.display = 'inline-block';
-      enableWalletButton();
   }
 }
+
 
     
     

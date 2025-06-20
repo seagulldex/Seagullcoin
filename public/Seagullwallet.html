@@ -201,6 +201,12 @@ const seagullWallet = localStorage.getItem('seagull_wallet');
   return 'logged_out';
 }
 
+    window.addEventListener('DOMContentLoaded', async () => {
+  await loadUserWallets();
+  updateWalletStatus();
+});
+
+
 
 function switchTab() {
   document.getElementById('tab-single').classList.remove('active-tab');

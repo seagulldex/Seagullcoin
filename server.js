@@ -5834,6 +5834,46 @@ app.post('/api/genesis/create', async (req, res) => {
 
 export default app;
 
+app.post('/mint-token', async (req, res) => {
+  const {
+    type = 'token', // or 'nft'
+    name,
+    symbol,
+    amount,
+    issuer,
+    recipient,
+    metadata = {}
+  } = req.body;
+
+  if (!issuer || !recipient || !name || !symbol || !amount) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const tokenDoc = {
+    type,
+    name,
+    symbol,
+    amount,
+    issuer,
+    recipient: {
+      xrpl_address: recipient.xrpl_address || null,
+      seagull_wallet: recipient.seagull_wallet || null,
+      binding: recipient.binding || (recipient.xrpl_address ? 'xrpl' : 'seagull')
+    },
+    metadata: type === 'nft' ? metadata : {},
+    status: 'minted',
+    created_at: new Date(),
+    tx_hash: null
+  };
+
+  try {
+    const result = await db.collection('tokens').insertOne(tokenDoc);
+    return res.json({ message: 'Token minted off-chain', id: result.insertedId });
+  } catch (e) {
+    console.error('Mint error:', e);
+    return res.status(500).json({ error: 'Token mint failed' });
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

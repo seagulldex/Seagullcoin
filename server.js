@@ -5876,13 +5876,25 @@ app.post('/mint-token', async (req, res) => {
 });
 
 // Example: server-side (Node.js / Express)
-app.get('/api/get-wallets', async (req, res) => {
-  const xumm = req.query.xumm;
-  const user = await db.findUserByXumm(xumm);
-  if (!user) return res.status(404).json({ error: "User not found" });
-  return res.json({ seagullWallet: user.seagullWallet });
-});
 
+app.get('/api/get-wallets', async (req, res) => {
+  try {
+    const { xumm } = req.query;
+    if (!xumm) {
+      return res.status(400).json({ error: 'Missing xumm UUID in query' });
+    }
+
+    const user = await UserWallet.findOne({ xumm_uuid: xumm });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({ seagullWallet: user.wallet });
+  } catch (err) {
+    console.error('Error fetching wallet:', err);
+    return res.status(500).json({ error: 'Failed to retrieve wallet' });
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

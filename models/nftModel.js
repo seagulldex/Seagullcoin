@@ -5,8 +5,11 @@ const nftSchema = new mongoose.Schema({
   NFTokenID: String,
   URI: String,
   icon: String,
-  collection: Object,     // flexible collection info (name, image, description, etc.)
-  metadata: Object,       // full on-chain/off-chain metadata blob
+  collection: Object,
+  metadata: Object,
+  image: String,
+  name: String,
+  traits: Array,
   updatedAt: { type: Date, default: Date.now },
 });
 

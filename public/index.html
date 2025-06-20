@@ -130,7 +130,7 @@
         TransactionType: "TrustSet",
         Account: wallet, // user's wallet
         LimitAmount: {
-          currency: "SeagullMansions", // replace with your token code exactly
+          currency: "SseagullMansions", // replace with your token code exactly
           issuer: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV", // replace with your actual issuer address
           value: "2"
         }
@@ -255,34 +255,28 @@ function updateWalletUI() {
     
     
     async function startLoginFlow() {
-  try {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
-    const data = await res.json();
-    window.location.href = data.payloadURL;
+      try {
+        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
+        const data = await res.json();
+        window.location.href = data.payloadURL;
 
-    const interval = setInterval(async () => {
-      const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
-      const loginStatus = await check.json();
-
-      if (loginStatus.loggedIn) {
-        clearInterval(interval);
-        wallet = loginStatus.account;
-
-        // Save both wallets
-        localStorage.setItem('xumm_wallet_address', wallet);
-        localStorage.setItem('seagull_wallet', wallet); // <-- Correctly added
-        localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
-
-        document.getElementById('wallet-address').textContent = wallet;
-        updateWalletUI();
+        const interval = setInterval(async () => {
+          const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
+          const loginStatus = await check.json();
+          if (loginStatus.loggedIn) {
+            clearInterval(interval);
+            wallet = loginStatus.account;
+            localStorage.setItem('xumm_wallet_address', wallet);
+            
+            localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+            document.getElementById('wallet-address').textContent = wallet;
+            updateWalletUI();
+          }
+        }, 3000);
+      } catch (e) {
+        alert('Login failed: ' + e.message);
       }
-
-    }, 3000); // <- this closing brace lines up properly now
-  } catch (e) {
-    alert('Login failed: ' + e.message);
-  }
-}
-
+    }
 
     async function fetchSeagullCoinBalance(account) {
       try {

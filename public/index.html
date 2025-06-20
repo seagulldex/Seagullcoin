@@ -291,33 +291,6 @@ async function startLoginFlow() {
   }, 3000);
 }
 
-
-    
-
-    async function startLoginFlow() {
-      try {
-        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
-        const data = await res.json();
-        window.location.href = data.payloadURL;
-
-        const interval = setInterval(async () => {
-          const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
-          const loginStatus = await check.json();
-          if (loginStatus.loggedIn) {
-            clearInterval(interval);
-            wallet = loginStatus.account;
-            localStorage.setItem('xumm_wallet_address', wallet);
-            
-            localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
-            document.getElementById('wallet-address').textContent = wallet;
-            updateWalletUI();
-          }
-        }, 3000);
-      } catch (e) {
-        alert('Login failed: ' + e.message);
-      }
-    }
-
     async function fetchSeagullCoinBalance(account) {
       try {
         const response = await fetch(`/balance/${account}`);

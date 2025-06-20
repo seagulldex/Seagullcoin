@@ -21,38 +21,44 @@
       padding: 0 20px;
       z-index: 1000;
     }
-    #wallet-container {
-      border: 2px solid #000;
-      border-radius: 10px;
-      padding: 6px 12px;
-      background-color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      max-width: 100px;
-    }
+#wallet-container {
+  border: 2px solid #000;
+  border-radius: 10px;
+  padding: 4px 10px;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: none;  /* REMOVE width constraint */
+  white-space: nowrap; /* Prevent wrapping */
+  overflow: hidden;
+  margin-left: auto;
+}
     #wallet-status {
       font-size: 0.9rem;
       cursor: pointer;
       font-weight: bold;
     }
-
 #wallet-indicator.red {
+  display: inline-block;
   color: #ff4444;
   font-weight: bold;
 }
 
 #wallet-indicator.green {
+  display: inline-block;
   color: #44ff44;
   font-weight: bold;
 }
 
 #wallet-indicator.purple {
+  display: inline-block;
   color: #9c27b0;
   font-weight: bold;
 }
 
 #wallet-indicator.blue {
+  display: inline-block;
   color: #2196f3;
   font-weight: bold;
 }

@@ -176,10 +176,11 @@
 
     // On page load, check login
     window.addEventListener('DOMContentLoaded', () => {
-      loadWalletFromStorage();
-      updateWalletUI();
-      setupTrustlineButton();
-    });
+  loadWalletFromStorage();
+  updateWalletStatus(); // ✅ NEW
+  setupTrustlineButton();
+});
+
 
     function loadWalletFromStorage() {
   const xummWallet = localStorage.getItem('xumm_wallet_address');

@@ -1,5 +1,4 @@
-// nftModel.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const nftSchema = new mongoose.Schema({
   wallet: String,
@@ -9,8 +8,11 @@ const nftSchema = new mongoose.Schema({
   name: String,
   traits: Array,
   collection: String,
+  icon: String,
   metadata: Object,
+  updatedAt: { type: Date, default: Date.now },
 });
 
-const NFTModel = mongoose.model('NFT', nftSchema);
-module.exports = { NFTModel }; // <- Named export
+nftSchema.index({ wallet: 1, NFTokenID: 1 }, { unique: true });
+
+export const NFTModel = mongoose.models.NFT || mongoose.model('NFT', nftSchema);

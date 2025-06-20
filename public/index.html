@@ -417,6 +417,12 @@
         status.textContent = 'Invalid XRPL wallet address.';
       }
     }
+    
+    console.log('Stored:', {
+  xumm: localStorage.getItem('xumm_wallet_address'),
+  seagull: localStorage.getItem('seagull_wallet'),
+});
+
   </script>
 </body>
 </html>

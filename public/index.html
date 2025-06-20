@@ -176,6 +176,7 @@
   const seagullWallet = localStorage.getItem('seagull_wallet');
 
   if (xummWallet) {
+    wallet = xummWallet; // <--- This is the fix
     document.getElementById('xumm-wallet-address').textContent = xummWallet;
   } else {
     document.getElementById('xumm-wallet-address').textContent = 'Not connected';
@@ -189,7 +190,6 @@
 }
 
 
-    
     function updateWalletUI() {
       const indicator = document.getElementById('wallet-indicator');
       if(wallet) {

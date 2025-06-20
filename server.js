@@ -5791,35 +5791,7 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
 });
 
 app.get('/api/wallets/:wallet/transactions', async (req, res) => {
-  const { wallet } = req.params;
 
-  const txs = await Transaction.find({ wallet }).sort({ createdAt: -1 });
-
-  return res.json({ success: true, transactions: txs });
-});
-
-
-
-// Example: server-side (Node.js / Express)
-
-app.get('/api/get-wallets', async (req, res) => {
-  try {
-    const { xumm } = req.query;
-    if (!xumm) {
-      return res.status(400).json({ error: 'Missing xumm UUID in query' });
-    }
-
-    const user = await UserWallet.findOne({ xumm_uuid: xumm });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    return res.json({ seagullWallet: user.wallet });
-  } catch (err) {
-    console.error('Error fetching wallet:', err);
-    return res.status(500).json({ error: 'Failed to retrieve wallet' });
-  }
-});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

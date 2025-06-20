@@ -173,11 +173,18 @@
   };
 }
 
-  // Load and initialize everything on page load
-  window.addEventListener('DOMContentLoaded', () => {
-    updateWalletStatus();
-    setupTrustlineButton?.(); // Optional if you have this defined
-  });
+    window.addEventListener('DOMContentLoaded', () => {
+  // Try restore from localStorage after redirect
+  const user = JSON.parse(localStorage.getItem('xumm_user') || '{}');
+
+  if (user?.account) {
+    localStorage.setItem('xumm_wallet_address', user.account);
+    localStorage.setItem('seagull_wallet', user.seagullWallet);
+  }
+
+  updateWalletStatus();
+  setupTrustlineButton?.(); 
+});
 
   // Determines current wallet state based on localStorage
   function getWalletState() {

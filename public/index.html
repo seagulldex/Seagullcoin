@@ -268,10 +268,12 @@ function updateWalletUI() {
         clearInterval(interval);
         wallet = loginStatus.account;
 
-        // Save both wallets
-        localStorage.setItem('xumm_wallet_address', wallet);
-        localStorage.setItem('seagull_wallet', wallet); // <-- Correctly added
-        localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+        // 🔐 Save both XRPL and SEAGULL wallet info
+      localStorage.setItem('xumm_wallet_address', loginStatus.account);
+      localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
+      localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
+      localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
+
 
         document.getElementById('wallet-address').textContent = wallet;
         updateWalletUI();

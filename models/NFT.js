@@ -1,13 +1,12 @@
-// models/NFT.js
 import mongoose from 'mongoose';
 
 const nftSchema = new mongoose.Schema({
   wallet: String,
   NFTokenID: String,
   URI: String,
-  collection: String,
   icon: String,
-  metadata: Object,
+  collection: Object,     // flexible collection info (name, image, description, etc.)
+  metadata: Object,       // full on-chain/off-chain metadata blob
   updatedAt: { type: Date, default: Date.now },
 });
 

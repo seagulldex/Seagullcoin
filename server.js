@@ -2938,14 +2938,18 @@ app.get('/api/nfts/:wallet', async (req, res) => {
       }
 
       return {
-        wallet,
-        NFTokenID: nft.NFTokenID,
-        URI: uri,
-        collection,
-        icon,
-        metadata
-      };
-    }));
+    wallet,
+    NFTokenID: nft.NFTokenID,
+    URI: uri,
+    icon,
+    collection,
+    metadata,
+    // 👇 Extracted fields
+    image: metadata?.image || icon || null,
+    name: metadata?.name || null,
+    traits: metadata?.attributes || null,
+  };
+}));
 
     // Save to MongoDB with upsert
     for (const item of parsed) {

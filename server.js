@@ -5795,9 +5795,6 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
   }
 });
 
-app.get('/api/wallets/:wallet/transactions', async (req, res) => {
-
-
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

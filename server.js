@@ -2913,7 +2913,7 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
 };
 
 // ✅ The actual app.get route
-app.get('/api/nfts/:wallet', async (req, res) => {
+app.get('/nfts/:wallet', async (req, res) => {
   const { wallet } = req.params;
 
   try {

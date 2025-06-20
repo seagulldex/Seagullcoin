@@ -244,15 +244,6 @@
         }
         break;
 
-      default:
-        indicator.textContent = '🔴 Login';
-        indicator.classList.add('red');
-        indicator.onclick = startLoginFlow;
-        generateBtn.style.display = 'inline-block';
-        enableWalletButton();
-        break;
-    }
-
     if (walletAddr) {
       walletAddr.textContent = xumm || 'Not connected';
     }

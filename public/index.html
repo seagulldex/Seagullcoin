@@ -204,8 +204,6 @@ function updateWalletUI() {
       indicator.onclick = null;
       document.getElementById('wallet-info').style.display = 'block';
       document.getElementById('logout-menu').style.display = 'inline-block';
-      generateBtn.style.display = 'none';
-      disableWalletButton('Wallet Already Created');
       fetchNFTs(localStorage.getItem('xumm_wallet_address'));
       break;
 
@@ -216,8 +214,6 @@ function updateWalletUI() {
       indicator.onclick = startLoginFlow;
       document.getElementById('wallet-info').style.display = 'block';
       document.getElementById('logout-menu').style.display = 'inline-block';
-      generateBtn.style.display = 'none';
-      disableWalletButton('Wallet Already Created');
       break;
 
     case 'xumm_only':
@@ -233,13 +229,6 @@ function updateWalletUI() {
       document.getElementById('wallet-info').style.display = 'block';
       document.getElementById('logout-menu').style.display = 'inline-block';
 
-      if (localStorage.getItem('seagull_wallet')) {
-        generateBtn.style.display = 'none';
-        disableWalletButton('Wallet Already Created');
-      } else {
-        generateBtn.style.display = 'inline-block';
-        enableWalletButton();
-      }
 
       fetchSeagullCoinBalance(wallet);
       break;

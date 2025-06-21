@@ -246,7 +246,7 @@ async function updateWalletStatus() {
       indicator.onclick = startLoginFlow;
       document.getElementById('logout-menu').style.display = 'none';
       generateBtn.style.display = 'inline-block';
-      enableWalletButton();
+      disableWalletButton('Login');
   }
 }
 

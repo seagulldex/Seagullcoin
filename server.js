@@ -5687,57 +5687,45 @@ app.get('/confirm-login/:payloadUUID', async (req, res) => {
   }
 });
 
-app.get('/check-login', async (req, res) => {
-  const uuid = req.query.uuid;
-  if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
+app.get('/api/check-login', async (req, res) => {
+  try {
+    const uuid = req.session.xummPayload || req.query.uuid;
+    if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
 
-  console.log('UUID received:', uuid);
+    const payload = await xumm.payload.get(uuid);
 
-  try {
-    const payload = await xumm.payload.get(uuid);
-    console.log('XUMM payload:', JSON.stringify(payload, null, 2));
+    if (payload.meta.signed && payload.response?.account) {
+      const xrplAddress = payload.response.account;
 
-    if (payload.meta.signed && payload.response?.account) {
-      const xrplAddress = payload.response.account;
-      console.log('XRPL Address:', xrplAddress);
+      let userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress });
 
-      let userWallet;
-      try {
-        userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress });
-      } catch (dbFindErr) {
-        console.error('DB lookup failed:', dbFindErr);
-        return res.status(500).json({ error: 'Database lookup failed' });
-      }
+      if (!userWallet) {
+        const newWalletStr = await generateUniqueWallet();
+        // You can add seed/hashSeed logic here if needed
+        userWallet = new UserWallet({
+          wallet: newWalletStr,
+          xrpl_address: xrplAddress,
+          xumm_uuid: uuid
+        });
+        await userWallet.save();
+      }
 
-      if (!userWallet) {
-        const generatedWallet = `SEAGULL${crypto.randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase()}`;
-        console.log('Creating new wallet:', generatedWallet);
+      req.session.userAddress = xrplAddress;
 
-        try {
-          userWallet = await UserWallet.create({
-            xrpl_address: xrplAddress,
-            wallet: generatedWallet
-          });
-        } catch (dbCreateErr) {
-          console.error('Wallet creation failed:', dbCreateErr);
-          return res.status(500).json({ error: 'Failed to create wallet' });
-        }
-      }
-
-      return res.json({
-        loggedIn: true,
-        account: xrplAddress,
-        seagullWallet: userWallet.wallet,
-        user: userWallet,
-        uuid
-      });
-    } else {
-      res.json({ loggedIn: false });
-    }
-  } catch (err) {
-    console.error('Login check error:', err);
-    res.status(500).json({ error: 'Error checking login' });
-  }
+      return res.json({
+        loggedIn: true,
+        account: xrplAddress,
+        seagullWallet: userWallet.wallet,
+        user: userWallet,
+        uuid
+      });
+    } else {
+      return res.json({ loggedIn: false });
+    }
+  } catch (err) {
+    console.error('Login check error:', err);
+    res.status(500).json({ error: 'Error checking login' });
+  }
 });
 
 

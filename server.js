@@ -5657,6 +5657,52 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
   }
 });
 
+app.get('/check-login', async (req, res) => {
+  const uuid = req.query.uuid;
+  if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
+
+  try {
+    const payload = await xumm.payload.get(uuid);
+    
+    if (payload.meta.signed && payload.response.account) {
+      const xrplAddress = payload.response.account;
+
+      let userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
+
+      if (!userWallet) {
+        // 🔧 Generate unique SEAGULL wallet
+        let unique = false;
+        let walletStr;
+        while (!unique) {
+          walletStr = generateSeagullWallet();
+          const exists = await Wallet.findOne({ wallet: walletStr });
+          if (!exists) unique = true;
+        }
+
+        // Save new wallet
+        userWallet = new Wallet({
+          wallet: walletStr,
+          xrpl_address: xrplAddress,
+          xumm_uuid: uuid
+        });
+        await userWallet.save();
+      }
+
+      // ✅ Return wallet info
+      return res.json({
+        loggedIn: true,
+        account: xrplAddress,
+        seagullWallet: userWallet.wallet,
+        uuid
+      });
+    } else {
+      res.json({ loggedIn: false });
+    }
+  } catch (err) {
+    console.error('Login check error:', err);
+    res.status(500).json({ error: 'Error checking login' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

@@ -152,24 +152,20 @@ async function fetchIPFSMetadata(uri) {
 })();
 
 
-
-// Generator Function
 export async function generateCustomWallet() {
-  // Generate a random wallet address that starts with SEAGULL
   const uniquePart = randomBytes(12).toString('hex').toUpperCase();
   const wallet = `SEAGULL${uniquePart}`;
 
-  // Generate a seed (can be used for login or signing, depending on your logic)
   const seed = randomBytes(32).toString('hex');
   const hashedSeed = hashSeed(seed);
-  
-  // Save to MongoDB
-  const newWallet = new UserWallet({ wallet, seed });
+
+  const newWallet = new UserWallet({ wallet, seed, hashed_seed: hashedSeed }); // ✅ include hashed_seed
   await newWallet.save();
 
   console.log("✅ Created wallet:", wallet);
   return newWallet;
 }
+
 
 async function main() {
   const privateKey = new Uint8Array(32); // Example, replace with your key

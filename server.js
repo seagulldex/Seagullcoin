@@ -5685,7 +5685,42 @@ app.get('/confirm-login/:payloadUUID', async (req, res) => {
   }
 });
 
+app.get('/check-login', async (req, res) => {
+  const uuid = req.query.uuid;
+  if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
 
+  try {
+    const payload = await xumm.payload.get(uuid);
+
+    if (payload.meta.signed && payload.response?.account) {
+      const xrplAddress = payload.response.account;
+
+      let userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress });
+
+      // 🔧 Create if not found
+      if (!userWallet) {
+        const generatedWallet = `SEAGULL${crypto.randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase()}`;
+        userWallet = await UserWallet.create({
+          xrpl_address: xrplAddress,
+          wallet: generatedWallet
+        });
+      }
+
+      return res.json({
+        loggedIn: true,
+        account: xrplAddress,
+        seagullWallet: userWallet.wallet,
+        user: userWallet,
+        uuid
+      });
+    } else {
+      res.json({ loggedIn: false });
+    }
+  } catch (err) {
+    console.error('Login check error:', err);
+    res.status(500).json({ error: 'Error checking login' });
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

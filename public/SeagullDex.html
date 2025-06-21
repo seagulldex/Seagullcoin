@@ -158,48 +158,135 @@
         </table>
       </div>
     </div>
+    
+  <script>
+    
+// On page load, check login
+    window.addEventListener('DOMContentLoaded', () => {
+      loadWalletFromStorage();
+      updateWalletUI();
+      setupTrustlineButton();
+    });
+
+    function loadWalletFromStorage() {
+  const xummWallet = localStorage.getItem('xumm_wallet_address');
+  const seagullWallet = localStorage.getItem('seagull_wallet');
+
+  if (xummWallet) {
+    document.getElementById('xumm-wallet-address').textContent = xummWallet;
+  } else {
+    document.getElementById('xumm-wallet-address').textContent = 'Not connected';
+  }
+
+  if (seagullWallet) {
+    document.getElementById('seagull-wallet-address').textContent = seagullWallet;
+  } else {
+    document.getElementById('seagull-wallet-address').textContent = 'Not connected';
+  }
+}
+
+    function getWalletState() {
+  const xummWallet = localStorage.getItem('xumm_wallet_address');
+  const seagullWallet = localStorage.getItem('seagull_wallet');
+
+  if (xummWallet && seagullWallet) {
+    return 'layer2';
+  } else if (seagullWallet) {
+    return 'seagull_only';
+  } else if (xummWallet) {
+    return 'xumm_only';
+  } else {
+    return 'default';
+  }
+}
+
+
+function updateWalletUI() {
+  const indicator = document.getElementById('wallet-indicator');
+  const state = getWalletState();
+
+  // Reset all color classes
+  indicator.classList.remove('red', 'green', 'blue', 'purple');
+
+  switch (state) {
+    case 'layer2':
+      indicator.textContent = '🔵 Layer 2';
+      indicator.classList.add('blue');
+      indicator.onclick = null;
+      document.getElementById('wallet-info').style.display = 'block';
+      fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+      break;
+
+    case 'seagull_only':
+      indicator.textContent = '🟣 SGLCN-X20';
+      indicator.classList.add('purple');
+      indicator.title = 'Click to login';
+      indicator.onclick = startLoginFlow;
+      document.getElementById('wallet-info').style.display = 'block';
+      break;
+
+    case 'xumm_only':
+      indicator.textContent = '🟢 Connected';
+      indicator.classList.add('green');
+      indicator.title = 'Go to profile';
+      indicator.onclick = () => {
+        const user = JSON.parse(localStorage.getItem('xumm_user'));
+        if (user && user.uuid) {
+          window.location.href = `/profile.html?uuid=${user.uuid}`;
+        }
+      };
+      if (seagullAddress) {
+        walletInfo.style.display = 'block';
+        document.getElementById('xumm-wallet-address').textContent = xummAddress;
+        document.getElementById('seagull-wallet-address').textContent = seagullAddress;
+      } else {
+        walletInfo.style.display = 'none'; // hide if only XUMM with no seagull
+      }
+
+      fetchSeagullCoinBalance(xummAddress);
+      break;
+
+    default:
+      indicator.textContent = '🔴 Login';
+      indicator.classList.add('red');
+      indicator.title = 'Click to login';
+      indicator.onclick = startLoginFlow;
+      document.getElementById('wallet-info').style.display = 'none';
+  }
+}
+
 
     
-
-  <script>
-    function updateWalletStatus() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      const indicator = document.getElementById('wallet-indicator');
-      const logoutBtn = document.getElementById('logout-btn');
-      if (wallet) {
-        indicator.textContent = '🟢 Connected';
-        indicator.classList.remove('red');
-        indicator.classList.add('green');
-        indicator.title = 'Logged in';
-        indicator.onclick = null;
-        logoutBtn.style.display = 'inline-block';
-      } else {
-        indicator.textContent = '🔴 Login';
-        indicator.classList.remove('green');
-        indicator.classList.add('red');
-        indicator.title = 'Click to login';
-        indicator.onclick = startLoginFlow;
-        logoutBtn.style.display = 'none';
-      }
-    }
-
+    
     async function startLoginFlow() {
-      try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/login');
-        const data = await res.json();
-        window.open(data.payloadURL, "_blank");
-        const interval = setInterval(async () => {
-          const check = await fetch(`https://sglcn-x20-api.glitch.me/check-login?uuid=${data.payloadUUID}`);
-          const loginStatus = await check.json();
-          if (loginStatus.loggedIn) {
-            clearInterval(interval);
-            localStorage.setItem('xumm_wallet_address', loginStatus.account);
-            updateWalletStatus();
-          }
-        }, 3000);
-      } catch (err) {
-        alert('Login failed: ' + err.message);
+  try {
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
+    const data = await res.json();
+    window.location.href = data.payloadURL;
+
+    const interval = setInterval(async () => {
+      const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
+      const loginStatus = await check.json();
+
+      if (loginStatus.loggedIn) {
+        clearInterval(interval);
+        wallet = loginStatus.account;
+
+        // 🔐 Save both XRPL and SEAGULL wallet info
+      localStorage.setItem('xumm_wallet_address', loginStatus.account);
+      localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
+      localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
+      localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
+
+
+        document.getElementById('wallet-address').textContent = wallet;
+        updateWalletUI();
       }
+
+    }, 3000); // <- this closing brace lines up properly now
+  } catch (e) {
+    alert('Login failed: ' + e.message);
+  }
     }
 
     document.getElementById('logout-btn').onclick = () => {

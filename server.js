@@ -1196,7 +1196,7 @@ app.get('/check-login', async (req, res) => {
       const xrplAddress = payload.response.account;
 
       // Check if Seagull wallet already exists for this XRPL address
-      let userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress });
+      let userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
 
       if (!userWallet) {
         let unique = false;
@@ -1204,7 +1204,7 @@ app.get('/check-login', async (req, res) => {
 
         while (!unique) {
           newWallet = await generateCustomWallet();
-          const exists = await UserWallet.findOne({ wallet: newWallet.wallet });
+          const exists = await Wallet.findOne({ wallet: newWallet.wallet });
           if (!exists) unique = true;
         }
 

@@ -151,21 +151,34 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
+const UserWalletSchema = new mongoose.Schema({
+  wallet: { type: String, required: true, unique: true },
+  seed: { type: String, required: false },
+  xrpl_address: { type: String, required: false },
+  xumm_uuid: { type: String, required: false },
+  hashed_seed: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
 
+
+
+// Generator Function
 export async function generateCustomWallet() {
+  // Generate a random wallet address that starts with SEAGULL
   const uniquePart = randomBytes(12).toString('hex').toUpperCase();
   const wallet = `SEAGULL${uniquePart}`;
 
+  // Generate a seed (can be used for login or signing, depending on your logic)
   const seed = randomBytes(32).toString('hex');
   const hashedSeed = hashSeed(seed);
-
-  const newWallet = new Wallet({ wallet, seed, hashed_seed: hashedSeed });
+  
+  // Save to MongoDB
+  const newWallet = new UserWallet({ wallet, seed });
   await newWallet.save();
 
   console.log("✅ Created wallet:", wallet);
   return newWallet;
 }
-
 
 
 async function main() {

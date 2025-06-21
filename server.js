@@ -1187,51 +1187,35 @@ app.get('/confirm-login/:payloadUUID', async (req, res) => {
   }
 });
 
+
+
 app.get('/check-login', async (req, res) => {
   const uuid = req.query.uuid;
   if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
 
   try {
     const payload = await xumm.payload.get(uuid);
-
+    
     if (payload.meta.signed && payload.response.account) {
       const xrplAddress = payload.response.account;
 
-      // 🔍 Look for existing wallet tied to XRPL address
-      let userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
+      // 🔍 Find wallet in DB using the XRPL address
+      const userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
 
       if (!userWallet) {
-        // 👛 Generate a new wallet
-        const { address: seagullWallet, seed } = createNewSeagullWallet();
-
-        // ❌ Ensure no one else already has this Seagull wallet
-        const duplicate = await Wallet.findOne({ wallet: seagullWallet });
-        if (duplicate) {
-          return res.status(409).json({
-            error: 'Generated wallet already exists. Please try again.'
-          });
-        }
-
-        // ✅ Save the wallet
-        userWallet = await Wallet.create({
-          xrpl_address: xrplAddress,
-          wallet: seagullWallet,
-        });
-
-        return res.json({
+        return res.status(404).json({
           loggedIn: true,
           account: xrplAddress,
-          seagullWallet,
-          seed,
-          newWallet: true
+          seagullWallet: null,
+          message: 'Wallet not found in DB'
         });
       }
 
-      // 🎯 Wallet already exists for user
+      // ✅ Return both XRPL address and SEAGULL wallet
       res.json({
         loggedIn: true,
         account: xrplAddress,
-        seagullWallet: userWallet.wallet,
+        seagullWallet: userWallet.wallet, // ← SEAGULLXXXXXXXX
         uuid
       });
     } else {
@@ -1242,7 +1226,6 @@ app.get('/check-login', async (req, res) => {
     res.status(500).json({ error: 'Error checking login' });
   }
 });
-
 
   
 

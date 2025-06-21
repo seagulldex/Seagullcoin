@@ -5660,39 +5660,47 @@ app.get('/check-login', async (req, res) => {
   const uuid = req.query.uuid;
   if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
 
+  console.log('Checking login with UUID:', uuid);
+
+  let payload;
   try {
-    const payload = await xumm.payload.get(uuid);
-    
-    if (payload.meta.signed && payload.response.account) {
-      const xrplAddress = payload.response.account;
+    payload = await xumm.payload.get(uuid);
+  } catch (err) {
+    console.error('Error fetching payload:', err.message, err.stack);
+    return res.status(500).json({ error: 'Failed to fetch payload from XUMM' });
+  }
 
-      // 🔍 Find wallet in DB using the XRPL address
-      const userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
+  if (payload.meta.signed && payload.response && payload.response.account) {
+    const xrplAddress = payload.response.account;
 
-      if (!userWallet) {
-        return res.status(404).json({
-          loggedIn: true,
-          account: xrplAddress,
-          seagullWallet: null,
-          message: 'Wallet not found in DB'
-        });
-      }
+    let userWallet;
+    try {
+      userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
+    } catch (dbErr) {
+      console.error('Database error:', dbErr.message);
+      return res.status(500).json({ error: 'Database query failed' });
+    }
 
-      // ✅ Return both XRPL address and SEAGULL wallet
-      res.json({
+    if (!userWallet) {
+      return res.status(404).json({
         loggedIn: true,
         account: xrplAddress,
-        seagullWallet: userWallet.wallet, // ← SEAGULLXXXXXXXX
-        uuid
+        seagullWallet: null,
+        message: 'Wallet not found in DB'
       });
-    } else {
-      res.json({ loggedIn: false });
     }
-  } catch (err) {
-    console.error('Login check error:', err);
-    res.status(500).json({ error: 'Error checking login' });
+
+    return res.json({
+      loggedIn: true,
+      account: xrplAddress,
+      seagullWallet: userWallet.wallet,
+      uuid
+    });
   }
+
+  res.json({ loggedIn: false });
 });
+
 
 
 // Call the XRPL ping when the server starts

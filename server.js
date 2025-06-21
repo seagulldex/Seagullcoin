@@ -1186,58 +1186,32 @@ app.get('/confirm-login/:payloadUUID', async (req, res) => {
   }
 });
 
-app.get('/check-login', async (req, res) => {
-  const uuid = req.query.uuid;
-  if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
-
-  try {
-    const payload = await xumm.payload.get(uuid);
-
-    if (payload.meta.signed && payload.response.account) {
-      const xrplAddress = payload.response.account;
-
-      // Check if Seagull wallet already exists for this XRPL address
-      let userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
-
-      if (!userWallet) {
-        let unique = false;
-        let newWallet;
-
-        while (!unique) {
-          newWallet = await generateCustomWallet();
-          const exists = await Wallet.findOne({ wallet: newWallet.wallet });
-          if (!exists) unique = true;
-        }
-
-        // Link XRPL address to generated Seagull wallet
-        newWallet.xrpl_address = xrplAddress;
-        await newWallet.save();
-
-        return res.json({
-          loggedIn: true,
-          account: xrplAddress,
-          seagullWallet: newWallet.wallet,
-          seed: newWallet.seed, // Send only once!
-          newWallet: true,
-          uuid
-        });
-      }
-
-      // Wallet exists, return it (without seed)
-      return res.json({
-        loggedIn: true,
-        account: xrplAddress,
-        seagullWallet: userWallet.wallet,
-        newWallet: false,
-        uuid
-      });
-    }
-
-    res.json({ loggedIn: false });
-  } catch (err) {
-    console.error('Login check error:', err);
-    res.status(500).json({ error: 'Error checking login' });
-  }
+app.get('/check-login', async (req, res) 
+const uuid = req.query.uuid;
+if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
+try {
+const payload = await xumm.payload.get(uuid);
+if (payload.meta.signed && payload.response.account) {
+const xrplAddress = payload.response.account;
+// 🔍 Look up the wallet in the DB
+const userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress });
+if (!userWallet) {
+return res.status(404).json({ error: 'Wallet not found for this XRPL address' });
+}
+res.json({
+loggedIn: true,
+account: xrplAddress,
+seagullWallet: userWallet.wallet, // <- SEAGULLXXXXXXXXXXX
+user: userWallet,
+uuid
+});
+} else {
+res.json({ loggedIn: false });
+}
+} catch (err) {
+console.error('Login check error:', err);
+res.status(500).json({ error: 'Error checking login' });
+}
 });
 
 

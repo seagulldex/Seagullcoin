@@ -74,6 +74,8 @@ import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
+import { PriceHistory } from './models/priceHistory.js'; // or '../models/...' depending on path
+
 
 // ===== Init App and Env =====
 dotenv.config();

@@ -1216,7 +1216,6 @@ app.get('/check-login', async (req, res) => {
         userWallet = await Wallet.create({
           xrpl_address: xrplAddress,
           wallet: seagullWallet,
-          seed
         });
 
         return res.json({

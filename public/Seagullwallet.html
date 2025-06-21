@@ -293,14 +293,41 @@ async function startLoginFlow() {
     const loginStatus = await check.json();
 
     if (loginStatus.loggedIn) {
-      clearInterval(interval);
+  clearInterval(interval);
 
-      // 🔐 Save both XRPL and SEAGULL wallet info
-      localStorage.setItem('xumm_wallet_address', loginStatus.account);
-      localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
-      localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
-      localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
-      updateWalletStatus();
+  // Save what exists
+  if (loginStatus.account) {
+    localStorage.setItem('xumm_wallet_address', loginStatus.account);
+    localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
+  }
+
+  if (loginStatus.seagullWallet) {
+    localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
+  }
+
+  if (loginStatus.user) {
+    localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
+  }
+
+  // Redirect logic after login
+  const hasXumm = !!loginStatus.account;
+  const hasSeagull = !!loginStatus.seagullWallet;
+
+  if (hasXumm && hasSeagull) {
+    // redirect to 🔵 (Layer 2)
+    window.location.href = "layer2.html"; // replace with actual Layer 2 page
+  } else if (hasSeagull) {
+    // redirect to 🟣 SGLCN-X20
+    window.location.href = "seagull-only.html"; // replace with actual Seagull-only page
+  } else if (hasXumm) {
+    // redirect to 🟢 Connected
+    window.location.href = "xumm-only.html"; // replace with actual XUMM-only page
+  } else {
+    // fallback: stay on login
+    alert("Login succeeded, but no wallet info detected.");
+  }
+
+  updateWalletStatus();
     }
   }, 3000);
 }

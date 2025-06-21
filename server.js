@@ -1182,27 +1182,46 @@ app.get('/check-login', async (req, res) => {
 
   try {
     const payload = await xumm.payload.get(uuid);
-    
+
     if (payload.meta.signed && payload.response.account) {
       const xrplAddress = payload.response.account;
 
-      // 🔍 Find wallet in DB using the XRPL address
-      const userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
+      // 🔍 Look for existing wallet tied to XRPL address
+      let userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
 
       if (!userWallet) {
-        return res.status(404).json({
+        // 👛 Generate a new wallet
+        const { address: seagullWallet, seed } = createNewSeagullWallet();
+
+        // ❌ Ensure no one else already has this Seagull wallet
+        const duplicate = await Wallet.findOne({ wallet: seagullWallet });
+        if (duplicate) {
+          return res.status(409).json({
+            error: 'Generated wallet already exists. Please try again.'
+          });
+        }
+
+        // ✅ Save the wallet
+        userWallet = await Wallet.create({
+          xrpl_address: xrplAddress,
+          wallet: seagullWallet,
+          seed
+        });
+
+        return res.json({
           loggedIn: true,
           account: xrplAddress,
-          seagullWallet: null,
-          message: 'Wallet not found in DB'
+          seagullWallet,
+          seed,
+          newWallet: true
         });
       }
 
-      // ✅ Return both XRPL address and SEAGULL wallet
+      // 🎯 Wallet already exists for user
       res.json({
         loggedIn: true,
         account: xrplAddress,
-        seagullWallet: userWallet.wallet, // ← SEAGULLXXXXXXXX
+        seagullWallet: userWallet.wallet,
         uuid
       });
     } else {

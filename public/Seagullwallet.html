@@ -282,55 +282,68 @@ function logoutAll() {
 }
 
 async function startLoginFlow() {
-  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
-  const data = await res.json();
-  const payloadUUID = data.payloadUUID;
+  try {
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
+    const data = await res.json();
 
-  window.open(data.payloadURL, "_blank");
-
-  const interval = setInterval(async () => {
-    const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${payloadUUID}`);
-    const loginStatus = await check.json();
-
-    if (loginStatus.loggedIn) {
-  clearInterval(interval);
-
-  // Save what exists
-  if (loginStatus.account) {
-    localStorage.setItem('xumm_wallet_address', loginStatus.account);
-    localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
-  }
-
-  if (loginStatus.seagullWallet) {
-    localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
-  }
-
-  if (loginStatus.user) {
-    localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
-  }
-
-  // Redirect logic after login
-  const hasXumm = !!loginStatus.account;
-  const hasSeagull = !!loginStatus.seagullWallet;
-
-  if (hasXumm && hasSeagull) {
-    // redirect to 🔵 (Layer 2)
-    window.location.href = "layer2.html"; // replace with actual Layer 2 page
-  } else if (hasSeagull) {
-    // redirect to 🟣 SGLCN-X20
-    window.location.href = "seagull-only.html"; // replace with actual Seagull-only page
-  } else if (hasXumm) {
-    // redirect to 🟢 Connected
-    window.location.href = "xumm-only.html"; // replace with actual XUMM-only page
-  } else {
-    // fallback: stay on login
-    alert("Login succeeded, but no wallet info detected.");
-  }
-
-  updateWalletStatus();
+    const payloadUUID = data.payloadUUID;
+    if (!payloadUUID || !data.payloadURL) {
+      throw new Error("Invalid login payload received.");
     }
-  }, 3000);
+
+    window.open(data.payloadURL, "_blank");
+
+    const interval = setInterval(async () => {
+      try {
+        const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${payloadUUID}`);
+        const loginStatus = await check.json();
+
+        if (loginStatus.loggedIn) {
+          clearInterval(interval);
+
+          // Save to localStorage
+          if (loginStatus.account) {
+            localStorage.setItem('xumm_wallet_address', loginStatus.account);
+            localStorage.setItem('xumm_payload_uuid', payloadUUID);
+          }
+
+          if (loginStatus.seagullWallet) {
+            localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
+          }
+
+          if (loginStatus.user) {
+            localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
+          }
+
+          // Redirect based on what the user has connected
+          const hasXumm = !!loginStatus.account;
+          const hasSeagull = !!loginStatus.seagullWallet;
+
+          if (hasXumm && hasSeagull) {
+            window.location.href = "layer2.html";
+          } else if (hasSeagull) {
+            window.location.href = "seagull-only.html";
+          } else if (hasXumm) {
+            window.location.href = "xumm-only.html";
+          } else {
+            alert("Login succeeded, but no wallet info detected.");
+          }
+
+          // Optional: update UI post-login
+          updateWalletStatus();
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+        // Optional: add retry logic or stop polling after X attempts
+      }
+    }, 3000);
+
+  } catch (err) {
+    console.error("Login start error:", err);
+    alert("Failed to initiate login flow.");
+  }
 }
+
 
 
 document.getElementById('generate-wallet-btn').addEventListener('click', async () => {

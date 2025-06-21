@@ -160,7 +160,7 @@ const UserWalletSchema = new mongoose.Schema({
 });
 
 
-const UserWallet = mongoose.model('UserWallet', UserWalletSchema);
+
 
 // Generator Function
 export async function generateCustomWallet() {

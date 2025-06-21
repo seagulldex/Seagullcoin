@@ -141,8 +141,13 @@ let currentIndex = 0;
 const nftsPerPage = 20;
 let currentTab = 'single'; // or 'collections'
 
-window.addEventListener('DOMContentLoaded', () => {
-  updateWalletStatus();
+
+  // On page load, check login
+    window.addEventListener('DOMContentLoaded', () => {
+      loadWalletFromStorage();
+      updateWalletUI();
+      setupTrustlineButton();
+    })
   
 const seagullWallet = localStorage.getItem('seagull_wallet');
   const generateBtn = document.getElementById('generate-wallet-btn');
@@ -178,6 +183,23 @@ const seagullWallet = localStorage.getItem('seagull_wallet');
   });
 });
 
+    function loadWalletFromStorage() {
+  const xummWallet = localStorage.getItem('xumm_wallet_address');
+  const seagullWallet = localStorage.getItem('seagull_wallet');
+
+  if (xummWallet) {
+    document.getElementById('xumm-wallet-address').textContent = xummWallet;
+  } else {
+    document.getElementById('xumm-wallet-address').textContent = 'Not connected';
+  }
+
+  if (seagullWallet) {
+    document.getElementById('seagull-wallet-address').textContent = seagullWallet;
+  } else {
+    document.getElementById('seagull-wallet-address').textContent = 'Not connected';
+  }
+    }
+
 
 
 function getWalletState() {
@@ -185,15 +207,15 @@ function getWalletState() {
   const seagullWallet = localStorage.getItem('seagull_wallet');
 
   if (xummWallet && seagullWallet) {
-  return 'layer2'; // Both connected
-} else if (seagullWallet) {
-  return 'seagull_only'; // Seagull wallet only
-} else if (xummWallet) {
-  return 'xumm_only'; // XUMM only
-} else {
-  return 'default'; // No wallet connected
+    return 'layer2';
+  } else if (seagullWallet) {
+    return 'seagull_only';
+  } else if (xummWallet) {
+    return 'xumm_only';
+  } else {
+    return 'default';
+  }
 }
-
 
 
 

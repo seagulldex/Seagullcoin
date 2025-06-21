@@ -199,12 +199,16 @@ const giftCardOrderSchema = new mongoose.Schema({
 const GiftCardOrder = mongoose.model('GiftCardOrder', giftCardOrderSchema);
 
 function createNewSeagullWallet() {
-  const wallet = xrpl.Wallet.generate(); // generates a random wallet
+  const random = Math.random().toString(36).substring(2, 10).toUpperCase();
+  const address = 'SEAGULL' + random.padEnd(16, 'X');
+  const seed = crypto.randomBytes(32).toString('hex'); // or whatever format you use
+
   return {
-    address: wallet.address, // SEAGULL-style address (X-address)
-    seed: wallet.seed        // Private seed
+    address,
+    seed
   };
 }
+
 
 async function getStakes() {
   const client = new xrpl.Client("wss://s1.ripple.com");

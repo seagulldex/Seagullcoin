@@ -281,6 +281,7 @@ function logoutAll() {
   updateWalletStatus();
 }
 
+
 async function startLoginFlow() {
   try {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
@@ -315,21 +316,14 @@ async function startLoginFlow() {
             localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
           }
 
-          // Redirect based on what the user has connected
           const hasXumm = !!loginStatus.account;
           const hasSeagull = !!loginStatus.seagullWallet;
 
-          if (hasXumm && hasSeagull) {
-            window.location.href = "layer2.html";
-          } else if (hasSeagull) {
-            window.location.href = "seagull-only.html";
-          } else if (hasXumm) {
-            window.location.href = "xumm-only.html";
-          } else {
-            alert("Login succeeded, but no wallet info detected.");
-          }
+          console.log("Login success:", { hasXumm, hasSeagull, user: loginStatus.user });
 
-          // Optional: update UI post-login
+          // Call your handler instead of redirect
+          handleSuccessfulLogin({ hasXumm, hasSeagull, user: loginStatus.user });
+
           updateWalletStatus();
         }
       } catch (err) {
@@ -337,11 +331,17 @@ async function startLoginFlow() {
         // Optional: add retry logic or stop polling after X attempts
       }
     }, 3000);
-
   } catch (err) {
-    console.error("Login start error:", err);
-    alert("Failed to initiate login flow.");
+    console.error("Login flow error:", err);
   }
+}
+
+// Example handler you can customize
+function handleSuccessfulLogin({ hasXumm, hasSeagull, user }) {
+  // Customize what to do on login success
+  // For example, update UI, show messages, etc.
+  alert(`Logged in! XUMM: ${hasXumm}, Seagull: ${hasSeagull}`);
+  // Or do something else here...
 }
 
 

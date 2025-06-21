@@ -181,12 +181,14 @@ const seagullWallet = localStorage.getItem('seagull_wallet');
 
 
 function getWalletState() {
+function getWalletState() {
   const xummWallet = localStorage.getItem('xumm_wallet_address');
   const seagullWallet = localStorage.getItem('seagull_wallet');
 
+  const isLayer2 = seagullWallet && seagullWallet.startsWith('SEAGULL');
 
-  if (xummWallet && seagullWallet) {
-    return 'xumm_only';
+  if (xummWallet && isLayer2) {
+    return 'layer2';
   } else if (seagullWallet) {
     return 'seagull_only';
   } else if (xummWallet) {
@@ -195,6 +197,7 @@ function getWalletState() {
     return 'default';
   }
 }
+
 
 
 

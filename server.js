@@ -74,8 +74,6 @@ import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
-import { PriceHistory } from './models/priceHistory.js'; // or '../models/...' depending on path
-
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -151,7 +149,15 @@ async function fetchIPFSMetadata(uri) {
 })();
 
 
-
+// MongoDB Schema
+const UserWalletSchema = new mongoose.Schema({
+  wallet: { type: String, required: true, unique: true },
+  seed: { type: String, required: false },
+  xrpl_address: { type: String, required: false },
+  xumm_uuid: { type: String, required: false },
+  hashed_seed: { type: String, required: true }, // <-- Ensure this field exists
+  createdAt: { type: Date, default: Date.now },
+});
 
 
 const UserWallet = mongoose.model('UserWallet', UserWalletSchema);
@@ -645,7 +651,6 @@ app.get("/tokens", (req, res) => {
   res.json(tokens);
 });
 
-
 // ===== Swagger Docs =====
 const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -930,6 +935,9 @@ app.get('/signed-payloads', (req, res) => {
     res.json(rows);
   });
 });
+
+
+
 
 // Endpoint: Stake status by wallet
 app.get('/stake-status/:wallet', async (req, res) => {
@@ -1958,7 +1966,6 @@ async function updateUserProfile(walletAddress, newProfileData) {
     res.status(500).json({ error: 'Failed to update username.' });
   }
 });
-
 /**
  * @swagger
  * /update-username:
@@ -3245,6 +3252,7 @@ async function fetchOffersFromXRPL(walletAddress) {
   }
 }
 
+
 app.get('/offers/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   const client = new xrpl.Client(xrplApiUrl);
@@ -4369,7 +4377,7 @@ app.get('/api/sglcn-xrp', (req, res) => {
       return res.status(404).json({ error: "No AMM price history available." });
     }
 
-    const showHistory = req.query.history === 'true';
+  const showHistory = req.query.history === 'true';
     if (showHistory) {
       return res.json({ history });
     }
@@ -5032,6 +5040,7 @@ app.get('/rate-preview', async (req, res) => {
   }
 });
 
+
 app.get('/amm/view/sglcn-xau', async (req, res) => {
   const client = new Client("wss://s2.ripple.com");
 
@@ -5076,8 +5085,6 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
     res.status(500).json({ error: e?.data?.error_message || e?.message || "Unknown error" });
   }
 });
-
-
 
 app.post('/swap/amm/sglcn-xau', async (req, res) => {
   try {
@@ -5650,83 +5657,6 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
   }
 });
 
-
-app.get('/confirm-login/:payloadUUID', async (req, res) => {
-  try {
-    const uuid = req.session.payloadUUID;
-    if (!uuid) return res.status(400).json({ error: 'Missing session UUID' });
-
-    const result = await xumm.payload.get(uuid);
-
-    if (result.meta.signed !== true) {
-      return res.status(401).json({ status: 'Not signed yet' });
-    }
-
-    const xrpl_address = result.response.account;
-    const walletDoc = await UserWallet.findOne({ xrpl_address });
-
-    if (!walletDoc) {
-      return res.status(404).json({ error: 'Wallet not registered' });
-    }
-
-    // ✅ Store in session or JWT
-    req.session.user = {
-      wallet: walletDoc.wallet,             // SEAGULL...
-      xrpl_address: walletDoc.xrpl_address  // r...
-    };
-
-    res.status(200).json({
-      status: 'Signed',
-      wallet: walletDoc.wallet,
-      xrpl_address: walletDoc.xrpl_address
-    });
-
-  } catch (err) {
-    console.error('Error verifying login:', err);
-    res.status(500).json({ error: 'Login verification failed' });
-  }
-});
-
-app.get('/api/check-login', async (req, res) => {
-  try {
-    const uuid = req.session.xummPayload || req.query.uuid;
-    if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
-
-    const payload = await xumm.payload.get(uuid);
-
-    if (payload.meta.signed && payload.response?.account) {
-      const xrplAddress = payload.response.account;
-
-      let userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress });
-
-      if (!userWallet) {
-        const newWalletStr = await generateUniqueWallet();
-        // You can add seed/hashSeed logic here if needed
-        userWallet = new UserWallet({
-          wallet: newWalletStr,
-          xrpl_address: xrplAddress,
-          xumm_uuid: uuid
-        });
-        await userWallet.save();
-      }
-
-      req.session.userAddress = xrplAddress;
-
-      return res.json({
-        loggedIn: true,
-        account: xrplAddress,
-        seagullWallet: userWallet.wallet,
-        user: userWallet,
-        uuid
-      });
-    } else {
-      return res.json({ loggedIn: false });
-    }
-  } catch (err) {
-    console.error('Login check error:', err);
-    res.status(500).json({ error: 'Error checking login' });
-  }
-});
 
 
 // Call the XRPL ping when the server starts

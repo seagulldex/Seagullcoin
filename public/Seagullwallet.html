@@ -184,16 +184,16 @@ function getWalletState() {
   const xummWallet = localStorage.getItem('xumm_wallet_address');
   const seagullWallet = localStorage.getItem('seagull_wallet');
 
-  if (xummWallet && seagullWallet) {
-    return 'xumm_only';
-  } else if (seagullWallet) {
-    return 'seagull_only';
-  } else if (xummWallet) {
-    return 'xumm_only';
-  } else {
-    return 'default';
-  }
+if (xummWallet && seagullWallet) {
+  return 'layer2'; // Both connected
+} else if (seagullWallet) {
+  return 'seagull_only'; // Seagull wallet only
+} else if (xummWallet) {
+  return 'xumm_only'; // XUMM only
+} else {
+  return 'default'; // No wallet connected
 }
+
 
 
 

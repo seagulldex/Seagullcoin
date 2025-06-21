@@ -178,15 +178,24 @@ const seagullWallet = localStorage.getItem('seagull_wallet');
   });
 });
 
-    function getWalletState() {
-  const hasXumm = !!localStorage.getItem('xumm_wallet_address');
-  const hasSeagull = !!localStorage.getItem('seagull_wallet');
+function getWalletState() {
+  const xummWallet = localStorage.getItem('xumm_wallet_address');
+  const seagullWallet = localStorage.getItem('seagull_wallet');
 
-  if (hasXumm && hasSeagull) return 'layer2';
-  if (hasSeagull && !hasXumm) return 'seagull_only';
-  if (hasXumm && !hasSeagull) return 'xumm_only';
-  return 'logged_out';
+  const hasXumm = xummWallet && xummWallet !== 'null' && xummWallet !== '';
+  const hasSeagull = seagullWallet && seagullWallet !== 'null' && seagullWallet !== '';
+
+  if (hasXumm && hasSeagull) {
+    return 'layer2';
+  } else if (hasSeagull) {
+    return 'seagull_only';
+  } else if (hasXumm) {
+    return 'xumm_only';
+  } else {
+    return 'default';
+  }
 }
+
 
 
 function switchTab() {

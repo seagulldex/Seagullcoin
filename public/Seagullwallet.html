@@ -179,24 +179,21 @@ const seagullWallet = localStorage.getItem('seagull_wallet');
 });
 
 
+
 function getWalletState() {
   const xummWallet = localStorage.getItem('xumm_wallet_address');
   const seagullWallet = localStorage.getItem('seagull_wallet');
 
-  const hasXumm = xummWallet && xummWallet !== 'null' && xummWallet !== '';
-  const hasSeagull = seagullWallet && seagullWallet !== 'null' && seagullWallet !== '';
-
-  if (hasXumm && hasSeagull) {
-    return 'xumm_and_seagull';
-  } else if (hasSeagull) {
+  if (xummWallet && seagullWallet) {
+    return 'xumm_only';
+  } else if (seagullWallet) {
     return 'seagull_only';
-  } else if (hasXumm) {
+  } else if (xummWallet) {
     return 'xumm_only';
   } else {
     return 'default';
   }
 }
-
 
 
 

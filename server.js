@@ -5656,6 +5656,7 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
   }
 });
 
+
 app.get('/check-login', async (req, res) => {
   const uuid = req.query.uuid;
   if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
@@ -5666,7 +5667,7 @@ app.get('/check-login', async (req, res) => {
   try {
     payload = await xumm.payload.get(uuid);
   } catch (err) {
-    console.error('Error fetching payload:', err.message, err.stack);
+    console.error('Error fetching payload:', err.message);
     return res.status(500).json({ error: 'Failed to fetch payload from XUMM' });
   }
 
@@ -5682,12 +5683,28 @@ app.get('/check-login', async (req, res) => {
     }
 
     if (!userWallet) {
-      return res.status(404).json({
-        loggedIn: true,
-        account: xrplAddress,
-        seagullWallet: null,
-        message: 'Wallet not found in DB'
-      });
+      // ✅ Create a new SEAGULL wallet
+      const generatedWalletId = `SEAGULL${crypto.randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase()}`;
+
+      try {
+        const newWallet = new Wallet({
+          xrpl_address: xrplAddress,
+          wallet: generatedWalletId
+        });
+
+        await newWallet.save();
+
+        return res.status(201).json({
+          loggedIn: true,
+          account: xrplAddress,
+          seagullWallet: generatedWalletId,
+          uuid,
+          message: 'New wallet created'
+        });
+      } catch (saveErr) {
+        console.error('Error saving new wallet:', saveErr.message);
+        return res.status(500).json({ error: 'Failed to create new wallet' });
+      }
     }
 
     return res.json({
@@ -5700,7 +5717,6 @@ app.get('/check-login', async (req, res) => {
 
   res.json({ loggedIn: false });
 });
-
 
 
 // Call the XRPL ping when the server starts

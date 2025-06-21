@@ -159,12 +159,13 @@ export async function generateCustomWallet() {
   const seed = randomBytes(32).toString('hex');
   const hashedSeed = hashSeed(seed);
 
-  const newWallet = new UserWallet({ wallet, seed, hashed_seed: hashedSeed }); // ✅ include hashed_seed
+  const newWallet = new Wallet({ wallet, seed, hashed_seed: hashedSeed });
   await newWallet.save();
 
   console.log("✅ Created wallet:", wallet);
   return newWallet;
 }
+
 
 
 async function main() {

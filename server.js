@@ -5657,66 +5657,42 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
 });
 
 
-app.get('/check-login', async (req, res) => {
-  const uuid = req.query.uuid;
-  if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
-
-  console.log('Checking login with UUID:', uuid);
-
-  let payload;
+app.get('/confirm-login/:payloadUUID', async (req, res) => {
   try {
-    payload = await xumm.payload.get(uuid);
-  } catch (err) {
-    console.error('Error fetching payload:', err.message);
-    return res.status(500).json({ error: 'Failed to fetch payload from XUMM' });
-  }
+    const uuid = req.session.payloadUUID;
+    if (!uuid) return res.status(400).json({ error: 'Missing session UUID' });
 
-  if (payload.meta.signed && payload.response && payload.response.account) {
-    const xrplAddress = payload.response.account;
+    const result = await xumm.payload.get(uuid);
 
-    let userWallet;
-    try {
-      userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
-    } catch (dbErr) {
-      console.error('Database error:', dbErr.message);
-      return res.status(500).json({ error: 'Database query failed' });
+    if (result.meta.signed !== true) {
+      return res.status(401).json({ status: 'Not signed yet' });
     }
 
-    if (!userWallet) {
-      // ✅ Create a new SEAGULL wallet
-      const generatedWalletId = `SEAGULL${crypto.randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase()}`;
+    const xrpl_address = result.response.account;
+    const walletDoc = await UserWallet.findOne({ xrpl_address });
 
-      try {
-        const newWallet = new Wallet({
-          xrpl_address: xrplAddress,
-          wallet: generatedWalletId
-        });
-
-        await newWallet.save();
-
-        return res.status(201).json({
-          loggedIn: true,
-          account: xrplAddress,
-          seagullWallet: generatedWalletId,
-          uuid,
-          message: 'New wallet created'
-        });
-      } catch (saveErr) {
-        console.error('Error saving new wallet:', saveErr.message);
-        return res.status(500).json({ error: 'Failed to create new wallet' });
-      }
+    if (!walletDoc) {
+      return res.status(404).json({ error: 'Wallet not registered' });
     }
 
-    return res.json({
-      loggedIn: true,
-      account: xrplAddress,
-      seagullWallet: userWallet.wallet,
-      uuid
+    // ✅ Store in session or JWT
+    req.session.user = {
+      wallet: walletDoc.wallet,             // SEAGULL...
+      xrpl_address: walletDoc.xrpl_address  // r...
+    };
+
+    res.status(200).json({
+      status: 'Signed',
+      wallet: walletDoc.wallet,
+      xrpl_address: walletDoc.xrpl_address
     });
-  }
 
-  res.json({ loggedIn: false });
+  } catch (err) {
+    console.error('Error verifying login:', err);
+    res.status(500).json({ error: 'Login verification failed' });
+  }
 });
+
 
 
 // Call the XRPL ping when the server starts

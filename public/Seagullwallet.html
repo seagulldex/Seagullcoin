@@ -270,6 +270,7 @@ function logoutXRPL() {
   localStorage.removeItem('xumm_wallet_address');
   localStorage.removeItem('xumm_payload_uuid');
   localStorage.removeItem('xumm_user');
+  localStorage.removeItem('Layer2_wallet');
   updateWalletStatus();
 }
 
@@ -303,7 +304,7 @@ async function startLoginFlow() {
       localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
       localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
       localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
-
+      localStorage.setItem('Layer2_wallet', loginStatus.Layerwallet);
       updateWalletStatus();
     }
   }, 3000);

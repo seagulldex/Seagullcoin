@@ -5671,24 +5671,28 @@ app.get('/check-login', async (req, res) => {
 
       if (!userWallet) {
         // 🔧 Generate unique SEAGULL wallet
-        let unique = false;
         let walletStr;
-        while (!unique) {
-          walletStr = generateSeagullWallet();
-          const exists = await Wallet.findOne({ wallet: walletStr });
-          if (!exists) unique = true;
+        let exists = true;
+        while (exists) {
+          walletStr = 'SEAGULL' + randomBytes(12).toString('hex').toUpperCase();
+          exists = await Wallet.findOne({ wallet: walletStr });
         }
 
-        // Save new wallet
+        // Create and save wallet
         userWallet = new Wallet({
           wallet: walletStr,
           xrpl_address: xrplAddress,
           xumm_uuid: uuid
         });
-        await userWallet.save();
+
+        try {
+          await userWallet.save();
+        } catch (err) {
+          console.error('Wallet save error:', err);
+          return res.status(500).json({ error: 'Could not save wallet' });
+        }
       }
 
-      // ✅ Return wallet info
       return res.json({
         loggedIn: true,
         account: xrplAddress,
@@ -5703,6 +5707,8 @@ app.get('/check-login', async (req, res) => {
     res.status(500).json({ error: 'Error checking login' });
   }
 });
+
+
 
 
 // Call the XRPL ping when the server starts

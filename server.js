@@ -72,13 +72,8 @@ import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
 import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
-console.log("Imported Wallet model:", Wallet?.modelName);
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
-import Transaction from './models/Transaction.js';
-
-
-
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -111,6 +106,8 @@ const token = randomBytes(32).toString('hex')
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
+
+
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 
@@ -151,16 +148,19 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
+
+// MongoDB Schema
 const UserWalletSchema = new mongoose.Schema({
   wallet: { type: String, required: true, unique: true },
   seed: { type: String, required: false },
   xrpl_address: { type: String, required: false },
   xumm_uuid: { type: String, required: false },
-  hashed_seed: { type: String, required: true },
+  hashed_seed: { type: String, required: true }, // <-- Ensure this field exists
   createdAt: { type: Date, default: Date.now },
 });
 
 
+const UserWallet = mongoose.model('UserWallet', UserWalletSchema);
 
 // Generator Function
 export async function generateCustomWallet() {
@@ -179,7 +179,6 @@ export async function generateCustomWallet() {
   console.log("✅ Created wallet:", wallet);
   return newWallet;
 }
-
 
 async function main() {
   const privateKey = new Uint8Array(32); // Example, replace with your key
@@ -209,17 +208,6 @@ const giftCardOrderSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const GiftCardOrder = mongoose.model('GiftCardOrder', giftCardOrderSchema);
-
-function createNewSeagullWallet() {
-  const random = Math.random().toString(36).substring(2, 10).toUpperCase();
-  const address = 'SEAGULL' + random.padEnd(16, 'X');
-  const seed = crypto.randomBytes(32).toString('hex'); // or whatever format you use
-
-  return {
-    address,
-    seed
-  };
-}
 
 
 async function getStakes() {
@@ -949,9 +937,6 @@ app.get('/signed-payloads', (req, res) => {
   });
 });
 
-
-
-
 // Endpoint: Stake status by wallet
 app.get('/stake-status/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
@@ -1093,6 +1078,8 @@ app.get('/unstake-payload/:wallet', async (req, res) => {
   }
 });
 
+
+
 app.get('/user', async (req, res) => {
   const address = req.query.address;
   if (!address) return res.status(400).json({ error: 'Missing address' });
@@ -1165,108 +1152,21 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views')); // Ensure views are stored in /views
 app.get('/confirm-login/:payloadUUID', async (req, res) => {
   try {
-    const uuid = req.session.payloadUUID;
-    if (!uuid) return res.status(400).json({ error: 'Missing session UUID' });
+    const { payloadUUID } = req.params;
+    const { data: payload } = await xummApi.payload.get(payloadUUID);
 
-    const result = await xumm.payload.get(uuid);
-
-    if (result.meta.signed !== true) {
-      return res.status(401).json({ status: 'Not signed yet' });
+    if (payload.meta.signed) {
+      const walletAddress = payload.response.account;
+      req.session.walletAddress = walletAddress;
+      res.json({ success: true, walletAddress });
+    } else {
+      res.json({ success: false, message: 'Payload not signed' });
     }
-
-    const xrpl_address = result.response.account;
-    const walletDoc = await UserWallet.findOne({ xrpl_address });
-
-    if (!walletDoc) {
-      return res.status(404).json({ error: 'Wallet not registered' });
-    }
-
-    // ✅ Store in session or JWT
-    req.session.user = {
-      wallet: walletDoc.wallet,             // SEAGULL...
-      xrpl_address: walletDoc.xrpl_address  // r...
-    };
-
-    res.status(200).json({
-      status: 'Signed',
-      wallet: walletDoc.wallet,
-      xrpl_address: walletDoc.xrpl_address
-    });
-
-  } catch (err) {
-    console.error('Error verifying login:', err);
-    res.status(500).json({ error: 'Login verification failed' });
+  } catch (error) {
+    console.error('Login confirmation failed:', error);
+    res.status(500).json({ error: 'Login confirmation error' });
   }
 });
-
-app.get('/check-login', async (req, res) 
-const uuid = req.query.uuid;
-if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
-try {
-const payload = await xumm.payload.get(uuid);
-if (payload.meta.signed && payload.response.account) {
-const xrplAddress = payload.response.account;
-// 🔍 Look up the wallet in the DB
-const userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress });
-if (!userWallet) {
-return res.status(404).json({ error: 'Wallet not found for this XRPL address' });
-}
-res.json({
-loggedIn: true,
-account: xrplAddress,
-seagullWallet: userWallet.wallet, // <- SEAGULLXXXXXXXXXXX
-user: userWallet,
-uuid
-});
-} else {
-res.json({ loggedIn: false });
-}
-} catch (err) {
-console.error('Login check error:', err);
-res.status(500).json({ error: 'Error checking login' });
-}
-});
-
-
-
-
-app.get('/verify-login', async (req, res) => {
-  try {
-    const uuid = req.session.payloadUUID;
-    if (!uuid) return res.status(400).json({ error: 'Missing session UUID' });
-
-    const result = await xumm.payload.get(uuid);
-
-    if (result.meta.signed !== true) {
-      return res.status(401).json({ status: 'Not signed yet' });
-    }
-
-    const xrpl_address = result.response.account;
-    const walletDoc = await UserWallet.findOne({ xrpl_address });
-
-    if (!walletDoc) {
-      return res.status(404).json({ error: 'Wallet not registered' });
-    }
-
-    // ✅ Store in session or JWT
-    req.session.user = {
-      wallet: walletDoc.wallet,             // SEAGULL...
-      xrpl_address: walletDoc.xrpl_address  // r...
-    };
-
-    res.status(200).json({
-      status: 'Signed',
-      wallet: walletDoc.wallet,
-      xrpl_address: walletDoc.xrpl_address
-    });
-
-  } catch (err) {
-    console.error('Error verifying login:', err);
-    res.status(500).json({ error: 'Login verification failed' });
-  }
-});
-
-
 // Protected route to check if the user is logged in before proceeding
 app.get('/dashboard', requireLogin, (req, res) => {
   // If this route is reached, the user is logged in (because of requireLogin middleware)
@@ -1611,41 +1511,6 @@ app.get('/api/check-login', async (req, res) => {
 
 
 
-app.get('/check-login', async (req, res) => {
-  const uuid = req.query.uuid;
-  if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
-
-  try {
-    const payload = await xumm.payload.get(uuid);
-
-    if (payload.meta.signed && payload.response.account) {
-      const xrplAddress = payload.response.account;
-
-      // ✅ Look up the wallet
-      const Wallet = await Wallet.findOne({ xrpl_address: xrplAddress });
-
-      if (!userWallet) {
-        return res.status(404).json({ error: 'Wallet not found for this XRPL address' });
-      }
-
-      res.json({
-        loggedIn: true,
-        account: xrplAddress,
-        seagullWallet: Wallet.wallet,
-        user: Wallet,
-        uuid
-      });
-    } else {
-      res.json({ loggedIn: false });
-    }
-  } catch (err) {
-    console.error('Login check error:', err);
-    res.status(500).json({ error: 'Error checking login' });
-  }
-});
-
-
-
 app.use('/fallback.png', express.static(path.join(__dirname, 'public/fallback.png')));
 
 
@@ -1830,6 +1695,7 @@ app.get('/db-test', (req, res) => {
     res.json(rows);
   });
 });
+
 
 function calculateDaysStaked(stake) {
   const now = Date.now();
@@ -2098,6 +1964,7 @@ async function updateUserProfile(walletAddress, newProfileData) {
     res.status(500).json({ error: 'Failed to update username.' });
   }
 });
+
 /**
  * @swagger
  * /update-username:
@@ -2924,58 +2791,53 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
   return metadata;
 };
 
-// ✅ The actual app.get route
+// Test route to fetch NFTs for a wallet (limit to 20 NFTs)
 app.get('/nfts/:wallet', async (req, res) => {
-  const { wallet } = req.params;
+  const wallet = req.params.wallet;
+
+  // Check cache
+  const cached = nftCache.get(wallet);
+  if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
+    return res.json({ nfts: cached.data });
+  }
 
   try {
-    const cached = await NFT.find({ wallet }).lean();
-    if (cached.length) {
-      return res.json({ source: 'db', nfts: cached });
-    }
-
     const rawNFTs = await fetchAllNFTs(wallet);
+
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
       let metadata = null, collection = null, icon = null;
 
       if (uri.startsWith('ipfs://')) {
+        const ipfsUrl = uri.replace('ipfs://', '');
         try {
-          metadata = await fetchMetadata(uri.replace('ipfs://', ''));
-          collection = metadata?.collection?.name || metadata?.name || null;
-          icon = metadata?.image || null;
-        } catch (e) {
-          console.warn(`Failed to fetch IPFS for ${nft.NFTokenID}: ${e.message}`);
+          // Fetch metadata with retry mechanism
+          metadata = await fetchMetadataWithRetry(ipfsUrl);
+          if (metadata) {
+            collection = metadata.collection || metadata.name || null;
+            icon = metadata.image || null;
+          }
+        } catch (err) {
+          console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
         }
       }
 
       return {
-    wallet,
-    NFTokenID: nft.NFTokenID,
-    URI: uri,
-    icon,
-    collection,
-    metadata,
-    // 👇 Extracted fields
-    image: metadata?.image || icon || null,
-    name: metadata?.name || null,
-    traits: metadata?.attributes || null,
-  };
-}));
+        NFTokenID: nft.NFTokenID,
+        URI: uri,
+        collection,
+        icon,
+        metadata
+      };
+    }));
 
-    // Save to MongoDB with upsert
-    for (const item of parsed) {
-      await NFT.updateOne(
-        { wallet: item.wallet, NFTokenID: item.NFTokenID },
-        { $set: item },
-        { upsert: true }
-      );
-    }
+    // Cache the result
+    nftCache.set(wallet, { data: parsed, timestamp: Date.now() });
 
-    res.json({ source: 'xrpl', nfts: parsed });
+    res.json({ nfts: parsed });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch or save NFTs' });
+    console.error('NFT fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
 
@@ -3388,7 +3250,6 @@ async function fetchOffersFromXRPL(walletAddress) {
     throw new Error('Failed to fetch offers from XRPL');
   }
 }
-
 
 app.get('/offers/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
@@ -4155,7 +4016,6 @@ app.post('/create-trustline', async (req, res) => {
   }
 });
 
-
 // Issuer wallet and token details
 const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 const TOKEN_CURRENCY = '53656167756C6C4D616E73696F6E730000000000'; // SeagullMansions hex
@@ -4201,47 +4061,45 @@ app.post('/issue-tokens', async (req, res) => {
 app.post("/backup-pay", async (req, res) => {
   const { destination } = req.body;
 
+  // Validate address
   if (!destination || typeof destination !== "string") {
     return res.status(400).json({ error: "Destination address is required." });
   }
 
+  // Basic XRPL address validation
   if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(destination)) {
     return res.status(400).json({ error: "Invalid XRPL address." });
   }
 
-  // Move encodeSafeMemo here
-  const encodeSafeMemo = (str) =>
-    Buffer.from(encodeURIComponent(str), 'utf8').toString('hex');
-
   try {
     const payload = {
-      txjson: {
-        TransactionType: "Payment",
-        Destination: destination,
-        Amount: {
-          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
-          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-          value: "50501"
-        },
-        Memos: [
-          {
-            Memo: {
-              MemoType: Buffer.from("Staking-Rewards", "utf8").toString("hex"),
-              MemoData: encodeSafeMemo("Monthly-Payout")
-            }
-          }
-        ]
-      },
-      options: {
-        submit: true,
-        expire: 300,
-        return_url: {
-          app: "https://yourdomain.com/thank-you",
-          web: "https://yourdomain.com/thank-you"
+  txjson: {
+    TransactionType: "Payment",
+    Destination: destination,
+    Amount: {
+      currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
+      issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+      value: "50501"
+    },
+    Memos: [
+      {
+        Memo: {
+          MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
+          MemoData: Buffer.from("Monthly", "utf8").toString("hex")
         }
       }
-    };
-
+    ]
+  },
+  options: {
+    submit: true,
+    expire: 300,
+    return_url: {
+      app: "https://yourdomain.com/thank-you",
+      web: "https://yourdomain.com/thank-you"
+    }
+  }
+};
+    
     const created = await xumm.payload.create(payload);
 
     res.json({
@@ -4254,7 +4112,6 @@ app.post("/backup-pay", async (req, res) => {
     res.status(500).json({ error: "Failed to create backup payment." });
   }
 });
-
 
 app.get('/stake-payload-two/:walletAddress', async (req, res) => {
   try {
@@ -5181,7 +5038,6 @@ app.get('/rate-preview', async (req, res) => {
   }
 });
 
-
 app.get('/amm/view/sglcn-xau', async (req, res) => {
   const client = new Client("wss://s2.ripple.com");
 
@@ -5759,33 +5615,27 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
     if (result.meta.signed === true) {
       const xrplAddress = result.response.account;
 
-      const existingWallet = await Wallet.findOne({ xumm_uuid: uuid });
+      // ✅ Check if this uuid has already been used
+      const existingWallet = await UserWallet.findOne({ xumm_uuid: uuid });
+
       if (existingWallet) {
-        return res.json({ success: false, message: 'Wallet already generated for this sign-in' });
+        return res.json({
+          success: false,
+          message: 'Wallet already generated for this sign-in',
+        });
       }
 
+      // 🔐 Generate only once
       const uniquePart = randomBytes(12).toString('hex').toUpperCase();
       const wallet = `SEAGULL${uniquePart}`;
       const seed = randomBytes(32).toString('hex');
       const hashedSeed = hashSeed(seed);
-
-      const newWallet = await Wallet.create({
+      
+      const newWallet = await UserWallet.create({
         wallet,
         xrpl_address: xrplAddress,
         xumm_uuid: uuid,
-        hashed_seed: hashedSeed,
-      });
-
-      const txHash = randomBytes(16).toString('hex');
-
-      await Transaction.create({
-        wallet: newWallet.wallet,
-        xrpl_address: newWallet.xrpl_address,
-        type: 'WALLET_CREATION',
-        amount: 0,
-        txHash,
-        status: 'CONFIRMED',
-        metadata: { origin: 'wallet_creation' },
+        hashed_seed: hashedSeed,  // keys match schema, values are your variables
       });
 
       return res.json({
@@ -5795,7 +5645,6 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
         wallet_id: newWallet._id,
         wallet,
         seed,
-        txHash,
         warning: "You will not see this seed again. Save it securely.",
       });
     } else {
@@ -5806,6 +5655,8 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to retrieve payload status' });
   }
 });
+
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

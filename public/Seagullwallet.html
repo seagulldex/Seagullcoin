@@ -72,7 +72,7 @@
   <div id="top-bar">
     <div style="flex:1;">
       <div id="logout-menu" style="display:none; position: relative;">
-  <button onclick="toggleLogoutOptions()">Networks ⬇️</button>
+  <button onclick="toggleLogoutOptions()">Logout ⬇️</button>
   <div id="logout-options" class="hidden" style="position: absolute; top: 30px; background: #222; border: 1px solid #444; padding: 10px; border-radius: 6px; z-index: 100;">
     <button onclick="logoutXRPL()">Logout XRPL</button>
     <button onclick="logoutSeagull()">Logout SGLCN-X20</button>
@@ -179,18 +179,20 @@ const seagullWallet = localStorage.getItem('seagull_wallet');
 });
 
 
+
 function getWalletState() {
   const xummWallet = localStorage.getItem('xumm_wallet_address');
   const seagullWallet = localStorage.getItem('seagull_wallet');
 
   if (xummWallet && seagullWallet) {
-  return 'layer2'; // Both connected
-} else if (seagullWallet) {
-  return 'seagull_only'; // Seagull wallet only
-} else if (xummWallet) {
-  return 'xumm_only'; // XUMM only
-} else {
-  return 'default'; // No wallet connected
+    return 'xumm_only';
+  } else if (seagullWallet) {
+    return 'seagull_only';
+  } else if (xummWallet) {
+    return 'xumm_only';
+  } else {
+    return 'default';
+  }
 }
 
 

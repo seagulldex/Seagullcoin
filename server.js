@@ -76,7 +76,6 @@ console.log("Imported Wallet model:", Wallet?.modelName);
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
 import Transaction from './models/Transaction.js';
-import UserWallet from './UserWallet.js';  // or relative path to your model file
 
 
 

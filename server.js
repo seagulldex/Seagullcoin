@@ -1191,20 +1191,54 @@ app.get('/check-login', async (req, res) => {
 
   try {
     const payload = await xumm.payload.get(uuid);
+
     if (payload.meta.signed && payload.response.account) {
-      res.json({
+      const xrplAddress = payload.response.account;
+
+      // Check if Seagull wallet already exists for this XRPL address
+      let userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress });
+
+      if (!userWallet) {
+        let unique = false;
+        let newWallet;
+
+        while (!unique) {
+          newWallet = await generateCustomWallet();
+          const exists = await UserWallet.findOne({ wallet: newWallet.wallet });
+          if (!exists) unique = true;
+        }
+
+        // Link XRPL address to generated Seagull wallet
+        newWallet.xrpl_address = xrplAddress;
+        await newWallet.save();
+
+        return res.json({
+          loggedIn: true,
+          account: xrplAddress,
+          seagullWallet: newWallet.wallet,
+          seed: newWallet.seed, // Send only once!
+          newWallet: true,
+          uuid
+        });
+      }
+
+      // Wallet exists, return it (without seed)
+      return res.json({
         loggedIn: true,
-        account: payload.response.account,
+        account: xrplAddress,
+        seagullWallet: userWallet.wallet,
+        newWallet: false,
         uuid
       });
-    } else {
-      res.json({ loggedIn: false });
     }
+
+    res.json({ loggedIn: false });
   } catch (err) {
-    console.error(err);
+    console.error('Login check error:', err);
     res.status(500).json({ error: 'Error checking login' });
   }
 });
+
 
 
 

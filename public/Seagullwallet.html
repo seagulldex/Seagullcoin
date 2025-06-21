@@ -184,9 +184,10 @@ function getWalletState() {
 
   const hasXumm = xummWallet && xummWallet !== 'null' && xummWallet !== '';
   const hasSeagull = seagullWallet && seagullWallet !== 'null' && seagullWallet !== '';
-
+  const hasLayer2 = seagullWallet && xummWallet !== 'null' && seagullWallet !== '';
+  
   if (hasXumm && hasSeagull) {
-    return 'layer2';
+    return 'xumm_only';
   } else if (hasSeagull) {
     return 'seagull_only';
   } else if (hasXumm) {

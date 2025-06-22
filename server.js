@@ -154,19 +154,17 @@ async function fetchIPFSMetadata(uri) {
 
 // Generator Function
 export async function generateCustomWallet() {
-  // Generate a random wallet address that starts with SEAGULL
   const uniquePart = randomBytes(12).toString('hex').toUpperCase();
   const wallet = `SEAGULL${uniquePart}`;
 
-  // Generate a seed (can be used for login or signing, depending on your logic)
   const seed = randomBytes(32).toString('hex');
   const hashedSeed = hashSeed(seed);
-  
-const newWallet = new UserWallet({
+
+  const newWallet = new Wallet({
     wallet,
     seed,
     hashed_seed: hashedSeed,
-    xrpl_address: '', // ← required if your schema enforces it, or make optional
+    xrpl_address: '', // Optional or required based on your schema
   });
 
   await newWallet.save();

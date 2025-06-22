@@ -35,7 +35,7 @@ const WalletSchema = new mongoose.Schema({
   tokenName: { type: String, required: false, trim: true },
   tokenSymbol: { type: String, required: false, trim: true, uppercase: true },
   tokenSupply: { type: Number, required: false, min: 0 },
-  isGenesisWallet: { type: Boolean, default: false } // ← NO unique
+  isGenesisWallet: { type: Boolean, default: false }, // ← NO unique
 
 
   // Bridge & Interop Fields

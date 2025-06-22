@@ -148,9 +148,6 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
-function hashSeed(seed) {
-  return require('crypto').createHash('sha256').update(seed).digest('hex');
-}
 
 // MongoDB Schema
 const UserWalletSchema = new mongoose.Schema({

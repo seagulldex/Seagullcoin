@@ -172,13 +172,19 @@ export async function generateCustomWallet() {
   const seed = randomBytes(32).toString('hex');
   const hashedSeed = hashSeed(seed);
   
-  // Save to MongoDB
-  const newWallet = new UserWallet({ wallet, seed });
+const newWallet = new UserWallet({
+    wallet,
+    seed,
+    hashed_seed: hashedSeed,
+    xrpl_address: '', // ← required if your schema enforces it, or make optional
+  });
+
   await newWallet.save();
 
   console.log("✅ Created wallet:", wallet);
   return newWallet;
 }
+ 
 
 async function main() {
   const privateKey = new Uint8Array(32); // Example, replace with your key

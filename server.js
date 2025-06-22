@@ -160,7 +160,9 @@ const UserWalletSchema = new mongoose.Schema({
 });
 
 
-
+function hashSeed(seed) {
+  return createHash('sha256').update(seed).digest('hex');
+}
 
 // Generator Function
 export async function generateCustomWallet() {

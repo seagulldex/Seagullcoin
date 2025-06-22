@@ -74,7 +74,7 @@ import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
-import { createGenesisBlock } from './blockchain/utils.js';
+import { createGenesisTokenAndBlock } from './blockchain/utils.js';
 import Block from './models/Block.js';
 import { calculateHash } from './blockchain/utils.js';
 import Balance from './models/Balance.js';

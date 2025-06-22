@@ -1,8 +1,12 @@
+import mongoose from 'mongoose';
+
 const BlockSchema = new mongoose.Schema({
-  index: Number, // Block height
-  previousHash: String,
-  timestamp: Date,
-  transactions: [Object], // Your transactions, e.g., { from, to, amount }
-  nonce: Number,          // For PoW if you want
-  hash: String            // Hash of this block's content
+  index: { type: Number, required: true },
+  previousHash: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+  transactions: { type: [Object], default: [] },
+  nonce: { type: Number, default: 0 },
+  hash: { type: String, required: true }
 });
+
+export default mongoose.model('Block', BlockSchema);

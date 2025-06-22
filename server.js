@@ -150,14 +150,18 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
-// Create genesis block if it doesn’t exist
+
+async function init() {
   const Block = mongoose.model('Block');
   const genesis = await Block.findOne({ index: 0 });
+
   if (!genesis) {
     console.log('Creating genesis block...');
     await createGenesisBlock();
   }
-});
+}
+
+init(); // 🔥 Call the async function
 
 
 

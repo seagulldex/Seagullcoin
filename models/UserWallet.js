@@ -35,23 +35,16 @@ const WalletSchema = new mongoose.Schema({
   tokenName: { type: String, required: false, trim: true },
   tokenSymbol: { type: String, required: false, trim: true, uppercase: true },
   tokenSupply: { type: Number, required: false, min: 0 },
-  isGenesisWallet: { type: Boolean, default: false } // ← NO unique
-  
+  isGenesisWallet: { type: Boolean, default: false }, // only once!
 
   // Bridge & Interop Fields
-  bridgedFromXrpl: { type: Boolean, default: true },  // Set true by default here
+  bridgedFromXrpl: { type: Boolean, default: true },
   bridgeTxHash: { type: String, trim: true, default: null },
-  isCustodial: { type: Boolean, default: false },     // Non-custodial by default
-  l2Balance: { type: Number, default: 0 },          
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-});
+  isCustodial: { type: Boolean, default: false },
+  l2Balance: { type: Number, default: 0 }
+}, { timestamps: true }); // automatically adds createdAt and updatedAt
 
-// Optional: update `updatedAt` on every save
-walletSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
+
 
 // Compound indexes:
 WalletSchema.index({ bridgedFromXrpl: 1, isCustodial: 1 });

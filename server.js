@@ -5723,8 +5723,15 @@ app.get('/check-login', async (req, res) => {
       };
 
       if (seedToSend) {
-        response.seed = seedToSend;
-      }
+  try {
+    const seedQRCode = await QRCode.toDataURL(seedToSend);
+    response.seed = seedToSend;
+    response.seed_qr = seedQRCode;
+  } catch (qrErr) {
+    console.warn('QR Code generation failed:', qrErr);
+    response.seed = seedToSend; // fallback
+  }
+}
 
       return res.json(response);
 

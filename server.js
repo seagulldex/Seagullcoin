@@ -76,6 +76,7 @@ import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
 import { createGenesisBlock } from './blockchain/utils.js';
 import Block from './models/Block.js';
+import { calculateHash } from './blockchain/utils.js';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -5755,7 +5756,22 @@ if (userWallet && userWallet.hasMinted) {
   }
 });
 
+app.post('/mine', async (req, res) => {
+  const previousBlock = await Block.findOne().sort({ index: -1 });
+  
+  const newBlock = new Block({
+    index: previousBlock.index + 1,
+    previousHash: previousBlock.hash,
+    timestamp: new Date(),
+    transactions: req.body.transactions || [],
+    nonce: 0,
+  });
 
+  newBlock.hash = calculateHash(newBlock);
+  await newBlock.save();
+
+  res.json(newBlock);
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

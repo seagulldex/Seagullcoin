@@ -1,6 +1,6 @@
 // utils.js
 import crypto from 'crypto';
-import Block from '../models/Block.js'; // adjust path if needed
+import Block from './models/Block.js'; // adjust path if needed
 
 export function calculateHash(block) {
   return crypto.createHash('sha256')

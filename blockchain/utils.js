@@ -30,8 +30,8 @@ export async function createGenesisTokenAndBlock() {
 
   // 2. Create Genesis Token
   const genesisTokenData = {
-    symbol: 'SEAGULL',
-    name: 'Seagull Token',
+    symbol: 'SGLCN-X20',
+    name: 'SeagullCoin',
     owner_wallet: preminedWallet._id,
     max_supply: 589000000,
     circulating_supply: 589000000,

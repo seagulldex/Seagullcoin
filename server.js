@@ -77,6 +77,7 @@ import { hashSeed } from './utils/test-hash.js';
 import { createGenesisBlock } from './blockchain/utils.js';
 import Block from './models/Block.js';
 import { calculateHash } from './blockchain/utils.js';
+import Balance from './models/Balance.js';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -164,6 +165,30 @@ async function init() {
 
 init(); // 🔥 Call the async function
 
+
+export async function processTransactions(transactions) {
+  for (const tx of transactions) {
+    const { from, to, amount } = tx;
+
+    if (!from || !to || typeof amount !== 'number') continue;
+
+    // Get balances or create if not exist
+    const fromBal = await Balance.findOne({ address: from }) || new Balance({ address: from });
+    const toBal = await Balance.findOne({ address: to }) || new Balance({ address: to });
+
+    // Check balance
+    if (fromBal.amount < amount) {
+      throw new Error(`Insufficient funds for ${from}`);
+    }
+
+    // Update balances
+    fromBal.amount -= amount;
+    toBal.amount += amount;
+
+    await fromBal.save();
+    await toBal.save();
+  }
+}
 
 
 // Generator Function

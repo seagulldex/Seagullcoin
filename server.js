@@ -5814,21 +5814,35 @@ if (userWallet && userWallet.hasMinted) {
 });
 
 app.post('/mine', async (req, res) => {
-  const previousBlock = await Block.findOne().sort({ index: -1 });
-  
-  const newBlock = new Block({
-    index: previousBlock.index + 1,
-    previousHash: previousBlock.hash,
-    timestamp: new Date(),
-    transactions: req.body.transactions || [],
-    nonce: 0,
-  });
+  try {
+    const previousBlock = await Block.findOne().sort({ index: -1 });
+    if (!previousBlock) {
+      return res.status(400).json({ error: 'Genesis block not found.' });
+    }
 
-  newBlock.hash = calculateHash(newBlock);
-  await newBlock.save();
+    const transactions = req.body.transactions;
+    if (!Array.isArray(transactions)) {
+      return res.status(400).json({ error: 'Transactions must be an array' });
+    }
 
-  res.json(newBlock);
+    const newBlock = new Block({
+      index: previousBlock.index + 1,
+      previousHash: previousBlock.hash,
+      timestamp: new Date(),
+      transactions,
+      nonce: 0,
+    });
+
+    newBlock.hash = calculateHash(newBlock.toObject());
+    await newBlock.save();
+
+    res.json(newBlock);
+  } catch (err) {
+    console.error('❌ Error in /mine:', err);
+    res.status(500).json({ error: 'Failed to mine block' });
+  }
 });
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

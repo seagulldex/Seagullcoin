@@ -148,6 +148,9 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
+function hashSeed(seed) {
+  return require('crypto').createHash('sha256').update(seed).digest('hex');
+}
 
 // MongoDB Schema
 const UserWalletSchema = new mongoose.Schema({
@@ -5657,6 +5660,7 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
   }
 });
 
+
 app.get('/check-login', async (req, res) => {
   const uuid = req.query.uuid;
   if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
@@ -5680,10 +5684,12 @@ app.get('/check-login', async (req, res) => {
 
         // Create and save wallet
         userWallet = new Wallet({
-          wallet: walletStr,
-          xrpl_address: xrplAddress,
-          xumm_uuid: uuid
-        });
+        wallet: walletStr,
+        xrpl_address: xrplAddress,
+        xumm_uuid: uuid,
+        hashed_seed: hashedSeed // 💥 Required field now filled
+      });
+
 
         try {
           await userWallet.save();

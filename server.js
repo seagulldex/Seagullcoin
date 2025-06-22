@@ -5693,21 +5693,27 @@ app.get('/check-login', async (req, res) => {
       }
 
       return res.json({
-        loggedIn: true,
-        account: xrplAddress,
-        seagullWallet: userWallet.wallet,
-        uuid
-      });
+        loggedIn: true,
+        account: xrplAddress,
+        seagullWallet: userWallet.wallet,
+        uuid,
+        walletDetails: {
+          isGenesisWallet: userWallet.isGenesisWallet,
+          bridgedFromXrpl: userWallet.bridgedFromXrpl,
+          isCustodial: userWallet.isCustodial,
+          l2Balance: userWallet.l2Balance,
+          createdAt: userWallet.createdAt,
+          updatedAt: userWallet.updatedAt
+        }
+});
     } else {
-      return res.json({ loggedIn: false });
+      res.json({ loggedIn: false });
     }
   } catch (err) {
     console.error('Login check error:', err);
-    return res.status(500).json({ error: 'Error checking login' });
+    res.status(500).json({ error: 'Error checking login' });
   }
 });
-
-
 
 
 

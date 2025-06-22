@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import Block from '../models/Block.js'; // adjust path if needed
+import Block from './models/Block.js'; // adjust path if needed
 
 function calculateHash(block) {
   return crypto.createHash('sha256')
@@ -14,11 +14,22 @@ function calculateHash(block) {
 }
 
 async function createGenesisBlock() {
-  const genesisBlock = new Block({
+  const preminedWallet = 'SEAGULLD1DFB4670F7CA58AB0B03B62';  // Your special wallet address
+  const initialBalance = 589000000; // Amount of tokens premined
+
+
+const genesisBlock = new Block({
     index: 0,
     previousHash: '0',
     timestamp: new Date(),
-    transactions: [],
+    transactions: [
+      {
+        from: null, // No sender for genesis tokens
+        to: preminedWallet,
+        amount: initialBalance,
+        type: 'genesis'  // optional, to identify transaction type
+      }
+    ],
     nonce: 0,
   });
 

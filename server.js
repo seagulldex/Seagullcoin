@@ -5663,34 +5663,49 @@ app.get('/check-login', async (req, res) => {
 
       let userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
 
+      // If wallet doesn't exist, create one
       if (!userWallet) {
-        // Generate seed & hashed seed for new wallet
         const seed = randomBytes(32).toString('hex');
         const hashedSeed = hashSeed(seed);
 
-        // 🔧 Generate unique SEAGULL wallet string
-                let walletStr;
-        let exists = true;
-        while (exists) {
-          walletStr = 'SEAGULL' + randomBytes(12).toString('hex').toUpperCase();
-          exists = await Wallet.findOne({ wallet: walletStr });
+        const maxAttempts = 5;
+        let attempt = 0;
+        let saved = false;
+
+        while (attempt < maxAttempts && !saved) {
+          const walletStr = 'SEAGULL' + randomBytes(12).toString('hex').toUpperCase();
+
+          try {
+            const isGenesis = await Wallet.countDocuments({ isGenesisWallet: true }) === 0;
+
+            userWallet = new Wallet({
+              wallet: walletStr,
+              seed,
+              hashed_seed: hashedSeed,
+              xrpl_address: xrplAddress,
+              xumm_uuid: uuid,
+              isGenesisWallet: isGenesis
+            });
+
+            await userWallet.save();
+            saved = true;
+          } catch (err) {
+            if (err.code === 11000 && err.keyPattern?.wallet) {
+              console.warn('⚠️ Duplicate wallet, retrying...');
+              attempt++;
+            } else {
+              console.error('Wallet save error:', err);
+              return res.status(500).json({ error: 'Could not save wallet' });
+            }
+          }
         }
 
-        userWallet = new Wallet({
-          wallet: walletStr,
-          seed,
-          hashed_seed: hashedSeed,
-          xrpl_address: xrplAddress,
-          xumm_uuid: uuid
-        });
-
-        try {
-          await userWallet.save();
-        } catch (err) {
-          console.error('Wallet save error:', err);
-          return res.status(500).json({ error: 'Could not save wallet' });
+        if (!saved) {
+          return res.status(500).json({ error: 'Failed to create unique wallet' });
         }
+      }
 
+      // ✅ Send response for both new and existing wallets
       return res.json({
         loggedIn: true,
         account: xrplAddress,
@@ -5705,6 +5720,7 @@ app.get('/check-login', async (req, res) => {
           updatedAt: userWallet.updatedAt
         }
       });
+
     } else {
       res.json({ loggedIn: false });
     }

@@ -193,6 +193,31 @@ export async function processTransactions(transactions) {
 }
 
 
+
+// Basic mining function
+async function minePendingTransactions() {
+  const pendingTxs = await PendingTransaction.find();
+
+  if (pendingTxs.length === 0) return;
+
+  const previousBlock = await Block.findOne().sort({ index: -1 });
+  const newBlock = new Block({
+    index: previousBlock ? previousBlock.index + 1 : 0,
+    previousHash: previousBlock ? previousBlock.hash : '0',
+    timestamp: new Date(),
+    transactions: pendingTxs,
+    nonce: 0,
+  });
+
+  newBlock.hash = calculateHash(newBlock);
+  await newBlock.save();
+  await PendingTransaction.deleteMany(); // clear mempool
+}
+
+// ⏱ Start interval loop — every 10 seconds
+setInterval(minePendingTransactions, 10000);
+
+
 // Generator Function
 export async function generateCustomWallet() {
   const uniquePart = randomBytes(12).toString('hex').toUpperCase();

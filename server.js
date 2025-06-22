@@ -79,7 +79,7 @@ import Block from './models/Block.js';
 import { calculateHash } from './blockchain/utils.js';
 import Balance from './models/Balance.js';
 import { encrypt, decrypt } from './utils/encryption.js';
-
+import PendingTransaction from './models/PendingTransaction.js';
 
 // ===== Init App and Env =====
 dotenv.config();

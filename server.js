@@ -5665,10 +5665,10 @@ app.get('/check-login', async (req, res) => {
 
       let userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
 
-      let seedToSend = null;  // Will hold seed only if new wallet created
+      let seedToSend = null;  // Only returned if wallet is new
 
       if (!userWallet) {
-        // Generate seed & hashed seed (hashed seed stored, seed only returned)
+        // Generate seed & hashed seed
         const seed = randomBytes(32).toString('hex');
         const hashedSeed = hashSeed(seed);
 
@@ -5685,12 +5685,13 @@ app.get('/check-login', async (req, res) => {
               hashed_seed: hashedSeed,
               xrpl_address: xrplAddress,
               xumm_uuid: uuid,
-              bridgedFromXrpl: true, // mark as bridged wallet
+              bridgedFromXrpl: true,
+              hasMinted: false, // ✅ Add this line
             });
 
             await userWallet.save();
             saved = true;
-            seedToSend = seed;  // Only here do we keep seed to send back
+            seedToSend = seed;
           } catch (err) {
             if (err.code === 11000 && err.keyPattern?.wallet) {
               console.warn('⚠️ Duplicate wallet, retrying...');
@@ -5707,7 +5708,7 @@ app.get('/check-login', async (req, res) => {
         }
       }
 
-      // Send response with seed only if just created
+      // ✅ Include hasMinted in the response
       const response = {
         loggedIn: true,
         account: xrplAddress,
@@ -5716,6 +5717,7 @@ app.get('/check-login', async (req, res) => {
         walletDetails: {
           bridgedFromXrpl: userWallet.bridgedFromXrpl,
           isCustodial: userWallet.isCustodial,
+          hasMinted: userWallet.hasMinted, // ✅
           l2Balance: userWallet.l2Balance,
           createdAt: userWallet.createdAt,
           updatedAt: userWallet.updatedAt
@@ -5723,8 +5725,9 @@ app.get('/check-login', async (req, res) => {
       };
 
       if (seedToSend) {
-  response.seed = seedToSend;
-}
+        response.seed = seedToSend;
+      }
+
       return res.json(response);
 
     } else {
@@ -5735,6 +5738,7 @@ app.get('/check-login', async (req, res) => {
     return res.status(500).json({ error: 'Error checking login' });
   }
 });
+
 
 
 // Call the XRPL ping when the server starts

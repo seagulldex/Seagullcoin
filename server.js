@@ -5684,7 +5684,6 @@ app.get('/check-login', async (req, res) => {
               hashed_seed: hashedSeed,
               xrpl_address: xrplAddress,
               xumm_uuid: uuid,
-              isGenesisWallet: isGenesis
             });
 
             await userWallet.save();
@@ -5712,7 +5711,6 @@ app.get('/check-login', async (req, res) => {
         seagullWallet: userWallet.wallet,
         uuid,
         walletDetails: {
-          isGenesisWallet: userWallet.isGenesisWallet,
           bridgedFromXrpl: userWallet.bridgedFromXrpl,
           isCustodial: userWallet.isCustodial,
           l2Balance: userWallet.l2Balance,

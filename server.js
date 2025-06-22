@@ -74,7 +74,7 @@ import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
-import QRCode from 'qrcode';
+
 
 
 // ===== Init App and Env =====

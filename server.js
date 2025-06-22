@@ -78,6 +78,8 @@ import { createGenesisBlock } from './blockchain/utils.js';
 import Block from './models/Block.js';
 import { calculateHash } from './blockchain/utils.js';
 import Balance from './models/Balance.js';
+import { encrypt, decrypt } from './utils/encryption.js';
+
 
 // ===== Init App and Env =====
 dotenv.config();

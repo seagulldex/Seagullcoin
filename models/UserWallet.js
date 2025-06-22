@@ -45,10 +45,10 @@ const WalletSchema = new mongoose.Schema({
   bridgedFromXrpl: { type: Boolean, default: true },
   bridgeTxHash: { type: String, trim: true, default: null },
   isCustodial: { type: Boolean, default: false },
-  l2Balance: { type: Number, default: 0 }
-}, { timestamps: true }); // automatically adds createdAt and updatedAt
-
-
+  
+balance: { type: Number, default: 0 }, // ✅ Changed from l2Balance
+  nonce: { type: Number, default: 0 },   // optional anti-replay
+}, { timestamps: true });
 
 // Compound indexes:
 WalletSchema.index({ bridgedFromXrpl: 1, isCustodial: 1 });

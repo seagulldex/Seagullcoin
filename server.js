@@ -5663,8 +5663,10 @@ app.get('/check-login', async (req, res) => {
 
       let userWallet = await Wallet.findOne({ xrpl_address: xrplAddress });
 
-      // If wallet doesn't exist, create one
+      let seedToSend = null;  // Will hold seed only if new wallet created
+
       if (!userWallet) {
+        // Generate seed & hashed seed (hashed seed stored, seed only returned)
         const seed = randomBytes(32).toString('hex');
         const hashedSeed = hashSeed(seed);
 
@@ -5676,18 +5678,17 @@ app.get('/check-login', async (req, res) => {
           const walletStr = 'SEAGULL' + randomBytes(12).toString('hex').toUpperCase();
 
           try {
-            const isGenesis = await Wallet.countDocuments({ isGenesisWallet: true }) === 0;
-
             userWallet = new Wallet({
               wallet: walletStr,
-              seed,
               hashed_seed: hashedSeed,
               xrpl_address: xrplAddress,
               xumm_uuid: uuid,
+              bridgedFromXrpl: true, // mark as bridged wallet
             });
 
             await userWallet.save();
             saved = true;
+            seedToSend = seed;  // Only here do we keep seed to send back
           } catch (err) {
             if (err.code === 11000 && err.keyPattern?.wallet) {
               console.warn('⚠️ Duplicate wallet, retrying...');
@@ -5704,8 +5705,8 @@ app.get('/check-login', async (req, res) => {
         }
       }
 
-      // ✅ Send response for both new and existing wallets
-      return res.json({
+      // Send response with seed only if just created
+      const response = {
         loggedIn: true,
         account: xrplAddress,
         seagullWallet: userWallet.wallet,
@@ -5717,14 +5718,20 @@ app.get('/check-login', async (req, res) => {
           createdAt: userWallet.createdAt,
           updatedAt: userWallet.updatedAt
         }
-      });
+      };
+
+      if (seedToSend) {
+        response.seed = seedToSend;
+      }
+
+      return res.json(response);
 
     } else {
-      res.json({ loggedIn: false });
+      return res.json({ loggedIn: false });
     }
   } catch (err) {
     console.error('Login check error:', err);
-    res.status(500).json({ error: 'Error checking login' });
+    return res.status(500).json({ error: 'Error checking login' });
   }
 });
 

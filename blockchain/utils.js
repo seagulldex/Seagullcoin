@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import Block from '../models/Block.js'; // adjust path if needed
 
 function calculateHash(block) {
   return crypto.createHash('sha256')

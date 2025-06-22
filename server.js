@@ -5693,19 +5693,19 @@ app.get('/check-login', async (req, res) => {
       }
 
       return res.json({
-        loggedIn: true,
-        account: xrplAddress,
-        seagullWallet: userWallet.wallet,
-        uuid,
-        walletDetails: {
-          isGenesisWallet: userWallet.isGenesisWallet,
-          bridgedFromXrpl: userWallet.bridgedFromXrpl,
-          isCustodial: userWallet.isCustodial,
-          l2Balance: userWallet.l2Balance,
-          createdAt: userWallet.createdAt,
-          updatedAt: userWallet.updatedAt
-        }
-});
+        loggedIn: true,
+        account: xrplAddress,
+        seagullWallet: userWallet.wallet,
+        uuid,
+        walletDetails: {
+          isGenesisWallet: userWallet.isGenesisWallet,
+          bridgedFromXrpl: userWallet.bridgedFromXrpl,
+          isCustodial: userWallet.isCustodial,
+          l2Balance: userWallet.l2Balance,
+          createdAt: userWallet.createdAt,
+          updatedAt: userWallet.updatedAt
+        }
+      });
     } else {
       res.json({ loggedIn: false });
     }
@@ -5714,7 +5714,6 @@ app.get('/check-login', async (req, res) => {
     res.status(500).json({ error: 'Error checking login' });
   }
 });
-
 
 
 // Call the XRPL ping when the server starts

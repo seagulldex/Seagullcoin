@@ -192,7 +192,12 @@ export async function processTransactions(transactions) {
   }
 }
 
-
+function sign(data, privateKey) {
+  const sign = crypto.createSign('SHA256');
+  sign.update(data);
+  sign.end();
+  return sign.sign(privateKey, 'hex');
+}
 
 // Basic mining function
 async function minePendingTransactions() {

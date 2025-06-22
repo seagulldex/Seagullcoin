@@ -5667,6 +5667,11 @@ app.get('/check-login', async (req, res) => {
 
       let seedToSend = null;  // Only returned if wallet is new
 
+// ✅ DENY minting if already minted
+if (userWallet && userWallet.hasMinted) {
+  return res.status(403).json({ error: 'Already minted' });
+}
+      
       if (!userWallet) {
         // Generate seed & hashed seed
         const seed = randomBytes(32).toString('hex');

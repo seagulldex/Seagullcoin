@@ -36,10 +36,9 @@ const WalletSchema = new mongoose.Schema({
   tokenSymbol: { type: String, required: false, trim: true, uppercase: true },
   tokenSupply: { type: Number, required: false, min: 0 },
   isGenesisWallet: { type: Boolean, default: false } // ← NO unique
-
+  
 
   // Bridge & Interop Fields
-  isGenesisWallet: { type: Boolean, default: false },
   bridgedFromXrpl: { type: Boolean, default: true },  // Set true by default here
   bridgeTxHash: { type: String, trim: true, default: null },
   isCustodial: { type: Boolean, default: false },     // Non-custodial by default

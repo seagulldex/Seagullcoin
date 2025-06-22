@@ -26,3 +26,5 @@ async function createGenesisBlock() {
   await genesisBlock.save();
   return genesisBlock;
 }
+
+export { calculateHash, createGenesisBlock };

@@ -75,7 +75,7 @@ import Wallet from './models/Wallet.js';
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
 import { createGenesisBlock } from './blockchain/utils.js';
-
+import Block from './models/Block.js';
 
 // ===== Init App and Env =====
 dotenv.config();

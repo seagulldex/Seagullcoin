@@ -13,7 +13,7 @@ const WalletSchema = new mongoose.Schema({
     match: /^SEAGULL[A-Z0-9]{6,}$/ // Enforce SEAGULLXXX format
   }
 
-  seed: { type: String, required: false }, // optional, encrypt if stored
+  encrypted_seed: { type: String, required: false },  // <-- encrypted seed here
   hashed_seed: { type: String, required: true },
 
   xrpl_address: { 
@@ -50,6 +50,13 @@ const WalletSchema = new mongoose.Schema({
 balance: { type: Number, default: 0 }, // ✅ Changed from l2Balance
   nonce: { type: Number, default: 0 },   // optional anti-replay
 }, { timestamps: true });
+
+// Add method to decrypt seed (import decrypt function from utils/encryption.js)
+WalletSchema.methods.getDecryptedSeed = function() {
+  if (!this.encrypted_seed) return null;
+  // import decrypt function at top of this file if needed
+  return decrypt(this.encrypted_seed);
+};
 
 // Compound indexes:
 WalletSchema.index({ bridgedFromXrpl: 1, isCustodial: 1 });

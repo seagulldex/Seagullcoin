@@ -74,7 +74,7 @@ import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
-
+import { createGenesisBlock } from './blockchain/utils.js';
 
 
 // ===== Init App and Env =====
@@ -150,7 +150,14 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
-
+// Create genesis block if it doesn’t exist
+  const Block = mongoose.model('Block');
+  const genesis = await Block.findOne({ index: 0 });
+  if (!genesis) {
+    console.log('Creating genesis block...');
+    await createGenesisBlock();
+  }
+});
 
 
 

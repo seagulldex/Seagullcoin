@@ -5669,7 +5669,7 @@ app.get('/check-login', async (req, res) => {
         const hashedSeed = hashSeed(seed);
 
         // 🔧 Generate unique SEAGULL wallet string
-        let walletStr;
+                let walletStr;
         let exists = true;
         while (exists) {
           walletStr = 'SEAGULL' + randomBytes(12).toString('hex').toUpperCase();
@@ -5690,7 +5690,6 @@ app.get('/check-login', async (req, res) => {
           console.error('Wallet save error:', err);
           return res.status(500).json({ error: 'Could not save wallet' });
         }
-      }
 
       return res.json({
         loggedIn: true,

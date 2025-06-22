@@ -9,8 +9,9 @@ const WalletSchema = new mongoose.Schema({
     unique: true, 
     index: true, 
     trim: true,
-    uppercase: true 
-  }, // SEAGULLXXXXXXX
+    uppercase: true,
+    match: /^SEAGULL[A-Z0-9]{6,}$/ // Enforce SEAGULLXXX format
+  }
 
   seed: { type: String, required: false }, // optional, encrypt if stored
   hashed_seed: { type: String, required: true },

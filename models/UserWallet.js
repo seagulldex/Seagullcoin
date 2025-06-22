@@ -39,11 +39,14 @@ const WalletSchema = new mongoose.Schema({
 
 
   // Bridge & Interop Fields
-  bridgedFromXrpl: { type: Boolean, default: true, index: true },  // For wallets created from XRPL events
-  bridgeTxHash: { type: String, trim: true, default: null },  // To track origin
-  isCustodial: { type: Boolean, default: false },                   // If owned by platform not user
-  l2Balance: { type: Number, default: 0, min: 0 },
-}, { timestamps: true });
+  isGenesisWallet: { type: Boolean, default: false },
+  bridgedFromXrpl: { type: Boolean, default: true },  // Set true by default here
+  bridgeTxHash: { type: String, trim: true, default: null },
+  isCustodial: { type: Boolean, default: false },     // Non-custodial by default
+  l2Balance: { type: Number, default: 0 },          
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
 
 // Optional: update `updatedAt` on every save
 walletSchema.pre('save', function(next) {

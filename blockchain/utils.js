@@ -68,4 +68,5 @@ export async function createGenesisTokenAndBlock() {
 
   return { genesisToken, genesisBlock };
 }
-export { calculateHash, createGenesisTokenAndBlock };
+export { calculateHash }; // ✅ only this
+

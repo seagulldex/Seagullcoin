@@ -7,8 +7,6 @@ const BlockSchema = new mongoose.Schema({
   transactions: { type: [Object], default: [] },
   nonce: { type: Number, default: 0 },
   hash: { type: String, required: true },
-  tokenName: { type: String, default: null },   // add this
-  tokenSymbol: { type: String, default: null }, // add this
 });
 
 export default mongoose.model('Block', BlockSchema);

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
-import Block from './models/Block.js';
-import Token from './models/Token.js';
-import UserWallet from './models/UserWallet.js';
+import Block from '../models/Block.js';
+import Token from '../models/Token.js';
+import UserWallet from '../models/UserWallet.js';
 
 function calculateHash(block) {
   return crypto.createHash('sha256')

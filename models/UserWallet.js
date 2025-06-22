@@ -22,11 +22,11 @@ const WalletSchema = new mongoose.Schema({
     trim: true,
     uppercase: false,
     validate: {
-      validator: function(v) {
-        return !v || isValidXrplAddress(v);
-      },
-      message: props => `${props.value} is not a valid address`
-    }
+  validator: function(v) {
+    return isValidXrplAddress(v); // no !v check here
+  },
+  message: props => `${props.value} is not a valid address`
+}
   }, // rXXXXXXXXX
 
   xumm_uuid: { type: String, required: false },

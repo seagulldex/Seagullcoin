@@ -40,7 +40,7 @@ export async function createGenesisTokenAndBlock() {
     layer: 'L1',
   };
 
-  let genesisToken = await Token.findOne({ symbol: 'SEAGULL' });
+  let genesisToken = await Token.findOne({ symbol: 'SGLCN-X20' });
   if (!genesisToken) {
     genesisToken = new Token(genesisTokenData);
     await genesisToken.save();

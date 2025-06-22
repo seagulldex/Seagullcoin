@@ -63,4 +63,5 @@ WalletSchema.methods.getDecryptedSeed = function() {
 // Compound indexes:
 WalletSchema.index({ bridgedFromXrpl: 1, isCustodial: 1 });
 
-export default mongoose.model('UserWallet', WalletSchema);
+export default mongoose.models.UserWallet || mongoose.model('UserWallet', WalletSchema);
+

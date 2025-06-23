@@ -112,6 +112,8 @@ const token = randomBytes(32).toString('hex')
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
 
+const PRIVATE_KEY_PEM = fs.readFileSync(path.resolve('./keys/private.pem'), 'utf-8');
+const PUBLIC_KEY_PEM = fs.readFileSync(path.resolve('./keys/public.pem'), 'utf-8');
 
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });

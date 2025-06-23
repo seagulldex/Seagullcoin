@@ -170,26 +170,34 @@ init(); // 🔥 Call the async function
 
 
 // 2. Function to mine a block
-async function mineBlock(transactions) {
-  const previousBlock = await Block.findOne().sort({ index: -1 });
-  if (!previousBlock) {
-    console.error('❌ Genesis block not found.');
-    return;
-  }
+async function mineBlock(transactions, privateKeyPem, validatorId) {
+  const previousBlock = await Block.findOne().sort({ index: -1 });
+  if (!previousBlock) {
+    console.error('❌ Genesis block not found.');
+    return;
+  }
 
-  const newBlock = new Block({
-    index: previousBlock.index + 1,
-    previousHash: previousBlock.hash,
-    timestamp: new Date(),
-    transactions,
-    nonce: 0,
-  });
+  const newBlock = new Block({
+    index: previousBlock.index + 1,
+    previousHash: previousBlock.hash,
+    timestamp: new Date(),
+    transactions,
+    nonce: 0,
+  });
 
-  newBlock.hash = calculateHash(newBlock.toObject());
-  await newBlock.save();
+  newBlock.hash = calculateHash(newBlock.toObject());
 
-  console.log(`✅ Block #${newBlock.index} mined with ${transactions.length} txs`);
+  // Sign the block hash
+  const signature = signBlock(newBlock.hash, privateKeyPem);
+
+  // Attach signature and validator reference
+  newBlock.signatures = [{ validator: validatorId, signature }];
+
+  await newBlock.save();
+
+  console.log(`✅ Block #${newBlock.index} mined and signed with ${transactions.length} txs`);
 }
+
 
 // 3. Auto-mine loop every 10 seconds
 setInterval(async () => {

@@ -156,6 +156,31 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
+async function createValidator() {
+  // Connect to MongoDB (adjust connection string)
+  await mongoose.connect('mongodb://localhost:27017/your-db-name');
+
+  // Load your public key PEM
+  const PUBLIC_KEY_PEM = fs.readFileSync(path.resolve('./keys/public.pem'), 'utf-8');
+
+  // Create ValidatorNode entry if not exists
+  const existing = await ValidatorNode.findOne({ nodeId: 'seagull-validator-1' });
+  if (!existing) {
+    await ValidatorNode.create({
+      nodeId: 'seagull-validator-1',
+      publicKey: PUBLIC_KEY_PEM,
+      trusted: true,
+    });
+    console.log('✅ Validator node created');
+  } else {
+    console.log('Validator node already exists');
+  }
+
+  await mongoose.disconnect();
+}
+
+createValidator().catch(console.error);
+
 
 // Generate RSA key pair (2048 bits)
 const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {

@@ -9,4 +9,4 @@ const BlockSchema = new mongoose.Schema({
   hash: { type: String, required: true },
 });
 
-export default mongoose.model('Block', BlockSchema);
+export default mongoose.models.Block || mongoose.model('Block', BlockSchema);

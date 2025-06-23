@@ -8,12 +8,13 @@ const BlockSchema = new mongoose.Schema({
   nonce: { type: Number, default: 0 },
   hash: { type: String, required: true },
 
-
-// ✅ New field for validator signature
-  validatorSignature: {
-    type: String,
-    required: false,
-  },
-});
+// models/Block.js (add to existing schema)
+signatures: [
+  {
+    validator: { type: mongoose.Schema.Types.ObjectId, ref: 'Validator' },
+    signature: String
+  }
+],
+finalized: { type: Boolean, default: false },
 
 export default mongoose.models.Block || mongoose.model('Block', BlockSchema);

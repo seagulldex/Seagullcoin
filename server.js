@@ -5829,6 +5829,23 @@ app.post('/mine', async (req, res) => {
   }
 });
 
+app.get('/generate-keys', (req, res) => {
+  try {
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { format: 'pem', type: 'spki' },
+      privateKeyEncoding: { format: 'pem', type: 'pkcs8' }
+    });
+
+    res.json({
+      publicKey,
+      privateKey
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

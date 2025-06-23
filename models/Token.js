@@ -1,7 +1,6 @@
 // models/Token.js
 import mongoose from 'mongoose';
 
-console.log('Loading Token model...')
 const tokenSchema = new mongoose.Schema({
   symbol: {
     type: String,
@@ -48,7 +47,4 @@ const tokenSchema = new mongoose.Schema({
 // Index for common token queries per wallet
 tokenSchema.index({ owner_wallet: 1, symbol: 1 });
 
-console.log('Exporting Token model:', mongoose.models.Token ? 'Using cached model' : 'Creating new model');
-
-export default mongoose.models.Token || mongoose.model('Token', tokenSchema);
-
+export default mongoose.model('Token', tokenSchema);

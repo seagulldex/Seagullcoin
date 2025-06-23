@@ -7,7 +7,7 @@ const BlockSchema = new mongoose.Schema({
   transactions: { type: [Object], default: [] },
   nonce: { type: Number, default: 0 },
   hash: { type: String, required: true },
-});
+
 
 // ✅ New field for validator signature
   validatorSignature: {

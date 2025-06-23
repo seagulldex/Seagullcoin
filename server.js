@@ -78,6 +78,7 @@ import { createGenesisBlock } from './blockchain/utils.js';
 import Block from './models/Block.js';
 import { calculateHash } from './blockchain/utils.js';
 import PendingTransaction from './models/PendingTransaction.js';
+import ValidatorNode from './models/ValidatorNode.js';
 
 
 // ===== Init App and Env =====

@@ -140,4 +140,4 @@ export { createGenesisBlock };
 
   return { genesisToken, genesisBlock };
 }
-export { calculateHash, createGenesisTokenAndBlock };
+export { calculateHash, createGenesisTokenAndBlock as createGenesisBlock };

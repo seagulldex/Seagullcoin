@@ -77,6 +77,7 @@ import { hashSeed } from './utils/test-hash.js';
 import { createGenesisBlock } from './blockchain/utils.js';
 import Block from './models/Block.js';
 import { calculateHash } from './blockchain/utils.js';
+import PendingTransaction from './models/PendingTransaction.js';
 
 
 // ===== Init App and Env =====
@@ -166,7 +167,7 @@ async function init() {
 init(); // 🔥 Call the async function
 
 // 1. Simulated pending transactions store (in-memory or DB)
-let pendingTransactions = [];
+
 
 // 2. Function to mine a block
 async function mineBlock(transactions) {

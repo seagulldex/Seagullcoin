@@ -96,6 +96,6 @@ issuer: {
   }
 });
 
-export default mongoose.model('Transaction', transactionSchema);
+export default mongoose.models.Transaction || mongoose.model('Transaction', transactionSchema);
 
 console.log("Transaction model initialized:", mongoose.modelNames());

@@ -47,4 +47,5 @@ const tokenSchema = new mongoose.Schema({
 // Index for common token queries per wallet
 tokenSchema.index({ owner_wallet: 1, symbol: 1 });
 
-export default mongoose.model('Token', tokenSchema);
+
+export default mongoose.models.Token || mongoose.model('Token', tokenSchema);

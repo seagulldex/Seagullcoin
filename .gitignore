@@ -1,5 +1,6 @@
 .glitchdotcom.json
 .node-gyp
 node_modules
-# Ignore all files in the keys directory
-keys/
+# Ignore just the key files
+keys/private.pem
+keys/public.pem

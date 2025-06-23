@@ -193,18 +193,22 @@ async function mineBlock(transactions) {
 
 // 3. Auto-mine loop every 10 seconds
 setInterval(async () => {
-  if (pendingTransactions.length === 0) return;
-
-  const txsToMine = [...pendingTransactions]; // copy to avoid mutation issues
-  pendingTransactions = []; // clear queue before mining
+  const txsToMine = await PendingTransaction.find().limit(100); // Limit if needed
+  if (txsToMine.length === 0) return;
 
   try {
     await mineBlock(txsToMine);
+
+    // Remove mined transactions
+    const ids = txsToMine.map(tx => tx._id);
+    await PendingTransaction.deleteMany({ _id: { $in: ids } });
+
   } catch (err) {
     console.error('❌ Auto-mining failed:', err);
-    pendingTransactions.push(...txsToMine); // restore if failed
+    // Optional: mark as failed or keep retrying
   }
 }, 10_000);
+
 
 
 // Generator Function

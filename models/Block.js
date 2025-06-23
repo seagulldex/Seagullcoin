@@ -8,13 +8,16 @@ const BlockSchema = new mongoose.Schema({
   nonce: { type: Number, default: 0 },
   hash: { type: String, required: true },
 
-// models/Block.js (add to existing schema)
-signatures: [
-  {
-    validator: { type: mongoose.Schema.Types.ObjectId, ref: 'Validator' },
-    signature: String
-  }
-],
-finalized: { type: Boolean, default: false },
+  // ✅ These fields are correctly inside the schema
+  signatures: [
+    {
+      validator: { type: mongoose.Schema.Types.ObjectId, ref: 'Validator' },
+      signature: String
+    }
+  ],
 
+  finalized: { type: Boolean, default: false }
+});
+
+// ✅ Export correctly after schema is defined
 export default mongoose.models.Block || mongoose.model('Block', BlockSchema);

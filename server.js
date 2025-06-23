@@ -188,23 +188,7 @@ export async function generateCustomWallet() {
   return newWallet;
 }
 
-async function main() {
-  const privateKey = nacl.sign.keyPair().secretKey; // Or your 32-byte key
-  const message = decodeUTF8('hello');
 
-  // Sign the message
-  const signature = nacl.sign.detached(message, privateKey);
-
-  // Get public key from private key (nacl uses 64-byte secret key)
-  const publicKey = privateKey.slice(32);
-
-  // Verify signature
-  const isValid = nacl.sign.detached.verify(message, signature, publicKey);
-
-  console.log('Signature valid?', isValid);
-}
- 
-main();
 
 
 // 1. Simulated pending transactions store (in-memory or DB)

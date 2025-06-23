@@ -645,14 +645,15 @@ const limiter = rateLimit({
 // ===== Middleware =====
 // First session middleware
 app.use(session({
-    secret: 'your-secret-key',
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-  maxAge: 5 * 60 * 1000,  // 5 minutes
-  secure: true,           // Ensure cookie is sent only over HTTPS
-  httpOnly: true          // Helps with security by making the cookie inaccessible to JavaScript
-    }
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,  // only save sessions with data
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
+  cookie: {
+    maxAge: 5 * 60 * 1000,   // 5 minutes
+    secure: process.env.NODE_ENV === 'production',  // true only in prod HTTPS
+    httpOnly: true,
+  }
 }));
 
 // Now, apply other middleware

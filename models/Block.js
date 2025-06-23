@@ -12,7 +12,7 @@ const BlockSchema = new mongoose.Schema({
 // ✅ New field for validator signature
   validatorSignature: {
     type: String,
-    required: true,
+    required: false,
   },
 });
 

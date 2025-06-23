@@ -9,4 +9,11 @@ const BlockSchema = new mongoose.Schema({
   hash: { type: String, required: true },
 });
 
+// ✅ New field for validator signature
+  validatorSignature: {
+    type: String,
+    required: true,
+  },
+});
+
 export default mongoose.models.Block || mongoose.model('Block', BlockSchema);

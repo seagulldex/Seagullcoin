@@ -77,6 +77,9 @@ import { hashSeed } from './utils/test-hash.js';
 import { createGenesisBlock } from './blockchain/utils.js';
 import Block from './models/Block.js';
 import { calculateHash } from './blockchain/utils.js';
+import nacl from 'tweetnacl';
+import { encodeUTF8, decodeUTF8, encodeBase64 } from 'tweetnacl-util';
+
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -186,20 +189,25 @@ export async function generateCustomWallet() {
   console.log("✅ Created wallet:", wallet);
   return newWallet;
 }
- 
 
 async function main() {
-  const privateKey = new Uint8Array(32); // Example, replace with your key
-  const message = new TextEncoder().encode('hello');
+  const privateKey = nacl.sign.keyPair().secretKey; // Or your 32-byte key
+  const message = decodeUTF8('hello');
 
-  const signature = await sign(message, privateKey);
-  const publicKey = await getPublicKey(privateKey);
-  const isValid = await verify(signature, message, publicKey);
+  // Sign the message
+  const signature = nacl.sign.detached(message, privateKey);
+
+  // Get public key from private key (nacl uses 64-byte secret key)
+  const publicKey = privateKey.slice(32);
+
+  // Verify signature
+  const isValid = nacl.sign.detached.verify(message, signature, publicKey);
 
   console.log('Signature valid?', isValid);
 }
+ 
+main();
 
-main().catch(console.error);
 
 // 1. Simulated pending transactions store (in-memory or DB)
 let pendingTransactions = [];

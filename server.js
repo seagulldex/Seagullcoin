@@ -5220,7 +5220,7 @@ app.post('/create-merch-order', async (req, res) => {
 // ✅ Gift card creation endpoint
 
 // Define TokenModel
-const TokenModel = mongoose.model('Token', new mongoose.Schema({
+const TokensModel = mongoose.model('Tokens', new mongoose.Schema({
   token: String,
   orderIdentifier: String,
   used: { type: Boolean, default: false },
@@ -5241,7 +5241,7 @@ app.post("/create-giftcard-order", async (req, res) => {
   }
 
   try {
-    const token = randomBytes(32).toString('hex');   // Generate token **first**
+    const tokens = randomBytes(32).toString('hex');   // Generate token **first**
     const identifier = `GIFTCARD-${Date.now()}-${brand}-${amount}`;
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
@@ -5267,8 +5267,8 @@ app.post("/create-giftcard-order", async (req, res) => {
         submit: true,
         expire: 300,
         return_url: {
-          app: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=${token}`,
-          web: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?token=${token}`,
+          app: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?tokens=${tokens}`,
+          web: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?tokens=${tokens}`,
         }
       },
       custom_meta: {
@@ -5294,8 +5294,8 @@ app.post("/create-giftcard-order", async (req, res) => {
     });
 
     // Save token linked to order
-    await TokenModel.create({
-      token,
+    await TokensModel.create({
+      tokens,
       orderIdentifier: identifier,
       expiresAt,
       used: false
@@ -5368,11 +5368,11 @@ app.get('/test-mongodb', (req, res) => {
 });
 
 app.get("/redeem", async (req, res) => {
-  const token = req.query.token;
+  const token = req.query.tokens;
 
-  if (!token) return res.status(400).send("❌ Missing token.");
+  if (!tokens) return res.status(400).send("❌ Missing token.");
 
-  const gift = await TokenModel.findOne({ token });
+  const gift = await TokensModel.findOne({ tokens });
   if (!gift || gift.used || gift.expiresAt < new Date()) {
     return res.status(404).send("❌ Invalid or expired token.");
   }

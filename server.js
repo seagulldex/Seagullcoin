@@ -165,6 +165,45 @@ async function init() {
 
 init(); // 🔥 Call the async function
 
+// 1. Simulated pending transactions store (in-memory or DB)
+let pendingTransactions = [];
+
+// 2. Function to mine a block
+async function mineBlock(transactions) {
+  const previousBlock = await Block.findOne().sort({ index: -1 });
+  if (!previousBlock) {
+    console.error('❌ Genesis block not found.');
+    return;
+  }
+
+  const newBlock = new Block({
+    index: previousBlock.index + 1,
+    previousHash: previousBlock.hash,
+    timestamp: new Date(),
+    transactions,
+    nonce: 0,
+  });
+
+  newBlock.hash = calculateHash(newBlock.toObject());
+  await newBlock.save();
+
+  console.log(`✅ Block #${newBlock.index} mined with ${transactions.length} txs`);
+}
+
+// 3. Auto-mine loop every 10 seconds
+setInterval(async () => {
+  if (pendingTransactions.length === 0) return;
+
+  const txsToMine = [...pendingTransactions]; // copy to avoid mutation issues
+  pendingTransactions = []; // clear queue before mining
+
+  try {
+    await mineBlock(txsToMine);
+  } catch (err) {
+    console.error('❌ Auto-mining failed:', err);
+    pendingTransactions.push(...txsToMine); // restore if failed
+  }
+}, 10_000);
 
 
 // Generator Function

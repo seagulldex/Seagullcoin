@@ -74,14 +74,9 @@ import { randomBytes } from 'crypto';
 import Wallet from './models/Wallet.js';
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
-import { createGenesisTokenAndBlock } from './blockchain/utils.js';
+import { createGenesisBlock } from './blockchain/utils.js';
 import Block from './models/Block.js';
 import { calculateHash } from './blockchain/utils.js';
-import Balance from './models/Balance.js';
-import { encrypt, decrypt } from './utils/encryption.js';
-import PendingTransaction from './models/PendingTransaction.js';
-import MongoStore from 'connect-mongo';
-
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -169,60 +164,6 @@ async function init() {
 
 init(); // 🔥 Call the async function
 
-
-export async function processTransactions(transactions) {
-  for (const tx of transactions) {
-    const { from, to, amount } = tx;
-
-    if (!from || !to || typeof amount !== 'number') continue;
-
-    // Get balances or create if not exist
-    const fromBal = await Balance.findOne({ address: from }) || new Balance({ address: from });
-    const toBal = await Balance.findOne({ address: to }) || new Balance({ address: to });
-
-    // Check balance
-    if (fromBal.amount < amount) {
-      throw new Error(`Insufficient funds for ${from}`);
-    }
-
-    // Update balances
-    fromBal.amount -= amount;
-    toBal.amount += amount;
-
-    await fromBal.save();
-    await toBal.save();
-  }
-}
-
-function sign(data, privateKey) {
-  const sign = crypto.createSign('SHA256');
-  sign.update(data);
-  sign.end();
-  return sign.sign(privateKey, 'hex');
-}
-
-// Basic mining function
-async function minePendingTransactions() {
-  const pendingTxs = await PendingTransaction.find();
-
-  if (pendingTxs.length === 0) return;
-
-  const previousBlock = await Block.findOne().sort({ index: -1 });
-  const newBlock = new Block({
-    index: previousBlock ? previousBlock.index + 1 : 0,
-    previousHash: previousBlock ? previousBlock.hash : '0',
-    timestamp: new Date(),
-    transactions: pendingTxs,
-    nonce: 0,
-  });
-
-  newBlock.hash = calculateHash(newBlock);
-  await newBlock.save();
-  await PendingTransaction.deleteMany(); // clear mempool
-}
-
-// ⏱ Start interval loop — every 10 seconds
-setInterval(minePendingTransactions, 10000);
 
 
 // Generator Function
@@ -647,15 +588,14 @@ const limiter = rateLimit({
 // ===== Middleware =====
 // First session middleware
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,  // only save sessions with data
-  store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
-  cookie: {
-    maxAge: 5 * 60 * 1000,   // 5 minutes
-    secure: process.env.NODE_ENV === 'production',  // true only in prod HTTPS
-    httpOnly: true,
-  }
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+  maxAge: 5 * 60 * 1000,  // 5 minutes
+  secure: true,           // Ensure cookie is sent only over HTTPS
+  httpOnly: true          // Helps with security by making the cookie inaccessible to JavaScript
+    }
 }));
 
 // Now, apply other middleware
@@ -2365,7 +2305,6 @@ app.get('/collections', async (req, res) => {
  *         description: Public collections retrieved
  */
 
-
 // Get all collections
 app.get('/getallcollections', async (req, res) => {
   db.all("SELECT * FROM collections", [], (err, rows) => {
@@ -2615,8 +2554,6 @@ app.get('/get-balance/:address', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch balance', details: error.message });
   }
 });
-
-
 
 // Load all NFTs
 app.get('/all-nfts', (req, res) => {
@@ -2997,10 +2934,6 @@ app.post('/transfer-nft', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Internal error' });
   }
 });
-
-
-
-
 
 app.post('/sell-nft', async (req, res) => {
   const { walletAddress, nftId, price } = req.body;
@@ -5694,7 +5627,7 @@ app.get('/api/wallets/xumm-callback/:uuid', async (req, res) => {
         });
       }
 
-      // 🔐 Generate only once
+     // 🔐 Generate only once
       const uniquePart = randomBytes(12).toString('hex').toUpperCase();
       const wallet = `SEAGULL${uniquePart}`;
       const seed = randomBytes(32).toString('hex');
@@ -5817,35 +5750,21 @@ if (userWallet && userWallet.hasMinted) {
 });
 
 app.post('/mine', async (req, res) => {
-  try {
-    const previousBlock = await Block.findOne().sort({ index: -1 });
-    if (!previousBlock) {
-      return res.status(400).json({ error: 'Genesis block not found.' });
-    }
+  const previousBlock = await Block.findOne().sort({ index: -1 });
+  
+  const newBlock = new Block({
+    index: previousBlock.index + 1,
+    previousHash: previousBlock.hash,
+    timestamp: new Date(),
+    transactions: req.body.transactions || [],
+    nonce: 0,
+  });
 
-    const transactions = req.body.transactions;
-    if (!Array.isArray(transactions)) {
-      return res.status(400).json({ error: 'Transactions must be an array' });
-    }
+  newBlock.hash = calculateHash(newBlock);
+  await newBlock.save();
 
-    const newBlock = new Block({
-      index: previousBlock.index + 1,
-      previousHash: previousBlock.hash,
-      timestamp: new Date(),
-      transactions,
-      nonce: 0,
-    });
-
-    newBlock.hash = calculateHash(newBlock.toObject());
-    await newBlock.save();
-
-    res.json(newBlock);
-  } catch (err) {
-    console.error('❌ Error in /mine:', err);
-    res.status(500).json({ error: 'Failed to mine block' });
-  }
+  res.json(newBlock);
 });
-
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

@@ -77,8 +77,6 @@ import { hashSeed } from './utils/test-hash.js';
 import { createGenesisBlock } from './blockchain/utils.js';
 import Block from './models/Block.js';
 import { calculateHash } from './blockchain/utils.js';
-import nacl from 'tweetnacl';
-import { encodeUTF8, decodeUTF8, encodeBase64 } from 'tweetnacl-util';
 
 
 // ===== Init App and Env =====

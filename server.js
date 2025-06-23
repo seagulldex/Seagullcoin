@@ -154,6 +154,17 @@ async function fetchIPFSMetadata(uri) {
 })();
 
 
+// Generate RSA key pair (2048 bits)
+const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+  modulusLength: 2048,
+  publicKeyEncoding: { type: 'spki', format: 'pem' },
+  privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+});
+
+console.log('Dummy Private Key PEM:\n', privateKey);
+console.log('Dummy Public Key PEM:\n', publicKey);
+
+
 async function init() {
   const Block = mongoose.model('Block');
   const genesis = await Block.findOne({ index: 0 });

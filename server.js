@@ -5887,6 +5887,15 @@ app.get('/generate-keys', (req, res) => {
   }
 });
 
+app.get('/test-sign', (req, res) => {
+  const data = 'hello-blockchain';
+  const signature = signBlock(data, privateKeyPem);
+  res.send({ data, signature });
+});
+
+
+
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

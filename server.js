@@ -81,7 +81,7 @@ import PendingTransaction from './models/PendingTransaction.js';
 import ValidatorNode from './models/ValidatorNode.js';
 import { signBlock } from './utils/signBlock.js'; // existing
 import { verifySignature } from './utils/verifySignature.js';
-import React, { useEffect, useState } from 'react';
+
 
 // ===== Init App and Env =====
 dotenv.config();

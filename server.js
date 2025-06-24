@@ -97,11 +97,6 @@ const NFT_STORAGE_API_KEY = process.env.NFT_STORAGE_API_KEY;
 const nftData = requireLogin.body;
 const sessions = {};
 
-const hash = 'test-data-123';
-const sig = signBlock(hash, fs.readFileSync('./keys/private.pem', 'utf-8'));
-
-console.log('✅ Signature valid:', verifySignature(hash, sig));
-
 const app = express();
 const port = process.env.PORT || 3000;
 const myCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });

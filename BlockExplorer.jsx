@@ -36,7 +36,7 @@ const BlockExplorer = () => {
 
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
-      <h1>📦 Block Explorer</h1>
+      <h1>SGLCN-X20 📦 Block Explorer</h1>
       {!isChainValid(blocks) && (
         <div style={{ color: 'red', fontWeight: 'bold' }}>
           ⚠️ Blockchain is invalid! Broken hash chain detected.

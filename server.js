@@ -694,7 +694,7 @@ app.use(session({
 
 // Now, apply other middleware
 app.use(limiter);
-app.use(cors({ origin: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app', credentials: true }));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));

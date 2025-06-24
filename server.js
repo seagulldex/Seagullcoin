@@ -5895,6 +5895,10 @@ app.get('/test-sign', (req, res) => {
   res.send({ data, signature });
 });
 
+app.get('/api/blocks', async (req, res) => {
+  const blocks = await Block.find().sort({ index: -1 });
+  res.json(blocks);
+});
 
 
 

@@ -269,12 +269,7 @@ setInterval(async () => {
   }
 }, 10_000);
 
-export function signBlock(data, privateKeyPem) {
-  const signer = crypto.createSign('RSA-SHA256');
-  signer.update(data);
-  signer.end();
-  return signer.sign(privateKeyPem, 'base64');
-}
+
 
 
 // Generator Function

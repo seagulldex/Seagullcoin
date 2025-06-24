@@ -79,7 +79,8 @@ import Block from './models/Block.js';
 import { calculateHash } from './blockchain/utils.js';
 import PendingTransaction from './models/PendingTransaction.js';
 import ValidatorNode from './models/ValidatorNode.js';
-
+import { signBlock } from './utils/signBlock.js'; // existing
+import { verifySignature } from './utils/verifySignature.js';
 
 // ===== Init App and Env =====
 dotenv.config();
@@ -96,6 +97,10 @@ const NFT_STORAGE_API_KEY = process.env.NFT_STORAGE_API_KEY;
 const nftData = requireLogin.body;
 const sessions = {};
 
+const hash = 'test-data-123';
+const sig = signBlock(hash, fs.readFileSync('./keys/private.pem', 'utf-8'));
+
+console.log('✅ Signature valid:', verifySignature(hash, sig));
 
 const app = express();
 const port = process.env.PORT || 3000;

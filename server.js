@@ -156,6 +156,19 @@ async function fetchIPFSMetadata(uri) {
   }
 })();
 
+const privateKeyPem = fs.readFileSync('./keys/private.pem', 'utf8');
+
+try {
+  crypto.createPrivateKey({
+    key: privateKeyPem,
+    format: 'pem',
+    type: 'pkcs8',
+  });
+  console.log('✅ Private key loaded successfully');
+} catch (err) {
+  console.error('❌ Private key error:', err.message);
+}
+
 async function createValidator() {
   // Connect to MongoDB (adjust connection string)
   await mongoose.connect('mongodb://localhost:27017/your-db-name');

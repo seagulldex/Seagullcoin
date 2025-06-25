@@ -78,6 +78,27 @@
   opacity: 0.4;
   cursor: default;
 }
+  .hash-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .hash-link {
+    color: #1e90ff;
+    text-decoration: none;
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px; /* adjust as needed */
+    display: inline-block;
+    vertical-align: bottom;
+  }
+
+  .hash-link:hover {
+    text-decoration: underline;
+  }
     </style>
   </head>
   <body>

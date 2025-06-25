@@ -5917,50 +5917,6 @@ app.get('/explorer/block/:hash', async (req, res) => {
   res.render('block-detail', { block }); // or send HTML
 });
 
-// Assuming MongoDB + Express
-app.get('/api/address/:address', async (req, res) => {
-  const { address } = req.params;
-
-  try {
-    const blocks = await db.collection('blocks').find({}).toArray();
-
-    const transactions = [];
-    let balance = 0;
-
-    for (const block of blocks) {
-      const { transactions: txs = [], timestamp, index, hash } = block;
-
-      for (const tx of txs) {
-        const isSender = tx.from === address;
-        const isReceiver = tx.to === address;
-
-        if (isSender || isReceiver) {
-          transactions.push({
-            hash,
-            blockIndex: index,
-            timestamp,
-            from: tx.from,
-            to: tx.to,
-            amount: tx.amount
-          });
-
-          if (isSender) balance -= tx.amount;
-          if (isReceiver) balance += tx.amount;
-        }
-      }
-    }
-
-    res.json({
-      address,
-      balance,
-      txCount: transactions.length,
-      transactions
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to retrieve address data' });
-  }
-});
 
 
 app.get('/api/address/:address', async (req, res) => {

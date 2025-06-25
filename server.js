@@ -5843,6 +5843,8 @@ if (userWallet && userWallet.hasMinted) {
   }
 });
 
+let allBlocks = [];  
+
 function fetchBlocks() {
   return fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/blocks').then(res => res.json());
 }

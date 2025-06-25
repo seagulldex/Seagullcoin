@@ -237,8 +237,9 @@ function fetchBlockDetails(hash) {
                 block.transactions.length === 0
                   ? '<li>None</li>'
                   : block.transactions.map(tx => {
-                      const from = highlightMatch(tx.from, query);
-                      const to = highlightMatch(tx.to, query);
+                      const from = `<a href="/wallet.html?address=${tx.from}" class="wallet-link">${highlightMatch(tx.from, query)}</a>`;
+                      const to = `<a href="/wallet.html?address=${tx.to}" class="wallet-link">${highlightMatch(tx.to, query)}</a>`;
+
                       return `<li>From: <strong>${from}</strong> → To: <strong>${to}</strong> — <strong>${tx.amount}</strong></li>`;
                     }).join('')
               }

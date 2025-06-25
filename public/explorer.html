@@ -3,12 +3,41 @@
   <head>
     <title>SeagullCoin Explorer</title>
     <style>
-      body { font-family: sans-serif; padding: 2rem; }
-      .block { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 6px; }
+      body {
+        font-family: sans-serif;
+        padding: 2rem;
+        background-color: #000;
+        color: #fff;
+      }
+      .block {
+        border: 1px solid #444;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 6px;
+        background-color: #111;
+      }
+      h1 {
+        display: flex;
+        align-items: center;
+        font-size: 2rem;
+      }
+      h1 img {
+        height: 40px;
+        width: 40px;
+        border-radius: 50%;
+        margin-right: 10px;
+      }
+      a {
+        color: #1e90ff;
+      }
     </style>
   </head>
   <body>
-    <h1>🧭 SeagullCoin Block Explorer</h1>
+    <h1>
+      <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" alt="SeagullCoin Logo">
+      SeagullCoin Block Explorer
+    </h1>
+
     <div id="blocks">Loading...</div>
 
     <script>
@@ -36,7 +65,7 @@
           });
         })
         .catch(err => {
-          document.getElementById('blocks').innerHTML = 'Failed to load blocks.';
+          document.getElementById('blocks').innerHTML = '❌ Failed to load blocks.';
           console.error(err);
         });
     </script>

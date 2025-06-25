@@ -42,32 +42,70 @@
 
     <script>
       fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/blocks')
-        .then(res => res.json())
-        .then(data => {
-          const container = document.getElementById('blocks');
-          container.innerHTML = '';
+  .then(res => res.json())
+  .then(data => {
+    const container = document.getElementById('blocks');
+    const searchInput = document.getElementById('search');
+    const modal = document.getElementById('modal');
 
-          data.forEach(block => {
-            const div = document.createElement('div');
-            div.className = 'block';
-            div.innerHTML = `
-              <p><strong>Index:</strong> ${block.index}</p>
-              <p><strong>Timestamp:</strong> ${new Date(block.timestamp).toLocaleString()}</p>
-              <p><strong>Hash:</strong> ${block.hash}</p>
-              <p><strong>Previous Hash:</strong> ${block.previousHash}</p>
-              <p><strong>Finalized:</strong> ${block.finalized ? '✅ Yes' : '⏳ No'}</p>
-              <p><strong>Transactions:</strong></p>
-              <ul>
-                ${block.transactions.map(tx => `<li>${tx.from} → ${tx.to} — ${tx.amount}</li>`).join('')}
-              </ul>
-            `;
-            container.appendChild(div);
-          });
-        })
-        .catch(err => {
-          document.getElementById('blocks').innerHTML = '❌ Failed to load blocks.';
-          console.error(err);
-        });
+    function renderBlocks(blocksToRender) {
+      container.innerHTML = '';
+      blocksToRender.forEach(block => {
+        const div = document.createElement('div');
+        div.className = 'block';
+        div.style.cursor = 'pointer';
+        div.innerHTML = `
+          <p><strong>Index:</strong> ${block.index}</p>
+          <p><strong>Timestamp:</strong> ${new Date(block.timestamp).toLocaleString()}</p>
+          <p><strong>Hash:</strong> ${block.hash}</p>
+          <p><strong>Previous Hash:</strong> ${block.previousHash}</p>
+          <p><strong>Finalized:</strong> ${block.finalized ? '✅ Yes' : '⏳ No'}</p>
+          <p><strong>Transactions:</strong></p>
+          <ul>
+            ${block.transactions.map(tx => `<li>${tx.from} → ${tx.to} — ${tx.amount}</li>`).join('')}
+          </ul>
+        `;
+        div.onclick = () => showDetails(block);
+        container.appendChild(div);
+      });
+    }
+
+    function showDetails(block) {
+      modal.innerHTML = `
+        <h2>Block #${block.index}</h2>
+        <p><strong>Hash:</strong> ${block.hash}</p>
+        <p><strong>Previous Hash:</strong> ${block.previousHash}</p>
+        <p><strong>Timestamp:</strong> ${new Date(block.timestamp).toLocaleString()}</p>
+        <h3>Transactions:</h3>
+        <ul>
+          ${block.transactions.length === 0 ? '<li>No transactions</li>' : block.transactions.map(tx => `<li>${tx.from} → ${tx.to} — ${tx.amount}</li>`).join('')}
+        </ul>
+        <button onclick="document.getElementById('modal').classList.remove('active')">Close</button>
+      `;
+      modal.classList.add('active');
+    }
+
+    // Search filtering
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.toLowerCase();
+      const filtered = data.filter(block =>
+        block.hash.toLowerCase().includes(query) ||
+        block.previousHash.toLowerCase().includes(query) ||
+        block.transactions.some(tx =>
+          tx.from.toLowerCase().includes(query) ||
+          tx.to.toLowerCase().includes(query)
+        )
+      );
+      renderBlocks(filtered);
+    });
+
+    // Initial render all blocks
+    renderBlocks(data);
+  })
+  .catch(err => {
+    document.getElementById('blocks').innerHTML = '❌ Failed to load blocks.';
+    console.error(err);
+  });
     </script>
   </body>
 </html>

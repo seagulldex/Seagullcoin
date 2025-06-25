@@ -7,6 +7,63 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <style>
+    body {
+        font-family: sans-serif;
+        padding: 2rem;
+        background-color: #000;
+        color: #fff;
+      }
+      .block {
+        border: 1px solid #444;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 6px;
+        background-color: #111;
+      }
+      h1 {
+        display: flex;
+        align-items: center;
+        font-size: 2rem;
+      }
+      h1 img {
+        height: 40px;
+        width: 40px;
+        border-radius: 50%;
+        margin-right: 10px;
+      }
+      a {
+        color: #1e90ff;
+      }
+      .modal {
+        background: #222;
+        color: #eee;
+        position: fixed;
+        top: 10%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 600px;
+        border: 2px solid #1e90ff;
+        padding: 1rem 2rem;
+        z-index: 1000;
+        border-radius: 8px;
+        display: none;
+        box-shadow: 0 0 10px #1e90ff;
+      }
+      .modal.active {
+        display: block;
+      }
+      .modal button {
+        background: #1e90ff;
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        margin-top: 1rem;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+  </style>
   <div class="container">
     <h1>Wallet Details</h1>
     <div id="wallet-info">

@@ -5843,8 +5843,7 @@ if (userWallet && userWallet.hasMinted) {
   }
 });
 
-fetchBlocksFromSomewhere().then(data => {
-  allBlocks = data;
+
 
 app.post('/mine', async (req, res) => {
   try {

@@ -70,18 +70,60 @@
 
  <script>
   let allBlocks = [];
+  let currentPage = 1;
+  const blocksPerPage = 5;
 
   const container = document.getElementById('blocks');
   const searchInput = document.getElementById('search');
 
-  // Function to highlight matched terms inside a string
+  // Highlight matched text helper
   function highlightMatch(text, query) {
     if (!query) return text;
     const regex = new RegExp(`(${query.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
     return text.replace(regex, '<mark>$1</mark>');
   }
 
-  // Render blocks filtered by query
+  // Render pagination controls
+  function renderPagination(totalBlocks) {
+    const paginationDivId = 'pagination';
+    let paginationDiv = document.getElementById(paginationDivId);
+
+    if (!paginationDiv) {
+      paginationDiv = document.createElement('div');
+      paginationDiv.id = paginationDivId;
+      paginationDiv.style.marginTop = '1rem';
+      paginationDiv.style.textAlign = 'center';
+      container.after(paginationDiv);
+    }
+
+    const totalPages = Math.ceil(totalBlocks / blocksPerPage);
+
+    if (totalPages <= 1) {
+      paginationDiv.innerHTML = '';
+      return;
+    }
+
+    paginationDiv.innerHTML = `
+      <button id="prevPage" ${currentPage === 1 ? 'disabled' : ''}>⬅ Prev</button>
+      <span style="margin: 0 1rem;">Page ${currentPage} of ${totalPages}</span>
+      <button id="nextPage" ${currentPage === totalPages ? 'disabled' : ''}>Next ➡</button>
+    `;
+
+    document.getElementById('prevPage').onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderBlocks(searchInput.value.trim());
+      }
+    };
+    document.getElementById('nextPage').onclick = () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderBlocks(searchInput.value.trim());
+      }
+    };
+  }
+
+  // Render blocks filtered and paginated
   function renderBlocks(query = '') {
     const filtered = allBlocks.filter(block => {
       query = query.toLowerCase();
@@ -95,14 +137,27 @@
       return false;
     });
 
+    const totalBlocks = filtered.length;
+    const totalPages = Math.ceil(totalBlocks / blocksPerPage);
+
+    // Clamp currentPage if out of range
+    if (currentPage > totalPages) currentPage = totalPages || 1;
+    if (currentPage < 1) currentPage = 1;
+
     container.innerHTML = '';
 
-    if (filtered.length === 0) {
+    if (totalBlocks === 0) {
       container.innerHTML = '<p style="color: #f44336; font-weight: bold;">No results found.</p>';
+      renderPagination(0);
       return;
     }
 
-    filtered.forEach(block => {
+    // Pagination slice
+    const startIdx = (currentPage - 1) * blocksPerPage;
+    const endIdx = startIdx + blocksPerPage;
+    const pagedBlocks = filtered.slice(startIdx, endIdx);
+
+    pagedBlocks.forEach(block => {
       const div = document.createElement('div');
       div.className = 'block';
 
@@ -127,9 +182,11 @@
       `;
       container.appendChild(div);
     });
+
+    renderPagination(totalBlocks);
   }
 
-  // Fetch blocks once and store them
+  // Initial fetch & render
   fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/blocks')
     .then(res => res.json())
     .then(data => {
@@ -141,8 +198,9 @@
       console.error(err);
     });
 
-  // Filter blocks on search input
+  // On search input, reset page and re-render
   searchInput.addEventListener('input', e => {
+    currentPage = 1;
     renderBlocks(e.target.value.trim());
   });
 </script>

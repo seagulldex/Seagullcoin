@@ -5977,62 +5977,39 @@ app.get('/api/address/:address', async (req, res) => {
   }
 });
 
-router.get('/api/address/:address', async (req, res) => {
-  const address = req.params.address.toUpperCase(); // Ensure consistency
+app.get('/api/address/:address', async (req, res) => {
+  const { address } = req.params;
 
   try {
-    // Optional: Fetch wallet metadata (if it's a registered wallet)
-    const wallet = await UserWallet.findOne({ wallet: address });
+    const wallet = await Wallet.findOne({ wallet: address.toUpperCase() });
+    if (!wallet) return res.status(404).json({ error: 'Address not found' });
 
-    // Fetch all blocks
-    const blocks = await Block.find().sort({ index: -1 });
+    const sentBlocks = await Block.find({ 'transactions.from': address.toUpperCase() });
+    const receivedBlocks = await Block.find({ 'transactions.to': address.toUpperCase() });
 
-    const transactions = [];
-
-    for (const block of blocks) {
-      const { transactions: txs = [], timestamp, index, hash } = block;
-
-      txs.forEach(tx => {
-        if (tx.from === address || tx.to === address) {
-          transactions.push({
-            hash,
-            blockIndex: index,
-            timestamp,
-            from: tx.from,
-            to: tx.to,
-            amount: tx.amount
-          });
-        }
-      });
-    }
-
-    const balance = wallet?.balance ?? calculateBalance(address, transactions); // fallback if not stored
+    const allBlocks = [...sentBlocks, ...receivedBlocks];
+    const allTransactions = allBlocks.flatMap(block =>
+      block.transactions
+        .filter(tx => tx.from === address.toUpperCase() || tx.to === address.toUpperCase())
+        .map(tx => ({
+          ...tx,
+          blockHash: block.hash,
+          timestamp: block.timestamp,
+        }))
+    );
 
     res.json({
-      address,
-      balance,
-      txCount: transactions.length,
-      isRegistered: !!wallet,
-      transactions,
+      address: wallet.wallet,
+      balance: wallet.balance,
+      xrpl_address: wallet.xrpl_address,
+      isGenesisWallet: wallet.isGenesisWallet,
+      transactions: allTransactions,
     });
-
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
-
-// Helper fallback if balance isn't precomputed
-function calculateBalance(address, txs) {
-  return txs.reduce((acc, tx) => {
-    if (tx.from === address) return acc - tx.amount;
-    if (tx.to === address) return acc + tx.amount;
-    return acc;
-  }, 0);
-}
-
-export default router;
-
 
 
 // Call the XRPL ping when the server starts

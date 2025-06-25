@@ -5842,6 +5842,10 @@ if (userWallet && userWallet.hasMinted) {
     return res.status(500).json({ error: 'Error checking login' });
   }
 });
+
+fetchBlocksFromSomewhere().then(data => {
+  allBlocks = data;
+
 app.post('/mine', async (req, res) => {
   try {
     const previousBlock = await Block.findOne().sort({ index: -1 });

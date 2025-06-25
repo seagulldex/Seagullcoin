@@ -164,6 +164,41 @@
     };
   }
 
+   function abbreviateHash(hash, length = 10) {
+  if (hash.length <= length) return hash;
+  return hash.slice(0, length / 2) + '...' + hash.slice(-length / 2);
+}
+
+data.forEach(block => {
+  const div = document.createElement('div');
+  div.className = 'block';
+  div.innerHTML = `
+    <p><strong>Index:</strong> ${block.index}</p>
+    <p><strong>Timestamp:</strong> ${new Date(block.timestamp).toLocaleString()}</p>
+    <p><strong>Hash:</strong> 
+      <span class="hash-container">
+        <a href="/explorer/block/${block.hash}" class="hash-link" title="${block.hash}" target="_blank" rel="noopener noreferrer">
+          ${abbreviateHash(block.hash)}
+        </a>
+      </span>
+    </p>
+    <p><strong>Previous Hash:</strong> 
+      <span class="hash-container">
+        <a href="/explorer/block/${block.previousHash}" class="hash-link" title="${block.previousHash}" target="_blank" rel="noopener noreferrer">
+          ${abbreviateHash(block.previousHash)}
+        </a>
+      </span>
+    </p>
+    <p><strong>Finalized:</strong> ${block.finalized ? '✅ Yes' : '⏳ No'}</p>
+    <p><strong>Transactions:</strong></p>
+    <ul>
+      ${block.transactions.map(tx => `<li>${tx.from} → ${tx.to} — ${tx.amount}</li>`).join('')}
+    </ul>
+  `;
+  container.appendChild(div);
+});
+
+
   // Render blocks filtered and paginated
   function renderBlocks(query = '') {
     const filtered = allBlocks.filter(block => {

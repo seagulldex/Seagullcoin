@@ -12,7 +12,7 @@
     <div id="blocks">Loading...</div>
 
     <script>
-      fetch('/api/blocks')
+      fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/blocks')
         .then(res => res.json())
         .then(data => {
           const container = document.getElementById('blocks');

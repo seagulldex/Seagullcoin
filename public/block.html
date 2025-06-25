@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Block Details</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #000;
+        color: #fff;
+        padding: 2rem;
+      }
+      .container {
+        max-width: 800px;
+        margin: auto;
+        background: #111;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #333;
+      }
+      pre {
+        background: #222;
+        padding: 1rem;
+        overflow-x: auto;
+        border-radius: 4px;
+      }
+      a {
+        color: #1e90ff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Block Details</h1>
+      <div id="blockContent">Loading...</div>
+      <p><a href="index.html">← Back to Explorer</a></p>
+    </div>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const hash = params.get('hash');
+      const blockContent = document.getElementById('blockContent');
+
+      if (!hash) {
+        blockContent.innerHTML = '<p style="color: red;">❌ No block hash provided.</p>';
+      } else {
+        fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/block/${hash}`)
+          .then(res => {
+            if (!res.ok) throw new Error('Block not found');
+            return res.json();
+          })
+          .then(block => {
+            blockContent.innerHTML = `<pre>${JSON.stringify(block, null, 2)}</pre>`;
+          })
+          .catch(err => {
+            blockContent.innerHTML = `<p style="color: red;">❌ Error: ${err.message}</p>`;
+          });
+      }
+    </script>
+  </body>
+</html>

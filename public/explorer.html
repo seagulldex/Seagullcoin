@@ -262,5 +262,10 @@ function fetchBlockDetails(hash) {
         renderBlocks(e.target.value.trim());
       });
     </script>
+<div id="blockModal" class="modal">
+  <h2>Block Details</h2>
+  <pre id="modalContent" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></pre>
+  <button onclick="closeModal()">Close</button>
+</div>
   </body>
 </html>

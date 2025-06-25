@@ -5904,6 +5904,12 @@ app.get('/api/blocks', async (req, res) => {
   res.json(blocks);
 });
 
+app.get('/api/block/:hash', (req, res) => {
+  const block = allBlocks.find(b => b.hash === req.params.hash);
+  if (!block) return res.status(404).json({ error: 'Not found' });
+  res.json(block);
+});
+
 
 
 

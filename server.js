@@ -5910,6 +5910,14 @@ app.get('/api/block/:hash', (req, res) => {
   res.json(block);
 });
 
+app.get('/explorer/block/:hash', async (req, res) => {
+  const hash = req.params.hash;
+  const blocks = await fetchBlocks(); // however you're getting blocks
+  const block = blocks.find(b => b.hash === hash);
+  if (!block) return res.status(404).send('Block not found');
+  res.render('block-detail', { block }); // or send HTML
+});
+
 
 
 

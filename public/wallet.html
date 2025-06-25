@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wallet Details | Seagull Explorer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Wallet Details</h1>
+    <div id="wallet-info">
+      <p><strong>Address:</strong> <span id="wallet-address"></span></p>
+      <p><strong>XRPL Address:</strong> <span id="xrpl-address"></span></p>
+      <p><strong>Genesis Wallet:</strong> <span id="genesis-status"></span></p>
+    </div>
+
+    <h2>Transactions</h2>
+    <ul id="transaction-list">
+      <li>Loading...</li>
+    </ul>
+
+    <a href="explorer.html">← Back to Explorer</a>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const address = params.get('address');
+    const apiUrl = `/api/address/${address}`;
+
+    async function fetchWalletDetails() {
+      try {
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error('Wallet not found');
+        const data = await res.json();
+
+        document.getElementById('wallet-address').textContent = data.address;
+        document.getElementById('xrpl-address').textContent = data.xrpl_address;
+        document.getElementById('genesis-status').textContent = data.isGenesisWallet ? '✅ Yes' : '❌ No';
+
+        const txList = document.getElementById('transaction-list');
+        txList.innerHTML = '';
+
+        if (data.transactions.length === 0) {
+          txList.innerHTML = '<li>No transactions found.</li>';
+          return;
+        }
+
+        data.transactions.forEach(tx => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <strong>From:</strong> ${tx.from} → <strong>To:</strong> ${tx.to} — 
+            <strong>Amount:</strong> ${tx.amount} 
+            <br /><small>Block: <a href="/explorer/block/${tx.blockHash}" target="_blank">${tx.blockHash}</a></small>
+          `;
+          txList.appendChild(li);
+        });
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('wallet-info').innerHTML = '<p style="color:red;">Failed to load wallet data.</p>';
+      }
+    }
+
+    fetchWalletDetails();
+  </script>
+</body>
+</html>
+

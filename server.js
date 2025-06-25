@@ -5977,6 +5977,62 @@ app.get('/api/address/:address', async (req, res) => {
   }
 });
 
+router.get('/api/address/:address', async (req, res) => {
+  const address = req.params.address.toUpperCase(); // Ensure consistency
+
+  try {
+    // Optional: Fetch wallet metadata (if it's a registered wallet)
+    const wallet = await UserWallet.findOne({ wallet: address });
+
+    // Fetch all blocks
+    const blocks = await Block.find().sort({ index: -1 });
+
+    const transactions = [];
+
+    for (const block of blocks) {
+      const { transactions: txs = [], timestamp, index, hash } = block;
+
+      txs.forEach(tx => {
+        if (tx.from === address || tx.to === address) {
+          transactions.push({
+            hash,
+            blockIndex: index,
+            timestamp,
+            from: tx.from,
+            to: tx.to,
+            amount: tx.amount
+          });
+        }
+      });
+    }
+
+    const balance = wallet?.balance ?? calculateBalance(address, transactions); // fallback if not stored
+
+    res.json({
+      address,
+      balance,
+      txCount: transactions.length,
+      isRegistered: !!wallet,
+      transactions,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Helper fallback if balance isn't precomputed
+function calculateBalance(address, txs) {
+  return txs.reduce((acc, tx) => {
+    if (tx.from === address) return acc - tx.amount;
+    if (tx.to === address) return acc + tx.amount;
+    return acc;
+  }, 0);
+}
+
+export default router;
+
 
 
 // Call the XRPL ping when the server starts

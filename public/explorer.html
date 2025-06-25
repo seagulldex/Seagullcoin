@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SeagullCoin Explorer</title>
+    <style>
+      body { font-family: sans-serif; padding: 2rem; }
+      .block { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <h1>🧭 SeagullCoin Block Explorer</h1>
+    <div id="blocks">Loading...</div>
+
+    <script>
+      fetch('/api/blocks')
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById('blocks');
+          container.innerHTML = '';
+
+          data.forEach(block => {
+            const div = document.createElement('div');
+            div.className = 'block';
+            div.innerHTML = `
+              <p><strong>Index:</strong> ${block.index}</p>
+              <p><strong>Timestamp:</strong> ${new Date(block.timestamp).toLocaleString()}</p>
+              <p><strong>Hash:</strong> ${block.hash}</p>
+              <p><strong>Previous Hash:</strong> ${block.previousHash}</p>
+              <p><strong>Finalized:</strong> ${block.finalized ? '✅ Yes' : '⏳ No'}</p>
+              <p><strong>Transactions:</strong></p>
+              <ul>
+                ${block.transactions.map(tx => `<li>${tx.from} → ${tx.to} — ${tx.amount}</li>`).join('')}
+              </ul>
+            `;
+            container.appendChild(div);
+          });
+        })
+        .catch(err => {
+          document.getElementById('blocks').innerHTML = 'Failed to load blocks.';
+          console.error(err);
+        });
+    </script>
+  </body>
+</html>

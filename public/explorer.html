@@ -124,6 +124,14 @@
     return text.replace(regex, '<mark>$1</mark>');
   }
 
+   function abbreviateHash(hash) {
+  if (!hash) return '';
+  const start = hash.slice(0, 6);
+  const end = hash.slice(-6);
+  return `${start}...${end}`;
+}
+
+
   // Render pagination controls
   function renderPagination(totalBlocks) {
     const paginationDivId = 'pagination';

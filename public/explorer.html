@@ -157,6 +157,30 @@
         };
       }
 
+      function openModal(blockData) {
+  const modal = document.getElementById('blockModal');
+  const content = document.getElementById('modalContent');
+  content.textContent = JSON.stringify(blockData, null, 2);
+  modal.classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('blockModal').classList.remove('active');
+}
+
+function fetchBlockDetails(hash) {
+  fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/block/${hash}`)
+    .then(res => {
+      if (!res.ok) throw new Error('Block not found');
+      return res.json();
+    })
+    .then(blockData => openModal(blockData))
+    .catch(err => {
+      alert('❌ Error fetching block: ' + err.message);
+    });
+}
+
+
       function renderBlocks(query = '') {
         const filtered = allBlocks.filter(block => {
           query = query.toLowerCase();

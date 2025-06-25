@@ -5847,6 +5847,7 @@ fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/blocks')
   .then(res => res.json())
   .then(data => {
     allBlocks = data;
+    });
 
 app.post('/mine', async (req, res) => {
   try {

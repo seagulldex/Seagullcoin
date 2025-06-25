@@ -99,7 +99,11 @@
     </h1>
     <input type="text" id="search" placeholder="Search by address or hash..." style="width: 100%; padding: 0.5rem; margin-bottom: 1rem;" />
     <div id="blocks">Loading...</div>
-
+    <div id="blockModal" class="modal">
+  <h2>Block Details</h2>
+  <pre id="modalContent" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></pre>
+  <button onclick="closeModal()">Close</button>
+    </div>
     <script>
       let allBlocks = [];
       let currentPage = 1;
@@ -262,10 +266,5 @@ function fetchBlockDetails(hash) {
         renderBlocks(e.target.value.trim());
       });
     </script>
-<div id="blockModal" class="modal">
-  <h2>Block Details</h2>
-  <pre id="modalContent" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></pre>
-  <button onclick="closeModal()">Close</button>
-</div>
   </body>
 </html>

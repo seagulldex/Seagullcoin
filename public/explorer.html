@@ -30,6 +30,34 @@
       a {
         color: #1e90ff;
       }
+      .modal {
+  background: #222;
+  color: #eee;
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 600px;
+  border: 2px solid #1e90ff;
+  padding: 1rem 2rem;
+  z-index: 1000;
+  border-radius: 8px;
+  display: none;
+  box-shadow: 0 0 10px #1e90ff;
+}
+.modal.active {
+  display: block;
+}
+.modal button {
+  background: #1e90ff;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
     </style>
   </head>
   <body>

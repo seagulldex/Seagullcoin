@@ -221,12 +221,12 @@ function fetchBlockDetails(hash) {
             <p><strong>Index:</strong> ${block.index}</p>
             <p><strong>Timestamp:</strong> ${new Date(block.timestamp).toLocaleString()}</p>
             <p><strong>Hash:</strong> 
-              <a href="/explorer/block/${block.hash}" class="hash-link" title="${block.hash}" target="_blank" rel="noopener noreferrer">
+              <a href="block.html?hash=${block.hash}" class="hash-link" title="${block.hash}">
                 ${highlightMatch(abbreviateHash(block.hash), query)}
               </a>
             </p>
             <p><strong>Previous Hash:</strong> 
-              <a href="/explorer/block/${block.previousHash}" class="hash-link" title="${block.previousHash}" target="_blank" rel="noopener noreferrer">
+              <a href="block.html?hash=${block.previousHash}" class="hash-link" title="${block.previousHash}">
                 ${highlightMatch(abbreviateHash(block.previousHash), query)}
               </a>
             </p>

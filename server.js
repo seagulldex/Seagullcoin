@@ -5967,36 +5967,45 @@ app.get('/api/address/:address', async (req, res) => {
   const { address } = req.params;
 
   try {
-    const wallet = await UserWallet.findOne({ wallet: address.toUpperCase() });
-    if (!wallet) return res.status(404).json({ error: 'Address not found' });
+    const upperAddress = address.toUpperCase();
 
-    const sentBlocks = await Block.find({ 'transactions.from': address.toUpperCase() });
-    const receivedBlocks = await Block.find({ 'transactions.to': address.toUpperCase() });
+    const wallet = await Wallet.findOne({ wallet: upperAddress }).lean();
+    if (!wallet) {
+      return res.status(404).json({ error: 'Address not found' });
+    }
 
-    const allBlocks = [...sentBlocks, ...receivedBlocks];
-    const allTransactions = allBlocks.flatMap(block =>
+    // Find blocks where address is sender or receiver
+    const matchingBlocks = await Block.find({
+      transactions: {
+        $elemMatch: {
+          $or: [{ from: upperAddress }, { to: upperAddress }]
+        }
+      }
+    }).lean();
+
+    const transactions = matchingBlocks.flatMap(block =>
       block.transactions
-        .filter(tx => tx.from === address.toUpperCase() || tx.to === address.toUpperCase())
+        .filter(tx => tx.from === upperAddress || tx.to === upperAddress)
         .map(tx => ({
           ...tx,
           blockHash: block.hash,
-          timestamp: block.timestamp,
+          timestamp: block.timestamp
         }))
     );
 
-    res.json({
+    return res.json({
       address: wallet.wallet,
       balance: wallet.balance,
       xrpl_address: wallet.xrpl_address,
       isGenesisWallet: wallet.isGenesisWallet,
-      transactions: allTransactions,
+      transactions
     });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Address API error:', err);
+    return res.status(500).json({ error: 'Server error' });
   }
 });
-
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

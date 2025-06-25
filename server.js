@@ -5843,11 +5843,16 @@ if (userWallet && userWallet.hasMinted) {
   }
 });
 
-fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/blocks')
-  .then(res => res.json())
-  .then(data => {
-    allBlocks = data;
-    });
+function fetchBlocks() {
+  return fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/blocks').then(res => res.json());
+}
+
+// Then call it like this:
+fetchBlocks().then(data => {
+  allBlocks = data;
+  renderBlocks();
+});
+
 
 app.post('/mine', async (req, res) => {
   try {

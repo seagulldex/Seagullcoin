@@ -5982,7 +5982,7 @@ app.get('/api/address/:address', async (req, res) => {
   const { address } = req.params;
 
   try {
-    const wallet = await Wallet.findOne({ wallet: address.toUpperCase() });
+    const wallet = await UserWallet.findOne({ wallet: address.toUpperCase() });
     if (!wallet) return res.status(404).json({ error: 'Address not found' });
 
     const sentBlocks = await Block.find({ 'transactions.from': address.toUpperCase() });

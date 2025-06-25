@@ -5872,12 +5872,12 @@ app.post('/mine', async (req, res) => {
   }
 });
 
-// Add this AFTER your API routes
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, 'build')));
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'build', 'explorer.html'));
 });
+
 
 
 app.get('/generate-keys', (req, res) => {

@@ -2381,15 +2381,7 @@ async function getAllCollections() {
   });
 }
 
-app.get('/collections', async (req, res) => {
-  try {
-    const collections = await getAllCollections(); // Function to fetch all collections
-    res.json({ collections });
-  } catch (err) {
-    console.error('Error fetching collections:', err);
-    res.status(500).json({ error: 'Failed to fetch collections.' });
-  }
-});
+
 /**
  * @swagger
  * /collections:
@@ -2400,15 +2392,7 @@ app.get('/collections', async (req, res) => {
  *         description: Public collections retrieved
  */
 
-// Get all collections
-app.get('/getallcollections', async (req, res) => {
-  db.all("SELECT * FROM collections", [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(rows);
-  });
-});
+
 
 /**
  * @swagger

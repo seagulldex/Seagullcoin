@@ -273,7 +273,30 @@ setInterval(async () => {
   }
 }, 10_000);
 
+async function loadStateFromDB() {
+  const blocks = await blockchainCollection.find({}).sort({ index: 1 }).toArray();
+  blockchain = blocks.length ? blocks : [];
 
+  const txs = await txPoolCollection.find({}).toArray();
+  transactionPool = txs.length ? txs : [];
+
+  console.log(`🔄 Loaded ${blockchain.length} blocks and ${transactionPool.length} transactions from MongoDB`);
+}
+
+async function saveBlock(block) {
+  await blockchainCollection.updateOne(
+    { index: block.index },
+    { $set: block },
+    { upsert: true }
+  );
+}
+
+async function saveTransactionPool() {
+  await txPoolCollection.deleteMany({});
+  if (transactionPool.length) {
+    await txPoolCollection.insertMany(transactionPool);
+  }
+}
 
 
 // Generator Function

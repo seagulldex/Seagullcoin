@@ -212,8 +212,10 @@ async function startNode() {
 
   // 📊 TPS counter every 3 seconds
   setInterval(() => {
-  console.log(`📦 Total Blocks: ${blockchain.length}`);
-  console.log(`💰 Pending Transactions in Pool: ${transactionPool.length}`);
+console.log(`📦 Chain Height: ${blockchain.length - 1}`);
+console.log(`💰 Pool Size: ${transactionPool.length}`);
+console.log(`📈 Total TXs Sent: ${txCount}`);
+
 }, 5000);
 }
 

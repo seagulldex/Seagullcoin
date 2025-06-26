@@ -197,9 +197,8 @@ async function startNode() {
 
   // 📊 TPS counter every 3 seconds
   setInterval(() => {
-    console.log(`📈 TPS: ${(txCount / 3).toFixed(2)}`);
-    txCount = 0;
-  }, 3000);
+  console.log(`🧾 Transaction pool size: ${transactionPool.length}`);
+}, 3000);
 }
 
 startNode().catch(console.error);

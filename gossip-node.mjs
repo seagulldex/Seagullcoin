@@ -153,8 +153,8 @@ server.on('connection', socket => {
     sockets.splice(sockets.indexOf(socket), 1);
   });
 });
- 
 
+ 
   socket.on('error', err => {
     console.error(`⚠️ Connection failed to ${address}:`, err.message);
     setTimeout(() => connectToPeer(address), PEER_RECONNECT_DELAY_MS);

@@ -93,11 +93,19 @@ async function saveBlock(block) {
 }
 
 async function saveTransactionPool() {
-  await txPoolCollection.deleteMany({});
-  if (transactionPool.length) {
-    await txPoolCollection.insertMany(transactionPool);
-  }
+  if (transactionPool.length === 0) return;
+
+  const operations = transactionPool.map(tx => ({
+    updateOne: {
+      filter: { txId: tx.txId },
+      update: { $set: tx },
+      upsert: true,
+    },
+  }));
+
+  await txPoolCollection.bulkWrite(operations);
 }
+
 
 function getLatestHash() {
   return blockchain.at(-1)?.hash || '0';

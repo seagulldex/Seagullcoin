@@ -105,10 +105,7 @@ async function handleMessage(data, socket) {
     case 'TX':
   console.log('💸 Received transaction');
 
-  const exists = transactionPool.some(
-    tx => JSON.stringify(tx) === JSON.stringify(data.tx)
-  );
-
+  const exists = transactionPool.some(tx => tx.txId === data.tx.txId);
   if (!exists) {
     transactionPool.push(data.tx);
     txCount++;

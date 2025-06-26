@@ -145,16 +145,6 @@ async function fetchIPFSMetadata(uri) {
   }
 }
 
-function connectToPeer(address) {
-  const socket = new WebSocket(address);
-
-  socket.on('open', () => { ... });
-
-  socket.on('error', err => {
-    console.error(`⚠️ Connection failed to ${address}:`, err.message);
-    setTimeout(() => connectToPeer(address), 5000); // retry
-  });
-}
 
 
 (async () => {

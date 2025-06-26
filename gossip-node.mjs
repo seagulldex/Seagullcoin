@@ -125,13 +125,17 @@ async function handleMessage(data, socket) {
 }
 
 function handleReceivedBlock(block) {
-  if (!blockchain.length || block.previousHash === getLatestHash()) {
+  if (
+    !blockchain.length ||
+    (block.previousHash === getLatestHash() && block.index === blockchain.length)
+  ) {
     blockchain.push(block);
-    console.log('✅ Block accepted');
+    console.log(`✅ Block accepted (#${block.index})`);
   } else {
-    console.warn('⚠️ Block rejected: bad previousHash');
+    console.warn(`⚠️ Block rejected (index: ${block.index}, expected: ${blockchain.length})`);
   }
 }
+
 
 async function startNode() {
   await connectDB();

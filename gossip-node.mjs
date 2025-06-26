@@ -74,10 +74,6 @@ async function connectDB(retries = 0) {
   }
 }
 
-await txPoolCollection.createIndex({ txId: 1 }, { unique: true });
-await blockchainCollection.createIndex({ index: 1 }, { unique: true });
-
-
 async function loadStateFromDB() {
   const blocks = await blockchainCollection.find({}).sort({ index: 1 }).toArray();
   blockchain = blocks.length ? blocks : [];
@@ -202,6 +198,7 @@ function handleReceivedBlock(block) {
 async function startNode() {
   await connectDB();
   await txPoolCollection.createIndex({ txId: 1 }, { unique: true });
+  await blockchainCollection.createIndex({ index: 1 }, { unique: true });
   await loadStateFromDB();
 
   const server = new WebSocketServer({ port: PORT });

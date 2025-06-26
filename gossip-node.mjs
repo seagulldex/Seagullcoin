@@ -1,4 +1,5 @@
-import WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
+import WebSocket from 'ws'; // Optional, if you're also using it for client connections
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -8,8 +9,9 @@ const peers = process.env.PEERS ? process.env.PEERS.split(',') : [];
 let blockchain = [];
 let transactionPool = [];
 
-const server = new WebSocket.Server({ port: PORT });
+const server = new WebSocketServer({ port: PORT }); // ✅ Fix here
 const sockets = [];
+
 
 console.log(`🌐 Node started on ws://localhost:${PORT}`);
 

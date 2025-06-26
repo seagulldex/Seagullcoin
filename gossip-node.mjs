@@ -196,6 +196,7 @@ function handleReceivedBlock(block) {
 
 async function startNode() {
   await connectDB();
+  await txPoolCollection.createIndex({ txId: 1 }, { unique: true });
   await loadStateFromDB();
 
   const server = new WebSocketServer({ port: PORT });

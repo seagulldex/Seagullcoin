@@ -15,6 +15,8 @@ let blockchainCollection;
 let txPoolCollection;
 const sockets = [];
 
+let txCount = 0; // TPS tracker
+
 async function connectDB() {
   try {
     await client.connect();
@@ -99,6 +101,7 @@ async function handleMessage(data, socket) {
     case 'TX':
       console.log('💸 Received transaction');
       transactionPool.push(data.tx);
+      txCount++;
       await saveTransactionPool();
       broadcast({ type: 'TX', tx: data.tx }, socket);
       break;
@@ -140,6 +143,7 @@ async function startNode() {
 
   peers.forEach(connectToPeer);
 
+  // ⛓ Create block every 3 seconds
   setInterval(async () => {
     if (transactionPool.length === 0) return;
 
@@ -159,19 +163,27 @@ async function startNode() {
 
     console.log('🚀 New block broadcasted');
     broadcast({ type: 'BLOCK', block });
-  }, 15000);
+  }, 3000);
 
+  // 💸 Generate 10 tx every 3s
   setInterval(() => {
-  for (let i = 0; i < 5; i++) { // ⬅️ Emit 5 tx every interval
-    const tx = {
-      from: `Node-${PORT}`,
-      to: `Wallet-${Math.floor(Math.random() * 1000)}`,
-      amount: Math.floor(Math.random() * 1000),
-    };
+    for (let i = 0; i < 10; i++) {
+      const tx = {
+        from: `Node-${PORT}`,
+        to: `Wallet-${Math.floor(Math.random() * 1000)}`,
+        amount: Math.floor(Math.random() * 1000),
+      };
 
-    console.log('📤 Created TX:', tx);
-    transactionPool.push(tx);
-    broadcast({ type: 'TX', tx });
+      transactionPool.push(tx);
+      txCount++;
+      broadcast({ type: 'TX', tx });
+    }
+  }, 3000);
+
+  // 📊 TPS counter every 3 seconds
+  setInterval(() => {
+    console.log(`📈 TPS: ${(txCount / 3).toFixed(2)}`);
+    txCount = 0;
   }, 3000);
 }
 

@@ -197,8 +197,9 @@ async function startNode() {
 
   // 📊 TPS counter every 3 seconds
   setInterval(() => {
-  console.log(`🧾 Transaction pool size: ${transactionPool.length}`);
-}, 3000);
+  console.log(`📦 Total Blocks: ${blockchain.length}`);
+  console.log(`💰 Pending Transactions in Pool: ${transactionPool.length}`);
+}, 5000);
 }
 
 startNode().catch(console.error);

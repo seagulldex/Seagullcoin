@@ -1,5 +1,5 @@
 import { WebSocketServer } from 'ws';
-import WebSocket from 'ws'; // Optional, if you're also using it for client connections
+import WebSocket from 'ws';
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -11,14 +11,14 @@ const peers = process.env.PEERS ? process.env.PEERS.split(',') : [];
 let db;
 let blockchain = [];
 let transactionPool = [];
-
-const server = new WebSocketServer({ port: PORT }); // ✅ Fix here
+let blockchainCollection;
+let txPoolCollection;
 const sockets = [];
 
 async function connectDB() {
   try {
     await client.connect();
-    db = client.db('gossipDB'); // your DB name
+    db = client.db('gossipDB');
     blockchainCollection = db.collection('blockchain');
     txPoolCollection = db.collection('transactionPool');
     console.log('🗄️ Connected to MongoDB');
@@ -27,23 +27,42 @@ async function connectDB() {
   }
 }
 
+async function loadStateFromDB() {
+  const blocks = await blockchainCollection.find({}).sort({ index: 1 }).toArray();
+  blockchain = blocks.length ? blocks : [];
 
-console.log(`🌐 Node started on ws://localhost:${PORT}`);
+  const txs = await txPoolCollection.find({}).toArray();
+  transactionPool = txs.length ? txs : [];
 
-server.on('connection', socket => {
-  console.log('✅ New peer connected');
-  sockets.push(socket);
+  console.log(`🔄 Loaded ${blockchain.length} blocks and ${transactionPool.length} transactions from MongoDB`);
+}
 
-  socket.on('message', msg => {
-    const data = JSON.parse(msg);
-    handleMessage(data, socket);
+async function saveBlock(block) {
+  await blockchainCollection.updateOne(
+    { index: block.index },
+    { $set: block },
+    { upsert: true }
+  );
+}
+
+async function saveTransactionPool() {
+  await txPoolCollection.deleteMany({});
+  if (transactionPool.length) {
+    await txPoolCollection.insertMany(transactionPool);
+  }
+}
+
+function getLatestHash() {
+  return blockchain.at(-1)?.hash || '0';
+}
+
+function broadcast(message, exclude) {
+  sockets.forEach(s => {
+    if (s !== exclude && s.readyState === WebSocket.OPEN) {
+      s.send(JSON.stringify(message));
+    }
   });
-
-  socket.on('close', () => {
-    console.log('❌ Peer disconnected');
-    sockets.splice(sockets.indexOf(socket), 1);
-  });
-});
+}
 
 function connectToPeer(address) {
   const socket = new WebSocket(address);
@@ -60,18 +79,17 @@ function connectToPeer(address) {
     socket.on('close', () => {
       console.log(`❌ Lost connection to ${address}`);
       sockets.splice(sockets.indexOf(socket), 1);
-      setTimeout(() => connectToPeer(address), 5000); // 🔁 retry
+      setTimeout(() => connectToPeer(address), 5000);
     });
   });
 
   socket.on('error', err => {
     console.error(`⚠️ Connection failed to ${address}:`, err.message);
-    setTimeout(() => connectToPeer(address), 5000); // 🔁 retry
+    setTimeout(() => connectToPeer(address), 5000);
   });
 }
 
-
-function handleMessage(data, socket) {
+async function handleMessage(data, socket) {
   switch (data.type) {
     case 'BLOCK':
       console.log('📦 Received block');
@@ -81,6 +99,7 @@ function handleMessage(data, socket) {
     case 'TX':
       console.log('💸 Received transaction');
       transactionPool.push(data.tx);
+      await saveTransactionPool();
       broadcast({ type: 'TX', tx: data.tx }, socket);
       break;
     default:
@@ -97,46 +116,62 @@ function handleReceivedBlock(block) {
   }
 }
 
-function getLatestHash() {
-  return blockchain.at(-1)?.hash || '0';
-}
+async function startNode() {
+  await connectDB();
+  await loadStateFromDB();
 
-function broadcast(message, exclude) {
-  sockets.forEach(s => {
-    if (s !== exclude && s.readyState === WebSocket.OPEN) {
-      s.send(JSON.stringify(message));
-    }
+  const server = new WebSocketServer({ port: PORT });
+  console.log(`🌐 Node started on ws://localhost:${PORT}`);
+
+  server.on('connection', socket => {
+    console.log('✅ New peer connected');
+    sockets.push(socket);
+
+    socket.on('message', msg => {
+      const data = JSON.parse(msg);
+      handleMessage(data, socket);
+    });
+
+    socket.on('close', () => {
+      console.log('❌ Peer disconnected');
+      sockets.splice(sockets.indexOf(socket), 1);
+    });
   });
+
+  peers.forEach(connectToPeer);
+
+  setInterval(async () => {
+    if (transactionPool.length === 0) return;
+
+    const block = {
+      index: blockchain.length,
+      timestamp: Date.now(),
+      transactions: transactionPool,
+      previousHash: getLatestHash(),
+      hash: (Math.random() + '').slice(2),
+    };
+
+    blockchain.push(block);
+    transactionPool = [];
+
+    await saveBlock(block);
+    await saveTransactionPool();
+
+    console.log('🚀 New block broadcasted');
+    broadcast({ type: 'BLOCK', block });
+  }, 15000);
+
+  setInterval(() => {
+    const tx = {
+      from: `Node-${PORT}`,
+      to: `Wallet-${Math.floor(Math.random() * 1000)}`,
+      amount: Math.floor(Math.random() * 1000),
+    };
+
+    console.log('📤 Created TX:', tx);
+    transactionPool.push(tx);
+    broadcast({ type: 'TX', tx });
+  }, 7000);
 }
 
-peers.forEach(connectToPeer);
-
-setInterval(() => {
-  if (transactionPool.length === 0) return;
-
-  const block = {
-    index: blockchain.length,
-    timestamp: Date.now(),
-    transactions: transactionPool,
-    previousHash: getLatestHash(),
-    hash: (Math.random() + '').slice(2),
-  };
-
-  blockchain.push(block);
-  transactionPool = [];
-
-  console.log('🚀 New block broadcasted');
-  broadcast({ type: 'BLOCK', block });
-}, 15000);
-
-setInterval(() => {
-  const tx = {
-    from: `Node-${PORT}`,
-    to: `Wallet-${Math.floor(Math.random() * 1000)}`,
-    amount: Math.floor(Math.random() * 1000),
-  };
-
-  console.log('📤 Created TX:', tx);
-  transactionPool.push(tx);
-  broadcast({ type: 'TX', tx });
-}, 7000);
+startNode().catch(console.error);

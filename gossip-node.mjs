@@ -102,12 +102,23 @@ async function handleMessage(data, socket) {
       broadcast({ type: 'BLOCK', block: data.block }, socket);
       break;
     case 'TX':
-      console.log('💸 Received transaction');
-      transactionPool.push(data.tx);
-      txCount++;
-      await saveTransactionPool();
-      broadcast({ type: 'TX', tx: data.tx }, socket);
-      break;
+  console.log('💸 Received transaction');
+
+  const exists = transactionPool.some(
+    tx => JSON.stringify(tx) === JSON.stringify(data.tx)
+  );
+
+  if (!exists) {
+    transactionPool.push(data.tx);
+    txCount++;
+    await saveTransactionPool();
+    broadcast({ type: 'TX', tx: data.tx }, socket);
+  } else {
+    console.log('⚠️ Duplicate TX ignored');
+  }
+
+  break;
+
     default:
       console.warn('❓ Unknown type:', data.type);
   }
@@ -164,7 +175,7 @@ async function startNode() {
   await saveBlock(block);
   await saveTransactionPool();
 
-  console.log('🚀 New block broadcasted');
+  console.log(`🚀 Block #${block.index} with ${block.transactions.length} txs`);
   broadcast({ type: 'BLOCK', block });
 
   // Add TPS tracking here:

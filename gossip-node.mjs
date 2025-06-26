@@ -148,25 +148,37 @@ async function startNode() {
 
   // ⛓ Create block every 3 seconds
   setInterval(async () => {
-    if (transactionPool.length === 0) return;
+  if (transactionPool.length === 0) return;
 
-    const block = {
-      index: blockchain.length,
-      timestamp: Date.now(),
-      transactions: transactionPool,
-      previousHash: getLatestHash(),
-      hash: (Math.random() + '').slice(2),
-    };
+  const block = {
+    index: blockchain.length,
+    timestamp: Date.now(),
+    transactions: transactionPool,
+    previousHash: getLatestHash(),
+    hash: (Math.random() + '').slice(2),
+  };
 
-    blockchain.push(block);
-    transactionPool = [];
+  blockchain.push(block);
+  transactionPool = [];
 
-    await saveBlock(block);
-    await saveTransactionPool();
+  await saveBlock(block);
+  await saveTransactionPool();
 
-    console.log('🚀 New block broadcasted');
-    broadcast({ type: 'BLOCK', block });
-  }, 3000);
+  console.log('🚀 New block broadcasted');
+  broadcast({ type: 'BLOCK', block });
+
+  // Add TPS tracking here:
+  confirmedTxCount += block.transactions.length;
+  const now = Date.now();
+  const elapsed = (now - lastTPSCheck) / 1000;
+  if (elapsed >= 10) {
+    const tps = confirmedTxCount / elapsed;
+    console.log(`📊 TPS: ${tps.toFixed(2)} tx/sec`);
+    confirmedTxCount = 0;
+    lastTPSCheck = now;
+  }
+}, 15000); // block interval
+
 
   // 💸 Generate 10 tx every 3s
   setInterval(() => {

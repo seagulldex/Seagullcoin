@@ -15,6 +15,9 @@ let blockchainCollection;
 let txPoolCollection;
 const sockets = [];
 
+let confirmedTxCount = 0;
+let lastTPSCheck = Date.now();
+
 let txCount = 0; // TPS tracker
 
 async function connectDB() {

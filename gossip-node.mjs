@@ -232,10 +232,9 @@ async function startNode() {
   });
 
   PEERS.forEach(connectToPeer);
-}
 
-
-  // ⛓ Create block every BLOCK_INTERVAL_MS ms
+  // --- Place the intervals here ---
+  // Create block every BLOCK_INTERVAL_MS ms
   setInterval(async () => {
     if (transactionPool.length === 0) return;
 
@@ -250,7 +249,6 @@ async function startNode() {
     blockchain.push(block);
     transactionPool = [];
 
-    
     await saveBlock(block);
     await saveTransactionPool();
 
@@ -268,7 +266,7 @@ async function startNode() {
     }
   }, BLOCK_INTERVAL_MS);
 
-  // 💸 Generate 10 tx every TX_GENERATION_INTERVAL_MS ms
+  // Generate 10 tx every TX_GENERATION_INTERVAL_MS ms
   setInterval(() => {
     for (let i = 0; i < 10; i++) {
       const tx = {
@@ -284,7 +282,7 @@ async function startNode() {
     }
   }, TX_GENERATION_INTERVAL_MS);
 
-  // 📊 TPS and stats logger every 5 seconds
+  // TPS and stats logger every 5 seconds
   setInterval(() => {
     console.log(`📦 Chain Height: ${blockchain.length - 1}`);
     console.log(`💰 Pool Size: ${transactionPool.length}`);

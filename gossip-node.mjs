@@ -36,22 +36,25 @@ function connectToPeer(address) {
   socket.on('open', () => {
     console.log(`🔌 Connected to peer: ${address}`);
     sockets.push(socket);
-  });
 
-  socket.on('message', msg => {
-    const data = JSON.parse(msg);
-    handleMessage(data, socket);
-  });
+    socket.on('message', msg => {
+      const data = JSON.parse(msg);
+      handleMessage(data, socket);
+    });
 
-  socket.on('close', () => {
-    console.log(`❌ Lost connection to ${address}`);
-    sockets.splice(sockets.indexOf(socket), 1);
+    socket.on('close', () => {
+      console.log(`❌ Lost connection to ${address}`);
+      sockets.splice(sockets.indexOf(socket), 1);
+      setTimeout(() => connectToPeer(address), 5000); // 🔁 retry
+    });
   });
 
   socket.on('error', err => {
     console.error(`⚠️ Connection failed to ${address}:`, err.message);
+    setTimeout(() => connectToPeer(address), 5000); // 🔁 retry
   });
 }
+
 
 function handleMessage(data, socket) {
   switch (data.type) {

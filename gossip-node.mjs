@@ -153,7 +153,7 @@ async function startNode() {
   const block = {
     index: blockchain.length,
     timestamp: Date.now(),
-    transactions: transactionPool,
+    transactions: transactionPool.splice(0, 100), // ⬅️ cap block size
     previousHash: getLatestHash(),
     hash: (Math.random() + '').slice(2),
   };

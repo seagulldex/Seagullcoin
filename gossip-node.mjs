@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws';
 import WebSocket from 'ws';
 import { MongoClient } from 'mongodb';
+import { randomUUID } from 'crypto';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -199,10 +200,12 @@ async function startNode() {
   setInterval(() => {
     for (let i = 0; i < 10; i++) {
       const tx = {
-        from: `Node-${PORT}`,
-        to: `Wallet-${Math.floor(Math.random() * 1000)}`,
-        amount: Math.floor(Math.random() * 1000),
-      };
+  txId: randomUUID(), // ✅ Add unique ID to each TX
+  from: `Node-${PORT}`,
+  to: `Wallet-${Math.floor(Math.random() * 1000)}`,
+  amount: Math.floor(Math.random() * 1000),
+};
+
 
       transactionPool.push(tx);
       txCount++;

@@ -203,17 +203,26 @@ async function startNode() {
   const server = new WebSocketServer({ port: PORT });
   console.log(`🌐 Node started on ws://localhost:${PORT}`);
 
+  const MESSAGE_DROP_RATE = 0.1;   // 10% messages dropped
+  const MAX_DELAY_MS = 200;        // up to 200ms delay
+
   server.on('connection', socket => {
     console.log('✅ New peer connected');
     sockets.push(socket);
 
     socket.on('message', msg => {
-      try {
-        const data = JSON.parse(msg);
-        handleMessage(data, socket);
-      } catch (e) {
-        console.warn('❌ Failed to parse message:', e.message);
+      if (Math.random() < MESSAGE_DROP_RATE) {
+        console.log('⚠️ Simulated message drop');
+        return; // drop the message randomly
       }
+      setTimeout(() => {
+        try {
+          const data = JSON.parse(msg);
+          handleMessage(data, socket);
+        } catch (e) {
+          console.warn('❌ Failed to parse message:', e.message);
+        }
+      }, Math.random() * MAX_DELAY_MS);
     });
 
     socket.on('close', () => {
@@ -223,6 +232,8 @@ async function startNode() {
   });
 
   PEERS.forEach(connectToPeer);
+}
+
 
   // ⛓ Create block every BLOCK_INTERVAL_MS ms
   setInterval(async () => {

@@ -5964,6 +5964,15 @@ app.get('/api/address/:address', async (req, res) => {
   }
 });
 
+app.get('/metrics', (req, res) => {
+  res.json({
+    blocks: blockchain.length,
+    poolSize: transactionPool.length,
+    tps: confirmedTxCount,
+    totalTx: txCount,
+  });
+});
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

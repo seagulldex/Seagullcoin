@@ -1,16 +1,31 @@
 import { WebSocketServer } from 'ws';
 import WebSocket from 'ws'; // Optional, if you're also using it for client connections
+import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 dotenv.config();
 
+const client = new MongoClient(process.env.MONGO_URI);
 const PORT = process.env.PORT || 3001;
 const peers = process.env.PEERS ? process.env.PEERS.split(',') : [];
 
+let db;
 let blockchain = [];
 let transactionPool = [];
 
 const server = new WebSocketServer({ port: PORT }); // ✅ Fix here
 const sockets = [];
+
+async function connectDB() {
+  try {
+    await client.connect();
+    db = client.db('gossipDB'); // your DB name
+    blockchainCollection = db.collection('blockchain');
+    txPoolCollection = db.collection('transactionPool');
+    console.log('🗄️ Connected to MongoDB');
+  } catch (err) {
+    console.error('❌ MongoDB connection failed:', err);
+  }
+}
 
 
 console.log(`🌐 Node started on ws://localhost:${PORT}`);

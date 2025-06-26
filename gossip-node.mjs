@@ -126,35 +126,22 @@ function connectToPeer(address) {
     console.log(`🔌 Connected to peer: ${address}`);
     sockets.push(socket);
 
-   const MESSAGE_DROP_RATE = 0.1;   // 10% messages dropped
-const MAX_DELAY_MS = 200;        // up to 200ms delay
-
-server.on('connection', socket => {
-  console.log('✅ New peer connected');
-  sockets.push(socket);
-
-  socket.on('message', msg => {
-    if (Math.random() < MESSAGE_DROP_RATE) {
-      console.log('⚠️ Simulated message drop');
-      return; // drop the message randomly
-    }
-    setTimeout(() => {
+    socket.on('message', msg => {
       try {
         const data = JSON.parse(msg);
         handleMessage(data, socket);
       } catch (e) {
         console.warn('❌ Failed to parse message:', e.message);
       }
-    }, Math.random() * MAX_DELAY_MS);
+    });
+
+    socket.on('close', () => {
+      console.log(`❌ Lost connection to ${address}`);
+      sockets.splice(sockets.indexOf(socket), 1);
+      setTimeout(() => connectToPeer(address), PEER_RECONNECT_DELAY_MS);
+    });
   });
 
-  socket.on('close', () => {
-    console.log('❌ Peer disconnected');
-    sockets.splice(sockets.indexOf(socket), 1);
-  });
-});
-
- 
   socket.on('error', err => {
     console.error(`⚠️ Connection failed to ${address}:`, err.message);
     setTimeout(() => connectToPeer(address), PEER_RECONNECT_DELAY_MS);

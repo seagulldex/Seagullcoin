@@ -162,6 +162,7 @@ async function startNode() {
   }, 15000);
 
   setInterval(() => {
+  for (let i = 0; i < 5; i++) { // ⬅️ Emit 5 tx every interval
     const tx = {
       from: `Node-${PORT}`,
       to: `Wallet-${Math.floor(Math.random() * 1000)}`,
@@ -171,7 +172,7 @@ async function startNode() {
     console.log('📤 Created TX:', tx);
     transactionPool.push(tx);
     broadcast({ type: 'TX', tx });
-  }, 7000);
+  }, 3000);
 }
 
 startNode().catch(console.error);

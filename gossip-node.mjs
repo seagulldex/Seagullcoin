@@ -103,8 +103,7 @@ async function saveTransactionPool() {
     },
   }));
 
-  await txPoolCollection.createIndex({ txId: 1 }, { unique: true });
-  await blockchainCollection.createIndex({ index: 1 }, { unique: true });
+  await txPoolCollection.bulkWrite(operations);
 }
 
 

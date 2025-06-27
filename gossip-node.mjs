@@ -280,6 +280,12 @@ async function startNode() {
     block.hash = calculateBlockHash(block);
     blockchain.push(block);
     transactionPool = [];
+    
+    try {
+    stateManager.applyBlock(block);
+  } catch (err) {
+    console.warn(`❌ Failed to apply new block to stateManager: ${err.message}`);
+    }
 
     await saveBlock(block);
     await saveTransactionPool();

@@ -4421,13 +4421,14 @@ app.post("/backup-pay-three", async (req, res) => {
   }
 });
 
-app.post('/stake-payload-three', async (req, res) => {
+
+app.get('/stake-payload-three/:walletAddress', async (req, res) => {
   try {
     const db = await connectDB();
     const stakesCollection = db.collection('stakes');
 
-    const { walletAddress } = req.body;
-    const amount = '5000000';  // fixed amount
+    const walletAddress = req.params.walletAddress;
+    const amount = '5000000'; // fixed for this tier
 
     if (!walletAddress || !walletAddress.startsWith('r')) {
       return res.status(400).json({ error: 'Invalid or missing wallet address' });
@@ -4438,7 +4439,7 @@ app.post('/stake-payload-three', async (req, res) => {
         TransactionType: 'Payment',
         Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U',
         Amount: {
-          currency: '53656167756C6C436F696E000000000000000000',
+          currency: '53656167756C6C436F696E000000000000000000', // "SeagullCoin"
           issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
           value: amount
         },
@@ -4457,6 +4458,10 @@ app.post('/stake-payload-three', async (req, res) => {
       }
     });
 
+    if (!payloadResponse?.uuid) {
+      throw new Error('XUMM payload creation failed');
+    }
+
     const stakeData = {
       walletAddress,
       amount: Number(amount),
@@ -4465,10 +4470,6 @@ app.post('/stake-payload-three', async (req, res) => {
     };
 
     await stakesCollection.insertOne(stakeData);
-
-    if (!payloadResponse?.uuid) {
-      throw new Error('XUMM payload creation failed');
-    }
 
     res.json(payloadResponse);
 

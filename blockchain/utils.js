@@ -19,7 +19,7 @@ function calculateHash(block) {
  * Create genesis token + block, and optionally broadcast it via gossip.
   @param {Function} broadcastFunc - Optional gossip broadcast function
  */
-export async function createGenesisTokenAndBlock() {
+export async function createGenesisTokenAndBlock(broadcastFunc) {
   const preminedWalletAddress = 'SEAGULLD1DFB4670F7CA58AB0B03B62';
 
   let preminedWallet = await UserWallet.findOne({ wallet: preminedWalletAddress });

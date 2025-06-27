@@ -1,61 +1,42 @@
-// blockchain/StateManager.ts
-type Transaction = {
-  txId: string;
-  from: string;
-  to: string;
-  amount: number;
-};
-
-type Block = {
-  index: number;
-  timestamp: number;
-  transactions: Transaction[];
-  previousHash: string;
-  hash: string;
-};
-
 export class StateManager {
-  private balances: Map<string, number>;
-
   constructor() {
     this.balances = new Map();
   }
 
-  initializeFromBlockchain(blocks: Block[]) {
-    this.balances.clear();
-    for (const block of blocks) {
+  initializeFromBlockchain(blockchain) {
+    for (const block of blockchain) {
       this.applyBlock(block);
     }
   }
 
-  applyBlock(block: Block) {
+  applyBlock(block) {
     for (const tx of block.transactions) {
-      if (!this.isValidTransaction(tx)) {
-        console.warn(`⛔ Invalid transaction skipped: ${tx.txId}`);
-        continue;
-      }
       this.applyTransaction(tx);
     }
   }
 
-  applyTransaction(tx: Transaction) {
+  applyTransaction(tx) {
     const fromBalance = this.balances.get(tx.from) || 0;
-    const toBalance = this.balances.get(tx.to) || 0;
-
+    if (fromBalance < tx.amount) {
+      throw new Error(`Insufficient funds for ${tx.from}`);
+    }
     this.balances.set(tx.from, fromBalance - tx.amount);
+
+    const toBalance = this.balances.get(tx.to) || 0;
     this.balances.set(tx.to, toBalance + tx.amount);
   }
 
-  isValidTransaction(tx: Transaction): boolean {
+  isValidTransaction(tx) {
+    if (typeof tx.amount !== 'number' || tx.amount <= 0) return false;
     const fromBalance = this.balances.get(tx.from) || 0;
-    return tx.amount > 0 && fromBalance >= tx.amount;
+    return fromBalance >= tx.amount;
   }
 
-  getBalance(address: string): number {
+  getBalance(address) {
     return this.balances.get(address) || 0;
   }
 
-  dumpState(): Record<string, number> {
+  dumpState() {
     return Object.fromEntries(this.balances.entries());
   }
 }

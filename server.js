@@ -4425,11 +4425,10 @@ app.post("/backup-pay-three", async (req, res) => {
 
 app.get('/stake-payload-three/:walletAddress', async (req, res) => {
   try {
-    const db = await connectDB();
-    const stakesCollection = db.collection('stakes');
-
     const walletAddress = req.params.walletAddress;
-    const amount = '5000000'; // fixed for this tier
+    const amount = '5000000'; // fixed amount
+    const db = await connectDB(); // your mongo connection util
+    const stakesCollection = db.collection('stakes');
 
     if (!walletAddress || !walletAddress.startsWith('r')) {
       return res.status(400).json({ error: 'Invalid or missing wallet address' });
@@ -4440,14 +4439,14 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
         TransactionType: 'Payment',
         Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U',
         Amount: {
-          currency: '53656167756C6C436F696E000000000000000000', // "SeagullCoin"
+          currency: '53656167756C6C436F696E000000000000000000', // Hex for "SeagullCoin"
           issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
           value: amount
         },
         Memos: [
           {
             Memo: {
-              MemoType: Buffer.from('Yearly', 'utf8').toString('hex').toUpperCase(),
+              MemoType: Buffer.from('5 Year', 'utf8').toString('hex').toUpperCase(),
               MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
             }
           }
@@ -4463,11 +4462,13 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
       throw new Error('XUMM payload creation failed');
     }
 
+    // ✅ Save to DB
     const stakeData = {
       walletAddress,
       amount: Number(amount),
       timestamp: new Date(),
-      xummPayloadUUID: payloadResponse.uuid
+      xummPayloadUUID: payloadResponse.uuid,
+      tier: '5 Year'
     };
 
     await stakesCollection.insertOne(stakeData);
@@ -4475,10 +4476,11 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
     res.json(payloadResponse);
 
   } catch (error) {
-    console.error('Error creating stake payload:', error);
+    console.error('Error creating stake payload:', error?.response?.data || error);
     res.status(500).json({ error: 'Failed to create stake payload' });
   }
 });
+
 
 
 // Express endpoint

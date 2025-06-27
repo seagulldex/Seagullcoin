@@ -13,10 +13,27 @@ export class StateManager {
   }
 
   applyBlock(block) {
+  // clone balances map
+  const tempBalances = new Map(this.balances);
+
+  try {
     for (const tx of block.transactions) {
-      this.applyTransaction(tx);
+      const fromBalance = tempBalances.get(tx.from) || 0;
+      const totalCost = tx.amount + this.GAS_FEE;
+      if (fromBalance < totalCost) throw new Error(`Insufficient funds for ${tx.from}`);
+
+      tempBalances.set(tx.from, fromBalance - totalCost);
+      const toBalance = tempBalances.get(tx.to) || 0;
+      tempBalances.set(tx.to, toBalance + tx.amount);
+      const minerBalance = tempBalances.get("miner") || 0;
+      tempBalances.set("miner", minerBalance + this.GAS_FEE);
     }
+    // If all passed, commit to actual balances
+    this.balances = tempBalances;
+  } catch (err) {
+    throw err; // propagate error to caller
   }
+}
 
   applyTransaction(tx) {
     const fromBalance = this.balances.get(tx.from) || 0;

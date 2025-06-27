@@ -230,7 +230,7 @@ async function handleMessage(data, socket) {
   }
 }
 
-function handleReceivedBlock(block) {
+async function handleReceivedBlock(block) {
   if (
     !blockchain.length ||
     (block.previousHash === getLatestHash() && block.index === blockchain.length)
@@ -238,6 +238,7 @@ function handleReceivedBlock(block) {
     blockchain.push(block);
     try {
       stateManager.applyBlock(block);
+      await saveBlock(block); // <-- ensure peer blocks get saved too
     } catch (err) {
       console.warn(`❌ Failed to apply block to stateManager: ${err.message}`);
       return false;
@@ -249,6 +250,7 @@ function handleReceivedBlock(block) {
     return false;
   }
 }
+
 
 
 async function startNode() {

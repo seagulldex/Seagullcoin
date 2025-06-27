@@ -46,8 +46,7 @@ export class StateManager {
     const toBalance = this.balances.get(tx.to) || 0;
     this.balances.set(tx.to, toBalance + tx.amount);
 
-    // You can define who gets the gas fee (miner, etc.)
-    const minerAddress = "miner";  // example
+    const minerAddress = "miner";
     const minerBalance = this.balances.get(minerAddress) || 0;
     this.balances.set(minerAddress, minerBalance + this.GAS_FEE);
   }
@@ -64,7 +63,9 @@ export class StateManager {
 
   dumpState(): Record<string, number> {
     return Object.fromEntries(this.balances.entries());
-setBalance(address: string, amount: number) {
+  }
+
+  setBalance(address: string, amount: number) {
     this.balances.set(address, amount);
   }
-  }
+}

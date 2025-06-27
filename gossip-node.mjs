@@ -126,6 +126,11 @@ function broadcast(message, exclude) {
   });
 }
 
+function calculateBlockHash(block) {
+  const blockString = block.index + block.timestamp + JSON.stringify(block.transactions) + block.previousHash;
+  return createHash('sha256').update(blockString).digest('hex');
+}
+
 function connectToPeer(address) {
   const socket = new WebSocket(address);
 

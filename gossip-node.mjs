@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import WebSocket from 'ws';
+import { createHash } from 'crypto';
 import { StateManager } from './blockchain/StateManager.js'; // adjust path if needed
 import { MongoClient } from 'mongodb';
 import { randomUUID } from 'crypto';
@@ -270,9 +271,8 @@ async function startNode() {
       timestamp: Date.now(),
       transactions: transactionPool.splice(0, BLOCK_MAX_TX),
       previousHash: getLatestHash(),
-      hash: (Math.random() + '').slice(2),
     };
-
+    block.hash = calculateBlockHash(block);
     blockchain.push(block);
     transactionPool = [];
 

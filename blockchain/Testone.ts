@@ -1,4 +1,4 @@
-import { StateManager, Transaction } from '.blockchain/StateManager';  // adjust path as needed
+import { StateManager, Transaction } from './blockchain/StateManager';  // adjust path as needed
 
 // Create a new state manager instance
 const state = new StateManager();

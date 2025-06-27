@@ -41,12 +41,15 @@ export async function createGenesisTokenAndBlock() {
     await genesisToken.save();
   }
 
-  const genesisBlock = new Block({
+  const genesisBlockData = {
     index: 0,
     previousHash: '0',
-    timestamp: new Date(),
+    timestamp: Date.now(),   // number, not Date object
+    finalized: false,        // add this
+    nonce: 0,
     transactions: [
       {
+        txId: 'genesis-mint',
         from: null,
         to: preminedWalletAddress,
         amount: genesisToken.max_supply,
@@ -54,14 +57,13 @@ export async function createGenesisTokenAndBlock() {
         type: 'genesis',
       }
     ],
-    nonce: 0,
-  });
+  };
 
-  genesisBlock.hash = calculateHash(genesisBlock.toObject());
+  const genesisBlock = new Block(genesisBlockData);
+  genesisBlock.hash = calculateHash(genesisBlockData);
   await genesisBlock.save();
 
   return { genesisToken, genesisBlock };
 }
 
-// ✅ Proper exports
 export { calculateHash, createGenesisTokenAndBlock as createGenesisBlock };

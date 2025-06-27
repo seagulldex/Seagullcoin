@@ -4,7 +4,6 @@ export class StateManager {
     this.GAS_FEE = 0.00002; // fixed gas fee per transaction
   }
 
-state.setBalance('de-3001', 1000); // Give sender 1000 tokens
   initializeFromBlockchain(blockchain) {
     for (const block of blockchain) {
       this.applyBlock(block);
@@ -20,6 +19,8 @@ state.setBalance('de-3001', 1000); // Give sender 1000 tokens
   applyTransaction(tx) {
     const fromBalance = this.balances.get(tx.from) || 0;
     const totalCost = tx.amount + this.GAS_FEE;
+
+    state.setBalance('de-3001', 1000); // Give sender 1000 tokens
 
     if (fromBalance < totalCost) {
       throw new Error(`Insufficient funds for ${tx.from}, need ${totalCost}`);

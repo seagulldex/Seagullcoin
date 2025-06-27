@@ -145,6 +145,63 @@ async function fetchIPFSMetadata(uri) {
   }
 }
 
+async function createStakePayload(req, res, amount) {
+  try {
+    const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
+
+    const walletAddress = req.params.walletAddress;
+
+    if (!walletAddress || !walletAddress.startsWith('r')) {
+      return res.status(400).json({ error: 'Invalid or missing wallet address' });
+    }
+
+    const payloadResponse = await xumm.payload.create({
+      txjson: {
+        TransactionType: 'Payment',
+        Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // Replace with your actual staking wallet
+        Amount: {
+          currency: '53656167756C6C436F696E000000000000000000', // Hex for "SeagullCoin"
+          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+          value: amount
+        },
+        Memos: [
+          {
+            Memo: {
+              MemoType: Buffer.from('Yearly', 'utf8').toString('hex').toUpperCase(),
+              MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
+            }
+          }
+        ]
+      },
+      options: {
+        submit: true,
+        expire: 10
+      }
+    });
+
+    const stakeData = {
+      walletAddress,
+      amount: Number(amount),
+      timestamp: new Date(),
+      xummPayloadUUID: payloadResponse.uuid
+    };
+
+    await stakesCollection.insertOne(stakeData);
+
+    if (!payloadResponse?.uuid) {
+      throw new Error('XUMM payload creation failed');
+    }
+
+    res.json(payloadResponse);
+
+  } catch (error) {
+    console.error('Error creating stake payload:', error);
+    res.status(500).json({ error: 'Failed to create stake payload' });
+  }
+}
+
+
 
 
 (async () => {

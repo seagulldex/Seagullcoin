@@ -13,27 +13,25 @@ type Block = {
   hash: string;
 };
 
-export class StateManager {
-  private balances: Map<string, number>;
-  private readonly GAS_FEE = 0.00002;  // fixed gas fee per transaction
-
+  export class StateManager {
   constructor() {
     this.balances = new Map();
+    this.GAS_FEE = 0.00002; // fixed gas fee per transaction
   }
 
-  initializeFromBlockchain(blockchain: Block[]) {
+  initializeFromBlockchain(blockchain) {
     for (const block of blockchain) {
       this.applyBlock(block);
     }
   }
 
-  applyBlock(block: Block) {
+  applyBlock(block) {
     for (const tx of block.transactions) {
       this.applyTransaction(tx);
     }
   }
 
-  applyTransaction(tx: Transaction) {
+  applyTransaction(tx) {
     const fromBalance = this.balances.get(tx.from) || 0;
     const totalCost = tx.amount + this.GAS_FEE;
 
@@ -51,21 +49,21 @@ export class StateManager {
     this.balances.set(minerAddress, minerBalance + this.GAS_FEE);
   }
 
-  isValidTransaction(tx: Transaction) {
+  isValidTransaction(tx) {
     if (typeof tx.amount !== 'number' || tx.amount <= 0) return false;
     const fromBalance = this.balances.get(tx.from) || 0;
     return fromBalance >= (tx.amount + this.GAS_FEE);
   }
 
-  getBalance(address: string): number {
+  getBalance(address) {
     return this.balances.get(address) || 0;
   }
 
-  dumpState(): Record<string, number> {
+  dumpState() {
     return Object.fromEntries(this.balances.entries());
   }
 
-  setBalance(address: string, amount: number) {
+  setBalance(address, amount) {
     this.balances.set(address, amount);
   }
 }

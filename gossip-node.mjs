@@ -126,10 +126,31 @@ function broadcast(message, exclude) {
   });
 }
 
+function canonicalizeTransaction(tx) {
+  const sortedKeys = Object.keys(tx).sort();
+  const sortedTx = {};
+  for (const key of sortedKeys) {
+    sortedTx[key] = tx[key];
+  }
+  return sortedTx;
+}
+
+
 function calculateBlockHash(block) {
-  const blockString = block.index + block.timestamp + JSON.stringify(block.transactions) + block.previousHash;
+  // Canonicalize transactions: sort txs by txId and keys in each tx
+  const sortedTxs = block.transactions
+    .map(canonicalizeTransaction)
+    .sort((a, b) => a.txId.localeCompare(b.txId));
+    
+  const blockString = 
+    block.index.toString() + 
+    block.timestamp.toString() + 
+    JSON.stringify(sortedTxs) + 
+    block.previousHash;
+
   return createHash('sha256').update(blockString).digest('hex');
 }
+
 
 function connectToPeer(address) {
   const socket = new WebSocket(address);

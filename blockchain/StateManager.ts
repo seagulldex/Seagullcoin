@@ -15,6 +15,7 @@ type Block = {
 
 export class StateManager {
   private balances: Map<string, number>;
+  private readonly GAS_FEE = 0.00002;  // fixed gas fee per transaction
 
   constructor() {
     this.balances = new Map();
@@ -34,19 +35,27 @@ export class StateManager {
 
   applyTransaction(tx: Transaction) {
     const fromBalance = this.balances.get(tx.from) || 0;
-    if (fromBalance < tx.amount) {
-      throw new Error(`Insufficient funds for ${tx.from}`);
+    const totalCost = tx.amount + this.GAS_FEE;
+
+    if (fromBalance < totalCost) {
+      throw new Error(`Insufficient funds for ${tx.from}, need ${totalCost}`);
     }
-    this.balances.set(tx.from, fromBalance - tx.amount);
+
+    this.balances.set(tx.from, fromBalance - totalCost);
 
     const toBalance = this.balances.get(tx.to) || 0;
     this.balances.set(tx.to, toBalance + tx.amount);
+
+    // You can define who gets the gas fee (miner, etc.)
+    const minerAddress = "miner";  // example
+    const minerBalance = this.balances.get(minerAddress) || 0;
+    this.balances.set(minerAddress, minerBalance + this.GAS_FEE);
   }
 
   isValidTransaction(tx: Transaction) {
     if (typeof tx.amount !== 'number' || tx.amount <= 0) return false;
     const fromBalance = this.balances.get(tx.from) || 0;
-    return fromBalance >= tx.amount;
+    return fromBalance >= (tx.amount + this.GAS_FEE);
   }
 
   getBalance(address: string): number {

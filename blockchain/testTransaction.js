@@ -1,4 +1,4 @@
-import { StateManager } from './blockchain/StateManager.js';
+import { StateManager } from './StateManager.js';
 
 const tx = {
   txId: 'abc123',

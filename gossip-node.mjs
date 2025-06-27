@@ -270,7 +270,8 @@ async function startNode() {
   // Create block every BLOCK_INTERVAL_MS ms
   setInterval(async () => {
     if (transactionPool.length === 0) return;
-
+     
+    const transactionsForBlock = transactionPool.splice(0, BLOCK_MAX_TX);
     const block = {
       index: blockchain.length,
       timestamp: Date.now(),

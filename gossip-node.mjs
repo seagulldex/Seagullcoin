@@ -237,15 +237,19 @@ function handleReceivedBlock(block) {
   ) {
     blockchain.push(block);
     try {
-      stateManager.applyBlock(block);  // <-- Keep stateManager in sync
+      stateManager.applyBlock(block);
     } catch (err) {
       console.warn(`❌ Failed to apply block to stateManager: ${err.message}`);
+      return false;
     }
     console.log(`✅ Block accepted (#${block.index})`);
+    return true;
   } else {
     console.warn(`⚠️ Block rejected (index: ${block.index}, expected: ${blockchain.length})`);
+    return false;
   }
 }
+
 
 async function startNode() {
   await connectDB();

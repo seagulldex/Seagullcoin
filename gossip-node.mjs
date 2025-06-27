@@ -3,6 +3,7 @@ import WebSocket from 'ws';
 import { createHash } from 'crypto';
 import { StateManager } from './blockchain/StateManager.js'; // adjust path if needed
 import { MongoClient } from 'mongodb';
+import { loadGenesisToken } from './db.js'; // or wherever it lives
 import { randomUUID } from 'crypto';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -78,14 +79,16 @@ async function connectDB(retries = 0) {
 }
 
 async function loadStateFromDB() {
+  const genesisToken = await loadGenesisToken();
+
   const blocks = await blockchainCollection.find({}).sort({ index: 1 }).toArray();
   blockchain = blocks.length ? blocks : [];
-
+  
   const txs = await txPoolCollection.find({}).toArray();
   transactionPool = txs.length ? txs : [];
   // Initialize state
-  stateManager = new StateManager();
-  stateManager.initializeFromBlockchain(blockchain);
+  stateManager = new StateManager(genesisToken);
+  stateManager.initializeFromBlockchain(blockchain);;
 
   
   console.log(`🔄 Loaded ${blockchain.length} blocks and ${transactionPool.length} transactions from MongoDB`);

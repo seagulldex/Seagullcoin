@@ -66,3 +66,6 @@ export class StateManager {
     return Object.fromEntries(this.balances.entries());
   }
 }
+  setBalance(address: string, amount: number) {
+    this.balances.set(address, amount);
+  }

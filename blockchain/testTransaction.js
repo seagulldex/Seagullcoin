@@ -1,5 +1,7 @@
 import { StateManager } from './StateManager.js';
 
+state.setBalance('de-3001', 1000);  // <-- Add this here
+
 const tx = {
   txId: 'abc123',
   from: 'Alice',

@@ -201,9 +201,6 @@ async function createStakePayload(req, res, amount) {
   }
 }
 
-
-
-
 (async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {

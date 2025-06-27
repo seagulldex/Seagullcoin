@@ -4,6 +4,7 @@ import { createHash } from 'crypto';
 import { StateManager } from './blockchain/StateManager.js'; // adjust path if needed
 import { MongoClient } from 'mongodb';
 import { loadGenesisToken } from './db.js'; // or wherever it lives
+import Block from '../models/Block.js';
 import { randomUUID } from 'crypto';
 import dotenv from 'dotenv';
 dotenv.config();

@@ -187,8 +187,7 @@ async function handleMessage(data, socket) {
       if (isValidBlock(data.block)) {
         try {
           // Try applying block to state manager before accepting
-          stateManager.applyBlock(data.block);
-
+        
           console.log('📦 Received valid block');
           handleReceivedBlock(data.block);
           broadcast({ type: 'BLOCK', block: data.block }, socket);

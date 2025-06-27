@@ -6058,6 +6058,17 @@ app.get('/metrics', (req, res) => {
   });
 });
 
+// Tier 1 - Basic Stake
+app.get('/stake-payload-basic/:walletAddress', async (req, res) => {
+  await createStakePayload(req, res, '2500000');
+});
+
+// Tier 2 - Premium Stake
+app.get('/stake-payload-premium/:walletAddress', async (req, res) => {
+  await createStakePayload(req, res, '5000000');
+});
+
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

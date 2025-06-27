@@ -15,6 +15,10 @@ function calculateHash(block) {
     .digest('hex');
 }
 
+/**
+ * Create genesis token + block, and optionally broadcast it via gossip.
+  @param {Function} broadcastFunc - Optional gossip broadcast function
+ */
 export async function createGenesisTokenAndBlock() {
   const preminedWalletAddress = 'SEAGULLD1DFB4670F7CA58AB0B03B62';
 
@@ -62,6 +66,18 @@ export async function createGenesisTokenAndBlock() {
   const genesisBlock = new Block(genesisBlockData);
   genesisBlock.hash = calculateHash(genesisBlockData);
   await genesisBlock.save();
+
+  // ✅ Broadcast to gossip network if function is provided
+  if (typeof broadcastFunc === 'function') {
+    broadcastFunc({
+      type: 'BLOCK',
+      block: {
+        ...genesisBlock.toObject(),
+        _id: undefined, // remove Mongo's _id if needed
+        __v: undefined
+      }
+    });
+  }
 
   return { genesisToken, genesisBlock };
 }

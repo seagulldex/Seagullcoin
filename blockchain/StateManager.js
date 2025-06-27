@@ -4,6 +4,8 @@ export class StateManager {
     this.GAS_FEE = 0.00002; // fixed gas fee per transaction
   }
 
+  state.setBalance('de-3001', 1000);  // add 1000 tokens to sender so they can send txs
+
   initializeFromBlockchain(blockchain) {
     for (const block of blockchain) {
       this.applyBlock(block);

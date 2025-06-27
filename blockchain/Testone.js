@@ -1,30 +1,23 @@
-import { StateManager, Transaction } from './StateManager.js';  // adjust path as needed
+import { StateManager } from './StateManager.js';  // adjust if path differs
 
-// Create a new state manager instance
 const state = new StateManager();
 
-// Manually set some initial balances
 state.setBalance('Alice', 100);
 state.setBalance('Bob', 50);
-state.setBalance('miner', 0);  // miner starts with zero
+state.setBalance('miner', 0);
 
-// Create a transaction
-const tx: Transaction = {
+const tx = {
   txId: 'abc123',
   from: 'Alice',
   to: 'Bob',
   amount: 10,
 };
 
-// Check if the transaction is valid
 if (state.isValidTransaction(tx)) {
-  // Apply the transaction
   state.applyTransaction(tx);
   console.log('✅ Transaction applied!');
 } else {
   console.log('❌ Invalid transaction: insufficient funds or bad amount');
 }
 
-// Check balances after transaction
 console.log('Balances after transaction:', state.dumpState());
-

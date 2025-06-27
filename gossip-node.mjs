@@ -158,25 +158,41 @@ async function handleMessage(data, socket) {
   switch (data.type) {
     case 'BLOCK':
       if (isValidBlock(data.block)) {
-        console.log('📦 Received valid block');
-        handleReceivedBlock(data.block);
-        broadcast({ type: 'BLOCK', block: data.block }, socket);
+        try {
+          // Try applying block to state manager before accepting
+          stateManager.applyBlock(data.block);
+
+          console.log('📦 Received valid block');
+          handleReceivedBlock(data.block);
+          broadcast({ type: 'BLOCK', block: data.block }, socket);
+        } catch (err) {
+          console.warn('❌ Failed to apply block to state:', err.message);
+        }
       } else {
         console.warn('❌ Invalid block received, ignoring');
       }
       break;
 
-    case 'TX':
+        case 'TX':
       if (isValidTx(data.tx)) {
-        console.log('💸 Received valid transaction');
-        const exists = transactionPool.some(tx => tx.txId === data.tx.txId);
-        if (!exists) {
-          transactionPool.push(data.tx);
-          txCount++;
-          await saveTransactionPool();
-          broadcast({ type: 'TX', tx: data.tx }, socket);
-        } else {
-          console.log('⚠️ Duplicate TX ignored');
+        try {
+          // Optional: Use stateManager to validate transaction (e.g. balances)
+          if (!stateManager.isValidTransaction(data.tx)) {
+            console.warn('❌ Transaction invalid by state validation, ignoring');
+            break;
+          }
+
+    const exists = transactionPool.some(tx => tx.txId === data.tx.txId);
+          if (!exists) {
+            transactionPool.push(data.tx);
+            txCount++;
+            await saveTransactionPool();
+            broadcast({ type: 'TX', tx: data.tx }, socket);
+          } else {
+            console.log('⚠️ Duplicate TX ignored');
+          }
+        } catch (err) {
+          console.warn('❌ Error validating transaction:', err.message);
         }
       } else {
         console.warn('❌ Invalid transaction received, ignoring');
@@ -194,6 +210,11 @@ function handleReceivedBlock(block) {
     (block.previousHash === getLatestHash() && block.index === blockchain.length)
   ) {
     blockchain.push(block);
+    try {
+      stateManager.applyBlock(block);  // <-- Keep stateManager in sync
+    } catch (err) {
+      console.warn(`❌ Failed to apply block to stateManager: ${err.message}`);
+    }
     console.log(`✅ Block accepted (#${block.index})`);
   } else {
     console.warn(`⚠️ Block rejected (index: ${block.index}, expected: ${blockchain.length})`);

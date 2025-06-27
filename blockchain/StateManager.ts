@@ -1,21 +1,38 @@
+type Transaction = {
+  txId: string;
+  from: string;
+  to: string;
+  amount: number;
+};
+
+type Block = {
+  index: number;
+  timestamp: number;
+  transactions: Transaction[];
+  previousHash: string;
+  hash: string;
+};
+
 export class StateManager {
+  private balances: Map<string, number>;
+
   constructor() {
     this.balances = new Map();
   }
 
-  initializeFromBlockchain(blockchain) {
+  initializeFromBlockchain(blockchain: Block[]) {
     for (const block of blockchain) {
       this.applyBlock(block);
     }
   }
 
-  applyBlock(block) {
+  applyBlock(block: Block) {
     for (const tx of block.transactions) {
       this.applyTransaction(tx);
     }
   }
 
-  applyTransaction(tx) {
+  applyTransaction(tx: Transaction) {
     const fromBalance = this.balances.get(tx.from) || 0;
     if (fromBalance < tx.amount) {
       throw new Error(`Insufficient funds for ${tx.from}`);
@@ -26,17 +43,17 @@ export class StateManager {
     this.balances.set(tx.to, toBalance + tx.amount);
   }
 
-  isValidTransaction(tx) {
+  isValidTransaction(tx: Transaction) {
     if (typeof tx.amount !== 'number' || tx.amount <= 0) return false;
     const fromBalance = this.balances.get(tx.from) || 0;
     return fromBalance >= tx.amount;
   }
 
-  getBalance(address) {
+  getBalance(address: string): number {
     return this.balances.get(address) || 0;
   }
 
-  dumpState() {
+  dumpState(): Record<string, number> {
     return Object.fromEntries(this.balances.entries());
   }
 }

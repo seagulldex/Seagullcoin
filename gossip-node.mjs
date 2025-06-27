@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import WebSocket from 'ws';
+import { StateManager } from './blockchain/StateManager.js'; // adjust path if needed
 import { MongoClient } from 'mongodb';
 import { randomUUID } from 'crypto';
 import dotenv from 'dotenv';

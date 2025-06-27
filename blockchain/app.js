@@ -1,4 +1,4 @@
-import { StateManager } from './blockchain/StateManager.js';
+import { StateManager } from './StateManager.js';
 import { MongoClient } from 'mongodb';
 
 const uri = 'mongodb://localhost:27017';

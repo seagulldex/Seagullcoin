@@ -274,7 +274,7 @@ async function startNode() {
     const block = {
       index: blockchain.length,
       timestamp: Date.now(),
-      transactions: transactionPool.splice(0, BLOCK_MAX_TX),
+      transactions: transactionsForBlock,
       previousHash: getLatestHash(),
     };
     block.hash = calculateBlockHash(block);

@@ -8,13 +8,13 @@ const tx = {
   txId: 'abc123',
   from: 'Alice',
   to: 'Bob',
-  amount: 10.0,
+  amount: 1000.0,
 };
 
 const state = new StateManager();
 
 // Set initial balance manually for testing
-state['balances'].set('Alice', 100); // Note: Direct access to private property
+state['balances'].set('Alice', 1000); // Note: Direct access to private property
 
 if (state.isValidTransaction(tx)) {
   state.applyTransaction(tx);

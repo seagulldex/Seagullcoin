@@ -11,7 +11,7 @@ const tx = {
   txId: 'abc123',
   from: 'Alice',
   to: 'Bob',
-  amount: 10,
+  amount: 800,
 };
 
 if (state.isValidTransaction(tx)) {

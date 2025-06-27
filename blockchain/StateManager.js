@@ -1,19 +1,4 @@
-type Transaction = {
-  txId: string;
-  from: string;
-  to: string;
-  amount: number;
-};
-
-type Block = {
-  index: number;
-  timestamp: number;
-  transactions: Transaction[];
-  previousHash: string;
-  hash: string;
-};
-
-  export class StateManager {
+export class StateManager {
   constructor() {
     this.balances = new Map();
     this.GAS_FEE = 0.00002; // fixed gas fee per transaction

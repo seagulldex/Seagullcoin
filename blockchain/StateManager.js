@@ -2,7 +2,7 @@ export class StateManager {
   constructor() {
   this.balances = new Map();
   this.GAS_FEE = 0.00002;
-  this.setBalance('de-3001', 1000); // ✅ This is valid here
+  this.setBalance('de-3001', 1000); // ✅ This is valid
 }
 
 

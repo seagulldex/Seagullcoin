@@ -1,59 +1,62 @@
 export class StateManager {
   constructor() {
-  this.balances = new Map();
-  this.GAS_FEE = 0.00002;
-}
-
+    this.balances = new Map();
+    this.GAS_FEE = 0.00002;
+  }
 
   initializeFromBlockchain(blockchain) {
-    for (const block of blockchain) {
-      this.applyBlock(block);
+    if (!blockchain || blockchain.length === 0) {
+      throw new Error("Blockchain must start with a genesis block");
+    }
+
+    // Optionally: validate that the first block has no 'from' fields (coinbase style)
+    this.applyBlock(blockchain[0]); // Genesis block — may contain mint transactions
+
+    for (let i = 1; i < blockchain.length; i++) {
+      this.applyBlock(blockchain[i]);
     }
   }
 
-  applyBlock(block) {
-  // clone balances map
-  const tempBalances = new Map(this.balances);
-
-  try {
-    for (const tx of block.transactions) {
-      const fromBalance = tempBalances.get(tx.from) || 0;
-      const totalCost = tx.amount + this.GAS_FEE;
-      if (fromBalance < totalCost) throw new Error(`Insufficient funds for ${tx.from}`);
-
-      tempBalances.set(tx.from, fromBalance - totalCost);
-      const toBalance = tempBalances.get(tx.to) || 0;
-      tempBalances.set(tx.to, toBalance + tx.amount);
-      const minerBalance = tempBalances.get("miner") || 0;
-      tempBalances.set("miner", minerBalance + this.GAS_FEE);
-    }
-    // If all passed, commit to actual balances
-    this.balances = tempBalances;
-  } catch (err) {
-    throw err; // propagate error to caller
-  }
-}
-
-  applyTransaction(tx) {
-    const fromBalance = this.balances.get(tx.from) || 0;
+  applyTransactionToBalances(tx, balances) {
+    const fromBalance = balances.get(tx.from) || 0;
     const totalCost = tx.amount + this.GAS_FEE;
 
-    if (fromBalance < totalCost) {
+    // Only enforce balance check if this isn't a genesis 'mint' (from === null or 'coinbase')
+    if (tx.from && fromBalance < totalCost) {
       throw new Error(`Insufficient funds for ${tx.from}, need ${totalCost}`);
     }
 
-    this.balances.set(tx.from, fromBalance - totalCost);
+    if (tx.from) {
+      balances.set(tx.from, fromBalance - totalCost);
+    }
 
-    const toBalance = this.balances.get(tx.to) || 0;
-    this.balances.set(tx.to, toBalance + tx.amount);
+    const toBalance = balances.get(tx.to) || 0;
+    balances.set(tx.to, toBalance + tx.amount);
 
-    const minerAddress = "miner";
-    const minerBalance = this.balances.get(minerAddress) || 0;
-    this.balances.set(minerAddress, minerBalance + this.GAS_FEE);
+    const minerBalance = balances.get("miner") || 0;
+    balances.set("miner", minerBalance + this.GAS_FEE);
+  }
+
+  applyBlock(block) {
+    const tempBalances = new Map(this.balances);
+
+    try {
+      for (const tx of block.transactions) {
+        this.applyTransactionToBalances(tx, tempBalances);
+      }
+      this.balances = tempBalances;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  applyTransaction(tx) {
+    this.applyTransactionToBalances(tx, this.balances);
   }
 
   isValidTransaction(tx) {
     if (typeof tx.amount !== 'number' || tx.amount <= 0) return false;
+    if (!tx.from) return true; // minting transaction (e.g., in genesis)
     const fromBalance = this.balances.get(tx.from) || 0;
     return fromBalance >= (tx.amount + this.GAS_FEE);
   }

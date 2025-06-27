@@ -1,6 +1,7 @@
 import { StateManager } from './StateManager.js';  // adjust if path differs
 
 const state = new StateManager();
+state.setBalance('de-3001', 1000);  // <-- Add this here
 
 state.setBalance('Alice', 100);
 state.setBalance('Bob', 50);

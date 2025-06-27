@@ -29,6 +29,7 @@ let blockchain = [];
 let transactionPool = [];
 let blockchainCollection;
 let txPoolCollection;
+let stateManager;
 const sockets = [];
 
 let confirmedTxCount = 0;
@@ -80,7 +81,11 @@ async function loadStateFromDB() {
 
   const txs = await txPoolCollection.find({}).toArray();
   transactionPool = txs.length ? txs : [];
+  // Initialize state
+  stateManager = new StateManager();
+  stateManager.initializeFromBlockchain(blockchain);
 
+  
   console.log(`🔄 Loaded ${blockchain.length} blocks and ${transactionPool.length} transactions from MongoDB`);
 }
 

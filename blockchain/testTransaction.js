@@ -1,6 +1,8 @@
 import { StateManager } from './StateManager.js';
 
 state.setBalance('de-3001', 1000);  // <-- Add this here
+state.setBalance('Bob', 50);
+state.setBalance('miner', 0);
 
 const tx = {
   txId: 'abc123',

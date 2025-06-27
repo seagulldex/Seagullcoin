@@ -1,3 +1,20 @@
+// blockchain/StateManager.ts
+type Transaction = {
+  txId: string;
+  from: string;
+  to: string;
+  amount: number;
+};
+
+type Block = {
+  index: number;
+  timestamp: number;
+  transactions: Transaction[];
+  previousHash: string;
+  hash: string;
+};
+
+// blockchain/StateManager.js
 export class StateManager {
   constructor() {
     this.balances = new Map();
@@ -31,12 +48,14 @@ export class StateManager {
     const fromBalance = this.balances.get(tx.from) || 0;
     return fromBalance >= tx.amount;
   }
+}
 
-  getBalance(address) {
+
+  getBalance(address: string): number {
     return this.balances.get(address) || 0;
   }
 
-  dumpState() {
+  dumpState(): Record<string, number> {
     return Object.fromEntries(this.balances.entries());
   }
 }

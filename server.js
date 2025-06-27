@@ -4198,6 +4198,9 @@ app.post("/backup-pay", async (req, res) => {
 
 app.get('/stake-payload-two/:walletAddress', async (req, res) => {
   try {
+    const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
+
     const walletAddress = req.params.walletAddress;
 
     if (!walletAddress || !walletAddress.startsWith('r')) {
@@ -4227,6 +4230,14 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
         expire: 10
       }
     });
+
+    const stakeData = {
+      walletAddress,
+      amount,
+      timestamp: new Date(),
+    };
+
+    await stakesCollection.insertOne(stakeData);
 
     if (!payloadResponse?.uuid) {
       throw new Error('XUMM payload creation failed');

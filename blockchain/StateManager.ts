@@ -64,8 +64,7 @@ export class StateManager {
 
   dumpState(): Record<string, number> {
     return Object.fromEntries(this.balances.entries());
-  }
-}
-  setBalance(address: string, amount: number) {
+setBalance(address: string, amount: number) {
     this.balances.set(address, amount);
+  }
   }

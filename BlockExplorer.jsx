@@ -141,9 +141,9 @@ return (
     <li key={idx}>
       From: <strong>{tx.from === 'null' ? '🚀 GENESIS' : tx.from}</strong> → To: <strong>{tx.to}</strong> — 
       Amount: <strong>{tx.amount.toLocaleString()} {tx.token || 'XSDB'} 🪙</strong>
-    </li>
-  ))}
-</ul>
+    </li>               
+          ))}
+          </ul>
               {!isValidLink && (
                 <p style={{ color: 'red' }}>
                   ⚠️ Broken hash link! This block's <code>previousHash</code> does not match the previous block's hash.

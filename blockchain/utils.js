@@ -75,10 +75,7 @@ export async function createGenesisTokenAndBlock(broadcastFunc) {
     ],
   };
 
-  const genesisBlock = new Block({
-  ...genesisBlockData,
-  hash: calculateHash(genesisBlockData)
-});
+  
 
   let genesisBlock = await Block.findOne({ index: 0 });
 if (!genesisBlock) {
@@ -90,7 +87,7 @@ if (!genesisBlock) {
 }
 
 
-  await genesisBlock.save();
+  
 
   // ✅ Broadcast to gossip network if function is provided
   if (typeof broadcastFunc === 'function') {

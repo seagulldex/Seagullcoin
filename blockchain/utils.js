@@ -41,17 +41,17 @@ export async function createGenesisTokenAndBlock(broadcastFunc) {
   }
 
   const genesisTokenData = {
-    symbol: 'SGLCN-X20',
+    symbol: 'XSC',
     name: 'SeagullCoin',
     owner_wallet: preminedWallet._id,
     max_supply: 589000000,
     circulating_supply: 589000000,
-    decimals: 0,
+    decimals: 8,
     isGenesisToken: true,
     layer: 'L1',
   };
 
-  let genesisToken = await Token.findOne({ symbol: 'SGLCN-X20' });
+  let genesisToken = await Token.findOne({ symbol: 'XSC' });
   if (!genesisToken) {
     genesisToken = new Token(genesisTokenData);
     await genesisToken.save();
@@ -79,6 +79,16 @@ export async function createGenesisTokenAndBlock(broadcastFunc) {
   ...genesisBlockData,
   hash: calculateHash(genesisBlockData)
 });
+
+  let genesisBlock = await Block.findOne({ index: 0 });
+if (!genesisBlock) {
+  genesisBlock = new Block({
+    ...genesisBlockData,
+    hash: calculateHash(genesisBlockData),
+  });
+  await genesisBlock.save();
+}
+
 
   await genesisBlock.save();
 

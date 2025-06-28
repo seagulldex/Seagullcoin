@@ -1,7 +1,7 @@
 import { WebSocketServer } from 'ws';
 import WebSocket from 'ws';
 import { createHash } from 'crypto';
-import StateManager from '../blockchain/StateManager.js'; // adjust path if needed
+import { StateManager } from '../StateManager.js';
 import { MongoClient } from 'mongodb';
 import { loadGenesisToken } from './db.js'; // or wherever it lives
 import Block from '../models/Block.js';

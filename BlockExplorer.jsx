@@ -172,7 +172,7 @@ return (
                     <strong style={{ color: tx.from === selectedWallet ? 'red' : 'green' }}>
                       {tx.from === selectedWallet ? 'Sent' : 'Received'}:
                     </strong>{' '}
-                    {tx.amount.toLocaleString()} <strong>XSDB 🪙</strong>
+                    {tx.amount.toLocaleString()} <strong>{tx.token || 'XSDB'} 🪙</strong>
                   </div>
                   <div>
                     {tx.from === 'null' ? '🚀 GENESIS' : `From: ${tx.from}`} | To: {tx.to}

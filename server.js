@@ -4435,20 +4435,24 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
     const db = await connectDB();
     const stakesCollection = db.collection('stakes');
 
+    // ✅ Encode memo fields safely
+    const memoTypeHex = Buffer.from('5 Year', 'utf8').toString('hex').toUpperCase();
+    const memoDataHex = Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase();
+
     const payloadResponse = await xumm.payload.create({
       txjson: {
         TransactionType: 'Payment',
         Destination: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U',
         Amount: {
-          currency: '53656167756C6C436F696E000000000000000000', // Hex for "SeagullCoin"
+          currency: '53656167756C6C436F696E000000000000000000', // "SeagullCoin"
           issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
           value: amount
         },
         Memos: [
           {
             Memo: {
-              MemoType: Buffer.from('5 Year', 'utf8').toString('hex').toUpperCase(),
-              MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
+              MemoType: memoTypeHex,
+              MemoData: memoDataHex
             }
           }
         ]
@@ -4469,7 +4473,7 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
       timestamp: new Date(),
       xummPayloadUUID: payloadResponse.uuid,
       tier: '5 Year',
-      status: 'pending' // for future use
+      status: 'pending'
     };
 
     await stakesCollection.insertOne(stakeData);
@@ -4489,6 +4493,7 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
     });
   }
 });
+
 
 
 

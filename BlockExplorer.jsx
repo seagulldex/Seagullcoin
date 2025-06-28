@@ -96,7 +96,7 @@ return (
                 >
                   <strong>{address}</strong>
                 </button>
-                : {balance.toLocaleString()} XSDB
+                : {balance.toLocaleString()} {/** Assuming only 1 token still here */} XSDB 🪙
               </li>
             ))}
           {Object.keys(balances).length === 0 && <li>No balances found</li>}

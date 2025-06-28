@@ -55,93 +55,124 @@ const BlockExplorer = () => {
     return true;
   };
 
-  return (
-    <div style={{ fontFamily: 'sans-serif' }}>
-      <h1>SGLCN-X20 📦 Block Explorer</h1>
+return (
+  <div style={{ fontFamily: 'sans-serif' }}>
+    <h1>SGLCN-X20 📦 Block Explorer</h1>
 
-<div style={{ margin: '1rem 0' }}>
-  <input
-    type="text"
-    placeholder="🔍 Search by wallet address..."
-    value={filterAddress}
-    onChange={(e) => setFilterAddress(e.target.value.trim())}
-    style={{
-      padding: '0.5rem',
-      fontSize: '1rem',
-      width: '100%',
-      maxWidth: '400px',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    }}
-  />
-</div>
-
-      <h2>Balances</h2>
-      <ul>
-        {Object.entries(balances)
-          .filter(([address]) =>
-            filterAddress ? address.toLowerCase().includes(filterAddress.toLowerCase()) : true
-          )
-          .map(([address, balance]) => (
-            <li key={address}>
-              <strong>{address}</strong>: {balance.toLocaleString()} XSDB
-            </li>
-          ))}
-        {Object.keys(balances).length === 0 && <li>No balances found</li>}
-      </ul>
-
-      {!isChainValid(blocks) && (
-        <div style={{ color: 'red', fontWeight: 'bold' }}>
-          ⚠️ Blockchain is invalid! Broken hash chain detected.
-        </div>
-      )}
-      {blocks.map((block, i) => {
-        const isValidLink =
-          i === 0 || block.previousHash === blocks[i - 1].hash;
-        const filteredTransactions = block.transactions.filter((tx) => {
-          if (!filterAddress) return true;
-        return (
-          tx.from?.toLowerCase() === filterAddress.toLowerCase() ||
-          tx.to?.toLowerCase() === filterAddress.toLowerCase()
-       );
-     });
-
-        return (
-          <div
-            key={block._id}
+    {!selectedWallet ? (
+      <>
+        <div style={{ margin: '1rem 0' }}>
+          <input
+            type="text"
+            placeholder="🔍 Search by wallet address..."
+            value={filterAddress}
+            onChange={(e) => setFilterAddress(e.target.value.trim())}
             style={{
-              border: '2px solid',
-              borderColor: isValidLink ? '#4caf50' : '#f44336', // green if valid, red if broken
-              margin: '1rem 0',
-              padding: '1rem',
-              backgroundColor: '#f9f9f9',
-              borderRadius: '8px',
+              padding: '0.5rem',
+              fontSize: '1rem',
+              width: '100%',
+              maxWidth: '400px',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
             }}
-          >
-            <p><strong>Index:</strong> {block.index}</p>
-            <p><strong>Timestamp:</strong> {new Date(block.timestamp).toLocaleString()}</p>
-            <p><strong>Hash:</strong> {block.hash}</p>
-            <p><strong>Previous Hash:</strong> {block.previousHash}</p>
-            <p><strong>Finalized:</strong> {block.finalized ? '✅ Yes' : '⏳ No'}</p>
-            <p><strong>Transactions:</strong></p>
-            <ul>
-              {filteredTransactions.length === 0 && <li>None</li>}
-              {filteredTransactions.map((tx, idx) => (
-            <li key={idx}>
-             From: <strong>{tx.from === 'null' ? '🚀 GENESIS' : tx.from}</strong> → To: <strong>{tx.to}</strong> — Amount: <strong>{tx.amount}</strong>
-            </li>
-            ))}
-            </ul>
-            {!isValidLink && (
-              <p style={{ color: 'red' }}>
-                ⚠️ Broken hash link! This block's <code>previousHash</code> does not match the previous block's hash.
-              </p>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-};
+          />
+        </div>
 
-export default BlockExplorer;
+        <h2>Balances</h2>
+        <ul>
+          {Object.entries(balances)
+            .filter(([address]) =>
+              filterAddress ? address.toLowerCase().includes(filterAddress.toLowerCase()) : true
+            )
+            .sort(([, a], [, b]) => b - a)
+            .map(([address, balance]) => (
+              <li key={address}>
+                <button
+                  onClick={() => setSelectedWallet(address)}
+                  style={{ border: 'none', background: 'none', color: '#007bff', cursor: 'pointer' }}
+                >
+                  <strong>{address}</strong>
+                </button>
+                : {balance.toLocaleString()} XSDB
+              </li>
+            ))}
+          {Object.keys(balances).length === 0 && <li>No balances found</li>}
+        </ul>
+
+        {!isChainValid(blocks) && (
+          <div style={{ color: 'red', fontWeight: 'bold' }}>
+            ⚠️ Blockchain is invalid! Broken hash chain detected.
+          </div>
+        )}
+
+        {blocks.map((block, i) => {
+          const isValidLink = i === 0 || block.previousHash === blocks[i - 1].hash;
+          const filteredTransactions = block.transactions.filter((tx) => {
+            if (!filterAddress) return true;
+            return (
+              tx.from?.toLowerCase() === filterAddress.toLowerCase() ||
+              tx.to?.toLowerCase() === filterAddress.toLowerCase()
+            );
+          });
+
+          return (
+            <div
+              key={block._id}
+              style={{
+                border: '2px solid',
+                borderColor: isValidLink ? '#4caf50' : '#f44336',
+                margin: '1rem 0',
+                padding: '1rem',
+                backgroundColor: '#f9f9f9',
+                borderRadius: '8px',
+              }}
+            >
+              <p><strong>Index:</strong> {block.index}</p>
+              <p><strong>Timestamp:</strong> {new Date(block.timestamp).toLocaleString()}</p>
+              <p><strong>Hash:</strong> {block.hash}</p>
+              <p><strong>Previous Hash:</strong> {block.previousHash}</p>
+              <p><strong>Finalized:</strong> {block.finalized ? '✅ Yes' : '⏳ No'}</p>
+              <p><strong>Transactions:</strong></p>
+              <ul>
+                {filteredTransactions.length === 0 && <li>None</li>}
+                {filteredTransactions.map((tx, idx) => (
+                  <li key={idx}>
+                    From: <strong>{tx.from === 'null' ? '🚀 GENESIS' : tx.from}</strong> → To: <strong>{tx.to}</strong> — Amount: <strong>{tx.amount}</strong>
+                  </li>
+                ))}
+              </ul>
+              {!isValidLink && (
+                <p style={{ color: 'red' }}>
+                  ⚠️ Broken hash link! This block's <code>previousHash</code> does not match the previous block's hash.
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </>
+    ) : (
+      <div>
+        <button onClick={() => setSelectedWallet(null)} style={{ marginBottom: '1rem' }}>
+          ← Back to explorer
+        </button>
+        <h2>Wallet: <code>{selectedWallet}</code></h2>
+        <p><strong>Balance:</strong> {balances[selectedWallet]?.toLocaleString() ?? 0} XSDB</p>
+        <h3>Transactions</h3>
+        <ul>
+          {blocks.flatMap((block) =>
+            block.transactions
+              .filter(tx => tx.from === selectedWallet || tx.to === selectedWallet)
+              .map((tx, i) => (
+                <li key={i}>
+                  <strong>{tx.from === selectedWallet ? 'Sent' : 'Received'}</strong> {tx.amount} XSDB
+                  {tx.from === 'null' ? ' from 🚀 GENESIS' : ` from ${tx.from}`}
+                  {tx.to && ` to ${tx.to}`}
+                </li>
+              ))
+          )}
+        </ul>
+      </div>
+    )}
+  </div>
+);
+

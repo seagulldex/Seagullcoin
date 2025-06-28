@@ -166,7 +166,14 @@ return (
           ← Back to explorer
         </button>
         <h2>Wallet: <code>{selectedWallet}</code></h2>
-        <p><strong>Balance:</strong> {balances[selectedWallet]?.toLocaleString() ?? 0} XSDB</p>
+        <p><strong>Balance:</strong> 
+  {balances[selectedWallet]
+    ? Object.entries(balances[selectedWallet]).map(([token, amount]) => (
+        <span key={token}>{amount.toLocaleString()} {token} 🪙 </span>
+      ))
+    : '0 XSDB'}
+</p>
+
         <h3>Transactions</h3>
         <ul style={{ listStyleType: 'none', paddingLeft: 0 }}>
           {blocks.flatMap((block) =>

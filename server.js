@@ -4436,8 +4436,8 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
     const stakesCollection = db.collection('stakes');
 
     // ✅ Encode memo fields safely
-    const memoTypeHex = Buffer.from('5 Year', 'utf8').toString('hex').toUpperCase();
-    const memoDataHex = Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase();
+    const memoPayload = `5Y|${walletAddress}`;
+const memoDataHex = Buffer.from(memoPayload, 'utf8').
 
     const payloadResponse = await xumm.payload.create({
       txjson: {
@@ -4448,14 +4448,15 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
           issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
           value: amount
         },
-        Memos: [
-          {
-            Memo: {
-              MemoType: memoTypeHex,
-              MemoData: memoDataHex
-            }
-          }
-        ]
+  Memos: [
+  {
+    Memo: {
+      MemoType: 'text/plain',
+      MemoFormat: 'text/plain',
+      MemoData: memoDataHex
+    }
+  }
+]
       },
       options: {
         submit: true,

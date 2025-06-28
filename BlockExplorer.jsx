@@ -6,6 +6,8 @@ const BlockExplorer = () => {
   const [error, setError] = useState(null);
   const [filterAddress, setFilterAddress] = useState('');
   const [balances, setBalances] = useState({});
+  const [selectedWallet, setSelectedWallet] = useState(null);
+
   
   useEffect(() => {
     fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/blocks')

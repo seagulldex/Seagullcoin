@@ -91,12 +91,12 @@ const BlockExplorer = () => {
             <p><strong>Finalized:</strong> {block.finalized ? '✅ Yes' : '⏳ No'}</p>
             <p><strong>Transactions:</strong></p>
             <ul>
-              {block.transactions.length === 0 && <li>None</li>}
-              {block.transactions.map((tx, idx) => (
+              {filteredTransactions.length === 0 && <li>None</li>}
+              {filteredTransactions.map((tx, idx) => (
             <li key={idx}>
-              From: <strong>{tx.from === 'null' ? '🚀 GENESIS' : tx.from}</strong> → To: <strong>{tx.to}</strong> — Amount: <strong>{tx.amount}</strong>
+             From: <strong>{tx.from === 'null' ? '🚀 GENESIS' : tx.from}</strong> → To: <strong>{tx.to}</strong> — Amount: <strong>{tx.amount}</strong>
             </li>
-              ))}
+            ))}
             </ul>
             {!isValidLink && (
               <p style={{ color: 'red' }}>

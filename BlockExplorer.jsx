@@ -166,10 +166,17 @@ return (
               .filter(tx => tx.from === selectedWallet || tx.to === selectedWallet)
               .map((tx, i) => (
                 <li key={i}>
-                  <strong>{tx.from === selectedWallet ? 'Sent' : 'Received'}</strong> {tx.amount} XSDB
-                  {tx.from === 'null' ? ' from 🚀 GENESIS' : ` from ${tx.from}`}
-                  {tx.to && ` to ${tx.to}`}
-                </li>
+          <div>
+          <strong>{tx.from === selectedWallet ? 'Sent' : 'Received'}:</strong>{' '}
+          {tx.amount.toLocaleString()} <strong>XSDB</strong>
+         </div>
+        <div>
+         {tx.from === 'null' ? '🚀 GENESIS' : `From: ${tx.from}`}
+        {' | '}
+        To: {tx.to}
+      </div>
+    </li>
+
               ))
           )}
         </ul>

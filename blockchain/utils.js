@@ -3,6 +3,8 @@ import Block from '../models/Block.js';
 import Token from '../models/Token.js';
 import UserWallet from '../models/UserWallet.js';
 
+
+
 function calculateHash(block) {
   return crypto.createHash('sha256')
     .update(
@@ -13,6 +15,16 @@ function calculateHash(block) {
       block.nonce
     )
     .digest('hex');
+}
+
+export async function connectDB() {
+  if (mongoose.connection.readyState === 0) {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('✅ Connected to MongoDB');
+  }
 }
 
 /**

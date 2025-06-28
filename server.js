@@ -4476,10 +4476,13 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
     res.json(payloadResponse);
 
   } catch (error) {
-    console.error('Error creating stake payload:', error?.response?.data || error);
-    res.status(500).json({ error: 'Failed to create stake payload' });
-  }
-});
+  console.error('❌ XUMM payload creation failed:', 
+    error.response?.status,
+    JSON.stringify(error.response?.data || error, null, 2)
+  );
+  res.status(500).json({ error: 'Failed to create stake payload' });
+}
+
 
 
 

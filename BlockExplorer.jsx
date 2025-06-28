@@ -4,6 +4,7 @@ const BlockExplorer = () => {
   const [blocks, setBlocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filterAddress, setFilterAddress] = useState('');
 
   useEffect(() => {
     fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/blocks')
@@ -37,6 +38,24 @@ const BlockExplorer = () => {
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
       <h1>SGLCN-X20 📦 Block Explorer</h1>
+
+<div style={{ margin: '1rem 0' }}>
+  <input
+    type="text"
+    placeholder="🔍 Search by wallet address..."
+    value={filterAddress}
+    onChange={(e) => setFilterAddress(e.target.value.trim())}
+    style={{
+      padding: '0.5rem',
+      fontSize: '1rem',
+      width: '100%',
+      maxWidth: '400px',
+      borderRadius: '4px',
+      border: '1px solid #ccc',
+    }}
+  />
+</div>
+
       {!isChainValid(blocks) && (
         <div style={{ color: 'red', fontWeight: 'bold' }}>
           ⚠️ Blockchain is invalid! Broken hash chain detected.

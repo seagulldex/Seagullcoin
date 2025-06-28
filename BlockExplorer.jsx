@@ -168,11 +168,26 @@ return (
         <h2>Wallet: <code>{selectedWallet}</code></h2>
         <p><strong>Balance:</strong> 
   {balances[selectedWallet]
-    ? Object.entries(balances[selectedWallet]).map(([token, amount]) => (
-        <span key={token}>{amount.toLocaleString()} {token} 🪙 </span>
-      ))
-    : '0 XSDB'}
-</p>
+    ? Object.entries(balances[selectedWallet])
+    .map(([address, balanceObj]) => (
+  <li key={address}>
+    <button
+      onClick={() => setSelectedWallet(address)}
+      style={{ border: 'none', background: 'none', color: '#007bff', cursor: 'pointer' }}
+    >
+      <strong>{address}</strong>
+    </button>
+    :{' '}
+    {Object.entries(balanceObj).map(
+      ([token, amount], idx, arr) => (
+        <span key={token}>
+          {amount.toLocaleString()} {token} 🪙
+          {idx < arr.length - 1 ? ', ' : ''}
+        </span>
+      )
+    )}
+  </li>
+))
 
         <h3>Transactions</h3>
         <ul style={{ listStyleType: 'none', paddingLeft: 0 }}>

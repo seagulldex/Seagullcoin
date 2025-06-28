@@ -136,13 +136,14 @@ return (
               <p><strong>Finalized:</strong> {block.finalized ? '✅ Yes' : '⏳ No'}</p>
               <p><strong>Transactions:</strong></p>
               <ul>
-                {filteredTransactions.length === 0 && <li>None</li>}
-                {filteredTransactions.map((tx, idx) => (
-                  <li key={idx}>
-                    From: <strong>{tx.from === 'null' ? '🚀 GENESIS' : tx.from}</strong> → To: <strong>{tx.to}</strong> — Amount: <strong>{tx.amount}</strong>
-                  </li>
-                ))}
-              </ul>
+  {filteredTransactions.length === 0 && <li>None</li>}
+  {filteredTransactions.map((tx, idx) => (
+    <li key={idx}>
+      From: <strong>{tx.from === 'null' ? '🚀 GENESIS' : tx.from}</strong> → To: <strong>{tx.to}</strong> — 
+      Amount: <strong>{tx.amount.toLocaleString()} {tx.token || 'XSDB'} 🪙</strong>
+    </li>
+  ))}
+</ul>
               {!isValidLink && (
                 <p style={{ color: 'red' }}>
                   ⚠️ Broken hash link! This block's <code>previousHash</code> does not match the previous block's hash.

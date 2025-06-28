@@ -16,6 +16,7 @@ const BlockExplorer = () => {
         return res.json();
       })
       .then((data) => {
+        console.log("Block data:", data); // 👈 Add this
         setBlocks(data);
         setLoading(false);
         calculateBalances(data);

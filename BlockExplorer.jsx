@@ -160,7 +160,6 @@ return (
         <h2>Wallet: <code>{selectedWallet}</code></h2>
         <p><strong>Balance:</strong> {balances[selectedWallet]?.toLocaleString() ?? 0} XSDB</p>
         <h3>Transactions</h3>
-        <ul>
           <ul style={{ listStyleType: 'none', paddingLeft: 0 }}>
   {blocks.flatMap((block) =>
     block.transactions

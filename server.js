@@ -6070,6 +6070,55 @@ app.get('/stake-payload-premium/:walletAddress', async (req, res) => {
 });
 
 
+
+const balances = new Map([
+  ['SEAGULLD1DFB4670F7CA58AB0B03B62', 589000000],
+  ['SEAGULL03A8138F0F1BB26C50A4A44F', 0]
+]);
+
+const nonces = new Map([
+  ['SEAGULLD1DFB4670F7CA58AB0B03B62', 0]
+]);
+
+app.post('/tx/send', (req, res) => {
+  const { from, to, amount, nonce, signature } = req.body;
+
+  // Basic validation
+  if (!from || !to || typeof amount !== 'number' || nonce == null || !signature) {
+    return res.status(400).json({ error: 'Missing or invalid fields' });
+  }
+
+  // Check balance
+  const fromBalance = balances.get(from) ?? 0;
+  if (fromBalance < amount) {
+    return res.status(400).json({ error: 'Insufficient balance' });
+  }
+
+  // Check nonce
+  const currentNonce = nonces.get(from) ?? 0;
+  if (nonce !== currentNonce) {
+    return res.status(400).json({ error: 'Invalid nonce' });
+  }
+
+  // TODO: Verify signature here, for now we trust it
+  const isValidSignature = true;
+  if (!isValidSignature) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+
+  // Update balances
+  balances.set(from, fromBalance - amount);
+  balances.set(to, (balances.get(to) ?? 0) + amount);
+
+  // Update nonce
+  nonces.set(from, currentNonce + 1);
+
+  res.json({ success: true, tx: { from, to, amount, nonce } });
+});
+
+
+
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

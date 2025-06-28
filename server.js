@@ -4447,7 +4447,7 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
         Memos: [
           {
             Memo: {
-              MemoType: Buffer.from('5 Years', 'utf8').toString('hex').toUpperCase(),
+              MemoType: Buffer.from('5Years', 'utf8').toString('hex').toUpperCase(),
               MemoData: Buffer.from(walletAddress, 'utf8').toString('hex').toUpperCase()
             }
           }

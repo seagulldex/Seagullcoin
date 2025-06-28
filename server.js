@@ -4474,6 +4474,26 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
 
     await stakesCollection.insertOne(stakeData);
 
+    // ✅ Wait 2 seconds and fetch status (or use a longer delay + client-side polling for UX)
+    setTimeout(async () => {
+      try {
+        const payloadDetails = await xumm.payload.get(payloadResponse.uuid);
+        const wasSigned = payloadDetails?.meta?.resolved && payloadDetails?.meta?.signed;
+
+        if (wasSigned) {
+          await stakesCollection.updateOne(
+            { xummPayloadUUID: payloadResponse.uuid },
+            { $set: { status: 'confirmed' } }
+          );
+          console.log(`✅ Payload ${payloadResponse.uuid} signed and confirmed.`);
+        } else {
+          console.log(`🕓 Payload ${payloadResponse.uuid} still pending or was rejected.`);
+        }
+      } catch (pollErr) {
+        console.error('❌ Failed to check XUMM payload status:', pollErr.message);
+      }
+    }, 2000);
+    
     return res.json(payloadResponse);
 
   } catch (error) {

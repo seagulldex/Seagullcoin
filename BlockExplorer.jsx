@@ -161,40 +161,25 @@ return (
         <p><strong>Balance:</strong> {balances[selectedWallet]?.toLocaleString() ?? 0} XSDB</p>
         <h3>Transactions</h3>
         <ul>
-          {blocks.flatMap((block) =>
-            block.transactions
-              .filter(tx => tx.from === selectedWallet || tx.to === selectedWallet)
-              .map((tx, i) => (
-                <li key={i} style={{ marginBottom: '0.75rem' }}>
-  <div>
-    <strong style={{ color: tx.from === selectedWallet ? 'red' : 'green' }}>
-      {tx.from === selectedWallet ? 'Sent' : 'Received'}:
-    </strong>{' '}
-    {tx.amount.toLocaleString()} <strong>XSDB 🪙</strong>
-  </div>
-  <div>
-    {tx.from === 'null' ? '🚀 GENESIS' : `From: ${tx.from}`} | To: {tx.to}
-  </div>
-  <div style={{ fontSize: '0.9rem', color: '#666' }}>
-    Block #{block.index} • {new Date(block.timestamp).toLocaleString()}
-  </div>
-</li>
+          <ul style={{ listStyleType: 'none', paddingLeft: 0 }}>
+  {blocks.flatMap((block) =>
+    block.transactions
+      .filter(tx => tx.from === selectedWallet || tx.to === selectedWallet)
+      .map((tx, i) => (
+        <li key={i} style={{ marginBottom: '0.75rem' }}>
           <div>
-          <strong>{tx.from === selectedWallet ? 'Sent' : 'Received'}:</strong>{' '}
-          {tx.amount.toLocaleString()} <strong>XSDB</strong>
-         </div>
-        <div>
-         {tx.from === 'null' ? '🚀 GENESIS' : `From: ${tx.from}`}
-        {' | '}
-        To: {tx.to}
-      </div>
-    </li>
-
-              ))
-          )}
-        </ul>
-      </div>
-    )}
-  </div>
-);
-
+            <strong style={{ color: tx.from === selectedWallet ? 'red' : 'green' }}>
+              {tx.from === selectedWallet ? 'Sent' : 'Received'}:
+            </strong>{' '}
+            {tx.amount.toLocaleString()} <strong>XSDB 🪙</strong>
+          </div>
+          <div>
+            {tx.from === 'null' ? '🚀 GENESIS' : `From: ${tx.from}`} | To: {tx.to}
+          </div>
+          <div style={{ fontSize: '0.9rem', color: '#666' }}>
+            Block #{block.index} • {new Date(block.timestamp).toLocaleString()}
+          </div>
+        </li>
+      ))
+  )}
+</ul>

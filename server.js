@@ -82,7 +82,7 @@ import ValidatorNode from './models/ValidatorNode.js';
 import { signBlock } from './utils/signBlock.js'; // existing
 import { verifySignature } from './utils/verifySignature.js';
 import UserWallet from './models/Wallet.js'; // assuming file is still Wallet.js
-
+import { connectDB } from './connectDB.js'; // ✅ Update path to match your file structure
 
 // ===== Init App and Env =====
 dotenv.config();

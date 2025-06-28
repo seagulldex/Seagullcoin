@@ -5,7 +5,8 @@ const BlockExplorer = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterAddress, setFilterAddress] = useState('');
-
+  const [balances, setBalances] = useState({});
+  
   useEffect(() => {
     fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/blocks')
       .then((res) => {
@@ -15,6 +16,7 @@ const BlockExplorer = () => {
       .then((data) => {
         setBlocks(data);
         setLoading(false);
+        calculateBalances(data);
       })
       .catch((err) => {
         setError(err.message);
@@ -22,6 +24,24 @@ const BlockExplorer = () => {
       });
   }, []);
 
+    // Calculate balances from blocks data
+  const calculateBalances = (blocks) => {
+    const bal = {};
+
+    blocks.forEach((block) => {
+      block.transactions.forEach((tx) => {
+        if (tx.from && tx.from !== 'null') {
+          bal[tx.from] = (bal[tx.from] || 0) - tx.amount;
+        }
+        if (tx.to) {
+          bal[tx.to] = (bal[tx.to] || 0) + tx.amount;
+        }
+      });
+    });
+
+    setBalances(bal);
+   };
+  
   if (loading) return <div>Loading blocks...</div>;
   if (error) return <div>Error loading blocks: {error}</div>;
 
@@ -55,6 +75,20 @@ const BlockExplorer = () => {
     }}
   />
 </div>
+
+      <h2>Balances</h2>
+      <ul>
+        {Object.entries(balances)
+          .filter(([address]) =>
+            filterAddress ? address.toLowerCase().includes(filterAddress.toLowerCase()) : true
+          )
+          .map(([address, balance]) => (
+            <li key={address}>
+              <strong>{address}</strong>: {balance.toLocaleString()} XSDB
+            </li>
+          ))}
+        {Object.keys(balances).length === 0 && <li>No balances found</li>}
+      </ul>
 
       {!isChainValid(blocks) && (
         <div style={{ color: 'red', fontWeight: 'bold' }}>

@@ -15,6 +15,5 @@ export async function connectDB() {
 }
 
 export async function loadGenesisToken() {
-  const token = await Token.findOne({ isGenesisToken: true });
-  return token;
+  return await Token.findOne({ isGenesisToken: true });
 }

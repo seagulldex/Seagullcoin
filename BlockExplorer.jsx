@@ -29,21 +29,27 @@ const BlockExplorer = () => {
 
     // Calculate balances from blocks data
   const calculateBalances = (blocks) => {
-    const bal = {};
+  const bal = {};
 
-    blocks.forEach((block) => {
-      block.transactions.forEach((tx) => {
-        if (tx.from && tx.from !== 'null') {
-          bal[tx.from] = (bal[tx.from] || 0) - tx.amount;
-        }
-        if (tx.to) {
-          bal[tx.to] = (bal[tx.to] || 0) + tx.amount;
-        }
-      });
+  blocks.forEach((block) => {
+    block.transactions.forEach((tx) => {
+      const token = tx.token || 'XSDB';
+
+      if (tx.from && tx.from !== 'null') {
+        bal[tx.from] = bal[tx.from] || {};
+        bal[tx.from][token] = (bal[tx.from][token] || 0) - tx.amount;
+      }
+
+      if (tx.to) {
+        bal[tx.to] = bal[tx.to] || {};
+        bal[tx.to][token] = (bal[tx.to][token] || 0) + tx.amount;
+      }
     });
+  });
 
-    setBalances(bal);
-   };
+  setBalances(bal);
+};
+
   
   if (loading) return <div>Loading blocks...</div>;
   if (error) return <div>Error loading blocks: {error}</div>;

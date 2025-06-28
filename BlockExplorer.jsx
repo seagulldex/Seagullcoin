@@ -64,6 +64,14 @@ const BlockExplorer = () => {
       {blocks.map((block, i) => {
         const isValidLink =
           i === 0 || block.previousHash === blocks[i - 1].hash;
+        const filteredTransactions = block.transactions.filter((tx) => {
+          if (!filterAddress) return true;
+        return (
+          tx.from?.toLowerCase() === filterAddress.toLowerCase() ||
+          tx.to?.toLowerCase() === filterAddress.toLowerCase()
+       );
+     });
+
         return (
           <div
             key={block._id}

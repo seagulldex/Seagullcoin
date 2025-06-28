@@ -6147,6 +6147,14 @@ app.post('/tx/send', (req, res) => {
   res.json({ success: true, tx: { from, to, amount, nonce } });
 });
 
+app.post('/check-webhook', async (req, res) => {
+  const { uuid, signed } = req.body;
+  await stakesCollection.updateOne(
+    { xummPayloadUUID: uuid },
+    { $set: { status: signed ? 'confirmed' : 'rejected' } }
+  );
+  res.sendStatus(200);
+});
 
 
 

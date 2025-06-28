@@ -66,9 +66,9 @@ const BlockExplorer = () => {
             <ul>
               {block.transactions.length === 0 && <li>None</li>}
               {block.transactions.map((tx, idx) => (
-                <li key={idx}>
-                  From: <strong>{tx.from}</strong> → To: <strong>{tx.to}</strong> — Amount: <strong>{tx.amount}</strong>
-                </li>
+            <li key={idx}>
+              From: <strong>{tx.from === 'null' ? '🚀 GENESIS' : tx.from}</strong> → To: <strong>{tx.to}</strong> — Amount: <strong>{tx.amount}</strong>
+            </li>
               ))}
             </ul>
             {!isValidLink && (

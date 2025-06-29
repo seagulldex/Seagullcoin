@@ -78,24 +78,6 @@
   </div>
 </div>
       </div>
-  <div id="stake-confirmed-modal" style="
-  display:none; 
-  position:fixed; 
-  top:0; left:0; width:100%; height:100%; 
-  background:rgba(0,0,0,0.6); 
-  z-index:9999; 
-  justify-content:center; 
-  align-items:center;">
-  <div style="
-    background:white; 
-    padding:20px 30px; 
-    border-radius:12px; 
-    text-align:center;">
-    <h2>✅ Stake Confirmed</h2>
-    <p>Your SeagullCoin stake has been successfully confirmed.</p>
-    <button onclick="closeStakeConfirmedModal()">Close</button>
-  </div>
-</div>
   <header>
     <nav>
       <ul>
@@ -202,14 +184,6 @@
     updateWalletUI();
     setupStakingButtonListeners();
   });
-
-  // Only show the “stake confirmed” modal if we just finished polling
-  const justStakedUUID = localStorage.getItem('justStakedUUID');
-  if (justStakedUUID) {
-    showStakeConfirmedModal();
-    localStorage.removeItem('justStakedUUID'); // don’t show again on refresh
-  }
-});
 
   async function updateWalletStatus() {
   const xummWallet = localStorage.getItem('xumm_wallet_address');
@@ -356,32 +330,30 @@
 
     // Poll stake/unstake status by UUID
     function pollStatus(uuid, successCallback) {
-  const statusEl = document.getElementById('staking-status');
-  pollInterval = setInterval(async () => {
-    try {
-      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
-      const json = await res.json();
+      const statusEl = document.getElementById('staking-status');
+      pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
+          const statusData = await statusRes.json();
 
-      if (json.signed) {
-        clearInterval(pollInterval);
-        currentUUID = null;
-        statusEl.textContent = 'Transaction confirmed!';
-
-        // Set flag for showing modal on next page load
-        localStorage.setItem('justStakedUUID', uuid);
-
-        // Reload or update UI
-        successCallback();
-      } else {
-        statusEl.textContent = 'Waiting for transaction confirmation...';
-      }
-    } catch (err) {
-      console.error('Polling error:', err);
-      statusEl.textContent = 'Error checking transaction status.';
+          if (statusData.signed) {
+            clearInterval(pollInterval);
+            currentUUID = null;
+            statusEl.textContent = 'Transaction confirmed!';
+            document.getElementById('qr-code').style.display = 'none';
+            successCallback();
+          } else if (statusData.error) {
+            clearInterval(pollInterval);
+            statusEl.textContent = 'Transaction failed or cancelled.';
+            document.getElementById('qr-code').style.display = 'none';
+          } else {
+            statusEl.textContent = 'Waiting for transaction confirmation...';
+          }
+        } catch {
+          statusEl.textContent = 'Error checking transaction status.';
+        }
+      }, 3000);
     }
-  }, 3000);
-}
-
     
      // You also need a duplicate pollStatus2 and loadStakingData2 functions
   // that are identical to your original ones but target the "-2" IDs
@@ -392,7 +364,7 @@
     const qr = document.getElementById('qr-code-2');
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
+        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
         const json = await res.json();
         if (json.signed) {
           clearInterval(interval);
@@ -421,7 +393,7 @@
     const qr = document.getElementById('qr-code-3');
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
+        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
         const json = await res.json();
         if (json.signed) {
           clearInterval(interval);

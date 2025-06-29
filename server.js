@@ -14,7 +14,7 @@ import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage';
-import xrpl from 'xrpl';
+import { Client } from 'xrpl';
 import NodeCache from 'node-cache';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';

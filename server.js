@@ -1079,57 +1079,6 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
   }
 });
 
-app.get('/payload-status/:uuid', async (req, res) => {
-  try {
-    const { uuid } = req.params;
-    const result = await xumm.payload.get(uuid);
-
-    if (result.meta?.resolved === false) {
-      return res.json({ status: "pending" });
-    }
-
-    if (result.meta?.signed === true) {
-      const txid = result.response.txid;
-      const account = result.response.account;
-      const timestamp = new Date().toISOString();
-
-      // Save to SQLite
-      db.run(
-  `INSERT OR REPLACE INTO signed_payloads (uuid, txid, wallet, signed_at)
-   VALUES (?, ?, ?, ?)`,
-  [uuid, txid, account, timestamp],
-  function (err) {
-    if (err) {
-      console.error("SQLite insert error:", err);
-      return res.status(500).json({ error: "DB insert failed" });
-    }
-
-    console.log("Payload signed & saved:", txid);
-    return res.json({ status: "signed", txid });
-  }
-);
-    } else {
-      return res.json({ status: "rejected" });
-    }
-  } catch (err) {
-    console.error("Error checking payload status:", err);
-    res.status(500).json({ error: "Could not check payload status" });
-  }
-});
-
-app.get('/signed-payloads', (req, res) => {
-  db.all("SELECT * FROM signed_payloads ORDER BY signed_at DESC", (err, rows) => {
-    if (err) {
-      console.error("Signed payloads query error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.json(rows);
-  });
-});
-
-
-
-
 // Endpoint: Stake status by wallet
 app.get('/stake-status/:wallet', async (req, res) => {
   const wallet = req.params.wallet;

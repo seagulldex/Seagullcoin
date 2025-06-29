@@ -6201,6 +6201,7 @@ app.post('/unstake', async (req, res) => {
     const db = await connectDB();
     const stakesCollection = db.collection('stakes');
 
+    // Find the latest confirmed stake for this wallet
     const stake = await stakesCollection.findOne({
       walletAddress,
       status: 'confirmed'
@@ -6212,80 +6213,70 @@ app.post('/unstake', async (req, res) => {
 
     const now = new Date();
     const stakedAt = new Date(stake.timestamp);
-
     const lockDurations = {
-      '1 Year': 365 * 24 * 60 * 60 * 1000,
-      '3 Year': 3 * 365 * 24 * 60 * 60 * 1000,
-      '5 Year': 5 * 365 * 24 * 60 * 60 * 1000,
-      'Monthly': 30 * 24 * 60 * 60 * 1000,
-      'Test': 60 * 1000
-    };
+  '1 Year': 365 * 24 * 60 * 60 * 1000,
+  '3 Year': 3 * 365 * 24 * 60 * 60 * 1000,
+  '5 Year': 5 * 365 * 24 * 60 * 60 * 1000,
+  'Test': 60 * 1000 // 1 minute for testing
+};
+  
 
-    const requiredDuration = lockDurations[stake.tier];
+const requiredDuration = lockDurations[stake.tier];
     if (!requiredDuration || now - stakedAt < requiredDuration) {
       return res.status(403).json({ error: 'Stake is not yet eligible for unstaking' });
     }
 
-    const client = new Client('wss://xrplcluster.com');
-    await client.connect();
-
-    if (!process.env.SERVICE_WALLET_SEED) {
-      throw new Error('SERVICE_WALLET_SEED is not set in environment variables');
-    }
-
-    const serviceWallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED);
-    console.log('Service Wallet Address:', serviceWallet.classicAddress);
-
-    const tx = {
-      TransactionType: 'Payment',
-      Account: serviceWallet.classicAddress,
-      Destination: walletAddress,
-      Amount: {
-        currency: '53656167756C6C436F696E000000000000000000',
-        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-        value: String(stake.amount)
-      },
-      Memos: [
-        {
-          Memo: {
-            MemoType: Buffer.from('Unstake', 'utf8').toString('hex').toUpperCase(),
-            MemoData: Buffer.from(stake.xummPayloadUUID, 'utf8').toString('hex').toUpperCase()
+    // Create a refund payload via XUMM
+    const refundPayload = await xumm.payload.create({
+      txjson: {
+        TransactionType: 'Payment',
+        Destination: walletAddress,
+        Amount: {
+          currency: '53656167756C6C436F696E000000000000000000',
+          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+          value: String(stake.amount)
+        },
+        Memos: [
+          {
+            Memo: {
+              MemoType: Buffer.from('Unstake', 'utf8').toString('hex').toUpperCase(),
+              MemoData: Buffer.from(stake.xummPayloadUUID, 'utf8').toString('hex').toUpperCase()
+            }
           }
-        }
-      ]
-    };
+        ]
+      },
+      options: {
+        submit: true,
+        expire: 10
+      }
+    });
 
-    const result = await client.submitAndWait(tx, { wallet: serviceWallet });
-    await client.disconnect();
-
-    if (result.result.meta.TransactionResult !== 'tesSUCCESS') {
-      throw new Error(`Unstake failed: ${result.result.meta.TransactionResult}`);
+    if (!refundPayload?.uuid) {
+      throw new Error('XUMM refund payload creation failed');
     }
 
+    // Update the stake record to reflect pending unstake
     await stakesCollection.updateOne(
       { _id: stake._id },
       {
         $set: {
-          status: 'unstaked',
-          unstakedAt: new Date(),
-          transactionHash: result.result.hash
+          status: 'unstaking',
+          unstakeUUID: refundPayload.uuid,
+          unstakeInitiatedAt: new Date()
         }
       }
     );
 
     res.json({
-      message: 'Unstake successful.',
-      txHash: result.result.hash
+      message: 'Unstake initiated. Please sign in XUMM.',
+      payload: refundPayload
     });
 
   } catch (err) {
-    console.error('Full unstake error:', JSON.stringify(err, null, 2));
-    res.status(500).json({
-      error: 'Unstaking failed',
-      details: err?.message || 'Unknown error'
-    });
+    console.error('Error in /unstake:', err);
+    res.status(500).json({ error: 'Unstaking failed', details: err.message });
   }
-}); // ← MISSING PARENTHESIS FIXED HERE
+});
 
 
 // Call the XRPL ping when the server starts

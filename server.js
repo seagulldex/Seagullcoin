@@ -6157,43 +6157,28 @@ app.post('/check-webhook', async (req, res) => {
 });
 
 app.get('/checking-login', async (req, res) => {
+  const { uuid } = req.query;
+  if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
+
   try {
-    const { uuid } = req.query;
+    const payload = await xumm.payload.get(uuid);
+    const isSigned = payload?.meta?.signed && payload?.meta?.resolved;
 
-    if (!uuid) {
-      return res.status(400).json({ error: 'Missing UUID' });
+    if (isSigned) {
+      const db = await connectDB();
+      const stakesCollection = db.collection('stakes');
+      await stakesCollection.updateOne(
+        { xummPayloadUUID: uuid },
+        { $set: { status: 'confirmed' } }
+      );
     }
 
-    // Fetch the payload details from XUMM API
-    const payloadDetails = await xumm.payload.get(uuid);
-
-    if (!payloadDetails) {
-      return res.status(404).json({ error: 'Payload not found' });
-    }
-
-    const { meta } = payloadDetails;
-
-    // Determine status
-    let status = 'pending';
-    if (meta.resolved) {
-      status = meta.signed ? 'signed' : 'rejected';
-    }
-
-    // Optionally: Update your DB here to reflect current status
-
-    return res.json({
-      uuid,
-      status,
-      signed: meta.signed || false,
-      resolved: meta.resolved || false,
-      payloadDetails
-    });
-
-  } catch (error) {
-    console.error('Error checking login status:', error);
-    return res.status(500).json({ error: 'Failed to check login status' });
+    res.json({ uuid, signed: isSigned, status: isSigned ? 'confirmed' : 'pending' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to check payload status' });
   }
 });
+
 
 
 // Call the XRPL ping when the server starts

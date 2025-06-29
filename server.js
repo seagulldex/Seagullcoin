@@ -6244,6 +6244,90 @@ app.get('/checking-login', async (req, res) => {
 });
 
 
+app.post('/unstake', async (req, res) => {
+  try {
+    const { walletAddress } = req.body;
+    if (!walletAddress || !walletAddress.startsWith('r')) {
+      return res.status(400).json({ error: 'Invalid wallet address' });
+    }
+
+    const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
+
+    // Find the latest confirmed stake for this wallet
+    const stake = await stakesCollection.findOne({
+      walletAddress,
+      status: 'confirmed'
+    });
+
+    if (!stake) {
+      return res.status(404).json({ error: 'No confirmed stake found' });
+    }
+
+    const now = new Date();
+    const stakedAt = new Date(stake.timestamp);
+    const tierDurations = {
+      '1 Year': 365 * 24 * 60 * 60 * 1000,
+      '5 Year': 5 * 365 * 24 * 60 * 60 * 1000
+    };
+
+    const requiredDuration = tierDurations[stake.tier];
+    if (!requiredDuration || now - stakedAt < requiredDuration) {
+      return res.status(403).json({ error: 'Stake is not yet eligible for unstaking' });
+    }
+
+    // Create a refund payload via XUMM
+    const refundPayload = await xumm.payload.create({
+      txjson: {
+        TransactionType: 'Payment',
+        Destination: walletAddress,
+        Amount: {
+          currency: '53656167756C6C436F696E000000000000000000',
+          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+          value: String(stake.amount)
+        },
+        Memos: [
+          {
+            Memo: {
+              MemoType: Buffer.from('Unstake', 'utf8').toString('hex').toUpperCase(),
+              MemoData: Buffer.from(stake.xummPayloadUUID, 'utf8').toString('hex').toUpperCase()
+            }
+          }
+        ]
+      },
+      options: {
+        submit: true,
+        expire: 10
+      }
+    });
+
+    if (!refundPayload?.uuid) {
+      throw new Error('XUMM refund payload creation failed');
+    }
+
+    // Update the stake record to reflect pending unstake
+    await stakesCollection.updateOne(
+      { _id: stake._id },
+      {
+        $set: {
+          status: 'unstaking',
+          unstakeUUID: refundPayload.uuid,
+          unstakeInitiatedAt: new Date()
+        }
+      }
+    );
+
+    res.json({
+      message: 'Unstake initiated. Please sign in XUMM.',
+      payload: refundPayload
+    });
+
+  } catch (err) {
+    console.error('Error in /unstake:', err);
+    res.status(500).json({ error: 'Unstaking failed', details: err.message });
+  }
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

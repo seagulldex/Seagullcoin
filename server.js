@@ -6331,10 +6331,13 @@ app.post('/unstake', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Error in /unstake:', err);
-    res.status(500).json({ error: 'Unstaking failed', details: err.message });
-  }
-});
+  console.error('Full unstake error:', JSON.stringify(err, null, 2));
+  res.status(500).json({
+    error: 'Unstaking failed',
+    details: err?.message || 'Unknown error'
+  });
+}
+
 
 
 

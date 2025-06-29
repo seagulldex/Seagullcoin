@@ -6269,8 +6269,10 @@ app.post('/unstake', async (req, res) => {
     const lockDurations = {
   '1 Year': 365 * 24 * 60 * 60 * 1000,
   '3 Year': 3 * 365 * 24 * 60 * 60 * 1000,
-  '5 Year': 5 * 365 * 24 * 60 * 60 * 1000
+  '5 Year': 5 * 365 * 24 * 60 * 60 * 1000,
+  'Test': 60 * 1000 // 1 minute for testing
 };
+  
 
 const requiredDuration = lockDurations[stake.tier];
     if (!requiredDuration || now - stakedAt < requiredDuration) {

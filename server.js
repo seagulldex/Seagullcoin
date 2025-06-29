@@ -1038,7 +1038,7 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
       amount: Number(amount),
       timestamp: new Date(),
       xummPayloadUUID: payloadResponse.uuid,
-      tier: '1 Year',
+      tier: 'Monthly',
       status: 'pending' // for future use
     };
 

@@ -203,6 +203,14 @@
     setupStakingButtonListeners();
   });
 
+  // Only show the “stake confirmed” modal if we just finished polling
+  const justStakedUUID = localStorage.getItem('justStakedUUID');
+  if (justStakedUUID) {
+    showStakeConfirmedModal();
+    localStorage.removeItem('justStakedUUID'); // don’t show again on refresh
+  }
+});
+
   async function updateWalletStatus() {
   const xummWallet = localStorage.getItem('xumm_wallet_address');
   const seagullWallet = localStorage.getItem('seagull_wallet');

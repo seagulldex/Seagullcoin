@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import fs from 'fs';
+import fs from 'fs';9
 import mongoose from 'mongoose';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -6243,93 +6243,102 @@ app.get('/checking-login', async (req, res) => {
   }
 });
 
-
 app.post('/unstake', async (req, res) => {
-  try {
-    const { walletAddress } = req.body;
-    if (!walletAddress || !walletAddress.startsWith('r')) {
-      return res.status(400).json({ error: 'Invalid wallet address' });
-    }
+  const { walletAddress } = req.body;
 
+  if (!walletAddress || !walletAddress.startsWith('r')) {
+    return res.status(400).json({ error: 'Invalid wallet address' });
+  }
+
+  try {
     const db = await connectDB();
     const stakesCollection = db.collection('stakes');
 
-    // Find the latest confirmed stake for this wallet
-    const stake = await stakesCollection.findOne({
+    const stakeDoc = await stakesCollection.findOne({
       walletAddress,
       status: 'confirmed'
     });
 
-    if (!stake) {
-      return res.status(404).json({ error: 'No confirmed stake found' });
+    if (!stakeDoc) {
+      return res.status(404).json({ error: 'No eligible stake found' });
     }
 
-    const now = new Date();
-    const stakedAt = new Date(stake.timestamp);
-    const lockDurations = {
-  '1 Year': 365 * 24 * 60 * 60 * 1000,
-  '3 Year': 3 * 365 * 24 * 60 * 60 * 1000,
-  '5 Year': 5 * 365 * 24 * 60 * 60 * 1000,
-  'Test': 60 * 1000 // 1 minute for testing
-};
-  
+    const tierDurations = {
+      'Monthly': 30 * 24 * 60 * 60 * 1000, // 30 days
+      '1 Year': 365 * 24 * 60 * 60 * 1000,
+      '5 Year': 5 * 365 * 24 * 60 * 60 * 1000,
+      'Test': 60 * 1000 // 1 minute
+    };
 
-const requiredDuration = lockDurations[stake.tier];
-    if (!requiredDuration || now - stakedAt < requiredDuration) {
-      return res.status(403).json({ error: 'Stake is not yet eligible for unstaking' });
+    const tierRewards = {
+      'Monthly': 50500,
+      '1 Year': 2562500,
+      '5 Year': 6000000,
+      'Test': 2500000
+    };
+
+    const requiredDuration = tierDurations[stakeDoc.tier];
+    const returnAmount = tierRewards[stakeDoc.tier];
+
+    if (!requiredDuration || !returnAmount) {
+      return res.status(400).json({ error: 'Invalid tier' });
     }
 
-    // Create a refund payload via XUMM
-    const refundPayload = await xumm.payload.create({
-      txjson: {
-        TransactionType: 'Payment',
-        Destination: walletAddress,
-        Amount: {
-          currency: '53656167756C6C436F696E000000000000000000',
-          issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-          value: String(stake.amount)
-        },
-        Memos: [
-          {
-            Memo: {
-              MemoType: Buffer.from('Unstake', 'utf8').toString('hex').toUpperCase(),
-              MemoData: Buffer.from(stake.xummPayloadUUID, 'utf8').toString('hex').toUpperCase()
-            }
-          }
-        ]
-      },
-      options: {
-        submit: true,
-        expire: 10
+    const elapsed = Date.now() - new Date(stakeDoc.timestamp).getTime();
+    if (elapsed < requiredDuration) {
+      return res.status(400).json({ error: 'Stake is not yet eligible for unstaking' });
+    }
+
+    // XRPL wallet setup
+    const client = new xrpl.Client('wss://xrplcluster.com');
+    await client.connect();
+
+    const serviceWallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED);
+
+    const tx = {
+      TransactionType: 'Payment',
+      Account: serviceWallet.classicAddress,
+      Destination: walletAddress,
+      Amount: {
+        currency: '53656167756C6C436F696E000000000000000000',
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
+        value: returnAmount.toString()
       }
-    });
+    };
 
-    if (!refundPayload?.uuid) {
-      throw new Error('XUMM refund payload creation failed');
+    const prepared = await client.autofill(tx);
+    const signed = serviceWallet.sign(prepared);
+    const result = await client.submitAndWait(signed.tx_blob);
+
+    await client.disconnect();
+
+    if (result.result.meta.TransactionResult !== 'tesSUCCESS') {
+      return res.status(500).json({ error: 'Transaction failed', details: result.result.meta.TransactionResult });
     }
 
-    // Update the stake record to reflect pending unstake
     await stakesCollection.updateOne(
-      { _id: stake._id },
+      { _id: stakeDoc._id },
       {
         $set: {
-          status: 'unstaking',
-          unstakeUUID: refundPayload.uuid,
-          unstakeInitiatedAt: new Date()
+          status: 'unstaked',
+          unstakedAt: new Date(),
+          unstakeTxID: result.result.hash
         }
       }
     );
 
     res.json({
-      message: 'Unstake initiated. Please sign in XUMM.',
-      payload: refundPayload
+      message: 'Unstaked and returned successfully.',
+      txid: result.result.hash
     });
 
-  } catch (err) {
-    console.error('Error in /unstake:', err);
-    res.status(500).json({ error: 'Unstaking failed', details: err.message });
+  } catch (error) {
+    console.error('Unstake error:', error);
+    res.status(500).json({ error: 'Unstaking failed' });
   }
 });
+
+
 
 app.get('/check-unstake', async (req, res) => {
   const { uuid } = req.query;

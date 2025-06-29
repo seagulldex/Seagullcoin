@@ -6266,12 +6266,13 @@ app.post('/unstake', async (req, res) => {
 
     const now = new Date();
     const stakedAt = new Date(stake.timestamp);
-    const tierDurations = {
-      '1 Year': 365 * 24 * 60 * 60 * 1000,
-      '5 Year': 5 * 365 * 24 * 60 * 60 * 1000
-    };
+    const lockDurations = {
+  '1 Year': 365 * 24 * 60 * 60 * 1000,
+  '3 Year': 3 * 365 * 24 * 60 * 60 * 1000,
+  '5 Year': 5 * 365 * 24 * 60 * 60 * 1000
+};
 
-    const requiredDuration = tierDurations[stake.tier];
+const requiredDuration = lockDurations[stake.tier];
     if (!requiredDuration || now - stakedAt < requiredDuration) {
       return res.status(403).json({ error: 'Stake is not yet eligible for unstaking' });
     }

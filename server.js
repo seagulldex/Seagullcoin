@@ -4331,6 +4331,7 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
       xummPayloadUUID: payloadResponse.uuid,
       tier: 'Test', // <-- use this
       status: 'confirmed'
+      };
 
     await stakesCollection.insertOne(stakeData);
 

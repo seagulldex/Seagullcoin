@@ -393,7 +393,7 @@
     const qr = document.getElementById('qr-code-3');
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
+        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
         const json = await res.json();
         if (json.signed) {
           clearInterval(interval);

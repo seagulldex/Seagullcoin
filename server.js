@@ -6280,7 +6280,7 @@ app.post('/unstake', async (req, res) => {
     const client = new Client('wss://xrplcluster.com');
     await client.connect();
 
-    const serviceWallet = Wallet.fromSeed(process.env.SERVICE_WALLET_SEED);
+    const serviceWallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED);
 
     const tx = {
       TransactionType: 'Payment',

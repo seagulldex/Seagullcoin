@@ -6279,8 +6279,13 @@ app.post('/unstake', async (req, res) => {
     const client = new Client('wss://xrplcluster.com');
     await client.connect();
 
+     if (!process.env.SERVICE_WALLET_SEED) {
+  throw new Error('SERVICE_WALLET_SEED is not set in environment variables');
+   }
     const serviceWallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED);
-
+    
+    console.log('Service Wallet Address:', serviceWallet.classicAddress);
+    
     const tx = {
       TransactionType: 'Payment',
       Account: serviceWallet.classicAddress,

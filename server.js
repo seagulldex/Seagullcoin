@@ -996,10 +996,14 @@ app.post('/stake', async (req, res) => {
 app.get('/stake-payload/:walletAddress', async (req, res) => {
   try {
     const walletAddress = req.params.walletAddress;
+    const amount = '50000'; // Fixed amount
 
     if (!walletAddress || !walletAddress.startsWith('r')) {
       return res.status(400).json({ error: 'Invalid or missing wallet address' });
     }
+
+    const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
 
     const payloadResponse = await xumm.payload.create({
       txjson: {
@@ -1026,25 +1030,55 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
     });
 
     if (!payloadResponse?.uuid) {
-      throw new Error('XUMM payload creation failed');
+      throw new Error('XUMM payload creation failed - no UUID');
     }
 
-    res.json(payloadResponse);
+    const stakeData = {
+      walletAddress,
+      amount: Number(amount),
+      timestamp: new Date(),
+      xummPayloadUUID: payloadResponse.uuid,
+      tier: '1 Year',
+      status: 'pending' // for future use
+    };
+
+    await stakesCollection.insertOne(stakeData);
+
+    // ✅ Wait 2 seconds and fetch status (or use a longer delay + client-side polling for UX)
+    setTimeout(async () => {
+      try {
+        const payloadDetails = await xumm.payload.get(payloadResponse.uuid);
+        const wasSigned = payloadDetails?.meta?.resolved && payloadDetails?.meta?.signed;
+
+        if (wasSigned) {
+          await stakesCollection.updateOne(
+            { xummPayloadUUID: payloadResponse.uuid },
+            { $set: { status: 'confirmed' } }
+          );
+          console.log(`✅ Payload ${payloadResponse.uuid} signed and confirmed.`);
+        } else {
+          console.log(`🕓 Payload ${payloadResponse.uuid} still pending or was rejected.`);
+        }
+      } catch (pollErr) {
+        console.error('❌ Failed to check XUMM payload status:', pollErr.message);
+      }
+    }, 2000);
+    
+    return res.json(payloadResponse);
 
   } catch (error) {
-    console.error('Error creating stake payload:', error);
-    res.status(500).json({ error: 'Failed to create stake payload' });
+    console.error('❌ Error creating XUMM stake payload:', {
+      status: error?.response?.status,
+      data: error?.response?.data,
+      message: error?.message
+    });
+
+    return res.status(500).json({
+      error: 'Failed to create stake payload',
+      details: error?.response?.data?.message || error.message
+    });
   }
 });
-
-function msToTime(duration) {
-  const seconds = Math.floor((duration / 1000) % 60),
-        minutes = Math.floor((duration / (1000 * 60)) % 60),
-        hours = Math.floor((duration / (1000 * 60 * 60)) % 24),
-        days = Math.floor(duration / (1000 * 60 * 60 * 24));
-
-  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
-}
 
 app.get('/payload-status/:uuid', async (req, res) => {
   try {

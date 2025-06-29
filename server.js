@@ -6244,56 +6244,43 @@ app.get('/checking-login', async (req, res) => {
 });
 
 app.post('/unstake', async (req, res) => {
-  const { walletAddress } = req.body;
-
-  if (!walletAddress || !walletAddress.startsWith('r')) {
-    return res.status(400).json({ error: 'Invalid wallet address' });
-  }
-
   try {
+    const { walletAddress } = req.body;
+    if (!walletAddress || !walletAddress.startsWith('r')) {
+      return res.status(400).json({ error: 'Invalid wallet address' });
+    }
+
     const db = await connectDB();
     const stakesCollection = db.collection('stakes');
 
-    const stakeDoc = await stakesCollection.findOne({
+    const stake = await stakesCollection.findOne({
       walletAddress,
       status: 'confirmed'
     });
 
-    if (!stakeDoc) {
-      return res.status(404).json({ error: 'No eligible stake found' });
+    if (!stake) {
+      return res.status(404).json({ error: 'No confirmed stake found' });
     }
 
-    const tierDurations = {
-      'Monthly': 30 * 24 * 60 * 60 * 1000, // 30 days
+    const now = new Date();
+    const stakedAt = new Date(stake.timestamp);
+
+    const lockDurations = {
       '1 Year': 365 * 24 * 60 * 60 * 1000,
+      '3 Year': 3 * 365 * 24 * 60 * 60 * 1000,
       '5 Year': 5 * 365 * 24 * 60 * 60 * 1000,
-      'Test': 60 * 1000 // 1 minute
+      'Test': 60 * 1000
     };
 
-    const tierRewards = {
-      'Monthly': 50500,
-      '1 Year': 2562500,
-      '5 Year': 6000000,
-      'Test': 2500000
-    };
-
-    const requiredDuration = tierDurations[stakeDoc.tier];
-    const returnAmount = tierRewards[stakeDoc.tier];
-
-    if (!requiredDuration || !returnAmount) {
-      return res.status(400).json({ error: 'Invalid tier' });
+    const requiredDuration = lockDurations[stake.tier];
+    if (!requiredDuration || now - stakedAt < requiredDuration) {
+      return res.status(403).json({ error: 'Stake is not yet eligible for unstaking' });
     }
 
-    const elapsed = Date.now() - new Date(stakeDoc.timestamp).getTime();
-    if (elapsed < requiredDuration) {
-      return res.status(400).json({ error: 'Stake is not yet eligible for unstaking' });
-    }
-
-    // XRPL wallet setup
-    const client = new xrpl.Client('wss://xrplcluster.com');
+    const client = new Client('wss://xrplcluster.com');
     await client.connect();
 
-    const serviceWallet = xrpl.Wallet.fromSeed(process.env.SERVICE_WALLET_SEED);
+    const serviceWallet = Wallet.fromSeed(process.env.SERVICE_WALLET_SEED);
 
     const tx = {
       TransactionType: 'Payment',
@@ -6301,40 +6288,45 @@ app.post('/unstake', async (req, res) => {
       Destination: walletAddress,
       Amount: {
         currency: '53656167756C6C436F696E000000000000000000',
-        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
-        value: returnAmount.toString()
-      }
+        issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno', // SEAGULL issuer
+        value: String(stake.amount)
+      },
+      Memos: [
+        {
+          Memo: {
+            MemoType: Buffer.from('Unstake', 'utf8').toString('hex').toUpperCase(),
+            MemoData: Buffer.from(stake.xummPayloadUUID, 'utf8').toString('hex').toUpperCase()
+          }
+        }
+      ]
     };
 
-    const prepared = await client.autofill(tx);
-    const signed = serviceWallet.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
-
+    const result = await client.submitAndWait(tx, { wallet: serviceWallet });
     await client.disconnect();
 
     if (result.result.meta.TransactionResult !== 'tesSUCCESS') {
-      return res.status(500).json({ error: 'Transaction failed', details: result.result.meta.TransactionResult });
+      throw new Error(`Unstake failed: ${result.result.meta.TransactionResult}`);
     }
 
     await stakesCollection.updateOne(
-      { _id: stakeDoc._id },
+      { _id: stake._id },
       {
         $set: {
           status: 'unstaked',
           unstakedAt: new Date(),
-          unstakeTxID: result.result.hash
+          transactionHash: result.result.hash
         }
       }
     );
 
     res.json({
-      message: 'Unstaked and returned successfully.',
-      txid: result.result.hash
+      message: 'Unstake successful.',
+      txHash: result.result.hash
     });
 
-  } catch (error) {
-    console.error('Unstake error:', error);
-    res.status(500).json({ error: 'Unstaking failed' });
+  } catch (err) {
+    console.error('Error in /unstake:', err);
+    res.status(500).json({ error: 'Unstaking failed', details: err.message });
   }
 });
 

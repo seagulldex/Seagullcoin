@@ -356,30 +356,32 @@
 
     // Poll stake/unstake status by UUID
     function pollStatus(uuid, successCallback) {
-      const statusEl = document.getElementById('staking-status');
-      pollInterval = setInterval(async () => {
-        try {
-          const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
-          const statusData = await statusRes.json();
+  const statusEl = document.getElementById('staking-status');
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
+      const json = await res.json();
 
-          if (statusData.signed) {
-            clearInterval(pollInterval);
-            currentUUID = null;
-            statusEl.textContent = 'Transaction confirmed!';
-            document.getElementById('qr-code').style.display = 'none';
-            successCallback();
-          } else if (statusData.error) {
-            clearInterval(pollInterval);
-            statusEl.textContent = 'Transaction failed or cancelled.';
-            document.getElementById('qr-code').style.display = 'none';
-          } else {
-            statusEl.textContent = 'Waiting for transaction confirmation...';
-          }
-        } catch {
-          statusEl.textContent = 'Error checking transaction status.';
-        }
-      }, 3000);
+      if (json.signed) {
+        clearInterval(pollInterval);
+        currentUUID = null;
+        statusEl.textContent = 'Transaction confirmed!';
+
+        // Set flag for showing modal on next page load
+        localStorage.setItem('justStakedUUID', uuid);
+
+        // Reload or update UI
+        successCallback();
+      } else {
+        statusEl.textContent = 'Waiting for transaction confirmation...';
+      }
+    } catch (err) {
+      console.error('Polling error:', err);
+      statusEl.textContent = 'Error checking transaction status.';
     }
+  }, 3000);
+}
+
     
      // You also need a duplicate pollStatus2 and loadStakingData2 functions
   // that are identical to your original ones but target the "-2" IDs
@@ -390,7 +392,7 @@
     const qr = document.getElementById('qr-code-2');
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
+        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
         const json = await res.json();
         if (json.signed) {
           clearInterval(interval);
@@ -419,7 +421,7 @@
     const qr = document.getElementById('qr-code-3');
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
+        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
         const json = await res.json();
         if (json.signed) {
           clearInterval(interval);

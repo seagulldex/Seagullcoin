@@ -67,7 +67,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { fetchSeagullCoinBalance } from './xrplClient.js';
 import { promisify } from 'util'; // 
 import { RippleAPI } from 'ripple-lib';
-import { Client, Wallet } from 'xrpl';
+import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
 import { randomBytes } from 'crypto';

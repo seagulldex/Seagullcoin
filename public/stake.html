@@ -296,52 +296,6 @@ localStorage.setItem('seagull_wallet', walletAddress);
     }
   }
 
-
-
-    async function loadStakingData() {
-      if (!wallet) {
-        document.getElementById('staking-status').textContent = 'Please login to view staking data.';
-        return;
-      }
-
-      // Clear any previous polling
-      if (pollInterval) clearInterval(pollInterval);
-
-      document.getElementById('staking-status').textContent = 'Loading staking data...';
-      document.getElementById('qr-code').style.display = 'none';
-
-      try {
-        // Fetch rewards history
-        const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/${wallet}`);
-        const rewardsData = await rewardsRes.json();
-        const rewardsList = document.getElementById('rewards-list');
-        rewardsList.innerHTML = '';
-
-        if (!rewardsData || rewardsData.length === 0) {
-          rewardsList.innerHTML = '<li>No rewards yet.</li>';
-        } else {
-          rewardsData.forEach(r => {
-            const li = document.createElement('li');
-            li.textContent = `Reward: ${r.amount} SeagullCoin at ${new Date(r.timestamp).toLocaleString()}`;
-            rewardsList.appendChild(li);
-          });
-        }
-
-        // Optionally, you can fetch current staking status here and show it
-        const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
-        if (statusRes.ok) {
-          const statusData = await statusRes.json();
-          document.getElementById('staking-status').textContent = `Currently Staked: ${statusData.stakedAmount || 0} SeagullCoin`;
-        } else {
-          document.getElementById('staking-status').textContent = 'No active stake found.';
-        }
-
-      } catch (err) {
-        document.getElementById('staking-status').textContent = 'Error loading staking data.';
-        document.getElementById('rewards-list').innerHTML = '<li>Error fetching rewards.</li>';
-      }
-    }
-
   function setupStakingButtonListeners() {
   // Monthly Staking (Already exists)
   document.getElementById('stake-btn').addEventListener('click', async () => {
@@ -466,7 +420,7 @@ function pollStatus3(uuid, successCallback) {
 
       if (json.signed) {
         clearInterval(pollInterval);
-        statusEl.textContent = 'Transaction confirmed!';
+        statusEl.textContent = 'Transaction confirmed! ✅️';
         document.getElementById('qr-code-3').style.display = 'none';
         localStorage.setItem('justStakedUUID', uuid);
         successCallback();

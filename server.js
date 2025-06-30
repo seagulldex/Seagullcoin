@@ -213,21 +213,16 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
-let tier;
+const { walletAddress, amount, timestamp, xummPayloadUUID, tier, status } = req.body;
 
-if (selectedStakeOption === 'monthly') {
-  tier = 'Monthly';
-} else if (selectedStakeOption === 'yearly') {
-  tier = '1 Year';
-} else if (selectedStakeOption === 'fiveYear') {
-  tier = '5 Year';
+if (!tier) {
+  return res.status(400).json({ error: 'Tier is required' });
 }
 
-const now = new Date();
+// Now you can use `tier` safely
+console.log(`Staking Tier: ${tier}`);
 
-let lockupDays = 30;
-if (tier === '1 Year') lockupDays = 365;
-else if (tier === '5 Year') lockupDays = 365 * 5;
+
 
 
 

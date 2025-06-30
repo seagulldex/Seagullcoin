@@ -429,6 +429,31 @@ function closeStakeConfirmedModal() {
   }, 3000);
 }
 
+function pollStatus3(uuid, successCallback) {
+  const statusEl = document.getElementById('staking-status-3');
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
+      const json = await res.json();
+
+      if (json.signed) {
+        clearInterval(pollInterval);
+        statusEl.textContent = 'Transaction confirmed!';
+        document.getElementById('qr-code-3').style.display = 'none';
+        localStorage.setItem('justStakedUUID', uuid);
+        successCallback();
+      } else if (json.error) {
+        clearInterval(pollInterval);
+        statusEl.textContent = 'Transaction failed or cancelled.';
+        document.getElementById('qr-code').style.display = 'none';
+      } else {
+        statusEl.textContent = 'Waiting for transaction confirmation...';
+      }
+    } catch {
+      statusEl.textContent = 'Error checking transaction status.';
+    }
+  }, 3000);
+}
 
 
   // When wallet changes or logs in, enable the buttons for both sections

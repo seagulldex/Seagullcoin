@@ -363,7 +363,7 @@ function closeStakeConfirmedModal() {
 
       if (json.signed) {
         clearInterval(pollInterval);
-        statusEl.textContent = 'Transaction confirmed!';
+        statusEl.textContent = 'Transaction confirmed! ✅️';
         document.getElementById('qr-code').style.display = 'none';
         localStorage.setItem('justStakedUUID', uuid);
         successCallback();

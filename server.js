@@ -5232,7 +5232,7 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
       amm: amm.account,
       price_SGLCN_per_XAU: price_SGLCN_per_XAU.toFixed(6),
       price_XAU_per_SGLCN: price_XAU_per_SGLCN.toFixed(10),
-      liquidity: 
+      liquidity: { 
         base: base.toFixed(4),
         quote: quote.toFixed(4)
       },

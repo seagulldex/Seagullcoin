@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -499,7 +500,7 @@
           rewardsList.appendChild(li);
         });
       }
-      const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
+      const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
       if (statusRes.ok) {
         const status = await statusRes.json();
         document.getElementById('staking-status-2').textContent = `Currently Staked: ${status.stakedAmount || 0} SeagullCoin`;

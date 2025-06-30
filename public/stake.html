@@ -346,11 +346,11 @@ localStorage.setItem('xumm_wallet_address', wallet);
     const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/start-stake?wallet=${wallet}&plan=monthly`);
     const json = await res.json();
     showQRCode(json.qrUrl);
-    pollStatus(json.uuid, () => {
-      loadStakingData();
-      showStakeConfirmedModal();
-    });
-  });
+    pollStatus(uuid, () => {
+  showStakeConfirmedModal(); // <- show modal first
+  loadStakingData();         // <- load in background
+});
+
 
   // Yearly Staking
   document.getElementById('stake-btn-2').addEventListener('click', async () => {
@@ -358,11 +358,11 @@ localStorage.setItem('xumm_wallet_address', wallet);
     const json = await res.json();
     document.getElementById('qr-code-2').src = json.qrUrl;
     document.getElementById('qr-code-2').style.display = 'block';
-    pollStatus2(json.uuid, () => {
-      loadStakingData(); // or a separate loadStakingData2() if needed
-      showStakeConfirmedModal();
-    });
-  });
+    pollStatus2(uuid, () => {
+  showStakeConfirmedModal(); // <- show modal first
+  loadStakingData();         // <- load in background
+});
+
 
   // 5-Year Staking
   document.getElementById('stake-btn-3').addEventListener('click', async () => {
@@ -370,12 +370,11 @@ localStorage.setItem('xumm_wallet_address', wallet);
     const json = await res.json();
     document.getElementById('qr-code-3').src = json.qrUrl;
     document.getElementById('qr-code-3').style.display = 'block';
-    pollStatus3(json.uuid, () => {
-      loadStakingData(); // or loadStakingData3()
-      showStakeConfirmedModal();
-    });
-  });
-}
+    pollStatus3(uuid, () => {
+  showStakeConfirmedModal(); // <- show modal first
+  loadStakingData();         // <- load in background
+});
+
 
 
 function showStakeConfirmedModal() {

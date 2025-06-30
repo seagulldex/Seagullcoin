@@ -217,7 +217,7 @@
   const seagullWallet = localStorage.getItem('seagull_wallet');
   const indicator = document.getElementById('wallet-indicator');
 
-  if (xummWallet && seagullWallet) {
+  if (xummWallet || seagullWallet) {
     indicator.textContent = '🟢 Connected';
     indicator.classList.remove('red');
     indicator.classList.add('green');

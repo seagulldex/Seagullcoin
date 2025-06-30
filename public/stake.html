@@ -347,8 +347,8 @@ localStorage.setItem('xumm_wallet_address', wallet);
     const json = await res.json();
     showQRCode(json.qrUrl);
     pollStatus(json.uuid, () => {
-      loadStakingData();
       showStakeConfirmedModal();
+      loadStakingData(); // or loadStakingData3()
     });
   });
 
@@ -359,8 +359,8 @@ localStorage.setItem('xumm_wallet_address', wallet);
     document.getElementById('qr-code-2').src = json.qrUrl;
     document.getElementById('qr-code-2').style.display = 'block';
     pollStatus2(json.uuid, () => {
-      loadStakingData(); // or a separate loadStakingData2() if needed
       showStakeConfirmedModal();
+      loadStakingData(); // or loadStakingData3()
     });
   });
 
@@ -371,8 +371,8 @@ localStorage.setItem('xumm_wallet_address', wallet);
     document.getElementById('qr-code-3').src = json.qrUrl;
     document.getElementById('qr-code-3').style.display = 'block';
     pollStatus3(json.uuid, () => {
-      loadStakingData(); // or loadStakingData3()
       showStakeConfirmedModal();
+      loadStakingData(); // or loadStakingData3()
     });
   });
 }

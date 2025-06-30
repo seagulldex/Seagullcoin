@@ -214,11 +214,20 @@ async function createStakePayload(req, res, amount) {
 })();
 
 
+function calculateEarnings(entry) {
+  const { timestamp, tier } = entry;
+  const now = new Date();
+  const start = new Date(timestamp);
+  const daysElapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
 
+  let dailyRate = 0;
+  if (tier === 'Monthly') dailyRate = 16.7;
+  else if (tier === '1 Year') dailyRate = 171.23;
+  else if (tier === '5 Year') dailyRate = 547.94;
 
-
-
-
+  const earned = dailyRate * daysElapsed;
+  return earned;
+}
 
 const privateKeyPem = fs.readFileSync('./keys/private.pem', 'utf8');
 

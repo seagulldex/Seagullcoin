@@ -14,6 +14,7 @@ import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { NFTStorage, File } from 'nft.storage';
+import xrpl from 'xrpl';
 import NodeCache from 'node-cache';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
@@ -66,11 +67,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { fetchSeagullCoinBalance } from './xrplClient.js';
 import { promisify } from 'util'; // 
 import { RippleAPI } from 'ripple-lib';
-import * as xrpl from 'xrpl';
+import { Client } from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
 import { randomBytes } from 'crypto';
-import { Client } from 'xrpl';
+import Wallet from './models/Wallet.js';
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
 import { createGenesisBlock } from './blockchain/utils.js';
@@ -80,7 +81,7 @@ import PendingTransaction from './models/PendingTransaction.js';
 import ValidatorNode from './models/ValidatorNode.js';
 import { signBlock } from './utils/signBlock.js'; // existing
 import { verifySignature } from './utils/verifySignature.js';
-import Wallet from './models/Wallet.js';
+import UserWallet from './models/Wallet.js'; // assuming file is still Wallet.js
 import { connectDB } from './connectDB.js'; // ✅ Update path to match your file structure
 
 dotenv.config();

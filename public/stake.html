@@ -242,15 +242,14 @@
       if (loginStatus.loggedIn) {
   clearInterval(interval);
   wallet = loginStatus.account;
-  localStorage.setItem('xumm_wallet_address', wallet);
-  updateWalletStatus();
-  updateWalletUI();
-  loadStakingData();  // <- ADD THIS
-  }
+localStorage.setItem('xumm_wallet_address', wallet);
+      updateWalletStatus();
+      updateWalletUI();
+      loadStakingData(); // <- This is fine
     }
-      }
-    }, 3000);
-  }
+  }, 3000); // Only ONE closing brace before this
+}
+
 
   function updateWalletUI() {
     const indicator = document.getElementById('wallet-indicator');

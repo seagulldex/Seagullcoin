@@ -199,10 +199,9 @@
   
 
   window.addEventListener('DOMContentLoaded', () => {
-    updateWalletStatus();
-    updateWalletUI();
-    setupStakingButtonListeners();
-  });
+  updateWalletStatus();
+  updateWalletUI();
+  setupStakingButtonListeners();
 
   // Only show the “stake confirmed” modal if we just finished polling
   const justStakedUUID = localStorage.getItem('justStakedUUID');
@@ -211,6 +210,7 @@
     localStorage.removeItem('justStakedUUID'); // don’t show again on refresh
   }
 });
+
 
   async function updateWalletStatus() {
   const xummWallet = localStorage.getItem('xumm_wallet_address');

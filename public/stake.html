@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -360,7 +359,7 @@
       const statusEl = document.getElementById('staking-status');
       pollInterval = setInterval(async () => {
         try {
-          const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
+          const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
           const statusData = await statusRes.json();
 
           if (statusData.signed) {

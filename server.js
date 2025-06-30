@@ -213,6 +213,22 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
+let tier;
+
+if (selectedStakeOption === 'monthly') {
+  tier = 'Monthly';
+} else if (selectedStakeOption === 'yearly') {
+  tier = '1 Year';
+} else if (selectedStakeOption === 'fiveYear') {
+  tier = '5 Year';
+}
+
+const now = new Date();
+
+let lockupDays = 30;
+if (tier === '1 Year') lockupDays = 365;
+else if (tier === '5 Year') lockupDays = 365 * 5;
+
 
 
 

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -559,14 +558,13 @@
         showQRCode(data.refs.qr_png);
         window.open(data.next.always, '_blank');
         document.getElementById('staking-status').textContent = 'Please sign the stake transaction in your wallet.';
-
-        pollStatus(currentUUID, () => {
-          loadStakingData();
-        });
-      } catch {
-        alert('Error initiating stake transaction.');
-      }
-    };
+        localStorage.setItem('justStakedUUID', data.uuid);
+    pollStatus2(data.uuid, () => showStakeConfirmedModal());
+  }
+    } catch {
+      alert('Error creating stake transaction.');
+    }
+  };
     
     //stake button #2
     document.getElementById('stake-btn-2').onclick = async () => {
@@ -588,7 +586,9 @@
       qr.style.display = 'block';
       window.open(data.next.always, '_blank');
       document.getElementById('staking-status-2').textContent = 'Please sign the stake transaction in your wallet.';
-      pollStatus2(currentUUID2, () => loadStakingData2());
+     localStorage.setItem('justStakedUUID', data.uuid);
+    pollStatus2(data.uuid, () => showStakeConfirmedModal());
+  }
     } catch {
       alert('Error creating stake transaction.');
     }
@@ -614,7 +614,9 @@
       qr.style.display = 'block';
       window.open(data.next.always, '_blank');
       document.getElementById('staking-status-2').textContent = 'Please sign the stake transaction in your wallet.';
-      pollStatus3(currentUUID3, () => loadStakingData3());
+      localStorage.setItem('justStakedUUID', data.uuid);
+    pollStatus2(data.uuid, () => showStakeConfirmedModal());
+  }
     } catch {
       alert('Error creating stake transaction.');
     }

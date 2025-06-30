@@ -341,6 +341,18 @@ localStorage.setItem('xumm_wallet_address', wallet);
       }
     }
 
+  function setupStakingButtonListeners() {
+  document.getElementById('stake-btn').addEventListener('click', async () => {
+    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/start-stake?wallet=${wallet}`);
+    const json = await res.json();
+    showQRCode(json.qrUrl);
+    pollStatus(json.uuid, () => {
+      loadStakingData();
+      showStakeConfirmedModal();
+    });
+  });
+  }
+
 function showStakeConfirmedModal() {
   const modal = document.getElementById('stake-confirmed-modal');
   if (modal) modal.style.display = 'flex';

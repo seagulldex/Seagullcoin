@@ -6283,6 +6283,20 @@ app.get('/api/staking-info', async (req, res) => {
   res.json(result);
 });
 
+app.get('/staking-info/:walletAddress', async (req, res) => {
+  const walletAddress = req.params.walletAddress;
+  const db = await connectDB();
+  const stakesCollection = db.collection('stakes');
+
+  const stakes = await stakesCollection.find({ walletAddress }).toArray();
+
+  const stakesWithEarnings = stakes.map(entry => ({
+    ...entry,
+    earned: calculateEarnings(entry)
+  }));
+
+  res.json(stakesWithEarnings);
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

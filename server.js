@@ -213,6 +213,13 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
+const now = new Date();
+
+let lockupDays = 30;
+if (tier === '1 Year') lockupDays = 365;
+else if (tier === '5 Year') lockupDays = 365 * 5;
+
+
 const privateKeyPem = fs.readFileSync('./keys/private.pem', 'utf8');
 
 try {
@@ -968,14 +975,15 @@ app.get('/stake-payload/:walletAddress', async (req, res) => {
       throw new Error('XUMM payload creation failed - no UUID');
     }
 
-    const stakeData = {
-      walletAddress,
-      amount: Number(amount),
-      timestamp: new Date(),
-      xummPayloadUUID: payloadResponse.uuid,
-      tier: 'Monthly',
-      status: 'pending' // for future use
-    };
+  const stakeData = {
+  walletAddress,
+  amount: Number(amount),
+  timestamp: now,
+  stakeEndDate: new Date(now.getTime() + lockupDays * 24 * 60 * 60 * 1000), // <-- ADD THIS
+  xummPayloadUUID: payloadResponse.uuid,
+  tier,
+  status: 'pending',
+};
 
     await stakesCollection.insertOne(stakeData);
 
@@ -4209,13 +4217,14 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
     }
 
     const stakeData = {
-      walletAddress,
-      amount: Number(amount),
-      timestamp: new Date(),
-      xummPayloadUUID: payloadResponse.uuid,
-      tier: '1 Year',
-      status: 'pending' // for future use
-    };
+  walletAddress,
+  amount: Number(amount),
+  timestamp: now,
+  stakeEndDate: new Date(now.getTime() + lockupDays * 24 * 60 * 60 * 1000), // <-- ADD THIS
+  xummPayloadUUID: payloadResponse.uuid,
+  tier,
+  status: 'pending',
+};
 
     await stakesCollection.insertOne(stakeData);
 
@@ -4412,13 +4421,14 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
     }
 
     const stakeData = {
-      walletAddress,
-      amount: Number(amount),
-      timestamp: new Date(),
-      xummPayloadUUID: payloadResponse.uuid,
-      tier: '5 Year',
-      status: 'pending' // for future use
-    };
+  walletAddress,
+  amount: Number(amount),
+  timestamp: now,
+  stakeEndDate: new Date(now.getTime() + lockupDays * 24 * 60 * 60 * 1000), // <-- ADD THIS
+  xummPayloadUUID: payloadResponse.uuid,
+  tier,
+  status: 'pending',
+};
 
     await stakesCollection.insertOne(stakeData);
 

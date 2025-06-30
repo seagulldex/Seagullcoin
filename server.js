@@ -213,11 +213,7 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
-const now = new Date();
 
-let lockupDays = 30;
-if (tier === '1 Year') lockupDays = 365;
-else if (tier === '5 Year') lockupDays = 365 * 5;
 
 
 const privateKeyPem = fs.readFileSync('./keys/private.pem', 'utf8');

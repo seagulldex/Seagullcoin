@@ -213,14 +213,7 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
-const { walletAddress, amount, timestamp, xummPayloadUUID, tier, status } = req.body;
 
-if (!tier) {
-  return res.status(400).json({ error: 'Tier is required' });
-}
-
-// Now you can use `tier` safely
-console.log(`Staking Tier: ${tier}`);
 
 
 

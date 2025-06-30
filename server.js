@@ -6277,6 +6277,31 @@ const requiredDuration = lockDurations[stake.tier];
   }
 });
 
+app.get('/check-unstake', async (req, res) => {
+  const { uuid } = req.query;
+  if (!uuid) return res.status(400).json({ error: 'Missing uuid' });
+
+  try {
+    const payload = await xumm.payload.get(uuid);
+    const signed = payload?.meta?.signed === true;
+    const resolved = payload?.meta?.resolved === true;
+
+    if (signed && resolved) {
+      const db = await connectDB();
+      const stakesCollection = db.collection('stakes');
+      await stakesCollection.updateOne(
+        { unstakeUUID: uuid },
+        { $set: { status: 'unstaked', unstakedAt: new Date() } }
+      );
+      return res.json({ status: 'unstaked' });
+    }
+
+    res.json({ status: 'pending' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Check failed' });
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

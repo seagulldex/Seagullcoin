@@ -338,13 +338,15 @@
       }
     }
 
+function showStakeConfirmedModal() {
+  const modal = document.getElementById('stake-confirmed-modal');
+  if (modal) modal.style.display = 'flex';
+}
 
-
-
-
-
-
-
+function closeStakeConfirmedModal() {
+  const modal = document.getElementById('stake-confirmed-modal');
+  if (modal) modal.style.display = 'none';
+}
 
 
 
@@ -368,6 +370,7 @@
             currentUUID = null;
             statusEl.textContent = 'Transaction confirmed!';
             document.getElementById('qr-code').style.display = 'none';
+            localStorage.setItem('justStakedUUID', uuid);
             successCallback();
           } else if (statusData.error) {
             clearInterval(pollInterval);

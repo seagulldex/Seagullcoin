@@ -404,60 +404,31 @@ function closeStakeConfirmedModal() {
 
   // Example pollStatus2:
   function pollStatus2(uuid, successCallback) {
-    const statusEl = document.getElementById('staking-status-2');
-    const qr = document.getElementById('qr-code-2');
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/${uuid}`);
-        const json = await res.json();
-        if (json.signed) {
-          clearInterval(interval);
-          statusEl.textContent = 'Transaction confirmed!';
-          qr.style.display = 'none';
-          localStorage.setItem('justStakedUUID', uuid);
-          successCallback();
-        } else if (json.error) {
-          clearInterval(interval);
-          statusEl.textContent = 'Transaction failed or cancelled.';
-          qr.style.display = 'none';
-        } else {
-          statusEl.textContent = 'Waiting for transaction confirmation...';
-        }
-      } catch {
-        statusEl.textContent = 'Error checking transaction status.';
-      }
-    }, 3000);
-  }
-    
-      // You also need a duplicate pollStatus3 and loadStakingData3 functions
-  // that are identical to your original ones but target the "-3" IDs
+  const statusEl = document.getElementById('staking-status-2');
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
+      const json = await res.json();
 
-  // Example pollStatus3:
-  function pollStatus3(uuid, successCallback) {
-    const statusEl = document.getElementById('staking-status-3');
-    const qr = document.getElementById('qr-code-3');
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
-        const json = await res.json();
-        if (json.signed) {
-          clearInterval(interval);
-          statusEl.textContent = 'Transaction confirmed!';
-          qr.style.display = 'none';
-          localStorage.setItem('justStakedUUID', uuid);
-          successCallback();
-        } else if (json.error) {
-          clearInterval(interval);
-          statusEl.textContent = 'Transaction failed or cancelled.';
-          qr.style.display = 'none';
-        } else {
-          statusEl.textContent = 'Waiting for transaction confirmation...';
-        }
-      } catch {
-        statusEl.textContent = 'Error checking transaction status.';
+      if (json.signed) {
+        clearInterval(pollInterval);
+        statusEl.textContent = 'Transaction confirmed!';
+        document.getElementById('qr-code-2').style.display = 'none';
+        localStorage.setItem('justStakedUUID', uuid);
+        successCallback();
+      } else if (json.error) {
+        clearInterval(pollInterval);
+        statusEl.textContent = 'Transaction failed or cancelled.';
+        document.getElementById('qr-code').style.display = 'none';
+      } else {
+        statusEl.textContent = 'Waiting for transaction confirmation...';
       }
-    }, 3000);
-  }
+    } catch {
+      statusEl.textContent = 'Error checking transaction status.';
+    }
+  }, 3000);
+}
+
 
 
   // When wallet changes or logs in, enable the buttons for both sections

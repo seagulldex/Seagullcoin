@@ -500,7 +500,7 @@ function pollStatus3(uuid, successCallback) {
 
   try {
     // Fetch rewards
-    const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-rewards/${wallet}`);
+    const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${wallet}`);
     const rewards = await rewardsRes.json();
 
     const rewardsList = document.getElementById('rewards-list');
@@ -517,7 +517,7 @@ function pollStatus3(uuid, successCallback) {
     }
 
     // Fetch latest staking status
-    const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
+    const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/latest/${wallet}`);
     const statusText = document.getElementById('staking-status');
 
     if (statusRes.ok) {
@@ -548,7 +548,7 @@ function pollStatus3(uuid, successCallback) {
 
   try {
     // Fetch rewards
-    const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-rewards/${wallet}`);
+    const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${wallet}`);
     const rewards = await rewardsRes.json();
 
     const rewardsList = document.getElementById('rewards-list-2');
@@ -565,7 +565,7 @@ function pollStatus3(uuid, successCallback) {
     }
 
     // Fetch latest staking status
-    const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
+    const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/latest/${wallet}`);
     const statusText = document.getElementById('staking-status-2');
 
     if (statusRes.ok) {

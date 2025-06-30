@@ -445,7 +445,7 @@ function closeStakeConfirmedModal() {
       } else if (json.error) {
         clearInterval(pollInterval);
         statusEl.textContent = 'Transaction failed or cancelled.';
-        document.getElementById('qr-code').style.display = 'none';
+        document.getElementById('qr-code-2').style.display = 'none';
       } else {
         statusEl.textContent = 'Waiting for transaction confirmation...';
       }
@@ -471,7 +471,7 @@ function pollStatus3(uuid, successCallback) {
       } else if (json.error) {
         clearInterval(pollInterval);
         statusEl.textContent = 'Transaction failed or cancelled.';
-        document.getElementById('qr-code').style.display = 'none';
+        document.getElementById('qr-code-3').style.display = 'none';
       } else {
         statusEl.textContent = 'Waiting for transaction confirmation...';
       }

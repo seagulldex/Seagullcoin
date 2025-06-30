@@ -70,7 +70,7 @@ import * as xrpl from 'xrpl';
 import { fetchSeagullOffers } from "./offers.js";
 import Stripe from 'stripe';
 import { randomBytes } from 'crypto';
-import { Client, Wallet } from 'xrpl';
+import { Client } from 'xrpl';
 import crypto from 'crypto';
 import { hashSeed } from './utils/test-hash.js';
 import { createGenesisBlock } from './blockchain/utils.js';

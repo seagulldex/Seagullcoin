@@ -4384,7 +4384,10 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
   try {
     const walletAddress = req.params.walletAddress;
     const amount = '5000000'; // Fixed amount
-
+    const tier = '5 Year';
+    const lockupDays = 365 * 5;
+    const now = new Date();
+    
     if (!walletAddress || !walletAddress.startsWith('r')) {
       return res.status(400).json({ error: 'Invalid or missing wallet address' });
     }
@@ -4421,14 +4424,15 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
     }
 
     const stakeData = {
-  walletAddress,
-  amount: Number(amount),
-  timestamp: now,
-  stakeEndDate: new Date(now.getTime() + lockupDays * 24 * 60 * 60 * 1000), // <-- ADD THIS
-  xummPayloadUUID: payloadResponse.uuid,
-  tier,
-  status: 'pending',
-};
+      walletAddress,
+      amount: Number(amount),
+      timestamp: now,
+      stakeEndDate: new Date(now.getTime() + lockupDays * 24 * 60 * 60 * 1000),
+      xummPayloadUUID: payloadResponse.uuid,
+      tier,
+      status: 'pending'
+    };
+
 
     await stakesCollection.insertOne(stakeData);
 
@@ -5228,7 +5232,7 @@ app.get('/amm/view/sglcn-xau', async (req, res) => {
       amm: amm.account,
       price_SGLCN_per_XAU: price_SGLCN_per_XAU.toFixed(6),
       price_XAU_per_SGLCN: price_XAU_per_SGLCN.toFixed(10),
-      liquidity: {
+      liquidity: 
         base: base.toFixed(4),
         quote: quote.toFixed(4)
       },

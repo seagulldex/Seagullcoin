@@ -6240,6 +6240,21 @@ app.get('/check-unstake', async (req, res) => {
   }
 });
 
+// /api/staking-info?wallet=xxxxx
+app.get('/api/staking-info', async (req, res) => {
+  const wallet = req.query.wallet;
+  if (!wallet) return res.status(400).json({ error: 'Wallet required' });
+
+  const stakes = await db.collection('stakes').find({ wallet }).toArray();
+  const result = stakes.map(s => ({
+    tier: s.tier,
+    endTime: s.endTime // ensure it's already stored or calculated server-side
+  }));
+
+  res.json(result);
+});
+
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

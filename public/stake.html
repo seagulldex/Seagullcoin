@@ -400,6 +400,7 @@ function closeStakeConfirmedModal() {
           clearInterval(interval);
           statusEl.textContent = 'Transaction confirmed!';
           qr.style.display = 'none';
+          localStorage.setItem('justStakedUUID', uuid);
           successCallback();
         } else if (json.error) {
           clearInterval(interval);
@@ -429,6 +430,7 @@ function closeStakeConfirmedModal() {
           clearInterval(interval);
           statusEl.textContent = 'Transaction confirmed!';
           qr.style.display = 'none';
+          localStorage.setItem('justStakedUUID', uuid);
           successCallback();
         } else if (json.error) {
           clearInterval(interval);

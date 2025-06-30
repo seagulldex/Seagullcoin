@@ -240,10 +240,14 @@
       const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
       const loginStatus = await check.json();
       if (loginStatus.loggedIn) {
-        clearInterval(interval);
-        wallet = loginStatus.account; // FIX: assign wallet here
-        localStorage.setItem('xumm_wallet_address', wallet);
-        updateWalletStatus();
+  clearInterval(interval);
+  wallet = loginStatus.account;
+  localStorage.setItem('xumm_wallet_address', wallet);
+  updateWalletStatus();
+  updateWalletUI();
+  loadStakingData();  // <- ADD THIS
+  }
+    }
       }
     }, 3000);
   }

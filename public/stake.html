@@ -546,20 +546,6 @@ function closeStakeConfirmedModal() {
     
   }
 
-  // Call loadStakingData and loadStakingData2 on login or wallet change
-function setupStakingButtonListeners() {
-  document.getElementById('stake-btn').addEventListener('click', async () => {
-    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
-    const json = await res.json();
-    showQRCode(json.qrUrl);
-    pollStatus(json.uuid, () => {
-      loadStakingData();
-      showStakeConfirmedModal();
-    });
-  });
-
-  
-
     // Stake button
     document.getElementById('stake-btn').onclick = async () => {
       if (!wallet) {

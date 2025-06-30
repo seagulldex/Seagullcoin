@@ -493,35 +493,51 @@ function pollStatus3(uuid, successCallback) {
   // Call loadStakingData and loadStakingData2 and loadStakingData3 on login or wallet change
 // Example loadStakingData to fetch rewards and status for second section
   async function loadStakingData() {
-    if (!wallet) {
-      document.getElementById('staking-status').textContent = 'Please login to view staking data.';
-      return;
-    }
-    try {
-      const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-rewards/${wallet}`);
-      const rewards = await rewardsRes.json();
-      const rewardsList = document.getElementById('rewards-list');
-      rewardsList.innerHTML = '';
-      if (rewards.length === 0) {
-        rewardsList.innerHTML = '<li>No rewards yet.</li>';
-      } else {
-        rewards.forEach(r => {
-          const li = document.createElement('li');
-          li.textContent = `Reward: ${r.amount} SeagullCoin at ${new Date(r.timestamp).toLocaleString()}`;
-          rewardsList.appendChild(li);
-        });
-      }
-      const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
-      if (statusRes.ok) {
-        const status = await statusRes.json();
-        document.getElementById('staking-status').textContent = `Currently Staked: ${status.stakedAmount || 0} SeagullCoin`;
-      } else {
-        document.getElementById('staking-status').textContent = 'No active stake found.';
-      }
-    } catch {
-      document.getElementById('staking-status').textContent = 'Error loading staking data.';
-    }
+  if (!wallet) {
+    document.getElementById('staking-status').textContent = 'Please login to view staking data.';
+    return;
   }
+
+  try {
+    // Fetch rewards
+    const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-rewards/${wallet}`);
+    const rewards = await rewardsRes.json();
+
+    const rewardsList = document.getElementById('rewards-list');
+    rewardsList.innerHTML = '';
+
+    if (rewards.length === 0) {
+      rewardsList.innerHTML = '<li>No rewards yet.</li>';
+    } else {
+      rewards.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = `Reward: ${r.amount} SeagullCoin at ${new Date(r.timestamp).toLocaleString()}`;
+        rewardsList.appendChild(li);
+      });
+    }
+
+    // Fetch latest staking status
+    const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
+    const statusText = document.getElementById('staking-status');
+
+    if (statusRes.ok) {
+      const status = await statusRes.json();
+
+      const earnings = calculateEarnings({
+        timestamp: status.timestamp,
+        tier: status.plan || status.tier
+      });
+
+      statusText.textContent = `Currently Staked: ${status.stakedAmount || 0} SeagullCoin — Est. Earnings: ${earnings.toFixed(2)} SeagullCoin`;
+    } else {
+      statusText.textContent = 'No active stake found.';
+    }
+  } catch (error) {
+    console.error('Error loading staking data:', error);
+    document.getElementById('staking-status').textContent = 'Error loading staking data.';
+  }
+}
+
   
   // Example loadStakingData2 to fetch rewards and status for second section
   async function loadStakingData2() {

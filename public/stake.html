@@ -296,6 +296,7 @@ async function updateWalletStatus() {
   async function startLoginFlow() {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
     const data = await res.json();
+    const payloadUUID = data.payloadUUID;
     window.open(data.payloadURL, "_blank");
 
     const interval = setInterval(async () => {
@@ -304,8 +305,10 @@ async function updateWalletStatus() {
       if (loginStatus.loggedIn) {
   clearInterval(interval);
   wallet = loginStatus.account;
-localStorage.setItem('xumm_wallet_address', wallet);
-localStorage.setItem('seagull_wallet', wallet);
+      localStorage.setItem('xumm_wallet_address', loginStatus.account);
+      localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
+      localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
+      localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
       updateWalletStatus();
       updateWalletUI();
       loadStakingData();

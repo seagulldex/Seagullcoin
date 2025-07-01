@@ -725,7 +725,7 @@ function pollStatus3(uuid, successCallback) {
       if (data.length === 0) {
         statusEl.innerHTML = `<p>No active stakes found.</p>`;
       } else {
-        statusEl.innerHTML = '<h3>📈 Active Stakes</h3>';
+        statusEl.innerHTML = '<h3>✅️ Active Stakes</h3>';
         data.forEach(stake => {
           const stakeStart = new Date(stake.timestamp);
           const stakeEnd = new Date(stake.stakeEndDate);

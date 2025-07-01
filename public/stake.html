@@ -218,7 +218,8 @@
   updateWalletStatus();
   updateWalletUI();
   setupStakingButtonListeners();
-
+  
+    
   // Only show the “stake confirmed” modal if we just finished polling
   const justStakedUUID = localStorage.getItem('justStakedUUID');
   if (justStakedUUID) {
@@ -262,7 +263,8 @@ localStorage.setItem('xumm_wallet_address', wallet);
 localStorage.setItem('seagull_wallet', walletAddress);
       updateWalletStatus();
       updateWalletUI();
-      loadStakingData(); // <- This is fine
+      loadStakingData();
+      getTimeLeft();// <- This is fine
     }
   }, 3000); // Only ONE closing brace before this
 }

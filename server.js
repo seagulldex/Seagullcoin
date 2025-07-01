@@ -2826,6 +2826,7 @@ function resolveIpfsUrl(ipfsUri, gateway = 'https://ipfs.io/ipfs/') {
 }
 
 
+
 // Helper to convert hex-encoded URI to UTF-8 string
 function hexToUtf8(hex) {
   if (!hex || typeof hex !== 'string' || !/^[0-9a-fA-F]+$/.test(hex)) return '';

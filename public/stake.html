@@ -583,8 +583,16 @@ function pollStatus3(uuid, successCallback) {
       // Default Section
       document.getElementById('staking-status').textContent = `Currently Staked: ${stakedAmount} SeagullCoin`;
 
-      // Yearly Section
-      if (tier === 'yearly') {
+            // Monthly Tier
+      if (tier === 'monthly') {
+        document.getElementById('staking-status-1').textContent = 'Monthly staking active';
+        document.getElementById('amount-staked-1').textContent = stakedAmount;
+        document.getElementById('accumulated-rewards-1').textContent = earnings;
+        document.getElementById('time-left-1').textContent = getTimeLeft(status.timestamp, 1 / 12); // 1 month
+      }
+
+      // Yearly Tier
+      else if (tier === 'yearly') {
         document.getElementById('staking-status-2').textContent = 'Yearly staking active';
         document.getElementById('amount-staked-2').textContent = stakedAmount;
         document.getElementById('accumulated-rewards-2').textContent = earnings;

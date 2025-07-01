@@ -586,10 +586,10 @@ async function loadStakingData() {
     });
 
     // Display current staking status
-    document.getElementById('staking-status').textContent = 
+    document.getElementById('staking-status').textContent =
       `Currently Staked: ${amount} SeagullCoin | Tier: ${tier} | Ends: ${new Date(stakeEndDate).toLocaleDateString()} | Estimated Earnings: ${earnings} SGC`;
 
-    // Optional: show earned rewards if available
+    // Display earned rewards
     if (earned > 0) {
       const li = document.createElement('li');
       li.textContent = `Earned: ${earned} SeagullCoin`;
@@ -598,11 +598,13 @@ async function loadStakingData() {
       rewardsList.innerHTML = '<li>No rewards yet.</li>';
     }
 
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error('Failed to load staking data:', error);
     document.getElementById('staking-status').textContent = 'Error loading staking data.';
   }
 }
+
+
 
 
   

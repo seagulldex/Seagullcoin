@@ -30,6 +30,7 @@ export const fetchAllNFTs = async (wallet) => {
     throw new Error(data.result.error_message);
   }
 
+  const rawNFTs = (await fetchAllNFTs(wallet)).slice(0, 20);
   const nfts = data.result.account_nfts || [];
   nftCache.set(wallet, { data: nfts, timestamp: Date.now() });
   return nfts;

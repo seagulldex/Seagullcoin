@@ -228,25 +228,84 @@
   }
 });
 
-
-  async function updateWalletStatus() {
+  function loadWalletFromStorage() {
   const xummWallet = localStorage.getItem('xumm_wallet_address');
   const seagullWallet = localStorage.getItem('seagull_wallet');
-  const indicator = document.getElementById('wallet-indicator');
 
-  if (xummWallet || seagullWallet) {
-    indicator.textContent = '🟢 Connected';
-    indicator.classList.remove('red');
-    indicator.classList.add('green');
-    document.getElementById('logout-btn').style.display = 'inline-block';
-    fetchNFTs(xummWallet); // or seagullWallet depending on which one your NFTs are tied to
+  if (xummWallet) {
+    document.getElementById('xumm-wallet-address').textContent = xummWallet;
   } else {
-    indicator.textContent = '🔴 Login';
-    indicator.classList.remove('green');
-    indicator.classList.add('red');
-    indicator.onclick = startLoginFlow;
+    document.getElementById('xumm-wallet-address').textContent = 'Not connected';
+  }
+
+  if (seagullWallet) {
+    document.getElementById('seagull-wallet-address').textContent = seagullWallet;
+  } else {
+    document.getElementById('seagull-wallet-address').textContent = 'Not connected';
   }
 }
+
+    function getWalletState() {
+  const xummWallet = localStorage.getItem('xumm_wallet_address');
+  const seagullWallet = localStorage.getItem('seagull_wallet');
+
+  if (xummWallet && seagullWallet) {
+    return 'layer2';
+  } else if (seagullWallet) {
+    return 'seagull_only';
+  } else if (xummWallet) {
+    return 'xumm_only';
+  } else {
+    return 'default';
+  }
+    }
+
+async function updateWalletStatus() {
+  const indicator = document.getElementById('wallet-indicator');
+  const generateBtn = document.getElementById('generate-wallet-btn');
+
+  // Reset color classes
+  indicator.classList.remove('red', 'green', 'blue', 'purple');
+
+  switch (getWalletState()) {
+    case 'layer2':
+      indicator.textContent = '🔵 Layer 2';
+      indicator.classList.add('blue');
+      indicator.onclick = null;
+      document.getElementById('logout-menu').style.display = 'inline-block';
+      fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+      generateBtn.style.display = 'none';
+      disableWalletButton('Wallet Already Created');
+      break;
+
+    case 'seagull_only':
+      indicator.textContent = '🟣 SGLCN-X20';
+      indicator.classList.add('purple');
+      indicator.onclick = null;
+      document.getElementById('logout-btn').style.display = 'inline-block';
+      generateBtn.style.display = 'none';
+      disableWalletButton('Wallet Already Created');
+      break;
+
+    case 'xumm_only':
+      indicator.textContent = '🟢 Connected (XUMM)';
+      indicator.classList.add('green');
+      indicator.onclick = null;
+      document.getElementById('logout-btn').style.display = 'inline-block';
+      generateBtn.style.display = 'inline-block';
+      enableWalletButton();
+      break;
+
+    default:
+      indicator.textContent = '🔴 Login';
+      indicator.classList.add('red');
+      indicator.onclick = startLoginFlow;
+      document.getElementById('logout-btn').style.display = 'none';
+      generateBtn.style.display = 'inline-block';
+      enableWalletButton();
+  }
+}
+
 
   async function startLoginFlow() {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');

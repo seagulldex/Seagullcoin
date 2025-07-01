@@ -743,7 +743,7 @@ function pollStatus3(uuid, successCallback) {
       if (oldStatus) oldStatus.remove();
 
       statusEl.id = 'staking-data-block';
-      stakingSection.appendChild(statusEl);
+      stakingSection.insertBefore(statusEl, stakingSection.firstChild);
     } catch (err) {
       console.error('Error loading staking info:', err);
     }

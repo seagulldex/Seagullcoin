@@ -4944,7 +4944,12 @@ app.get('/api/sglcn-xau', async (req, res) => {
   const showHistory = req.query.history === 'true';
 
   if (showHistory) {
-    return res.json({ history: ammHistory });
+    try {
+      const history = await SGLCNXAUPrice.find().sort({ timestamp: -1 }).limit(100);
+      return res.json({ history });
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to fetch history' });
+    }
   }
 
   const client = new Client("wss://s2.ripple.com");
@@ -4966,11 +4971,16 @@ app.get('/api/sglcn-xau', async (req, res) => {
     const xau = parseFloat(amm.amount.value);
     const sglcn = parseFloat(amm.amount2.value);
 
-    res.json({
-      sglcn_to_xau: (xau / sglcn).toFixed(6),
-      xau_to_sglcn: (sglcn / xau).toFixed(2),
-      timestamp: new Date().toISOString()
-    });
+    const result = {
+      sglcn_to_xau: parseFloat((xau / sglcn).toFixed(6)),
+      xau_to_sglcn: parseFloat((sglcn / xau).toFixed(2)),
+      timestamp: new Date()
+    };
+
+    // Save to MongoDB
+    await SGLCNXAUPrice.create(result);
+
+    res.json(result);
 
   } catch (err) {
     console.error("Error fetching AMM price:", err.message);
@@ -4979,6 +4989,7 @@ app.get('/api/sglcn-xau', async (req, res) => {
     if (client.isConnected()) await client.disconnect();
   }
 });
+
 
 
 

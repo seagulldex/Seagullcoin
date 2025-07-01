@@ -1,5 +1,5 @@
 const nftCache = new Map();
-const xrplApiUrl = 'https://xrplcluster.com;
+const xrplApiUrl = 'https://xrplcluster.com';
 
 
 export const fetchAllNFTs = async (wallet, nftCache, xrplApiUrl) => {

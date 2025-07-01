@@ -218,11 +218,6 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
-cron.schedule('*/5 * * * *', () => {
-  console.log('Fetching and saving price...');
-  fetchAndSavePrice();
-});
-
 
 async function fetchAndSavePrice() {
   const client = new Client('wss://s2.ripple.com');

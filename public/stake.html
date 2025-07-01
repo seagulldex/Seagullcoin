@@ -547,6 +547,30 @@ function pollStatus3(uuid, successCallback) {
   if (walletAddress) loadStakingData(walletAddress); // Remove the space between function name and parentheses
 });
 
+  async function loadStakingData() {
+  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-status?wallet=${wallet}&plan=monthly`);
+  const data = await res.json();
+  document.getElementById('amount-staked-1').textContent = data.amount;
+  document.getElementById('accumulated-rewards-1').textContent = data.rewards;
+  document.getElementById('time-left-1').textContent = getTimeLeft(data.start, 0.082); // 30 days ≈ 0.082 years
+}
+
+async function loadStakingData2() {
+  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-status?wallet=${wallet}&plan=yearly`);
+  const data = await res.json();
+  document.getElementById('amount-staked-2').textContent = data.amount;
+  document.getElementById('accumulated-rewards-2').textContent = data.rewards;
+  document.getElementById('time-left-2').textContent = getTimeLeft(data.start, 1);
+}
+
+async function loadStakingData3() {
+  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-status?wallet=${wallet}&plan=fiveyear`);
+  const data = await res.json();
+  document.getElementById('amount-staked-3').textContent = data.amount;
+  document.getElementById('accumulated-rewards-3').textContent = data.rewards;
+  document.getElementById('time-left-3').textContent = getTimeLeft(data.start, 5);
+}
+
 
   // Call loadStakingData and loadStakingData2 and loadStakingData3 on login or wallet change
 // Example loadStakingData to fetch rewards and status for second section

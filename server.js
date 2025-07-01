@@ -2874,7 +2874,7 @@ app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
   try {
-    const existingNFTs = await NFT.find({ wallet });
+    const existingNFTs = await NFTModel.find({ wallet });
 
     if (existingNFTs.length > 0) {
       return res.json({ nfts: existingNFTs });
@@ -2911,7 +2911,7 @@ app.get('/nfts/:wallet', async (req, res) => {
 
       // Save to MongoDB
       try {
-        await NFT.findOneAndUpdate(
+        await NFTModel.findOneAndUpdate(
           { NFTokenID: nft.NFTokenID },
           nftData,
           { upsert: true, new: true, setDefaultsOnInsert: true }

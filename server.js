@@ -2892,16 +2892,25 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
 
 
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
+
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
+  console.log(`Fetching NFTs for wallet: ${wallet}`);
+
   try {
     const existingNFTs = await NFTModel.find({ wallet }).select('-__v').lean();
+    console.log(`Found ${existingNFTs.length} NFTs in DB`);
+
     if (existingNFTs.length > 0) return res.json({ nfts: existingNFTs });
 
-    const rawNFTs = (await fetchAllNFTs(wallet)).slice(0, 20);
-    if (!Array.isArray(rawNFTs)) throw new Error('fetchAllNFTs did not return an array');
+    const rawNFTs = await fetchAllNFTs(wallet);
+    if (!Array.isArray(rawNFTs)) {
+      console.error('fetchAllNFTs returned:', rawNFTs);
+      throw new Error('fetchAllNFTs did not return an array');
+    }
+    console.log(`Fetched ${rawNFTs.length} NFTs from external source`);
 
-    const parsed = await Promise.all(rawNFTs.map(async (nft) => {
+    const parsed = await Promise.all(rawNFTs.slice(0, 20).map(async (nft) => {
       try {
         const uri = hexToUtf8(nft?.URI);
         let metadata = null, collection = null, icon = null;
@@ -2929,14 +2938,16 @@ app.get('/nfts/:wallet', async (req, res) => {
 
         return nftData;
       } catch (nftErr) {
-        console.error(`Failed to process NFT ${nft?.NFTokenID}:`, nftErr.message);
-        return null; // Skip or return minimal fallback
+        console.error(`Failed to process NFT ${nft?.NFTokenID}:`, nftErr);
+        return null;
       }
     }));
 
+    console.log(`Processed ${parsed.filter(Boolean).length} NFTs successfully`);
+
     res.json({ nfts: parsed.filter(Boolean) });
   } catch (err) {
-    console.error('NFT fetch error:', err.message);
+    console.error('NFT fetch error:', err.stack || err);
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });

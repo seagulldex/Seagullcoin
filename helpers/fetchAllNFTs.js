@@ -1,8 +1,7 @@
 const nftCache = new Map();
-const xrplApiUrl = 'wss://xrplcluster.com';
+const xrplApiUrl = 'https://xrplcluster.com';
 
-
-export const fetchAllNFTs = async (wallet, nftCache, xrplApiUrl) => {
+export const fetchAllNFTs = async (wallet) => {
   if (nftCache.has(wallet)) {
     const cachedData = nftCache.get(wallet);
     const currentTime = Date.now();

@@ -217,6 +217,9 @@
   window.addEventListener('DOMContentLoaded', () => {
   updateWalletStatus();
   updateWalletUI();
+  loadStakingData();
+  loadStakingData2();
+  loadStakingData3();
   setupStakingButtonListeners();
   getWalletState();
     
@@ -312,6 +315,8 @@ async function updateWalletStatus() {
       updateWalletStatus();
       updateWalletUI();
       loadStakingData();
+      loadStakingData2();
+      loadStakingData3();
       getTimeLeft();// <- This is fine
     }
   }, 3000); // Only ONE closing brace before this
@@ -364,11 +369,7 @@ async function updateWalletStatus() {
       unstakeBtn3.disabled = true;
     }
   }
-  if (wallet) {
-  loadStakingData();
-  loadStakingData2();
-  loadStakingData3();
-}
+  
 
   function getTimeLeft(startTimestamp, durationYears) {
   const now = Date.now();

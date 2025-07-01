@@ -63,7 +63,6 @@
 #wallet-indicator.red {
   color: red;
 }
-
   </style>
 </head>
 <body>
@@ -88,7 +87,7 @@
     </nav>
   </header>
 
-  <main>
+ <main>
       <section class="hero">
         <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" alt="SGLCN Logo" width="120" height="120" style="border-radius: 50%; margin-right: 12px;">
       <h1>SeagullCoin Staking</h1>
@@ -106,12 +105,6 @@
     <div id="staking-section">
       <h2>Monthly Staking</h2>
       <p id="staking-status"></p>
-
-      <div id="staking-info-1" class="staking-info">
-  <p>Amount Staked: <span id="amount-staked-1">0</span> SeagullCoin</p>
-  <p>Accumulated Rewards: <span id="accumulated-rewards-1">0</span> SeagullCoin</p>
-  <p>Time Left: <span id="time-left-1">--:--:--</span></p>
-</div>
       
       <div class="staking-details-top">
           <p><strong>50,000 SeagullCoin</strong></p>
@@ -124,8 +117,8 @@
           <p>Earn 16.7 SeagullCoin per day</p>
           <p>30 day 🔒 lockup</p>
       </div>
-
-
+      
+      
       
       <div id="qr-code-container">
         <img id="qr-code" alt="XUMM QR Code" />
@@ -136,11 +129,6 @@
     <div id="staking-section-2" style="margin-top:40px; border-top:2px solid #ccc; padding-top:20px;">
   <h2>Yearly Staking</h2>
   <p id="staking-status-2"></p>
-      <div id="staking-info-2" class="staking-info">
-  <p>Amount Staked: <span id="amount-staked-2">0</span> SeagullCoin</p>
-  <p>Accumulated Rewards: <span id="accumulated-rewards-2">0</span> SeagullCoin</p>
-  <p>Time Left: <span id="time-left-2">--:--:--</span></p>
-</div>
   
   <div class="staking-details-top">
     <p><strong>2,500,000 SeagullCoin</strong></p>
@@ -164,11 +152,6 @@
       <div id="staking-section-3" style="margin-top:40px; border-top:2px solid #ccc; padding-top:20px;">
   <h2> 5 Year Staking</h2>
   <p id="staking-status-3"></p>
-        <div id="staking-info-3" class="staking-info">
-  <p>Amount Staked: <span id="amount-staked-3">0</span> SeagullCoin</p>
-  <p>Accumulated Rewards: <span id="accumulated-rewards-3">0</span> SeagullCoin</p>
-  <p>Time Left: <span id="time-left-3">--:--:--</span></p>
-        </div>
   
   <div class="staking-details-top">
     <p><strong>5,000,000 SeagullCoin</strong></p>
@@ -186,7 +169,7 @@
   <div id="qr-code-container-3">
     <img id="qr-code-3" alt="XUMM QR Code" style="display:none; max-width:200px; max-height:200px; border:1px solid #ccc; padding:10px; margin-top:10px;"/>
         </div>
-        
+
         <div id="stake-confirmed-modal" style="
   display:none; 
   position:fixed; 
@@ -579,22 +562,12 @@ function pollStatus3(uuid, successCallback) {
     const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
     if (statusRes.ok) {
       const status = await statusRes.json();
-      console.log("Stake Status API response:", status);
       const tier = status.plan || status.tier || 'unknown';
       const stakedAmount = status.stakedAmount || 0;
       const earnings = calculateEarnings({ timestamp: status.timestamp, tier });
 
       // Default Section
       document.getElementById('staking-status').textContent = `Currently Staked: ${stakedAmount} SeagullCoin`;
-
-      // Monthly Section (staking-info-1)
-if (tier === 'monthly') {
-  document.getElementById('staking-status').textContent = 'Monthly staking active';
-  document.getElementById('amount-staked-1').textContent = stakedAmount;
-  document.getElementById('accumulated-rewards-1').textContent = earnings;
-  document.getElementById('time-left-1').textContent = getTimeLeft(status.timestamp, 1 / 12); // 1 month
-}
-
 
       // Yearly Section
       if (tier === 'yearly') {
@@ -719,6 +692,67 @@ if (tier === 'monthly') {
   }
 }
 
+
+  async function loadStakingData() {
+    const address = localStorage.getItem('xumm_wallet_address');
+    if (!address) return;
+
+    try {
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${address}`);
+      const data = await res.json();
+
+      const stakingSection = document.getElementById('staking-section');
+      const statusEl = document.createElement('div');
+      statusEl.style.marginTop = '20px';
+      statusEl.style.background = '#111';
+      statusEl.style.color = 'white';
+      statusEl.style.padding = '12px';
+      statusEl.style.borderRadius = '12px';
+
+      if (data.length === 0) {
+        statusEl.innerHTML = `<p>No active stakes found.</p>`;
+      } else {
+        statusEl.innerHTML = '<h3>✅️ Active Stakes</h3>';
+        data.forEach(stake => {
+          const stakeStart = new Date(stake.timestamp);
+          const stakeEnd = new Date(stake.stakeEndDate);
+          const now = new Date();
+          const daysLeft = Math.max(0, Math.ceil((stakeEnd - now) / (1000 * 60 * 60 * 24)));
+
+          const earned = calculateEarnings(stake).toFixed(2);
+
+          const stakeHtml = `
+            <div style="margin-top:10px; padding:10px; border:1px solid #333; border-radius:10px; background:#222;">
+              <p><strong>Tier:</strong> ${stake.tier}</p>
+              <p><strong>Amount:</strong> ${stake.amount.toLocaleString()} SGLCN</p>
+              <p><strong>Earned so far:</strong> ${earned} SGLCN</p>
+              <p><strong>Days left:</strong> ${daysLeft} day(s)</p>
+              <p><strong>Status:</strong> ${stake.status}</p>
+            </div>
+          `;
+          statusEl.innerHTML += stakeHtml;
+        });
+      }
+
+      // Remove old status if any
+      const oldStatus = document.getElementById('staking-data-block');
+      if (oldStatus) oldStatus.remove();
+
+      statusEl.id = 'staking-data-block';
+      stakingSection.insertBefore(statusEl, stakingSection.firstChild);
+    } catch (err) {
+      console.error('Error loading staking info:', err);
+    }
+  }
+
+  // Call this on wallet connection
+  window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('xumm_wallet_address')) {
+      loadStakingData();
+    }
+  });
+
+
     // Stake button
     document.getElementById('stake-btn').onclick = async () => {
       if (!wallet) {
@@ -797,60 +831,6 @@ if (tier === 'monthly') {
       alert('Error creating stake transaction.');
     }
   };
-
-  async function loadStakingSection({
-  wallet,
-  rewardsListId,
-  stakingStatusId,
-  amountStakedId,
-  accumulatedRewardsId,
-  timeLeftId,
-  tierMatch,
-  durationYears
-}) {
-  if (!wallet) {
-    document.getElementById(stakingStatusId).textContent = 'Please login to view staking data.';
-    return;
-  }
-
-  try {
-    const [rewardsRes, statusRes] = await Promise.all([
-      fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${wallet}`),
-      fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${wallet}`)
-    ]);
-
-    const rewards = await rewardsRes.json();
-    const status = await statusRes.json();
-
-    const rewardsList = document.getElementById(rewardsListId);
-    rewardsList.innerHTML = '';
-    if (rewards.length === 0) {
-      rewardsList.innerHTML = '<li>No rewards yet.</li>';
-    } else {
-      rewards.forEach(r => {
-        const li = document.createElement('li');
-        li.textContent = `Reward: ${r.amount} SeagullCoin at ${new Date(r.timestamp).toLocaleString()}`;
-        rewardsList.appendChild(li);
-      });
-    }
-
-    const currentTier = status.plan || status.tier;
-    const stakedAmount = status.stakedAmount || 0;
-    const earnings = calculateEarnings({ timestamp: status.timestamp, tier: currentTier });
-
-    // Only update if it matches the section's tier
-    if (currentTier === tierMatch) {
-      document.getElementById(stakingStatusId).textContent = `Currently Staked: ${stakedAmount} SeagullCoin`;
-      if (amountStakedId) document.getElementById(amountStakedId).textContent = stakedAmount;
-      if (accumulatedRewardsId) document.getElementById(accumulatedRewardsId).textContent = earnings.toFixed(2);
-      if (timeLeftId) document.getElementById(timeLeftId).textContent = getTimeLeft(status.timestamp, durationYears);
-    }
-
-  } catch (err) {
-    console.error('Error loading staking section:', err);
-    document.getElementById(stakingStatusId).textContent = 'Error loading staking data.';
-  }
-}
 
   
   document.getElementById('logout-btn').onclick = () => {

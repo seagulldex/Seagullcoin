@@ -205,7 +205,9 @@ async function createStakePayload(req, res, amount) {
 (async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
-      dbName: 'nft_marketplace_nfts'
+      dbName: 'nft_marketplace_nfts',
+      useNewUrlParser: true,
+      useUnifiedTopology: true
     });
     console.log('✅ MongoDB connected');
     //

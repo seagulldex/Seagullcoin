@@ -467,42 +467,7 @@ function pollStatus3(uuid, successCallback) {
     }
   }, 3000);
 }
-
-
-  // When wallet changes or logs in, enable the buttons for both sections
-
-  function updateWalletUI() {
-  const indicator = document.getElementById('wallet-indicator');
-  const short = document.getElementById('wallet-short');
-  const walletInfo = document.getElementById('wallet-info');
-  const container = document.getElementById('wallet-container');
-
-  const stakeBtn = document.getElementById('stake-btn');
-  const unstakeBtn = document.getElementById('unstake-btn');
-  const stakeBtn2 = document.getElementById('stake-btn-2');
-  const unstakeBtn2 = document.getElementById('unstake-btn-2');
-
-  if (wallet) {
-    walletInfo.style.display = 'block';
-    document.getElementById('wallet-address').textContent = wallet;
-    indicator.textContent = '🟢 Profile';
-    indicator.className = 'green';
-    short.style.display = 'inline';
-    short.textContent = wallet.slice(0, 6) + '...' + wallet.slice(-4);
-    container.onclick = () => alert('Profile page coming soon.');
-
-    stakeBtn.disabled = false;
-    unstakeBtn.disabled = false;
-    stakeBtn2.disabled = false;
-    unstakeBtn2.disabled = false;
-  } else {
-    walletInfo.style.display = 'none';
-    indicator.textContent = '🔴 Login';
-    indicator.className = 'red';
-    short.style.display = 'none';
-    container.onclick = () => startLoginFlow();
-  }
-}
+  
 
   window.addEventListener('load', () => {
   const walletAddress = localStorage.getItem('walletAddress');
@@ -653,34 +618,6 @@ function pollStatus3(uuid, successCallback) {
     document.getElementById('staking-status-3').textContent = 'Error loading staking data.';
   }
 }
-
-  
-  // When wallet changes or logs in, enable the buttons for both sections
-  function updateWalletUI() {
-    const stakeBtn = document.getElementById('stake-btn');
-    const unstakeBtn = document.getElementById('unstake-btn');
-    const stakeBtn2 = document.getElementById('stake-btn-2');
-    const unstakeBtn2 = document.getElementById('unstake-btn-2');
-    const stakeBtn3 = document.getElementById('stake-btn-3');
-    const unstakeBtn3 = document.getElementById('unstake-btn-3');
-
-    if (wallet) {
-      stakeBtn.disabled = false;
-      unstakeBtn.disabled = false;
-      stakeBtn2.disabled = false;
-      unstakeBtn2.disabled = false;
-      stakeBtn3.disabled = false;
-      unstakeBtn3.disabled = false;
-    } else {
-      stakeBtn.disabled = true;
-      unstakeBtn.disabled = true;
-      stakeBtn2.disabled = true;
-      unstakeBtn2.disabled = true;
-      stakeBtn3.disabled = true;
-      unstakeBtn3.disabled = true;
-    }
-    
-  }
 
     // Stake button
     document.getElementById('stake-btn').onclick = async () => {

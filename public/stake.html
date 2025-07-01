@@ -322,25 +322,10 @@ async function updateWalletStatus() {
       loadStakingData3();
       getTimeLeft();// <- This is fine
     }
-  }, 3000); // Only ONE closing brace before this
+  }, 2000); // Only ONE closing brace before this
 }
 
-  fetch(`https://Seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${walletAddress}`)
-  .then(res => res.json())
-  .then(data => {
-    if (data && data.length > 0) {
-      const stake = data[0];
-      // build a string for the marquee, e.g.:
-      const message = `Monthly Staking | Amount: ${stake.amount} SeagullCoin | Earned: ${stake.earned} | Ends: ${new Date(stake.stakeEndDate).toLocaleDateString()}`;
-      document.getElementById('marquee-board').textContent = message;
-    } else {
-      document.getElementById('marquee-board').textContent = 'No active staking found';
-    }
-  })
-  .catch(e => {
-    console.error('Error fetching staking data:', e);
-    document.getElementById('marquee-board').textContent = 'Error loading staking info';
-  });
+  
 
 
 

@@ -2818,14 +2818,15 @@ const xrplApiUrl = 'https://s1.ripple.com:51234'; // For Mainnet
 
 // Helper to convert hex-encoded URI to UTF-8 string
 function hexToUtf8(hex) {
-  if (!hex || typeof hex !== 'string') return '';
+  if (!hex || typeof hex !== 'string' || !/^[0-9a-fA-F]+$/.test(hex)) return '';
   try {
     return Buffer.from(hex, 'hex').toString('utf8').replace(/\0/g, '');
   } catch (e) {
-    console.error('Invalid hex string:', hex);
+    console.error('Invalid hex string:', hex, e.message);
     return '';
   }
 }
+
 
 // Helper for fetch with timeout
 const fetchWithTimeout = (url, options = {}, timeout = 7000) => {

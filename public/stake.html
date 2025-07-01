@@ -312,6 +312,21 @@ localStorage.setItem('seagull_wallet', walletAddress);
     }
   }
 
+  function getTimeLeft(startTimestamp, durationYears) {
+  const now = Date.now();
+  const end = new Date(startTimestamp).getTime() + durationYears * 365 * 24 * 60 * 60 * 1000;
+  const diff = end - now;
+
+  if (diff <= 0) return "00:00:00";
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+
+  return `${days}d ${hours}h ${minutes}m`;
+}
+
+
   function setupStakingButtonListeners() {
   // Monthly Staking (Already exists)
   document.getElementById('stake-btn').addEventListener('click', async () => {

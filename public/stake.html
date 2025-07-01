@@ -827,13 +827,14 @@ function pollStatus3(uuid, successCallback) {
   }
 }
 
-  
-  document.getElementById('logout-btn').onclick = () => {
-    localStorage.removeItem('xumm_wallet_address');
-    location.reload();
-  };
+  document.getElementById('logout-btn').addEventListener('click', () => {
+  localStorage.removeItem('xumm_wallet_address');
+  localStorage.removeItem('seagull_wallet');
+  wallet = null;
+  updateWalletStatus();
+  updateWalletUI();
+});
 
-    
   </script>
 </body>
       </html>

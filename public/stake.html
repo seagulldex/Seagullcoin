@@ -212,7 +212,12 @@
   let wallet = localStorage.getItem('xumm_wallet_address') || null;
   let currentUUID = null;
   let pollInterval = null;
-  
+
+  if (!wallet) {
+  document.getElementById('staking-status').textContent = 'Please login to view staking data.';
+  return;
+}
+
 
   window.addEventListener('DOMContentLoaded', () => {
   updateWalletStatus();

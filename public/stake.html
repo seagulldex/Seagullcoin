@@ -599,10 +599,11 @@ async function loadStakingData() {
     }
 
   } catch (error) {
-    console.error('Failed to load staking data:', error);
-    document.getElementById('staking-status').textContent = 'Error loading staking data.';
-  }
+  console.error('Failed to load staking data:', error);
+  document.getElementById('staking-status').textContent = 'Error loading staking data.';
 }
+
+
 
 
 

@@ -579,6 +579,7 @@ function pollStatus3(uuid, successCallback) {
     const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
     if (statusRes.ok) {
       const status = await statusRes.json();
+      console.log("Stake Status API response:", status);
       const tier = status.plan || status.tier || 'unknown';
       const stakedAmount = status.stakedAmount || 0;
       const earnings = calculateEarnings({ timestamp: status.timestamp, tier });

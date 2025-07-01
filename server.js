@@ -2878,27 +2878,22 @@ app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
   try {
-    const existingNFTs = await NFTModel.find({ wallet });
-
+    const existingNFTs = await NFTModel.find({ wallet }).select('-__v').lean();
     if (existingNFTs.length > 0) {
       return res.json({ nfts: existingNFTs });
     }
 
-    const rawNFTs = await fetchAllNFTs(wallet);
+    const rawNFTs = (await fetchAllNFTs(wallet)).slice(0, 20); // limit to 20
 
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
-      const uri = hexToUtf8(nft.URI);
+      const uri = hexToUtf8(nft?.URI);
       let metadata = null, collection = null, icon = null;
 
       if (uri.startsWith('ipfs://')) {
-        const ipfsUrl = `https://nftstorage.link/ipfs/${uri.replace('ipfs://', '')}`;
         try {
-          const res = await fetchWithTimeout(ipfsUrl, {}, 6000);
-          if (res.ok) {
-            metadata = await res.json();
-            collection = metadata.collection || metadata.name || null;
-            icon = metadata.image || null;
-          }
+          metadata = await fetchMetadataWithRetry(uri);
+          collection = metadata?.collection || metadata?.name || null;
+          icon = metadata?.image || null;
         } catch (err) {
           console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
         }
@@ -2913,7 +2908,6 @@ app.get('/nfts/:wallet', async (req, res) => {
         wallet
       };
 
-      // Save to MongoDB
       try {
         await NFTModel.findOneAndUpdate(
           { NFTokenID: nft.NFTokenID },
@@ -2933,6 +2927,7 @@ app.get('/nfts/:wallet', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+
 
 
 // /transfer-nft — direct transfer to another wallet

@@ -504,6 +504,11 @@ function pollStatus3(uuid, successCallback) {
   }
 }
 
+  window.addEventListener('load', () => {
+  const walletAddress = localStorage.getItem('walletAddress');
+  if (walletAddress) loadStakingData(walletAddress); // Remove the space between function name and parentheses
+});
+
 
   // Call loadStakingData and loadStakingData2 and loadStakingData3 on login or wallet change
 // Example loadStakingData to fetch rewards and status for second section
@@ -756,10 +761,6 @@ function pollStatus3(uuid, successCallback) {
     }
   };
 
-window.addEventListener('load', () => {
-  const walletAddress = localStorage.getItem('walletAddress');
-  if (walletAddress) loadStakingData (walletAddress);
-});
   
   document.getElementById('logout-btn').onclick = () => {
     localStorage.removeItem('xumm_wallet_address');

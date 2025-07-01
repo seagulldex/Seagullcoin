@@ -267,44 +267,87 @@ async function updateWalletStatus() {
   // Reset color classes
   indicator.classList.remove('red', 'green', 'blue', 'purple');
 
-  switch (getWalletState()) {
+  const wallet = localStorage.getItem('xumm_wallet_address');
+const walletInfo = document.getElementById('wallet-info');
+const indicator = document.getElementById('wallet-indicator');
+const short = document.getElementById('wallet-short');
+const container = document.getElementById('wallet-container');
+const generateBtn = document.getElementById('generate-wallet');
+const stakeBtn = document.getElementById('stake-btn');
+const unstakeBtn = document.getElementById('unstake-btn');
+const stakeBtn2 = document.getElementById('stake-btn-2');
+const unstakeBtn2 = document.getElementById('unstake-btn-2');
+const stakeBtn3 = document.getElementById('stake-btn-3');
+const unstakeBtn3 = document.getElementById('unstake-btn-3');
+
+function updateWalletUI() {
+  const state = getWalletState();
+
+  switch (state) {
     case 'layer2':
+      walletInfo.style.display = 'block';
       indicator.textContent = '🔵 Layer 2';
-      indicator.classList.add('blue');
+      indicator.className = 'blue';
       indicator.onclick = null;
+      short.style.display = 'inline';
+      short.textContent = wallet.slice(0, 6) + '...' + wallet.slice(-4);
+      container.onclick = () => alert('Profile page coming soon.');
+
       document.getElementById('logout-menu').style.display = 'inline-block';
-      fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+      fetchNFTs(wallet);
       generateBtn.style.display = 'none';
       disableWalletButton('Wallet Already Created');
+
+      toggleStakeButtons(false);
       break;
 
     case 'seagull_only':
+      walletInfo.style.display = 'block';
       indicator.textContent = '🟣 SGLCN-X20';
-      indicator.classList.add('purple');
+      indicator.className = 'purple';
       indicator.onclick = null;
+      short.style.display = 'inline';
+      short.textContent = wallet.slice(0, 6) + '...' + wallet.slice(-4);
+      container.onclick = () => alert('Profile page coming soon.');
+
       document.getElementById('logout-btn').style.display = 'inline-block';
       generateBtn.style.display = 'none';
       disableWalletButton('Wallet Already Created');
-      break;
 
-    case 'xumm_only':
-      indicator.textContent = '🟢 Connected (XUMM)';
-      indicator.classList.add('green');
-      indicator.onclick = null;
-      document.getElementById('logout-btn').style.display = 'inline-block';
-      generateBtn.style.display = 'inline-block';
-      enableWalletButton();
+      toggleStakeButtons(false);
       break;
 
     default:
-      indicator.textContent = '🔴 Login';
-      indicator.classList.add('red');
-      indicator.onclick = startLoginFlow;
-      document.getElementById('logout-btn').style.display = 'none';
-      generateBtn.style.display = 'inline-block';
-      enableWalletButton();
+      if (wallet) {
+        walletInfo.style.display = 'block';
+        document.getElementById('wallet-address').textContent = wallet;
+        indicator.textContent = '🟢 Connected';
+        indicator.className = 'green';
+        short.style.display = 'inline';
+        short.textContent = wallet.slice(0, 6) + '...' + wallet.slice(-4);
+        container.onclick = () => alert('Profile page coming soon.');
+        toggleStakeButtons(false);
+      } else {
+        walletInfo.style.display = 'none';
+        indicator.textContent = '🔴 Login';
+        indicator.className = 'red';
+        short.style.display = 'none';
+        container.onclick = () => startLoginFlow();
+        toggleStakeButtons(true);
+      }
+      break;
   }
 }
+
+function toggleStakeButtons(disabled) {
+  stakeBtn.disabled = disabled;
+  unstakeBtn.disabled = disabled;
+  stakeBtn2.disabled = disabled;
+  unstakeBtn2.disabled = disabled;
+  stakeBtn3.disabled = disabled;
+  unstakeBtn3.disabled = disabled;
+}
+
 
 
   async function startLoginFlow() {

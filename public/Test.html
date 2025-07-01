@@ -408,18 +408,20 @@ localStorage.setItem('seagull_wallet', wallet);
   });
 }
 
-  function calculateEarnings(stake) {
+  function calculateEarnings(entry) {
+  const { amount, timestamp, tier } = entry;
   const now = new Date();
-  const start = new Date(stake.timestamp);
-  const msElapsed = now - start;
+  const start = new Date(timestamp);
+  const daysElapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
 
-  // Convert milliseconds to days (fractional)
-  const daysElapsed = msElapsed / (1000 * 60 * 60 * 24);
+  let dailyRate = 0;
+  if (tier === 'Monthly') dailyRate = 16.7;
+  else if (tier === '1 Year') dailyRate = 171.23;
+  else if (tier === '5 Year') dailyRate = 547.94;
 
-  // Return fractional earnings
-  return daysElapsed * stake.dailyReward;
+  const earned = amount * dailyRate * daysElapsed;
+  return earned;
 }
-
 
 
 function showStakeConfirmedModal() {
@@ -562,16 +564,7 @@ function pollStatus3(uuid, successCallback) {
       const status = await statusRes.json();
       const tier = status.plan || status.tier || 'unknown';
       const stakedAmount = status.stakedAmount || 0;
-      // 💡 Calculate daily reward based on tier
-      let dailyReward = 0;
-      if (tier === 'yearly') {
-     dailyReward = stakedAmount * 0.25 / 365; // 25% APY
-     } else if (tier === '5year') {
-     dailyReward = stakedAmount * 2.0 / (365 * 5); // 200% over 5 years
-     }
-
-     // 💰 Calculate earnings
-const earnings = calculateEarnings({ timestamp: status.timestamp, dailyReward });
+      const earnings = calculateEarnings({ timestamp: status.timestamp, tier });
 
       // Default Section
       document.getElementById('staking-status').textContent = `Currently Staked: ${stakedAmount} SeagullCoin`;
@@ -726,8 +719,7 @@ const earnings = calculateEarnings({ timestamp: status.timestamp, dailyReward })
           const now = new Date();
           const daysLeft = Math.max(0, Math.ceil((stakeEnd - now) / (1000 * 60 * 60 * 24)));
 
-          // 💡 Calculate daily reward based on tier
-
+          const earned = calculateEarnings(stake).toFixed(2);
 
           const stakeHtml = `
             <div style="margin-top:10px; padding:10px; border:1px solid #333; border-radius:10px; background:#222;">
@@ -849,4 +841,4 @@ const earnings = calculateEarnings({ timestamp: status.timestamp, dailyReward })
     
   </script>
 </body>
-    </html>
+      </html>

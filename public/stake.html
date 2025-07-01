@@ -667,6 +667,7 @@ async function loadStakingData3() {
 
   return `${diffDays}d ${diffHrs}h ${diffMins}m`;
 }
+setInterval(() => updateMarquee(walletAddress), 30000);
 
 function updateMarquee(walletAddress) {
   fetch(`https://Seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${walletAddress}`)

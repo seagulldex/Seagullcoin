@@ -727,15 +727,6 @@ const earnings = calculateEarnings({ timestamp: status.timestamp, dailyReward })
           const daysLeft = Math.max(0, Math.ceil((stakeEnd - now) / (1000 * 60 * 60 * 24)));
 
           // 💡 Calculate daily reward based on tier
-let dailyReward = 0;
-if (tier === 'yearly') {
-  dailyReward = stakedAmount * 0.25 / 365; // 25% APY
-} else if (tier === '5year') {
-  dailyReward = stakedAmount * 2.0 / (365 * 5); // 200% over 5 years
-}
-
-// 💰 Calculate earnings
-const earnings = calculateEarnings({ timestamp: status.timestamp, dailyReward });
 
 
           const stakeHtml = `

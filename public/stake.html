@@ -291,6 +291,10 @@ async function updateWalletStatus() {
   }
 }
 
+  localStorage.setItem('xumm_wallet_address', wallet);
+localStorage.setItem('seagull_wallet', wallet);
+updateWalletStatus();
+
 
   async function startLoginFlow() {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');

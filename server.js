@@ -2814,6 +2814,16 @@ app.get('/user/balance', async (req, res) => {
 const xrplApiUrl = 'https://s1.ripple.com:51234'; // For Mainnet
 
 
+function resolveIpfsUrl(ipfsUri, gateway = 'https://ipfs.io/ipfs/') {
+  if (!ipfsUri) return '';
+  if (ipfsUri.startsWith('ipfs://')) {
+    return gateway + ipfsUri.slice(7); // remove "ipfs://"
+  }
+  if (/^[a-zA-Z0-9]{46,}$/.test(ipfsUri)) {
+    return gateway + ipfsUri; // raw CID
+  }
+  return ipfsUri; // fallback, maybe already http
+}
 
 
 // Helper to convert hex-encoded URI to UTF-8 string
@@ -2860,19 +2870,25 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
 
   while (attempt < retries && !metadata) {
     const gatewayUrl = ipfsGateways[attempt % ipfsGateways.length];  // Cycle through gateways
+    const resolvedUrl = resolveIpfsUrl(ipfsUrl, gatewayUrl);
+
     try {
-      const res = await fetchWithTimeout(gatewayUrl + ipfsUrl.replace('ipfs://', ''), {}, 10000);  // 10 seconds
+      const res = await fetchWithTimeout(resolvedUrl, {}, 10000);  // 10 seconds
       if (res.ok) {
         metadata = await res.json();
+      } else {
+        console.warn(`Non-OK response: ${res.status} from ${resolvedUrl}`);
       }
     } catch (err) {
-      console.warn(`Retry attempt ${attempt + 1} failed with gateway ${gatewayUrl}: ${err.message}`);
+      console.warn(`Retry attempt ${attempt + 1} failed with ${resolvedUrl}: ${err.message}`);
     }
+
     attempt++;
   }
 
   return metadata;
 };
+
 
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
 app.get('/nfts/:wallet', async (req, res) => {

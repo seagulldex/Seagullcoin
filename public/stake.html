@@ -729,6 +729,60 @@ function pollStatus3(uuid, successCallback) {
     }
   };
 
+  async function loadStakingSection({
+  wallet,
+  rewardsListId,
+  stakingStatusId,
+  amountStakedId,
+  accumulatedRewardsId,
+  timeLeftId,
+  tierMatch,
+  durationYears
+}) {
+  if (!wallet) {
+    document.getElementById(stakingStatusId).textContent = 'Please login to view staking data.';
+    return;
+  }
+
+  try {
+    const [rewardsRes, statusRes] = await Promise.all([
+      fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${wallet}`),
+      fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${wallet}`)
+    ]);
+
+    const rewards = await rewardsRes.json();
+    const status = await statusRes.json();
+
+    const rewardsList = document.getElementById(rewardsListId);
+    rewardsList.innerHTML = '';
+    if (rewards.length === 0) {
+      rewardsList.innerHTML = '<li>No rewards yet.</li>';
+    } else {
+      rewards.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = `Reward: ${r.amount} SeagullCoin at ${new Date(r.timestamp).toLocaleString()}`;
+        rewardsList.appendChild(li);
+      });
+    }
+
+    const currentTier = status.plan || status.tier;
+    const stakedAmount = status.stakedAmount || 0;
+    const earnings = calculateEarnings({ timestamp: status.timestamp, tier: currentTier });
+
+    // Only update if it matches the section's tier
+    if (currentTier === tierMatch) {
+      document.getElementById(stakingStatusId).textContent = `Currently Staked: ${stakedAmount} SeagullCoin`;
+      if (amountStakedId) document.getElementById(amountStakedId).textContent = stakedAmount;
+      if (accumulatedRewardsId) document.getElementById(accumulatedRewardsId).textContent = earnings.toFixed(2);
+      if (timeLeftId) document.getElementById(timeLeftId).textContent = getTimeLeft(status.timestamp, durationYears);
+    }
+
+  } catch (err) {
+    console.error('Error loading staking section:', err);
+    document.getElementById(stakingStatusId).textContent = 'Error loading staking data.';
+  }
+}
+
   
   document.getElementById('logout-btn').onclick = () => {
     localStorage.removeItem('xumm_wallet_address');

@@ -107,9 +107,9 @@
       <h2>Monthly Staking</h2>
       <p id="staking-status"></p>
 
-      <div id="staking-info-1" class="staking-status">
+      <div id="staking-info-1" class="staking-info">
   <p>Amount Staked: <span id="amount-staked-1">0</span> SeagullCoin</p>
-  <p>Accumulated Rewards: <span id="rewards-list">0</span> SeagullCoin</p>
+  <p>Accumulated Rewards: <span id="accumulated-rewards-1">0</span> SeagullCoin</p>
   <p>Time Left: <span id="time-left-1">--:--:--</span></p>
 </div>
       
@@ -212,12 +212,7 @@
   let wallet = localStorage.getItem('xumm_wallet_address') || null;
   let currentUUID = null;
   let pollInterval = null;
-
-  if (!wallet) {
-  document.getElementById('staking-status').textContent = 'Please login to view staking data.';
-  return;
-}
-
+  
 
   window.addEventListener('DOMContentLoaded', () => {
   updateWalletStatus();
@@ -554,58 +549,65 @@ function pollStatus3(uuid, successCallback) {
 
 
   // Call loadStakingData and loadStakingData2 and loadStakingData3 on login or wallet change
-
-  
-  // Example loadStakingData to fetch rewards and status for second section
-  
-async function loadStakingData() {
+// Example loadStakingData to fetch rewards and status for second section
+  async function loadStakingData() {
   if (!wallet) {
     document.getElementById('staking-status').textContent = 'Please login to view staking data.';
     return;
   }
 
   try {
-    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${wallet}`);
-    const data = await res.json();
-
+    // Load rewards
+    const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-rewards/${wallet}`);
+    const rewards = await rewardsRes.json();
     const rewardsList = document.getElementById('rewards-list');
     rewardsList.innerHTML = '';
-
-    if (!data || data.length === 0) {
-      document.getElementById('staking-status').textContent = 'No staking data found.';
+    if (rewards.length === 0) {
       rewardsList.innerHTML = '<li>No rewards yet.</li>';
-      return;
+    } else {
+      rewards.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = `Reward: ${r.amount} SeagullCoin at ${new Date(r.timestamp).toLocaleString()}`;
+        rewardsList.appendChild(li);
+      });
     }
 
-    const stake = data[0]; // assuming latest or only stake is the first one
-    const { amount, timestamp, stakeEndDate, tier, earned } = stake;
+    // Load latest staking status
+    const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
+    if (statusRes.ok) {
+      const status = await statusRes.json();
+      const tier = status.plan || status.tier || 'unknown';
+      const stakedAmount = status.stakedAmount || 0;
+      const earnings = calculateEarnings({ timestamp: status.timestamp, tier });
 
-    const earnings = calculateEarnings({
-      timestamp,
-      tier,
-    });
+      // Default Section
+      document.getElementById('staking-status').textContent = `Currently Staked: ${stakedAmount} SeagullCoin`;
 
-    // Display current staking status
-    document.getElementById('staking-status').textContent =
-      `Currently Staked: ${amount} SeagullCoin | Tier: ${tier} | Ends: ${new Date(stakeEndDate).toLocaleDateString()} | Estimated Earnings: ${earnings} SGC`;
+      // Yearly Section
+      if (tier === 'yearly') {
+        document.getElementById('staking-status-2').textContent = 'Yearly staking active';
+        document.getElementById('amount-staked-2').textContent = stakedAmount;
+        document.getElementById('accumulated-rewards-2').textContent = earnings;
+        document.getElementById('time-left-2').textContent = getTimeLeft(status.timestamp, 1); // 1 year
+      }
 
-    // Display earned rewards
-    if (earned > 0) {
-      const li = document.createElement('li');
-      li.textContent = `Earned: ${earned} SeagullCoin`;
-      rewardsList.appendChild(li);
+      // 5-Year Section
+      else if (tier === '5year') {
+        document.getElementById('staking-status-3').textContent = '5 Year staking active';
+        document.getElementById('amount-staked-3').textContent = stakedAmount;
+        document.getElementById('accumulated-rewards-3').textContent = earnings;
+        document.getElementById('time-left-3').textContent = getTimeLeft(status.timestamp, 5); // 5 years
+      }
+
     } else {
-      rewardsList.innerHTML = '<li>No rewards yet.</li>';
+      document.getElementById('staking-status').textContent = 'No active stake found.';
     }
 
   } catch (error) {
-  console.error('Failed to load staking data:', error);
-  document.getElementById('staking-status').textContent = 'Error loading staking data.';
+    console.error('Error loading staking data:', error);
+    document.getElementById('staking-status').textContent = 'Error loading staking data.';
+  }
 }
-
-
-
-
 
 
   

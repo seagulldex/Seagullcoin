@@ -2877,57 +2877,53 @@ const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
-
   try {
     const existingNFTs = await NFTModel.find({ wallet }).select('-__v').lean();
-    if (existingNFTs.length > 0) {
-      return res.json({ nfts: existingNFTs });
-    }
+    if (existingNFTs.length > 0) return res.json({ nfts: existingNFTs });
 
-    const rawNFTs = (await fetchAllNFTs(wallet)).slice(0, 20); // limit to 20
+    const rawNFTs = (await fetchAllNFTs(wallet)).slice(0, 20);
+    if (!Array.isArray(rawNFTs)) throw new Error('fetchAllNFTs did not return an array');
 
     const parsed = await Promise.all(rawNFTs.map(async (nft) => {
-      const uri = hexToUtf8(nft?.URI);
-      let metadata = null, collection = null, icon = null;
+      try {
+        const uri = hexToUtf8(nft?.URI);
+        let metadata = null, collection = null, icon = null;
 
-      if (uri.startsWith('ipfs://')) {
-        try {
+        if (uri.startsWith('ipfs://')) {
           metadata = await fetchMetadataWithRetry(uri);
           collection = metadata?.collection || metadata?.name || null;
           icon = metadata?.image || null;
-        } catch (err) {
-          console.warn(`IPFS fetch failed for ${nft.NFTokenID}: ${err.message}`);
         }
-      }
 
-      const nftData = {
-        NFTokenID: nft.NFTokenID,
-        URI: uri,
-        collection,
-        icon,
-        metadata,
-        wallet
-      };
+        const nftData = {
+          NFTokenID: nft.NFTokenID,
+          URI: uri,
+          collection,
+          icon,
+          metadata,
+          wallet
+        };
 
-      try {
         await NFTModel.findOneAndUpdate(
           { NFTokenID: nft.NFTokenID },
           nftData,
           { upsert: true, new: true, setDefaultsOnInsert: true }
         );
-      } catch (dbErr) {
-        console.error(`MongoDB save error: ${dbErr.message}`);
-      }
 
-      return nftData;
+        return nftData;
+      } catch (nftErr) {
+        console.error(`Failed to process NFT ${nft?.NFTokenID}:`, nftErr.message);
+        return null; // Skip or return minimal fallback
+      }
     }));
 
-    res.json({ nfts: parsed });
+    res.json({ nfts: parsed.filter(Boolean) });
   } catch (err) {
-    console.error('NFT fetch error:', err);
+    console.error('NFT fetch error:', err.message);
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+
 
 
 

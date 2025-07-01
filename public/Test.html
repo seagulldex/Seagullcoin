@@ -408,20 +408,18 @@ localStorage.setItem('seagull_wallet', wallet);
   });
 }
 
-  function calculateEarnings(entry) {
-  const { amount, timestamp, tier } = entry;
+  function calculateEarnings(stake) {
   const now = new Date();
-  const start = new Date(timestamp);
-  const daysElapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  const start = new Date(stake.timestamp);
+  const msElapsed = now - start;
 
-  let dailyRate = 0;
-  if (tier === 'Monthly') dailyRate = 16.7;
-  else if (tier === '1 Year') dailyRate = 171.23;
-  else if (tier === '5 Year') dailyRate = 547.94;
+  // Convert milliseconds to days (fractional)
+  const daysElapsed = msElapsed / (1000 * 60 * 60 * 24);
 
-  const earned = amount * dailyRate * daysElapsed;
-  return earned;
+  // Return fractional earnings
+  return daysElapsed * stake.dailyReward;
 }
+
 
 
 function showStakeConfirmedModal() {

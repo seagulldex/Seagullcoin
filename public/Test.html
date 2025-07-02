@@ -391,11 +391,7 @@ localStorage.setItem('seagull_wallet', wallet);
     });
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    updateWalletUI();
-    updateWalletStatus();
-    loadChartData();
-  });
+  
 
 
 
@@ -678,8 +674,8 @@ function loadChartData() {
 }
 
 // Initial load
-window.addEventListener('DOMContentLoaded', loadChartData);
-
+window.addEventListener('DOMContentLoaded', () => {
+    updateWalletUI();
     fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
     updateCurrentPrice();            // Orderbook data
     fetchLiveSGLCNXAUPrice();  

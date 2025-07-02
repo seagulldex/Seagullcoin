@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const SGLCNXAUPriceSchema = new mongoose.Schema({
-  timestamp: { type: Date, default: Date.now },
+  timestamp: { type: Date, default: Date.now, unique: true },
   sglcn_to_xau: Number,
   xau_to_sglcn: Number
 });

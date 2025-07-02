@@ -437,7 +437,7 @@ localStorage.setItem('seagull_wallet', wallet);
 
     async function fetchLiveSGLCNPrice() {
       try {
-        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xrp');
+        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xrp?history=true');
         const data = await res.json();
         if (data && data.sglcn_to_xrp) {
           const latestPrice = parseFloat(data.sglcn_to_xrp).toFixed(6);

@@ -652,13 +652,22 @@ function loadChartData() {
     type: 'line',
     data: {
       labels: labels,
-      datasets: [{
-        label: 'XAU/SGLCN',
-        data: data,
-        fill: false,
-        borderColor: 'rgba(255,193,7,1)',
-        tension: 0.1
-      }]
+      datasets: [
+        {
+          label: 'XAU/SGLCN',
+          data: xauSglcnPrices,
+          fill: false,
+          borderColor: 'rgba(255,193,7,1)', // gold/yellow
+          tension: 0.1
+        },
+        {
+          label: 'SGLCN/XRP',
+          data: sglcnXrpPrices,
+          fill: false,
+          borderColor: 'rgba(54, 162, 235, 1)', // blue
+          tension: 0.1
+        }
+      ]
     },
     options: {
       responsive: true,
@@ -676,7 +685,7 @@ function loadChartData() {
     }
   });
 }
-
+    
 // Initial load
 window.addEventListener('DOMContentLoaded', loadChartData);
 

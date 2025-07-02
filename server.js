@@ -5030,17 +5030,6 @@ app.get('/api/sglcn-xau', async (req, res) => {
     res.json(result);
 
     
-try {
-  await SGLCNXAUPrice.create(result);  // <-- use 'result' here
-  console.log("Saved AMM entry to DB");
-} catch (err) {
-  if (err.code === 11000) {
-    console.log("Duplicate timestamp — skipping insert");
-  } else {
-    console.error("MongoDB insert error:", err.message);
-  }
-}
-
   } catch (err) {
     console.error("Error fetching AMM price:", err.message);
     res.status(500).json({ error: err.message });

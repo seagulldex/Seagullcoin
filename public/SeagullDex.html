@@ -437,7 +437,7 @@ localStorage.setItem('seagull_wallet', wallet);
 
     async function fetchLiveSGLCNPrice() {
       try {
-        const res = await fetch('https://sglcn-x20-api.glitch.me/api/sglcn-xrp');
+        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xrp?history=true');
         const data = await res.json();
         if (data && data.sglcn_to_xrp) {
           const latestPrice = parseFloat(data.sglcn_to_xrp).toFixed(6);
@@ -652,22 +652,13 @@ function loadChartData() {
     type: 'line',
     data: {
       labels: labels,
-      datasets: [
-        {
-          label: 'XAU/SGLCN',
-          data: xauSglcnPrices,
-          fill: false,
-          borderColor: 'rgba(255,193,7,1)', // gold/yellow
-          tension: 0.1
-        },
-        {
-          label: 'SGLCN/XRP',
-          data: sglcnXrpPrices,
-          fill: false,
-          borderColor: 'rgba(54, 162, 235, 1)', // blue
-          tension: 0.1
-        }
-      ]
+      datasets: [{
+        label: 'XAU/SGLCN',
+        data: data,
+        fill: false,
+        borderColor: 'rgba(255,193,7,1)',
+        tension: 0.1
+      }]
     },
     options: {
       responsive: true,
@@ -685,7 +676,7 @@ function loadChartData() {
     }
   });
 }
-    
+
 // Initial load
 window.addEventListener('DOMContentLoaded', loadChartData);
 

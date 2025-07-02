@@ -6339,6 +6339,21 @@ app.get('/staking-info/:walletAddress', async (req, res) => {
   res.json(stakesWithEarnings);
 });
 
+app.get('/api/sglcn-xau/history', async (req, res) => {
+  try {
+    // Fetch recent data, e.g. last 7 days, limit 1000
+    const data = await SGLCNXAUPrice.find({})
+      .sort({ timestamp: 1 }) // oldest to newest
+      .limit(1000)
+      .lean();
+
+    res.json(data);
+  } catch (err) {
+    console.error('Failed to fetch history:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

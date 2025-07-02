@@ -638,7 +638,6 @@ async function loadChartData() {
   const dataXRP = await resXRP.json();
   const dataXAU = await resXAU.json();
 
-  // Make sure you are accessing the correct array in the response
   const format = (data) => data.map(point => ({
     x: new Date(point.timestamp),
     y: point.price
@@ -647,12 +646,11 @@ async function loadChartData() {
   const xrpData = format(dataXRP.history ?? dataXRP);
   const xauData = format(dataXAU.history ?? dataXAU);
 
-  // Combine and sort all timestamps to cover both datasets on x-axis
-  const allDates = Array.from(new Set([...xrpData, ...xauData].map(d => d.x))).sort((a,b) => a - b);
-
   const ctx = document.getElementById('priceChart').getContext('2d');
 
-  if (chartInstance) chartInstance.destroy();
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
 
   chartInstance = new Chart(ctx, {
     type: 'line',
@@ -699,6 +697,7 @@ async function loadChartData() {
     }
   });
 }
+
 
 // Initial load
 window.addEventListener('DOMContentLoaded', () => {

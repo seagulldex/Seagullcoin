@@ -296,9 +296,12 @@ localStorage.setItem('seagull_wallet', wallet);
     
 
     document.getElementById('logout-btn').onclick = () => {
-      localStorage.removeItem('xumm_wallet_address');
-      updateWalletStatus();
-    };
+  localStorage.removeItem('xumm_wallet_address');
+  localStorage.removeItem('seagull_wallet');
+  localStorage.removeItem('xumm_user');
+  updateWalletUI();  // Instead of updateWalletStatus()
+};
+
 
     function formatPrice(price) {
       return !price || isNaN(price) ? '' : Number(price).toFixed(6);

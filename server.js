@@ -4522,9 +4522,15 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
 
 
 // Express endpoint
-const HISTORY_FILE2 = "./sglcn_xrp_history.json";
-let ammXrpHistory = []
-// Load history from file if exists
+const ammSchema = new mongoose.Schema({
+  sglcn_to_xrp: String,
+  xrp_to_sglcn: String,
+  timestamp: { type: Date, default: Date.now }
+});
+
+const AmmHistory = mongoose.model('AmmHistory', ammSchema);
+
+// Load history from MongoDB
 const fetchSglcnXrpAmm = async () => {
   const client = new Client("wss://s2.ripple.com");
   try {
@@ -4548,18 +4554,15 @@ const fetchSglcnXrpAmm = async () => {
     const xrp = parseFloat(amm.amount) / 1000000; // drops to XRP
     const sglcn = parseFloat(amm.amount2.value);
 
-    const entry = {
+    const entry = new AmmHistory({
       sglcn_to_xrp: (xrp / sglcn).toFixed(6),
       xrp_to_sglcn: (sglcn / xrp).toFixed(2),
       timestamp: new Date().toISOString()
-    };
+    });
 
-    ammXrpHistory.unshift(entry);
-    if (ammXrpHistory.length > 35040) ammXrpHistory.pop();
+    await entry.save(); // Save to MongoDB
 
-    // Save to file
-    fs.writeFileSync(HISTORY_FILE2, JSON.stringify({ history: ammXrpHistory }, null, 2));
-    console.log("AMM data saved to HISTORY_FILE2");
+    console.log("AMM data saved to MongoDB");
 
   } catch (err) {
     console.error("Error fetching AMM:", err.message);
@@ -4571,30 +4574,33 @@ const fetchSglcnXrpAmm = async () => {
 // Run once immediately on startup
 fetchSglcnXrpAmm();
 
-// Then every 30 minutes (1800000 ms)
-setInterval(fetchSglcnXrpAmm, 1800000);
-
-app.get('/api/sglcn-xrp', (req, res) => {
+// API endpoint
+app.get('/api/sglcn-xrp', async (req, res) => {
   try {
-    const raw = fs.readFileSync(HISTORY_FILE2);
-    const { history } = JSON.parse(raw);
-    if (!history || !history.length) {
-      return res.status(404).json({ error: "No AMM price history available." });
-    }
-
-  const showHistory = req.query.history === 'true';
+    const showHistory = req.query.history === 'true';
+    
     if (showHistory) {
+      // Fetch all history from MongoDB
+      const history = await AmmHistory.find().sort({ timestamp: -1 }).limit(100); // Limit to last 100 entries
+      if (!history.length) {
+        return res.status(404).json({ error: "No AMM price history available." });
+      }
       return res.json({ history });
     }
 
     // Return latest entry
-    res.json(history[0]);
+    const latest = await AmmHistory.findOne().sort({ timestamp: -1 });
+    if (!latest) {
+      return res.status(404).json({ error: "No AMM price data available." });
+    }
+    res.json(latest);
 
   } catch (err) {
-    console.error("Error reading SGLCN-XRP history file:", err.message);
-    res.status(500).json({ error: "Failed to read price history." });
+    console.error("Error reading SGLCN-XRP history from MongoDB:", err.message);
+    res.status(500).json({ error: "Failed to fetch price history." });
   }
 });
+
 
 app.post('/orderbook/scl-xau', async (req, res) => {
   const { side, amount, rate, wallet_address, mode = 'passive' } = req.body;

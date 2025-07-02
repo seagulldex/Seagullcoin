@@ -148,6 +148,10 @@ async function fetchIPFSMetadata(uri) {
   }
 }
 
+// Fetch SGLCN-XRP price from the AMM pool
+
+
+
 async function createStakePayload(req, res, amount) {
   try {
     const db = await connectDB();
@@ -4522,6 +4526,9 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
 
 
 // Express endpoint
+const HISTORY_FILE2 = "./sglcn_xrp_history.json";
+
+// Define schema for storing AMM data in MongoDB
 const ammSchema = new mongoose.Schema({
   sglcn_to_xrp: String,
   xrp_to_sglcn: String,
@@ -4530,7 +4537,7 @@ const ammSchema = new mongoose.Schema({
 
 const AmmHistory = mongoose.model('AmmHistory', ammSchema);
 
-// Load history from MongoDB
+// Fetch SGLCN-XRP price from the AMM pool
 const fetchSglcnXrpAmm = async () => {
   const client = new Client("wss://s2.ripple.com");
   try {
@@ -4561,7 +4568,6 @@ const fetchSglcnXrpAmm = async () => {
     });
 
     await entry.save(); // Save to MongoDB
-
     console.log("AMM data saved to MongoDB");
 
   } catch (err) {
@@ -4571,14 +4577,18 @@ const fetchSglcnXrpAmm = async () => {
   }
 };
 
-// Run once immediately on startup
+// Run immediately on startup
 fetchSglcnXrpAmm();
 
-// API endpoint
+// Fetch data periodically (every 5 minutes)
+const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+setInterval(fetchSglcnXrpAmm, INTERVAL_MS);
+
+// API endpoint to get SGLCN-XRP data
 app.get('/api/sglcn-xrp', async (req, res) => {
   try {
     const showHistory = req.query.history === 'true';
-    
+
     if (showHistory) {
       // Fetch all history from MongoDB
       const history = await AmmHistory.find().sort({ timestamp: -1 }).limit(100); // Limit to last 100 entries
@@ -4588,7 +4598,7 @@ app.get('/api/sglcn-xrp', async (req, res) => {
       return res.json({ history });
     }
 
-    // Return latest entry
+    // Return the latest entry
     const latest = await AmmHistory.findOne().sort({ timestamp: -1 });
     if (!latest) {
       return res.status(404).json({ error: "No AMM price data available." });
@@ -4600,6 +4610,7 @@ app.get('/api/sglcn-xrp', async (req, res) => {
     res.status(500).json({ error: "Failed to fetch price history." });
   }
 });
+
 
 
 app.post('/orderbook/scl-xau', async (req, res) => {

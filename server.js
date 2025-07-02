@@ -4558,12 +4558,30 @@ const fetchSglcnXrpAmm = async () => {
       return;
     }
 
-    const xrp = parseFloat(amm.amount) / 1000000; // drops to XRP
-    const sglcn = parseFloat(amm.amount2.value);
+    const xrpStr = amm.amount;
+    const sglcnStr = amm.amount2.value;
 
+    // Validate and parse XRP and SGLCN
+    const xrp = parseFloat(xrpStr) / 1000000; // drops to XRP
+    const sglcn = parseFloat(sglcnStr);
+
+    // Check for NaN values
+    if (isNaN(xrp) || isNaN(sglcn)) {
+      console.error(`Invalid data: XRP = ${xrpStr}, SGLCN = ${sglcnStr}`);
+      return;
+    }
+
+    // Calculate the conversion rates
+    const sglcn_to_xrp = (xrp / sglcn).toFixed(6);
+    const xrp_to_sglcn = (sglcn / xrp).toFixed(2);
+
+    // Log the calculated values
+    console.log(`Calculated: sglcn_to_xrp = ${sglcn_to_xrp}, xrp_to_sglcn = ${xrp_to_sglcn}`);
+
+    // Save to MongoDB
     const entry = new AmmHistory({
-      sglcn_to_xrp: (xrp / sglcn).toFixed(6),
-      xrp_to_sglcn: (sglcn / xrp).toFixed(2),
+      sglcn_to_xrp,
+      xrp_to_sglcn,
       timestamp: new Date().toISOString()
     });
 
@@ -4610,6 +4628,8 @@ app.get('/api/sglcn-xrp', async (req, res) => {
     res.status(500).json({ error: "Failed to fetch price history." });
   }
 });
+
+
 
 
 

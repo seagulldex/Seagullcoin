@@ -317,7 +317,9 @@ localStorage.setItem('seagull_wallet', wallet);
     const resXAU = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau?range=${timeframe}`);
     const dataXRP = await resXRP.json();
     const dataXAU = await resXAU.json();
-
+    console.log('dataXRP', dataXRP);
+    console.log('dataXAU', dataXAU); 
+    
     const format = (data) =>
       data.map(point => ({
         x: new Date(point.timestamp),

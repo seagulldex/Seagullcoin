@@ -322,7 +322,7 @@ localStorage.setItem('seagull_wallet', wallet);
 
       }));
 
-    const xrpData = format(dataXRP);
+    const xrpData = format(dataXRP.history);
     const xauData = format(dataXAU);
 
     const ctx = document.getElementById('priceChart').getContext('2d');

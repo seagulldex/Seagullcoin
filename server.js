@@ -5011,7 +5011,7 @@ setInterval(async () => {
   } finally {
     if (client.isConnected()) await client.disconnect();
   }
-}, 1800000); // every 5 mins
+}, 300000); // every 5 mins
 
 
 // Single endpoint with optional ?history=true
@@ -5051,9 +5051,6 @@ app.get('/api/sglcn-xau', async (req, res) => {
       xau_to_sglcn: parseFloat((sglcn / xau).toFixed(2)),
       timestamp: new Date()
     };
-
-    // Save to MongoDB
-    await SGLCNXAUPrice.create(result);
 
     res.json(result);
 

@@ -4975,13 +4975,6 @@ app.get('/api/orderbook', async (req, res) => {
 });
  // In-memory history (lost on restart)
 
-
-
-
-
-
-
-
 setInterval(async () => {
   const client = new Client("wss://s2.ripple.com");
   try {
@@ -5029,6 +5022,7 @@ setInterval(async () => {
     if (client.isConnected()) await client.disconnect();
   }
 }, 300000); // every 5 mins
+
 
 // Single endpoint with optional ?history=true
 app.get('/api/sglcn-xau', async (req, res) => {

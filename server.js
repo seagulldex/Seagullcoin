@@ -4980,6 +4980,8 @@ app.get('/api/orderbook', async (req, res) => {
 
 
 
+
+
 setInterval(async () => {
   const client = new Client("wss://s2.ripple.com");
   try {
@@ -4987,7 +4989,10 @@ setInterval(async () => {
     const ammResponse = await client.request({
       command: "amm_info",
       asset: { currency: "XAU", issuer: "rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ" },
-      asset2: { currency: "53656167756C6C436F696E000000000000000000", issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno" }
+      asset2: {
+        currency: "53656167756C6C436F696E000000000000000000",
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+      }
     });
 
     const amm = ammResponse.result.amm;
@@ -4997,12 +5002,24 @@ setInterval(async () => {
       const entry = {
         sglcn_to_xau: (xau / sglcn).toFixed(6),
         xau_to_sglcn: (sglcn / xau).toFixed(2),
-        timestamp: new Date().toISOString()
+        timestamp: new Date()
       };
+
+      // ✅ Uniqueness check before saving to DB
+      const recent = await SGLCNXAUPrice.findOne({
+        timestamp: { $gte: new Date(Date.now() - 60 * 1000) }
+      });
+
+      if (!recent) {
+        await SGLCNXAUPrice.create(entry);
+        console.log("Saved AMM entry to DB");
+      } else {
+        console.log("Skipped saving duplicate entry");
+      }
+
+      // Still write to memory + file if you want
       ammHistory.unshift(entry);
       if (ammHistory.length > 35040) ammHistory.pop();
-
-      // Save to file
       fs.writeFileSync(HISTORY_FILE, JSON.stringify({ history: ammHistory }, null, 2));
     }
 
@@ -5012,7 +5029,6 @@ setInterval(async () => {
     if (client.isConnected()) await client.disconnect();
   }
 }, 300000); // every 5 mins
-
 
 // Single endpoint with optional ?history=true
 app.get('/api/sglcn-xau', async (req, res) => {

@@ -23,8 +23,21 @@ async function fetchAndSaveXRPPrice() {
     const amm = ammResponse.result.amm;
     if (!amm || !amm.amount || !amm.amount2) return;
 
-    const xrp = parseFloat(amm.amount.value) / 1_000_000; // XRP is in drops
-    const sglcn = parseFloat(amm.amount2.value);
+    const xrpRaw = amm.amount?.value;
+    const sglcnRaw = amm.amount2?.value;
+
+    if (!xrpRaw || !sglcnRaw) {
+      console.warn('Missing amount values:', { xrpRaw, sglcnRaw });
+      return;
+    }
+
+    const xrp = parseFloat(xrpRaw) / 1_000_000; // Convert drops to XRP
+    const sglcn = parseFloat(sglcnRaw);
+
+    if (isNaN(xrp) || isNaN(sglcn) || xrp === 0 || sglcn === 0) {
+      console.warn('Invalid numeric values for price tracking:', { xrp, sglcn });
+      return;
+    }
 
     const entry = new SGLCNXRPPrice({
       sglcn_to_xrp: xrp / sglcn,

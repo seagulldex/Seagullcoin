@@ -272,38 +272,28 @@ function updateWalletUI() {
 }
 
 
-    
-    
-    async function startLoginFlow() {
-  try {
+      async function startLoginFlow() {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
     const data = await res.json();
-    window.location.href = data.payloadURL;
+    window.open(data.payloadURL, "_blank");
 
     const interval = setInterval(async () => {
       const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
       const loginStatus = await check.json();
-
       if (loginStatus.loggedIn) {
-        clearInterval(interval);
-        wallet = loginStatus.account;
-
-        // 🔐 Save both XRPL and SEAGULL wallet info
-      localStorage.setItem('xumm_wallet_address', loginStatus.account);
-      localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
-      localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
-      localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
-
-
-        document.getElementById('wallet-address').textContent = wallet;
-        updateWalletUI();
-      }
-
-    }, 3000); // <- this closing brace lines up properly now
-  } catch (e) {
-    alert('Login failed: ' + e.message);
-  }
+  clearInterval(interval);
+  wallet = loginStatus.account;
+localStorage.setItem('xumm_wallet_address', wallet);
+localStorage.setItem('seagull_wallet', wallet);
+      updateWalletStatus();
+      updateWalletUI();
+      loadStakingData();
+      getTimeLeft();// <- This is fine
     }
+  }, 3000); // Only ONE closing brace before this
+}
+    
+    
 
     document.getElementById('logout-btn').onclick = () => {
       localStorage.removeItem('xumm_wallet_address');

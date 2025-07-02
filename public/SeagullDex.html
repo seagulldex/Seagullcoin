@@ -8,20 +8,6 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="header.css" />
   
-  <style>
-    body {
-      padding-top: 80px; /* space from top to push chart down */
-      font-family: Arial, sans-serif;
-    }
-    .green { color: green; }
-    .red { color: red; }
-    .orderbook-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-  </style>
-  
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
 </head>
@@ -31,8 +17,16 @@
   <script type="module" src="./chart.js"></script>
 </body>
 </html>
-
 <style>
+  h2 {
+  margin-top: 80px;
+  text-align: center;
+}
+
+#priceChart {
+  display: block;
+  margin: 0 auto;
+}
     .green { color: green; }
     .red { color: red; }
     .orderbook-table {
@@ -74,8 +68,6 @@
 #logout-btn:hover {
   background-color: #e04343;
 }
-
-
   </style>
 </head>
 <body>

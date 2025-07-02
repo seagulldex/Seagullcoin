@@ -13,7 +13,7 @@ async function fetchAndSaveXRPPrice() {
 
     const ammResponse = await client.request({
       command: 'amm_info',
-      asset: { currency: 'XRP' }, // XRP has no issuer
+      asset: { currency: 'XRP' },
       asset2: {
         currency: '53656167756C6C436F696E000000000000000000',
         issuer: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno'
@@ -23,19 +23,23 @@ async function fetchAndSaveXRPPrice() {
     const amm = ammResponse.result.amm;
     if (!amm || !amm.amount || !amm.amount2) return;
 
-    const xrpRaw = amm.amount?.value;
-    const sglcnRaw = amm.amount2?.value;
+    const { amount, amount2 } = amm;
 
-    if (!xrpRaw || !sglcnRaw) {
-      console.warn('Missing amount values:', { xrpRaw, sglcnRaw });
+    let xrp, sglcn;
+
+    if (amount.currency === undefined) {
+      xrp = parseFloat(amount.value) / 1_000_000;
+      sglcn = parseFloat(amount2.value);
+    } else if (amount2.currency === undefined) {
+      sglcn = parseFloat(amount.value);
+      xrp = parseFloat(amount2.value) / 1_000_000;
+    } else {
+      console.warn('AMM does not include XRP:', { amount, amount2 });
       return;
     }
 
-    const xrp = parseFloat(xrpRaw) / 1_000_000; // Convert drops to XRP
-    const sglcn = parseFloat(sglcnRaw);
-
     if (isNaN(xrp) || isNaN(sglcn) || xrp === 0 || sglcn === 0) {
-      console.warn('Invalid numeric values for price tracking:', { xrp, sglcn });
+      console.warn('Invalid parsed values:', { xrp, sglcn });
       return;
     }
 
@@ -52,6 +56,7 @@ async function fetchAndSaveXRPPrice() {
     if (client.isConnected()) await client.disconnect();
   }
 }
+
 
 // Connect to DB and schedule
 mongoose.connect(MONGO_URI, {

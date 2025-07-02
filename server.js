@@ -4573,9 +4573,19 @@ const fetchSglcnXrpAmm = async () => {
     const sglcn_to_xrp = (xrp / sglcn).toFixed(6);
     const xrp_to_sglcn = (sglcn / xrp).toFixed(2);
 
+// Inside fetchSglcnXrpAmm, before saving to MongoDB
+const recent = await AmmHistory.findOne().sort({ timestamp: -1 });
+
+if (recent && Date.now() - new Date(recent.timestamp).getTime() < INTERVAL_MS - 1000) {
+  console.log("Skipping insert: too soon after last update.");
+  return;
+}
+
+    
     // Log the calculated values
     console.log(`Calculated: sglcn_to_xrp = ${sglcn_to_xrp}, xrp_to_sglcn = ${xrp_to_sglcn}`);
 
+    
     // Save to MongoDB
     const entry = new AmmHistory({
       sglcn_to_xrp,
@@ -4607,7 +4617,7 @@ app.get('/api/sglcns-xrp', async (req, res) => {
 
     if (showHistory) {
       // Fetch all history from MongoDB
-      const history = await AmmHistory.find().sort({ timestamp: -1 }).limit(100); // Limit to last 100 entries
+      const history = await AmmHistory.find().sort({ timestamp: -1 }).limit(100000000); // Limit to last 100 entries
       if (!history.length) {
         return res.status(404).json({ error: "No AMM price history available." });
       }

@@ -391,7 +391,11 @@ localStorage.setItem('seagull_wallet', wallet);
     });
   }
 
-  
+  window.addEventListener('DOMContentLoaded', () => {
+    updateWalletUI();
+    updateWalletStatus();
+    loadChartData();
+  });
 
 
 
@@ -624,10 +628,7 @@ createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
   document.getElementById('amount-label').innerHTML = `<strong>You Will Receive (${toAsset})</strong>`;
     }
 
-
-
-    
-    let chartInstance;
+let chartInstance;
 
 async function loadChartData() {
   const timeframe = document.getElementById('timeframe').value;
@@ -699,9 +700,12 @@ async function loadChartData() {
 }
 
 
+    
+    
+
 // Initial load
-window.addEventListener('DOMContentLoaded', () => {
-    updateWalletUI();
+window.addEventListener('DOMContentLoaded', loadChartData);
+
     fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
     updateCurrentPrice();            // Orderbook data
     fetchLiveSGLCNXAUPrice();  

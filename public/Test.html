@@ -318,7 +318,8 @@ localStorage.setItem('seagull_wallet', wallet);
     const format = (data) =>
       data.map(point => ({
         x: new Date(point.timestamp),
-        y: point.price
+        y: parseFloat(point.price)
+
       }));
 
     const xrpData = format(dataXRP);

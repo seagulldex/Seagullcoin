@@ -86,7 +86,7 @@ import { connectDB } from './connectDB.js'; // ✅ Update path to match your fil
 import { fetchAllNFTs } from './helpers/fetchAllNFTs.js';
 import SGLCNXAUPrice from './models/SGLCNXAUPrice.js';
 import './Xauprice.js'; // or whatever your file with setInterval is
-
+import './priceTrackerSGLCNXRP.js';
 
 dotenv.config();
 

@@ -85,7 +85,7 @@ import UserWallet from './models/Wallet.js'; // assuming file is still Wallet.js
 import { connectDB } from './connectDB.js'; // ✅ Update path to match your file structure
 import { fetchAllNFTs } from './helpers/fetchAllNFTs.js';
 import SGLCNXAUPrice from './models/SGLCNXAUPrice.js';
-import './priceTracker.js'; // or whatever your file with setInterval is
+import './Xauprice.js'; // or whatever your file with setInterval is
 
 
 dotenv.config();

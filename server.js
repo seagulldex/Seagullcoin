@@ -4967,17 +4967,10 @@ app.get('/api/orderbook', async (req, res) => {
 });
  // In-memory history (lost on restart)
 
-const HISTORY_FILE = './sglcn_xau_history.json';
 
 
-let ammHistory = [];
-if (fs.existsSync(HISTORY_FILE)) {
-  try {
-    ammHistory = JSON.parse(fs.readFileSync(HISTORY_FILE)).history || [];
-  } catch (e) {
-    console.error("Failed to load history file:", e.message);
-  }
-}
+
+
 
 setInterval(async () => {
   const client = new Client("wss://s2.ripple.com");

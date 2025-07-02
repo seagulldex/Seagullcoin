@@ -349,45 +349,59 @@ localStorage.setItem('seagull_wallet', wallet);
         ]
       },
       options: {
-        responsive: true,
-        scales: {
-          x: {
-            type: 'time',
-            time: {
-              tooltipFormat: 'PPpp',
-              unit: timeframe === '1D' ? 'hour' : 'day'
-            },
-            title: {
-              display: true,
-              text: 'Date'
-            }
-          },
-          'y-xrp': {
-            type: 'linear',
-            position: 'left',
-            title: {
-              display: true,
-              text: 'XRP'
-            }
-          },
-          'y-xau': {
-            type: 'linear',
-            position: 'right',
-            grid: {
-              drawOnChartArea: false
-            },
-            title: {
-              display: true,
-              text: 'XAU'
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            display: true
-          }
-        }
+  responsive: true,
+  scales: {
+    x: {
+      type: 'time',
+      time: {
+        tooltipFormat: 'PPpp',
+        unit: timeframe === '1D' ? 'hour' : 'day'
+      },
+      title: {
+        display: true,
+        text: 'Date'
       }
+    },
+    'y-xrp': {
+      type: 'linear',
+      position: 'left',
+      title: {
+        display: true,
+        text: 'Price (XRP)',  // 🟢 Make this explicit
+        color: 'rgba(0,123,255,1)',
+        font: {
+          size: 14
+        }
+      },
+      ticks: {
+        color: 'rgba(0,123,255,1)'
+      }
+    },
+    'y-xau': {
+      type: 'linear',
+      position: 'right',
+      grid: {
+        drawOnChartArea: false
+      },
+      title: {
+        display: true,
+        text: 'Price (XAU)',  // 🟡 Make this explicit
+        color: 'rgba(255,193,7,1)',
+        font: {
+          size: 14
+        }
+      },
+      ticks: {
+        color: 'rgba(255,193,7,1)'
+      }
+    }
+  },
+  plugins: {
+    legend: {
+      display: true
+    }
+  }
+}
     });
   }
 

@@ -4999,7 +4999,7 @@ app.get('/api/sglcn-xau', async (req, res) => {
 
   if (showHistory) {
     try {
-      const history = await SGLCNXAUPrice.find().sort({ timestamp: -1 }).limit(100);
+      const history = await SGLCNXAUPrice.find().sort({ timestamp: -1 }).limit(100000);
       return res.json({ history });
     } catch (err) {
       return res.status(500).json({ error: 'Failed to fetch history' });
@@ -5111,7 +5111,7 @@ const getMarketRate = async (from_currency, to_currency, issuers) => {
     ]);
 
   try {
-    await withTimeout(client.connect(), 5000);
+    await withTimeout(client.connect(), 1800000);
 
     const taker_gets = getCurrencyObj(to_currency);
     const taker_pays = getCurrencyObj(from_currency);

@@ -662,35 +662,84 @@ function loadChartData() {
   if (chartInstance) {
     chartInstance.destroy();
   }
-
-  chartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'XAU/SGLCN',
-        data: data,
-        fill: false,
-        borderColor: 'rgba(255,193,7,1)',
-        tension: 0.1
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: {
-          type: 'time',
-          time: {
-            unit: timeframe === '1D' ? 'hour' : 'day'
+  
+chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'SGLCN/XRP',
+            data: xrpData,
+            borderColor: 'rgba(0,123,255,1)',
+            yAxisID: 'y-xrp',
+            tension: 0.3
+          },
+          {
+            label: 'SGLCN/XAU',
+            data: xauData,
+            borderColor: 'rgba(255,193,7,1)',
+            yAxisID: 'y-xau',
+            tension: 0.3
           }
-        },
-        y: {
-          beginAtZero: false
+        ]
+      },
+      options: {
+  responsive: true,
+  scales: {
+    x: {
+      type: 'time',
+      time: {
+        tooltipFormat: 'PPpp',
+        unit: timeframe === '1D' ? 'hour' : 'day'
+      },
+      title: {
+        display: true,
+        text: 'Date'
+      }
+    },
+    'y-xrp': {
+      type: 'linear',
+      position: 'left',
+      title: {
+        display: true,
+        text: 'Price (XRP)',  // 🟢 Make this explicit
+        color: 'rgba(0,123,255,1)',
+        font: {
+          size: 14
         }
+      },
+      ticks: {
+        color: 'rgba(0,123,255,1)'
+      }
+    },
+    'y-xau': {
+      type: 'linear',
+      position: 'right',
+      grid: {
+        drawOnChartArea: false
+      },
+      title: {
+        display: true,
+        text: 'Price (XAU)',  // 🟡 Make this explicit
+        color: 'rgba(255,193,7,1)',
+        font: {
+          size: 14
+        }
+      },
+      ticks: {
+        color: 'rgba(255,193,7,1)'
       }
     }
-  });
+  },
+  plugins: {
+    legend: {
+      display: true
+    }
+  }
 }
+    });
+  }
+  
 
 // Initial load
 window.addEventListener('DOMContentLoaded', loadChartData);

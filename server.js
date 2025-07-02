@@ -4525,8 +4525,6 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
 
 
 
-// Express endpoint
-const HISTORY_FILE2 = "./sglcn_xrp_history.json";
 
 // Define schema for storing AMM data in MongoDB
 const ammSchema = new mongoose.Schema({
@@ -4603,7 +4601,7 @@ const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 setInterval(fetchSglcnXrpAmm, INTERVAL_MS);
 
 // API endpoint to get SGLCN-XRP data
-app.get('/api/sglcn-xrp', async (req, res) => {
+app.get('/api/sglcns-xrp', async (req, res) => {
   try {
     const showHistory = req.query.history === 'true';
 

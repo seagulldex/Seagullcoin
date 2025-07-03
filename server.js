@@ -6372,6 +6372,34 @@ app.get('/api/sglcn-xau/history', async (req, res) => {
   }
 });
 
+setInterval(async () => {
+  const client = new xrpl.Client("wss://s2.ripple.com");
+  try {
+    await client.connect();
+
+    const ammResponse = await client.request({
+      command: "amm_info",
+      asset: {
+        currency: "RLUSD",
+        issuer: "rH4LCU7G9BdK4DWdWeCPuJSkLTxyHbZ8rB"  // Replace with correct RLUSD issuer
+      },
+      asset2: {
+        currency: "53656167756C6C436F696E000000000000000000",  // SGLCN hex
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+      }
+    });
+
+    const { amm } = ammResponse.result;
+    const price = parseFloat(amm.lp_token_balance.value) / parseFloat(amm.amount2.value);
+    console.log("RLUSD → SGLCN rate:", price.toFixed(6));
+
+    await client.disconnect();
+  } catch (err) {
+    console.error("RLUSD AMM fetch error:", err);
+    }
+}, 5 * 60 * 1000);    // Fetch every 10 seconds
+
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

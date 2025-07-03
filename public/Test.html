@@ -415,6 +415,10 @@ localStorage.setItem('seagull_wallet', wallet);
     loadChartData();
   });
 
+document.getElementById('toggle-direction').addEventListener('click', () => {
+  invertChart = !invertChart;
+  loadChartData(); // re-render chart with new direction
+});
 
 
     async function updateCurrentPrice() {

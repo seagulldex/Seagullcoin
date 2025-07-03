@@ -337,8 +337,9 @@ localStorage.setItem('seagull_wallet', wallet);
         y: point.price
       }));
 
-    const xrpData = format(dataXRP);
-    const xauData = format(dataXAU);
+    const xrpData = filterDataByTimeframe(format(dataXRP), timeframe);
+    const xauData = filterDataByTimeframe(format(dataXAU), timeframe);
+
 
     const ctx = document.getElementById('priceChart').getContext('2d');
 
@@ -558,6 +559,19 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
   }
 };
 
+    function filterDataByTimeframe(data, timeframe) {
+  const now = Date.now();
+  const ranges = {
+    '1D': now - 24 * 60 * 60 * 1000,
+    '1W': now - 7 * 24 * 60 * 60 * 1000,
+    '1M': now - 30 * 24 * 60 * 60 * 1000,
+    'ALL': 0
+  };
+  const minTimestamp = ranges[timeframe];
+  return data.filter(point => point.x >= minTimestamp);
+}
+
+
 
 async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
   const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
@@ -759,6 +773,8 @@ async function loadChartData() {
     console.error("Failed to load chart data:", err);
   }
 }
+
+    
 
 
 

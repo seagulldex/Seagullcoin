@@ -509,6 +509,22 @@ localStorage.setItem('seagull_wallet', wallet);
         alert("Error submitting offer: " + err.message);
       }
     }
+
+    async function updateSwapPrice() {
+  const from = document.getElementById('swap-from').value;
+  const to = document.getElementById('swap-to').value;
+  try {
+    const rate = await getRatePreview(from, to);
+    document.getElementById('swap-price').value = rate;
+  } catch (err) {
+    document.getElementById('swap-price').value = 'Error';
+  }
+}
+
+document.getElementById('swap-from').addEventListener('change', updateSwapPrice);
+document.getElementById('swap-to').addEventListener('change', updateSwapPrice);
+window.addEventListener('DOMContentLoaded', updateSwapPrice);
+
     
     async function getRatePreview(from, to) {
   const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/rate-preview?from=${from}&to=${to}`);

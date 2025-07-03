@@ -6375,7 +6375,7 @@ app.get('/api/sglcn-xau/history', async (req, res) => {
 });
 
 
-const INTERVAL_MS = 5 * 60 * 1000;
+const RLUSD_INTERVAL_MS = 5 * 60 * 1000;
 
 const fetchSglcnRlusdAmm = async () => {
   const client = new Client("wss://s2.ripple.com");
@@ -6438,7 +6438,7 @@ const fetchSglcnRlusdAmm = async () => {
 // Initial run
 fetchSglcnRlusdAmm();
 // Interval
-setInterval(fetchSglcnRlusdAmm, INTERVAL_MS);
+setInterval(fetchSglcnRlusdAmm, RLUSD_INTERVAL_MS);
 
 
 app.get('/api/rlusd-sglcn', async (req, res) => {

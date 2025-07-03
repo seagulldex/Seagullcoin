@@ -585,7 +585,7 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
   function updateLabels() {
     const fromAsset = document.getElementById('swap-from').value;
     const toAsset = document.getElementById('swap-to').value;
-    document.getElementById('from-asset-label').textContent = toAsset;
+    document.getElementById('from-asset-label').textContent = Asset;
     document.getElementById('amount-label').innerHTML = `<strong>You Will Receive (${toAsset})</strong>`;
   }
 

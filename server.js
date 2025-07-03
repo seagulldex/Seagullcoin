@@ -4972,7 +4972,7 @@ setInterval(async () => {
 
       // ✅ Uniqueness check before saving to DB
       const recent = await SGLCNXAUPrice.findOne({
-        timestamp: { $gte: new Date(Date.now() - 60 * 1000) }
+        timestamp: { $gte: new Date(Date.now() - 300 * 1000) }
       });
 
       if (!recent) {

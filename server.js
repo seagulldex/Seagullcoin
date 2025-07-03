@@ -5149,12 +5149,11 @@ const getMarketRate = async (from_currency, to_currency, issuers) => {
   }
 };
 
-
-
 // --- Express route to create swap offer via XUMM ---
 app.post('/swap', async (req, res) => {
   const { from_currency, to_currency, amount, wallet_address } = req.body;
 
+  // Validate required fields
   if (!from_currency || !to_currency || !amount || !wallet_address) {
     return res.status(400).json({ error: 'Missing required fields.' });
   }
@@ -5163,25 +5162,45 @@ app.post('/swap', async (req, res) => {
     return res.status(400).json({ error: 'Currencies must differ.' });
   }
 
-  // Allow only the supported currencies
+  // Allow only supported currencies
   const supported = ['SeagullCoin', 'XRP', 'XAU'];
   if (!supported.includes(from_currency) || !supported.includes(to_currency)) {
     return res.status(400).json({ error: 'Unsupported currencies.' });
   }
 
+  // Parse and validate amount
+  const fromAmt = parseFloat(amount);
+  if (isNaN(fromAmt) || fromAmt <= 0) {
+    return res.status(400).json({ error: 'Invalid amount.' });
+  }
+
+  if (fromAmt < 0.000001) {
+    return res.status(400).json({ error: 'Amount too small.' });
+  }
+
+  // Helper to get issuer address
+  function resolveIssuer(currency) {
+    if (currency === 'XRP') return null;
+    if (currency === 'SeagullCoin') return issuers.SGLCN_ISSUER;
+    if (currency === 'XAU') return issuers.XAU_ISSUER;
+    return null;
+  }
+
   try {
     const rate = await getMarketRate(from_currency, to_currency, issuers);
-    const fromAmt = parseFloat(amount);
-    // Calculate amount to receive
-    const toAmt = from_currency === 'SeagullCoin'
-     ? (fromAmt * rate)
-     : (fromAmt / rate);
 
-    // Compose currency objects for the transaction
+    if (!rate || rate <= 0) {
+      return res.status(400).json({ error: 'Invalid market rate.' });
+    }
+
+    // Calculate amount to receive, round to 6 decimal places
+    const toAmt = parseFloat(
+      (from_currency === 'SeagullCoin' ? (fromAmt * rate) : (fromAmt / rate)).toFixed(6)
+    );
+
     const takerGets = getCurrencyObj(from_currency, fromAmt, issuers);
     const takerPays = getCurrencyObj(to_currency, toAmt, issuers);
 
-    // XUMM payload to create the OfferCreate transaction
     const payload = {
       txjson: {
         TransactionType: 'OfferCreate',
@@ -5193,31 +5212,30 @@ app.post('/swap', async (req, res) => {
       options: {
         submit: true,
         return_url: {
-          app: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
-          web: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
+          app: process.env.RETURN_URL || 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
+          web: process.env.RETURN_URL || 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
         }
       }
     };
 
-    // Create payload on XUMM and get UUID + URLs
     const { uuid, next } = await xumm.payload.create(payload);
 
-    // Respond with payload info and swap details
     res.json({
       success: true,
       uuid,
       next,
       rate,
+      expires_in: 60, // seconds until rate is considered stale
       swap_details: {
         from: {
           currency: from_currency,
           amount: fromAmt,
-          issuer: from_currency === 'XRP' ? null : (from_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
+          issuer: resolveIssuer(from_currency)
         },
         to: {
           currency: to_currency,
           amount: toAmt,
-          issuer: to_currency === 'XRP' ? null : (to_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
+          issuer: resolveIssuer(to_currency)
         }
       }
     });
@@ -5227,6 +5245,7 @@ app.post('/swap', async (req, res) => {
     res.status(500).json({ error: err.message || 'Swap failed.' });
   }
 });
+
 
 app.get('/rate-preview', async (req, res) => {
   const { from, to } = req.query;

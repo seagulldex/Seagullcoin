@@ -529,7 +529,7 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
 
     
     async function getRatePreview(from, to) {
-  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/rate-preview?from=${from}&to=${to}`);
+  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/rate-preview?to=${to}&from=${from}`);
   if (!res.ok) throw new Error('Rate preview failed');
   const data = await res.json();
   console.log('Rate:', data.rate);

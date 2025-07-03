@@ -733,10 +733,15 @@ const dataXau = historyXau.map(entry => {
             }
           },
           tooltip: {
-            callbacks: {
-              label: context => `Rate: ${context.raw.toLocaleString(undefined, { maximumFractionDigits: 4 })}`
-            }
-          }
+  callbacks: {
+    label: context => {
+      const rate = context.raw;
+      const formatted = rate < 0.0001
+        ? rate.toFixed(6) // Show more digits for tiny numbers
+        : rate.toLocaleString(undefined, { maximumFractionDigits: 4 });
+      return `Rate: ${formatted}`;
+    }
+              }
         },
         scales: {
           x: {

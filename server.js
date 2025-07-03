@@ -4940,6 +4940,12 @@ app.get('/api/orderbook', async (req, res) => {
 });
  // In-memory history (lost on restart)
 
+function roundTo5Minutes(date = new Date()) {
+  const ms = 1000 * 60 * 5;
+  return new Date(Math.floor(date.getTime() / ms) * ms);
+}
+
+
 setInterval(async () => {
   const client = new Client("wss://s2.ripple.com");
   try {
@@ -4958,10 +4964,11 @@ setInterval(async () => {
       const xau = parseFloat(amm.amount.value);
       const sglcn = parseFloat(amm.amount2.value);
       const entry = {
-        sglcn_to_xau: (xau / sglcn).toFixed(6),
-        xau_to_sglcn: (sglcn / xau).toFixed(2),
-        timestamp: new Date()
-      };
+  sglcn_to_xau: parseFloat((xau / sglcn).toFixed(6)),
+  xau_to_sglcn: parseFloat((sglcn / xau).toFixed(2)),
+  timestamp: roundTo5Minutes()
+};
+
 
       // ✅ Uniqueness check before saving to DB
       const recent = await SGLCNXAUPrice.findOne({

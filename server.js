@@ -6375,6 +6375,98 @@ app.get('/api/sglcn-xau/history', async (req, res) => {
 });
 
 
+const INTERVAL_MS = 5 * 60 * 1000;
+
+const fetchSglcnRlusdAmm = async () => {
+  const client = new Client("wss://s2.ripple.com");
+
+  try {
+    await client.connect();
+
+    const ammResponse = await client.request({
+      command: "amm_info",
+      asset: {
+        currency: "RLUSD",
+        issuer: "rH4LCU7G9BdK4DWdWeCPuJSkLTxyHbZ8rB" // RLUSD issuer
+      },
+      asset2: {
+        currency: "53656167756C6C436F696E000000000000000000", // SGLCN hex
+        issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
+      }
+    });
+
+    const amm = ammResponse.result.amm;
+    if (!amm?.amount || !amm?.amount2) {
+      console.error("🛑 Invalid AMM data received.");
+      return;
+    }
+
+    const rlusd = parseFloat(amm.amount.value);
+    const sglcn = parseFloat(amm.amount2.value);
+
+    if (isNaN(rlusd) || isNaN(sglcn)) {
+      console.error("❌ Invalid numeric values for RLUSD/SGLCN");
+      return;
+    }
+
+    const sglcn_to_rlusd = (rlusd / sglcn).toFixed(6);
+    const rlusd_to_sglcn = (sglcn / rlusd).toFixed(2);
+
+    // Avoid duplicate inserts within interval
+    const recent = await SGLCNRLUSDPrice.findOne().sort({ timestamp: -1 });
+    if (recent && Date.now() - new Date(recent.timestamp).getTime() < INTERVAL_MS - 1000) {
+      console.log("🔁 Skipped RLUSD insert — too soon.");
+      return;
+    }
+
+    const entry = new SGLCNRLUSDPrice({
+      sglcn_to_rlusd,
+      rlusd_to_sglcn,
+      timestamp: new Date().toISOString()
+    });
+
+    await entry.save();
+    console.log(`✅ RLUSD → SGLCN saved: ${sglcn_to_rlusd}, ${rlusd_to_sglcn}`);
+
+  } catch (err) {
+    console.error("🔥 RLUSD AMM fetch error:", err.message);
+  } finally {
+    if (client.isConnected()) await client.disconnect();
+  }
+};
+
+// Initial run
+fetchSglcnRlusdAmm();
+// Interval
+setInterval(fetchSglcnRlusdAmm, INTERVAL_MS);
+
+
+app.get('/api/rlusd-sglcn', async (req, res) => {
+  try {
+    const showHistory = req.query.history === 'true';
+
+    if (showHistory) {
+      const history = await SGLCNRLUSDPrice.find().sort({ timestamp: -1 }).limit(100000);
+      if (!history.length) {
+        return res.status(404).json({ error: "No RLUSD-SGLCN price history available." });
+      }
+      return res.json({ history });
+    }
+
+    const latest = await SGLCNRLUSDPrice.findOne().sort({ timestamp: -1 });
+    if (!latest) {
+      return res.status(404).json({ error: "No RLUSD-SGLCN price available." });
+    }
+
+    res.json(latest);
+  } catch (err) {
+    console.error("❌ Failed to fetch RLUSD-SGLCN:", err.message);
+    res.status(500).json({ error: "Failed to fetch RLUSD price history." });
+  }
+});
+
+
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

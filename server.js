@@ -5223,7 +5223,7 @@ app.post('/swap', async (req, res) => {
     res.json({
       success: true,
       uuid,
-      next,
+      payloadURL: next.always,
       rate,
       expires_in: 60, // seconds until rate is considered stale
       swap_details: {

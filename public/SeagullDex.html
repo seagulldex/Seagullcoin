@@ -309,31 +309,6 @@ localStorage.setItem('seagull_wallet', wallet);
   updateWalletUI();  // Instead of updateWalletStatus()
 };
 
-function filterChartData(labels, data1, data2, timeframe) {
-  const now = Date.now();
-  let cutoff;
-
-  switch (timeframe) {
-    case '1D': cutoff = now - 1 * 24 * 60 * 60 * 1000; break;
-    case '7D': cutoff = now - 7 * 24 * 60 * 60 * 1000; break;
-    case '1M': cutoff = now - 30 * 24 * 60 * 60 * 1000; break;
-    default: return { labels, data1, data2 };
-  }
-
-  const filtered = labels.map((label, i) => ({
-    label,
-    xrp: data1[i],
-    xau: data2[i]
-  })).filter(item => item.label.getTime() >= cutoff);
-
-  return {
-    labels: filtered.map(i => i.label),
-    data1: filtered.map(i => i.xrp),
-    data2: filtered.map(i => i.xau)
-  };
-}
-
-    
 
     function formatPrice(price) {
       return !price || isNaN(price) ? '' : Number(price).toFixed(6);
@@ -709,7 +684,7 @@ async function loadChartData() {
     const historyXau = jsonXau.history;
 
     // Prepare labels and datasets
-    const { labels: filteredLabels, data1: xrpData, data2: xauData } = filterChartData(labels, dataXrp, dataXau, timeframe);
+    const labels = historyXrp.map(entry => new Date(entry.timestamp));
 
     const dataXrp = historyXrp.map(entry => parseFloat(entry.xrp_to_sglcn));
     const dataXau = historyXau.map(entry => parseFloat(entry.xau_to_sglcn));

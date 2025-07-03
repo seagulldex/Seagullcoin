@@ -309,7 +309,7 @@ localStorage.setItem('seagull_wallet', wallet);
   async function loadChartData() {
     const timeframe = document.getElementById('timeframe').value;
     const resXRP = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcns-xrp?history=true`);
-    const resXAU = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau?range=${timeframe}`);
+    const resXAU = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau?history=true`);
     const dataXRP = await resXRP.json();
     const dataXAU = await resXAU.json();
     console.log('dataXRP', dataXRP);

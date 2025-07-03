@@ -558,96 +558,75 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
   }
 };
 
-
-async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
-  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from_currency: fromCurrency, to_currency: toCurrency, amount, wallet_address: walletAddress })
-  });
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.error || 'Swap failed');
-  }
-  const data = await res.json();
-  console.log('Swap Payload UUID:', data.uuid);
-  return data;
-}
-
-// Example usage:
-getRatePreview('SeagullCoin', 'XAU').then(rate => {
-  console.log('Current SGLCN to XAU rate:', rate);
-});
-
-createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
-  .then(response => console.log('Swap started:', response))
-  .catch(err => console.error(err));
-
-    document.getElementById('swap-btn').addEventListener('click', () => {
-  const fromCurrency = document.getElementById('swap-from').value;
-  const toCurrency = document.getElementById('swap-to').value;
-
-  if (fromCurrency === toCurrency) {
-    alert('Please select different currencies to swap.');
-    return;
-  }
-
-  // Example payload trigger (replace with your real payload logic)
-  alert(`Swap request:\nFrom: ${fromCurrency}\nTo: ${toCurrency}`);
-
-  // TODO: Implement actual swap payload here, e.g., open XUMM payload URL, call API, etc.
-});
-
-    const toCurrency = document.getElementById('swap-to');
-  const amountLabel = document.getElementById('amount-label');
-
-  function updateAmountLabel() {
-    const selected = toCurrency.value;
-    amountLabel.innerHTML = `<strong>${selected} Amount</strong>`;
-  }
-
-  toCurrency.addEventListener('change', updateAmountLabel);
-
-  // Initialize on load
-  window.addEventListener('DOMContentLoaded', updateAmountLabel);
-    
-    document.getElementById('swap-btn').addEventListener('click', async () => {
-  const from = document.getElementById('swap-from').value;
-  const to = document.getElementById('swap-to').value;
-  const amount = document.getElementById('swap-amount').value;
-  const wallet = localStorage.getItem('xumm_wallet_address');
-
-  if (!wallet) {
-    alert('Please connect your wallet first.');
-    return;
-  }
-
-  if (!amount || isNaN(amount) || amount <= 0) {
-    alert('Please enter a valid amount to swap.');
-    return;
-  }
-
-  try {
+  async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, amount, wallet })
+      body: JSON.stringify({
+        from_currency: fromCurrency,
+        to_currency: toCurrency,
+        amount,
+        wallet_address: walletAddress
+      })
     });
 
     const data = await res.json();
 
-    if (data.payloadURL) {
-      window.open(data.payloadURL, '_blank');
-    } else {
-      alert('Error initiating swap: ' + (data.error || 'Unknown error.'));
+    if (!res.ok) {
+      throw new Error(data.error || 'Swap failed');
     }
-  } catch (err) {
-    alert('Swap failed: ' + err.message);
-  }
-});
 
-  document.getElementById('swap-from').addEventListener('change', function () {
-    document.getElementById('from-asset-label').textContent = this.value;
+    console.log('Swap Payload UUID:', data.uuid);
+    return data;
+  }
+
+  function updateLabels() {
+    const fromAsset = document.getElementById('swap-from').value;
+    const toAsset = document.getElementById('swap-to').value;
+    document.getElementById('from-asset-label').textContent = fromAsset;
+    document.getElementById('amount-label').innerHTML = `<strong>You Will Receive (${toAsset})</strong>`;
+  }
+
+  // Update labels when currency selection changes
+  document.getElementById('swap-from').addEventListener('change', updateLabels);
+  document.getElementById('swap-to').addEventListener('change', updateLabels);
+
+  // Initial label setup on page load
+  window.addEventListener('DOMContentLoaded', updateLabels);
+
+  // Swap button handler
+  document.getElementById('swap-btn').addEventListener('click', async () => {
+    const fromCurrency = document.getElementById('swap-from').value;
+    const toCurrency = document.getElementById('swap-to').value;
+    const amount = parseFloat(document.getElementById('swap-amount').value);
+    const walletAddress = localStorage.getItem('xumm_wallet_address');
+
+    if (!walletAddress) {
+      alert('Please connect your wallet first.');
+      return;
+    }
+
+    if (fromCurrency === toCurrency) {
+      alert('Please select different currencies to swap.');
+      return;
+    }
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+
+    try {
+      const response = await createSwap(fromCurrency, toCurrency, amount, walletAddress);
+
+      if (response.payloadURL) {
+        window.open(response.payloadURL, '_blank');
+      } else {
+        alert('Swap created, but no payload URL found.');
+      }
+    } catch (error) {
+      alert('Swap failed: ' + error.message);
+    }
   });
 
   // Trigger initial value

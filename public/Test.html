@@ -733,36 +733,44 @@ const dataXau = historyXau.map(entry => {
             }
           },
           tooltip: {
-  callbacks: {
-    label: context => {
-      const rate = context.raw;
-      if (typeof rate !== 'number' || isNaN(rate)) return 'Rate: N/A';
-      return `Rate: ${rate.toLocaleString(undefined, {
-        maximumFractionDigits: rate < 0.0001 ? 8 : 4
-      })}`;
-         }
-          }
-        },
-        scales: {
-          x: {
-            type: 'time',
-            time: {
-              unit: timeframe === '1D' ? 'minute' : 'hour',
-              tooltipFormat: 'yyyy-MM-dd HH:mm'
-            },
-            ticks: {
-              color: '#ccc'
-            }
-          },
-          y: {
-            beginAtZero: false,
-            ticks: {
-              color: '#ccc'
-            }
+        callbacks: {
+          label: context => {
+            const rate = context.raw;
+            if (typeof rate !== 'number' || isNaN(rate)) return 'Rate: N/A';
+            return `Rate: ${rate.toLocaleString(undefined, {
+              maximumFractionDigits: rate < 0.0001 ? 8 : 4
+            })}`;
           }
         }
       }
-    });
+    },
+        scales: {
+      x: {
+        type: 'time',
+        time: {
+          unit:
+            timeframe === '1D' ? 'minute' :
+            timeframe === '1W' ? 'hour' :
+            timeframe === '1M' ? 'day' :
+            timeframe === '3M' ? 'week' :
+            (timeframe === '6M' || timeframe === '1Y') ? 'month' :
+            'day',
+          tooltipFormat: 'yyyy-MM-dd HH:mm'
+        },
+        ticks: {
+          color: '#ccc'
+            }
+           },
+      y: {
+        beginAtZero: false,
+        ticks: {
+          color: '#ccc'
+        }
+      }
+    }
+  }
+});
+
 
   } catch (err) {
     console.error("Failed to load chart data:", err);

@@ -146,7 +146,7 @@ nav ul li a {
   </div>
   
     <div style="flex: 1; min-width: 100px;">
-  <label for="swap-price" id="receive-label"><strong><span id='to-asset-label'>From</span> Cost</strong></label>
+  <label for="swap-price" id="receive-label"><strong><span id='from-asset-label'>From</span> Cost</strong></label>
   <input
     type="number"
     id="swap-price"
@@ -637,7 +637,7 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
     function updateLabels() {
   const fromAsset = document.getElementById('swap-from').value;
   const toAsset = document.getElementById('swap-to').value;
-  document.getElementById('to-asset-label').textContent = toAsset;
+  document.getElementById('from-asset-label').textContent = fromAsset;
   document.getElementById('amount-label').innerHTML = `<strong>You Will Receive (${toAsset})</strong>`;
     }
 

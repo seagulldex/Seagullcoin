@@ -87,6 +87,8 @@ import { fetchAllNFTs } from './helpers/fetchAllNFTs.js';
 import SGLCNXAUPrice from './models/SGLCNXAUPrice.js';
 import './Xauprice.js'; // or whatever your file with setInterval is
 import './priceTrackerSGLCNXRP.js';
+import SGLCNRLUSDPrice from './models/SGLCNRLUSDPrice.js';
+
 
 dotenv.config();
 
@@ -6372,32 +6374,52 @@ app.get('/api/sglcn-xau/history', async (req, res) => {
   }
 });
 
+
 setInterval(async () => {
   const client = new xrpl.Client("wss://s2.ripple.com");
+
   try {
     await client.connect();
 
-    const ammResponse = await client.request({
+    const response = await client.request({
       command: "amm_info",
       asset: {
         currency: "RLUSD",
-        issuer: "rH4LCU7G9BdK4DWdWeCPuJSkLTxyHbZ8rB"  // Replace with correct RLUSD issuer
+        issuer: "rH4LCU7G9BdK4DWdWeCPuJSkLTxyHbZ8rB"  // Replace if needed
       },
       asset2: {
-        currency: "53656167756C6C436F696E000000000000000000",  // SGLCN hex
+        currency: "53474C434E000000000000000000000000000000",  // SGLCN
         issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno"
       }
     });
 
-    const { amm } = ammResponse.result;
-    const price = parseFloat(amm.lp_token_balance.value) / parseFloat(amm.amount2.value);
-    console.log("RLUSD → SGLCN rate:", price.toFixed(6));
+    const { amm } = response.result;
+
+    if (!amm) {
+      console.warn("RLUSD/SGLCN AMM not found.");
+      await client.disconnect();
+      return;
+    }
+
+    const rlusdAmount = parseFloat(amm.amount.value);
+    const sglcnAmount = parseFloat(amm.amount2.value);
+
+    const rlusdToSglcn = sglcnAmount / rlusdAmount;
+    const sglcnToRlusd = rlusdAmount / sglcnAmount;
+
+    await SGLCNRLUSDPrice.create({
+      rlusd_to_sglcn: rlusdToSglcn,
+      sglcn_to_rlusd: sglcnToRlusd
+    });
 
     await client.disconnect();
+    console.log(`Saved RLUSD/SGLCN: ${rlusdToSglcn.toFixed(6)}`);
   } catch (err) {
     console.error("RLUSD AMM fetch error:", err);
-    }
-}, 5 * 60 * 1000);    // Fetch every 10 seconds
+    await client.disconnect();
+  }
+}, 5 * 60 * 1000); // Every 5 minutes
+
 
 app.get('/api/rlusd-sglcn', async (req, res) => {
   try {

@@ -110,15 +110,22 @@ nav ul li a {
 <div>
   <label for="timeframe">View:</label>
   <select id="timeframe" onchange="loadChartData()">
-    <option value="1D">1 Day</option>
+    <option value="1D" selected>1 Day</option>
     <option value="1W">1 Week</option>
-    <option value="1M" selected>1 Month</option>
+    <option value="1M">1 Month</option>
+    <option value="6M">6 Month</option>
+    <option value="1Y">1 Year</option>
     <option value="ALL">All Time</option>
   </select>
 </div>
 <div style="width: 125%; max-width: 1000px; margin: auto;">
   <canvas id="priceChart" height="350" style="width: 100%; margin-top: 20px;"></canvas>
 </div>
+
+    timeframe === '1D' ? 'minute' :
+            timeframe === '1W' ? 'hour' :
+            timeframe === '1M' ? 'day' :
+            timeframe === '3M' ? 'week' :
 
 <!-- Add this right below your chart container and above #orderbook -->
 <!-- Add this right below your chart container and above #orderbook -->

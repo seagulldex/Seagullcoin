@@ -597,39 +597,49 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
   window.addEventListener('DOMContentLoaded', updateLabels);
 
   // Swap button handler
-  document.getElementById('swap-btn').addEventListener('click', async () => {
-    const fromCurrency = document.getElementById('swap-from').value;
-    const toCurrency = document.getElementById('swap-to').value;
-    const amount = parseFloat(document.getElementById('swap-amount').value);
-    const walletAddress = localStorage.getItem('xumm_wallet_address');
+  document.getElementById('swap-btn').onclick = async () => {
+  const btn = document.getElementById('swap-btn');
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) return alert("Please log in first.");
 
-    if (!walletAddress) {
-      alert('Please connect your wallet first.');
+  const from = document.getElementById('swap-from').value;
+  const to = document.getElementById('swap-to').value;
+  const amount = parseFloat(document.getElementById('swap-amount').value);
+
+  if (!amount || amount <= 0) return alert("Enter a valid amount");
+
+  // Disable button and show loading text
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = "Processing...";
+
+  try {
+    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to, amount, wallet })
+    });
+
+    const result = await res.json();
+    console.log("Swap result:", result);
+
+    if (result.payloadURL) {
+      window.open(result.payloadURL, "_blank");
+      alert("Swap request submitted. Please approve the transaction in XUMM.");
       return;
     }
 
-    if (fromCurrency === toCurrency) {
-      alert('Please select different currencies to swap.');
-      return;
-    }
+    alert("Swap failed: " + (result.message || "Unknown error"));
+  } catch (err) {
+    console.error("Swap error:", err);
+    alert("Swap failed: Network or server error");
+  } finally {
+    // Re-enable button and reset text
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+};
 
-    if (!amount || isNaN(amount) || amount <= 0) {
-      alert('Please enter a valid amount.');
-      return;
-    }
-
-    try {
-      const response = await createSwap(fromCurrency, toCurrency, amount, walletAddress);
-
-      if (response.payloadURL) {
-        window.open(response.payloadURL, '_blank');
-      } else {
-        alert('Swap created, but no payload URL found.');
-      }
-    } catch (error) {
-      alert('Swap failed: ' + error.message);
-    }
-  });
 
   // Trigger initial value
   document.getElementById('to-asset-label').textContent = document.getElementById('swap-from').value;

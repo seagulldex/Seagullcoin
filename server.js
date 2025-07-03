@@ -6399,6 +6399,14 @@ setInterval(async () => {
     }
 }, 5 * 60 * 1000);    // Fetch every 10 seconds
 
+app.get('/api/rlusd-sglcn', async (req, res) => {
+  try {
+    const rates = await getRecentRates('RLUSD-SGLCN');
+    res.json({ history: rates });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch rates' });
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

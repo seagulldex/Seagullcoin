@@ -700,41 +700,37 @@ async function loadChartData() {
     // Prepare labels and datasets
     const labels = historyXrp.map(entry => new Date(entry.timestamp));
 
-    const dataXrp = historyXrp.map(entry => parseFloat(entry.xrp_to_sglcn));
-    const dataXau = historyXau.map(entry => parseFloat(entry.xau_to_sglcn));
+const dataXrp = historyXrp.map(entry => parseFloat(entry.xrp_to_sglcn));
+const dataXau = historyXau.map(entry => parseFloat(entry.xau_to_sglcn));
 
-    const xrpData = filterDataByTimeframe(format(dataXrp), timeframe);
-    const xauData = filterDataByTimeframe(format(dataXau), timeframe);
+// Filter labels and data by timeframe
+const filteredLabels = filterDataByTimeframe(format(labels), timeframe);
+const xrpData = filterDataByTimeframe(format(dataXrp), timeframe);
+const xauData = filterDataByTimeframe(format(dataXau), timeframe);
 
-    const ctx = document.getElementById('priceChart').getContext('2d');
-
-    if (chartInstance) {
-      chartInstance.destroy();
-    }
-
-    chartInstance = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'XRP → SGLCN',
-            data: dataXrp,
-            fill: false,
-            borderColor: 'rgba(65,105,225,1)', // royal blue
-            tension: 0.2,
-            pointRadius: 2,
-            pointHoverRadius: 5
+chartInstance = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: filteredLabels,
+    datasets: [
+      {
+        label: 'XRP → SGLCN',
+        data: xrpData,
+        fill: false,
+        borderColor: 'rgba(65,105,225,1)', // royal blue
+        tension: 0.2,
+        pointRadius: 2,
+        pointHoverRadius: 5
           },
-          {
-            label: 'XAU → SGLCN',
-            data: dataXau,
-            fill: false,
-            borderColor: 'rgba(255,165,0,1)', // orange
-            tension: 0.2,
-            pointRadius: 2,
-            pointHoverRadius: 5
-          }
+      {
+        label: 'XAU → SGLCN',
+        data: xauData,
+        fill: false,
+        borderColor: 'rgba(255,165,0,1)', // orange
+        tension: 0.2,
+        pointRadius: 2,
+        pointHoverRadius: 5
+      }
         ]
       },
       options: {

@@ -6414,7 +6414,7 @@ const fetchSglcnRlusdAmm = async () => {
 
     // Avoid duplicate inserts within interval
     const recent = await SGLCNRLUSDPrice.findOne().sort({ timestamp: -1 });
-    if (recent && Date.now() - new Date(recent.timestamp).getTime() < INTERVAL_MS - 1000) {
+    if (recent && Date.now() - new Date(recent.timestamp).getTime() < RLUSD_INTERVAL_MS - 1000) {
       console.log("🔁 Skipped RLUSD insert — too soon.");
       return;
     }

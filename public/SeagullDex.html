@@ -636,8 +636,12 @@ createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, amount, wallet })
-    });
+      body: JSON.stringify({
+  from_currency: from,
+  to_currency: to,
+  amount,
+  wallet_address: wallet
+});
 
     const data = await res.json();
 

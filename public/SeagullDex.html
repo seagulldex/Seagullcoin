@@ -554,11 +554,12 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
 
   const result = await res.json();
   if (result.payloadURL) {
-    window.open(result.payloadURL, "_blank");
-  } else {
-    alert("Swap failed: " + result.message);
-  }
-};
+  window.open(result.payloadURL, "_blank");
+  alert("Swap request submitted. Please approve the transaction in XUMM.");
+  return;
+}
+alert("Swap failed: " + (result.message || "Unknown error"));
+      
 
   async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {

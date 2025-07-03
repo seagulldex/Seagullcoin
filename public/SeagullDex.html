@@ -703,6 +703,9 @@ async function loadChartData() {
     const dataXrp = historyXrp.map(entry => parseFloat(entry.xrp_to_sglcn));
     const dataXau = historyXau.map(entry => parseFloat(entry.xau_to_sglcn));
 
+    const xrpData = filterDataByTimeframe(format(dataXrp), timeframe);
+    const xauData = filterDataByTimeframe(format(dataXau), timeframe);
+
     const ctx = document.getElementById('priceChart').getContext('2d');
 
     if (chartInstance) {

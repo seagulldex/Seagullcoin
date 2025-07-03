@@ -13,17 +13,21 @@
 
   <style>
     #priceChart {
-      width: 1000px;
+      width: 1200px;
       height: 350px;
       display: block;
       margin: 0 auto;
     }
+    
     .green { color: green; }
     .red { color: red; }
+    .blue { color: white; }
+.purple { color: white; }
+    }
     .orderbook-table {
-      width: 100%;
+      width: 70%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 8px;
     }
     .orderbook-table th,
     .orderbook-table td {
@@ -34,13 +38,6 @@
     .orderbook-header {
       font-weight: bold;
       margin-top: 20px;
-    }
-    .orderbook-scroll {
-      max-height: 400px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      margin-top: 10px;
-      border-radius: 4px;
     }
     #price-value, #price-xau {
       font-weight: bold;
@@ -58,6 +55,25 @@
     #logout-btn:hover {
       background-color: #e04343;
     }
+    header {
+  background-color: #000;
+  color: Black;
+  padding: 10px;
+  width: 100%;
+}
+
+nav ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+nav ul li a {
+  color: white;
+  text-decoration: none;
+  padding: 8px 12px;
+}
     </style>
 </head>
 <body>
@@ -90,7 +106,7 @@
 
 
 
-    <h2>Price Chart XRP/SGLCN</h2>
+    <h2>Price Chart SGLCN</h2>
 <div>
   <label for="timeframe">View:</label>
   <select id="timeframe" onchange="loadChartData()">
@@ -100,7 +116,7 @@
     <option value="ALL">All Time</option>
   </select>
 </div>
-<div style="width: 100%; max-width: 1000px; margin: auto;">
+<div style="width: 125%; max-width: 1000px; margin: auto;">
   <canvas id="priceChart" height="350" style="width: 100%; margin-top: 20px;"></canvas>
 </div>
 
@@ -309,7 +325,7 @@ localStorage.setItem('seagull_wallet', wallet);
   async function loadChartData() {
     const timeframe = document.getElementById('timeframe').value;
     const resXRP = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcns-xrp?history=true`);
-    const resXAU = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau?range=${timeframe}`);
+    const resXAU = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau?history=true`);
     const dataXRP = await resXRP.json();
     const dataXAU = await resXAU.json();
     console.log('dataXRP', dataXRP);
@@ -493,6 +509,22 @@ localStorage.setItem('seagull_wallet', wallet);
         alert("Error submitting offer: " + err.message);
       }
     }
+
+    async function updateSwapPrice() {
+  const from = document.getElementById('swap-from').value;
+  const to = document.getElementById('swap-to').value;
+  try {
+    const rate = await getRatePreview(from, to);
+    document.getElementById('swap-price').value = rate;
+  } catch (err) {
+    document.getElementById('swap-price').value = 'Error';
+  }
+}
+
+document.getElementById('swap-from').addEventListener('change', updateSwapPrice);
+document.getElementById('swap-to').addEventListener('change', updateSwapPrice);
+window.addEventListener('DOMContentLoaded', updateSwapPrice);
+
     
     async function getRatePreview(from, to) {
   const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/rate-preview?from=${from}&to=${to}`);
@@ -634,31 +666,28 @@ async function loadChartData() {
   const timeframe = document.getElementById('timeframe').value;
 
   try {
-    // Fetch both datasets in parallel
-    const [xrpRes, xauRes] = await Promise.all([
+    // Fetch both APIs in parallel
+    const [responseXrp, responseXau] = await Promise.all([
       fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcns-xrp?history=true'),
-      fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcns-xau?history=true')
+      fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau?history=true')
     ]);
 
-    const xrpJson = await xrpRes.json();
-    const xauJson = await xauRes.json();
+    if (!responseXrp.ok || !responseXau.ok) {
+      throw new Error('Failed to fetch one or both datasets');
+    }
 
-    const xrpHistory = xrpJson.history;
-    const xauHistory = xauJson.history;
+    const jsonXrp = await responseXrp.json();
+    const jsonXau = await responseXau.json();
 
-    const xrpData = [];
-    const xauData = [];
-    const labels = [];
+    // Assuming both histories have the same timestamps and length
+    const historyXrp = jsonXrp.history;
+    const historyXau = jsonXau.history;
 
-    xrpHistory.forEach(entry => {
-      const date = new Date(entry.timestamp);
-      labels.push(date);
-      xrpData.push(parseFloat(entry.xrp_to_sglcn));
-    });
+    // Prepare labels and datasets
+    const labels = historyXrp.map(entry => new Date(entry.timestamp));
 
-    xauHistory.forEach(entry => {
-      xauData.push(parseFloat(entry.xau_to_sglcn));
-    });
+    const dataXrp = historyXrp.map(entry => parseFloat(entry.xrp_to_sglcn));
+    const dataXau = historyXau.map(entry => parseFloat(entry.xau_to_sglcn));
 
     const ctx = document.getElementById('priceChart').getContext('2d');
 
@@ -673,18 +702,18 @@ async function loadChartData() {
         datasets: [
           {
             label: 'XRP → SGLCN',
-            data: xrpData,
-            borderColor: 'rgba(255,193,7,1)',
+            data: dataXrp,
             fill: false,
+            borderColor: 'rgba(65,105,225,1)', // royal blue
             tension: 0.2,
             pointRadius: 2,
             pointHoverRadius: 5
           },
           {
             label: 'XAU → SGLCN',
-            data: xauData,
-            borderColor: 'rgba(0,255,255,0.8)',
+            data: dataXau,
             fill: false,
+            borderColor: 'rgba(255,165,0,1)', // orange
             tension: 0.2,
             pointRadius: 2,
             pointHoverRadius: 5

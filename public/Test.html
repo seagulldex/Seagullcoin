@@ -652,6 +652,8 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
     }
 
 let chartInstance;
+let invertChart = false;
+
 
 async function loadChartData() {
   const timeframe = document.getElementById('timeframe').value;

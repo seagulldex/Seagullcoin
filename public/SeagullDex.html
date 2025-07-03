@@ -735,12 +735,13 @@ const dataXau = historyXau.map(entry => {
         type: 'time',
         time: {
           unit:
+            timeframe === '1H' ? 'minute' :
             timeframe === '1D' ? 'minute' :
             timeframe === '1W' ? 'hour' :
             timeframe === '1M' ? 'day' :
             timeframe === '3M' ? 'week' :
-            (timeframe === '6M' || timeframe === '1Y') ? 'month' :
-            'day',
+           (timeframe === '6M' || timeframe === '1Y') ? 'month' :
+           'day',
           tooltipFormat: 'yyyy-MM-dd HH:mm'
         },
         ticks: {

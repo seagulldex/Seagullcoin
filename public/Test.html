@@ -733,9 +733,14 @@ const dataXau = historyXau.map(entry => {
             }
           },
           tooltip: {
-            callbacks: {
-              label: context => `Rate: ${context.raw.toLocaleString(undefined, { maximumFractionDigits: 4 })}`
-            }
+  callbacks: {
+    label: context => {
+      const rate = context.raw;
+      if (typeof rate !== 'number' || isNaN(rate)) return 'Rate: N/A';
+      return `Rate: ${rate.toLocaleString(undefined, {
+        maximumFractionDigits: rate < 0.0001 ? 8 : 4
+      })}`;
+         }
           }
         },
         scales: {

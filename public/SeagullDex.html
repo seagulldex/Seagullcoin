@@ -708,6 +708,10 @@ const filteredLabels = filterDataByTimeframe(format(labels), timeframe);
 const xrpData = filterDataByTimeframe(format(dataXrp), timeframe);
 const xauData = filterDataByTimeframe(format(dataXau), timeframe);
 
+ if (chartInstance) {
+      chartInstance.destroy();
+    }
+    
 chartInstance = new Chart(ctx, {
   type: 'line',
   data: {

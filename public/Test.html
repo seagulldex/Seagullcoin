@@ -700,49 +700,70 @@ const dataXau = historyXau.map(entry => {
     }
 
     chartInstance = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: invertChart ? 'SGLCN → XRP' : 'XRP → SGLCN',
-            data: dataXrp,
-            fill: false,
-            borderColor: 'rgba(65,105,225,1)', // royal blue
-            tension: 0.2,
-            pointRadius: 2,
-            pointHoverRadius: 5
-          },
-          {
-            label: invertChart ? 'SGLCN → XAU' : 'XAU → SGLCN',
-            data: dataXau,
-            fill: false,
-            borderColor: 'rgba(255,165,0,1)', // orange
-            tension: 0.2,
-            pointRadius: 2,
-            pointHoverRadius: 5
-          }
-        ]
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [
+      {
+        label: invertChart ? 'SGLCN → XRP' : 'XRP → SGLCN',
+        data: dataXrp,
+        fill: false,
+        borderColor: 'rgba(65,105,225,1)', // royal blue
+        tension: 0.2,
+        pointRadius: 2,
+        pointHoverRadius: 5
       },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            labels: {
-              color: '#fff'
-            }
-          },
-          tooltip: {
-  callbacks: {
-    label: context => {
-      const rate = context.raw;
-      const formatted = rate < 0.0001
-        ? rate.toFixed(6) // Show more digits for tiny numbers
-        : rate.toLocaleString(undefined, { maximumFractionDigits: 4 });
-      return `Rate: ${formatted}`;
+      {
+        label: invertChart ? 'SGLCN → XAU' : 'XAU → SGLCN',
+        data: dataXau,
+        fill: false,
+        borderColor: 'rgba(255,165,0,1)', // orange
+        tension: 0.2,
+        pointRadius: 2,
+        pointHoverRadius: 5
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: {
+          color: '#fff'
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: context => {
+            const rate = context.raw;
+            const formatted = rate < 0.0001
+              ? rate.toFixed(6)
+              : rate.toLocaleString(undefined, { maximumFractionDigits: 4 });
+            return `Rate: ${formatted}`;
+          }
+        }
+      }
+    }, // ← ✅ COMMA FIXED HERE
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          unit: timeframe === '1D' ? 'minute' : 'hour',
+          tooltipFormat: 'yyyy-MM-dd HH:mm'
+        },
+        ticks: {
+          color: '#ccc'
+        }
+      },
+      y: {
+        beginAtZero: false,
+        ticks: {
+          color: '#ccc'
+        }
+      }
     }
   }
-},
+});
 scales: {
           x: {
             type: 'time',

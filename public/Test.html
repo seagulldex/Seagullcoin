@@ -679,8 +679,15 @@ async function loadChartData() {
     // Prepare labels and datasets
     const labels = historyXrp.map(entry => new Date(entry.timestamp));
 
-    const dataXrp = historyXrp.map(entry => parseFloat(entry.xrp_to_sglcn));
-    const dataXau = historyXau.map(entry => parseFloat(entry.xau_to_sglcn));
+    const dataXrp = historyXrp.map(entry => {
+  const value = parseFloat(entry.xrp_to_sglcn);
+  return invertChart ? (1 / value) : value;
+});
+
+const dataXau = historyXau.map(entry => {
+  const value = parseFloat(entry.xau_to_sglcn);
+  return invertChart ? (1 / value) : value;
+});
 
     const ctx = document.getElementById('priceChart').getContext('2d');
 

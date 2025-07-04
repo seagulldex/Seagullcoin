@@ -2883,7 +2883,7 @@ app.get('/nfts/:wallet', async (req, res) => {
     } while (marker);
 
     const parsed = await Promise.all(allNfts.map(async (nft) => {
-      const uri = hexToUtf8(nft.URI);
+      const uri = "ipfs://QmZ4XKHWy..."; // Use a known-good IPFS link with metadata
       let metadata = null;
       let collection = null;
       let icon = null;

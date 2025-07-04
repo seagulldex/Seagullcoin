@@ -5116,8 +5116,9 @@ const getMarketRate = async (from_currency, to_currency, issuers) => {
   try {
     await withTimeout(client.connect(), 1800000);
 
-    const taker_gets = getCurrencyObj(to_currency);
-    const taker_pays = getCurrencyObj(from_currency);
+    const taker_gets = getCurrencyObj(from_currency); // What the offer creator is giving
+    const taker_pays = getCurrencyObj(to_currency);   // What the offer creator wants
+
 
     const response = await withTimeout(
       client.request({

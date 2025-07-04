@@ -645,42 +645,48 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
 let chartInstance;
 let invertChart = false;
 
-
 async function loadChartData() {
   const timeframe = document.getElementById('timeframe').value;
+  const interval = getIntervalFromTimeframe(timeframe);
 
-  try {
-    // Fetch both APIs in parallel
-    const [responseXrp, responseXau] = await Promise.all([
-      fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcns-xrp?history=true'),
-      fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau?history=true')
-    ]);
+const [xrpRes, xauRes] = await Promise.all([
+  fetch(`/api/ohlcv?symbol=SGLCN/XRP&interval=${interval}`),
+  fetch(`/api/ohlcv?symbol=SGLCN/XAU&interval=${interval}`)
+]);
 
-    if (!responseXrp.ok || !responseXau.ok) {
-      throw new Error('Failed to fetch one or both datasets');
-    }
+const [xrpJson, xauJson] = await Promise.all([xrpRes.json(), xauRes.json()]);
 
-    const jsonXrp = await responseXrp.json();
-    const jsonXau = await responseXau.json();
-
-    // Assuming both histories have the same timestamps and length
-    const historyXrp = jsonXrp.history;
-    const historyXau = jsonXau.history;
-
-    // Prepare labels and datasets
-    const labels = historyXrp.map(entry => new Date(entry.timestamp));
-
-    const dataXrp = historyXrp.map(entry => {
-  const value = parseFloat(entry.xrp_to_sglcn);
-  return invertChart ? (1 / value) : value;
+const labels = xrpJson.map(entry => new Date(entry.timestamp));
+const dataXrp = xrpJson.map(entry => {
+  const rate = parseFloat(entry.close);
+  return invertChart ? (1 / rate) : rate;
+});
+const dataXau = xauJson.map(entry => {
+  const rate = parseFloat(entry.close);
+  return invertChart ? (1 / rate) : rate;
 });
 
-const dataXau = historyXau.map(entry => {
-  const value = parseFloat(entry.xau_to_sglcn);
-  return invertChart ? (1 / value) : value;
-});
 
-    const ctx = document.getElementById('priceChart').getContext('2d');
+  
+  // ✅ Fetch chart data based on selected pair and interval
+  const response = await fetch(`/api/ohlcv?symbol=${pair}&interval=${interval}`);
+  if (!response.ok) {
+    console.error('Failed to fetch OHLCV data');
+    return;
+  }
+
+  const ohlcvData = await response.json();
+
+  // Transform OHLCV data into chart format
+  const labels = ohlcvData.map(entry => new Date(entry.timestamp));
+  const data = ohlcvData.map(entry => {
+    const value = parseFloat(entry.close);
+    return invertChart ? (1 / value) : value;
+  });
+
+  
+   const ctx = document.getElementById('priceChart').getContext('2d');
+
 
     if (chartInstance) {
       chartInstance.destroy();

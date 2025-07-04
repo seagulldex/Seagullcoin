@@ -2821,14 +2821,27 @@ app.get('/user/balance', async (req, res) => {
 
 // Helper to convert hex-encoded URI to UTF-8 string
 function hexToUtf8(hex) {
-  if (!hex || typeof hex !== 'string') return '';
+  if (!hex || typeof hex !== 'string' || hex.length === 0) return '';
+
+  // Strip trailing null characters (00)
+  const cleanHex = hex.replace(/(00)+$/, '');
+
   try {
-    return Buffer.from(hex, 'hex').toString('utf8').replace(/\0/g, '');
+    const buffer = Buffer.from(cleanHex, 'hex');
+    const utf8 = buffer.toString('utf8');
+
+    // Check for UTF-8 printable characters (basic heuristic)
+    if (/[\u0000-\u001F]/.test(utf8)) {
+      console.warn('Possibly invalid UTF-8:', utf8);
+    }
+
+    return utf8.replace(/\0/g, '');
   } catch (e) {
-    console.error('Invalid hex string:', hex);
+    console.error('Invalid hex to UTF-8:', hex);
     return '';
   }
 }
+
 
 // Helper for fetch with timeout
 const fetchWithTimeout = (url, timeout = 5000) => {

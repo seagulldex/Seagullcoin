@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
 const nftSchema = new mongoose.Schema({
-  wallet: String,
-  NFTokenID: String,
+  wallet: { type: String, required: true },
+  NFTokenID: { type: String, required: true },
   URI: String,
   image: String,
   name: String,
@@ -10,8 +10,7 @@ const nftSchema = new mongoose.Schema({
   collection: String,
   icon: String,
   metadata: Object,
-  updatedAt: { type: Date, default: Date.now },
-});
+  }, { timestamps: true });
 
 nftSchema.index({ wallet: 1, NFTokenID: 1 }, { unique: true });
 

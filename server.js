@@ -2844,6 +2844,7 @@ const fetchWithTimeout = (url, timeout = 5000) => {
 };
 
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
+// Assuming you're using Mongoose and have defined the model somewhere like this:
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   console.log('Using wallet address:', wallet);
@@ -2894,13 +2895,30 @@ app.get('/nfts/:wallet', async (req, res) => {
         }
       }
 
-      return {
+      const nftData = {
+        wallet,
         NFTokenID: nft.NFTokenID,
         URI: uri,
         collection,
         icon,
-        metadata
+        metadata,
+        image: metadata?.image || null,
+        name: metadata?.name || null,
+        traits: metadata?.attributes || []
       };
+
+      // Save or update in MongoDB
+      try {
+        await NFTModel.findOneAndUpdate(
+          { wallet, NFTokenID: nft.NFTokenID },
+          nftData,
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+      } catch (mongoErr) {
+        console.error(`Failed to save NFT ${nft.NFTokenID}:`, mongoErr.message);
+      }
+
+      return nftData;
     }));
 
     res.json({ nfts: parsed });
@@ -2909,6 +2927,7 @@ app.get('/nfts/:wallet', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+
 
 
 

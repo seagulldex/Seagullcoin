@@ -2884,47 +2884,46 @@ app.get('/nfts/:wallet', async (req, res) => {
       const uri = hexToUtf8(nft.URI);
 
       // Skip if URI is blank
-      if (!uri) {
-        console.warn(`Skipping NFT ${nft.NFTokenID} — no URI`);
-        return null;
+      if (
+  uri.startsWith('ipfs://') ||
+  uri.includes('ipfs.io/ipfs/') ||
+  uri.includes('ipfs/') ||
+  /^[a-zA-Z0-9]{46,}$/.test(uri) // ← detect raw CID
+) {
+  let ipfsPath = uri;
+
+  // Normalize to CID if it's raw CID
+  if (!uri.startsWith('ipfs://') && !uri.includes('/ipfs/')) {
+    ipfsPath = uri;
+  } else if (uri.startsWith('ipfs://')) {
+    ipfsPath = uri.replace('ipfs://', '');
+  } else if (uri.includes('/ipfs/')) {
+    ipfsPath = uri.split('/ipfs/')[1];
+  }
+
+  const gateways = [
+    'https://ipfs.io/ipfs/',
+    'https://gateway.pinata.cloud/ipfs/',
+    'https://cloudflare-ipfs.com/ipfs/',
+    'https://nftstorage.link/ipfs/',
+  ];
+
+  for (const gateway of gateways) {
+    const ipfsUrl = `${gateway}${ipfsPath}`;
+    try {
+      const res = await fetchWithTimeout(ipfsUrl, 7000);
+      if (res.ok) {
+        metadata = await res.json();
+        collection = metadata.collection || metadata.name || null;
+        icon = metadata.image || null;
+        break;
       }
+    } catch (e) {
+      console.warn(`Error fetching from ${ipfsUrl}:`, e.message);
+    }
+  }
+}
 
-      let metadata = null;
-      let collection = null;
-      let icon = null;
-
-      if (uri.startsWith('ipfs://') || uri.includes('ipfs.io/ipfs/') || uri.includes('ipfs/')) {
-        let ipfsPath = uri;
-
-        if (uri.startsWith('ipfs://')) {
-          ipfsPath = uri.replace('ipfs://', '');
-        } else if (uri.includes('/ipfs/')) {
-          ipfsPath = uri.split('/ipfs/')[1];
-        }
-
-        const gateways = [
-          'https://ipfs.io/ipfs/',
-          'https://gateway.pinata.cloud/ipfs/',
-          'https://cloudflare-ipfs.com/ipfs/',
-          'https://nftstorage.link/ipfs/',
-        ];
-
-        for (const gateway of gateways) {
-          const ipfsUrl = `${gateway}${ipfsPath}`;
-          try {
-            const res = await fetchWithTimeout(ipfsUrl, 7000);
-            if (res.ok) {
-              metadata = await res.json();
-              collection = metadata.collection || metadata.name || null;
-              icon = metadata.image || null;
-              break;
-            } else {
-              console.warn(`Non-OK IPFS response ${res.status} from ${ipfsUrl}`);
-            }
-          } catch (e) {
-            console.warn(`Error fetching IPFS URI (${ipfsUrl}):`, e.message);
-          }
-        }
         
         } else if (uri.startsWith('https://arweave.net/')) {
     // 🔥 ADD THIS BLOCK

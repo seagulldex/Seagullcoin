@@ -2879,7 +2879,16 @@ app.get('/nfts/:wallet', async (req, res) => {
       let collection = null;
       let icon = null;
 
-      if (uri.startsWith('ipfs://')) {
+      if (uri.startsWith('ipfs://') || uri.includes('ipfs.io/ipfs/') || uri.includes('ipfs/')) {
+  let ipfsPath = uri;
+
+  // Normalize to just the CID path if needed
+  if (uri.startsWith('ipfs://')) {
+    ipfsPath = uri.replace('ipfs://', '');
+  } else if (uri.includes('/ipfs/')) {
+    ipfsPath = uri.split('/ipfs/')[1]; // e.g., `bafy.../metadata.json`
+  }
+
   const gateways = [
     'https://ipfs.io/ipfs/',
     'https://gateway.pinata.cloud/ipfs/',
@@ -2888,14 +2897,14 @@ app.get('/nfts/:wallet', async (req, res) => {
   ];
 
   for (const gateway of gateways) {
-    const ipfsUrl = `${gateway}${uri.replace('ipfs://', '')}`;
+    const ipfsUrl = `${gateway}${ipfsPath}`;
     try {
       const res = await fetchWithTimeout(ipfsUrl, 7000);
       if (res.ok) {
         metadata = await res.json();
         collection = metadata.collection || metadata.name || null;
         icon = metadata.image || null;
-        break; // success, no need to try other gateways
+        break;
       } else {
         console.warn(`Non-OK response from ${ipfsUrl}: ${res.status}`);
       }
@@ -2905,11 +2914,9 @@ app.get('/nfts/:wallet', async (req, res) => {
   }
 
   if (!metadata) {
-    metadata = { error: 'All IPFS gateways failed' };
+    metadata = { error: 'All IPFS gateways failed or invalid URI' };
   }
 }
-
-
 
       const nftData = {
         wallet,

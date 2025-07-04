@@ -2880,22 +2880,35 @@ app.get('/nfts/:wallet', async (req, res) => {
       let icon = null;
 
       if (uri.startsWith('ipfs://')) {
-  const ipfsUrl = `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`;
-  try {
-    const metaRes = await fetchWithTimeout(ipfsUrl, 5000);
-    if (metaRes.ok) {
-      metadata = await metaRes.json();
-      collection = metadata.collection || metadata.name || null;
-      icon = metadata.image || null;
-    } else {
-      metadata = { error: `IPFS status ${metaRes.status}` };
+  const gateways = [
+    'https://ipfs.io/ipfs/',
+    'https://gateway.pinata.cloud/ipfs/',
+    'https://cloudflare-ipfs.com/ipfs/',
+    'https://nftstorage.link/ipfs/',
+  ];
+
+  for (const gateway of gateways) {
+    const ipfsUrl = `${gateway}${uri.replace('ipfs://', '')}`;
+    try {
+      const res = await fetchWithTimeout(ipfsUrl, 7000);
+      if (res.ok) {
+        metadata = await res.json();
+        collection = metadata.collection || metadata.name || null;
+        icon = metadata.image || null;
+        break; // success, no need to try other gateways
+      } else {
+        console.warn(`Non-OK response from ${ipfsUrl}: ${res.status}`);
+      }
+    } catch (e) {
+      console.warn(`Error fetching from ${ipfsUrl}:`, e.message);
     }
-  } catch (e) {
-    metadata = { error: 'IPFS fetch timeout or error' };
   }
-} else {
-  console.warn(`Skipping metadata fetch — URI not IPFS: ${uri}`);
+
+  if (!metadata) {
+    metadata = { error: 'All IPFS gateways failed' };
+  }
 }
+
 
 
       const nftData = {

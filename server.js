@@ -2880,20 +2880,23 @@ app.get('/nfts/:wallet', async (req, res) => {
       let icon = null;
 
       if (uri.startsWith('ipfs://')) {
-        const ipfsUrl = `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`;
-        try {
-          const metaRes = await fetchWithTimeout(ipfsUrl, 5000);
-          if (metaRes.ok) {
-            metadata = await metaRes.json();
-            collection = metadata.collection || metadata.name || null;
-            icon = metadata.image || null;
-          } else {
-            metadata = { error: `IPFS status ${metaRes.status}` };
-          }
-        } catch (e) {
-          metadata = { error: 'IPFS fetch timeout or error' };
-        }
-      }
+  const ipfsUrl = `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`;
+  try {
+    const metaRes = await fetchWithTimeout(ipfsUrl, 5000);
+    if (metaRes.ok) {
+      metadata = await metaRes.json();
+      collection = metadata.collection || metadata.name || null;
+      icon = metadata.image || null;
+    } else {
+      metadata = { error: `IPFS status ${metaRes.status}` };
+    }
+  } catch (e) {
+    metadata = { error: 'IPFS fetch timeout or error' };
+  }
+} else {
+  console.warn(`Skipping metadata fetch — URI not IPFS: ${uri}`);
+}
+
 
       const nftData = {
         wallet,

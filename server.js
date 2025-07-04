@@ -2845,23 +2845,19 @@ const fetchWithTimeout = (url, timeout = 5000) => {
 // Assuming you're using Mongoose and have defined the model somewhere like this:
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
-  console.log('Using wallet address:', wallet);
+  console.log(`Fetching NFTs for wallet: ${wallet}`);
 
   const requestBody = {
     method: 'account_nfts',
-    params: [{
-      account: wallet,
-      ledger_index: 'validated'
-    }]
+    params: [{ account: wallet, ledger_index: 'validated' }],
   };
 
   try {
     const response = await fetch(xrplApiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     });
-
     const data = await response.json();
 
     if (data.result?.error) {
@@ -2869,52 +2865,67 @@ app.get('/nfts/:wallet', async (req, res) => {
     }
 
     const nfts = data.result.account_nfts || [];
-    const limitedNfts = nfts; // process all NFTs
 
-    const parsed = await Promise.all(limitedNfts.map(async (nft) => {
+    const parsed = await Promise.all(nfts.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
+      console.log(`Processing NFT ${nft.NFTokenID} with URI: ${uri}`);
+
       let metadata = null;
       let collection = null;
       let icon = null;
 
-      if (uri.startsWith('ipfs://') || uri.includes('ipfs.io/ipfs/') || uri.includes('ipfs/')) {
-  let ipfsPath = uri;
+      if (uri && (uri.startsWith('ipfs://') || uri.includes('ipfs.io/ipfs/') || uri.includes('/ipfs/'))) {
+        // Extract CID/path from URI
+        let ipfsPath = uri.startsWith('ipfs://') ? uri.slice(7) :
+                       uri.includes('/ipfs/') ? uri.split('/ipfs/')[1] :
+                       uri;
 
-  // Normalize to just the CID path if needed
-  if (uri.startsWith('ipfs://')) {
-    ipfsPath = uri.replace('ipfs://', '');
-  } else if (uri.includes('/ipfs/')) {
-    ipfsPath = uri.split('/ipfs/')[1]; // e.g., `bafy.../metadata.json`
-  }
+        // Try metadata.json and index.json fallback files
+        const tryPaths = [
+          ipfsPath,
+          ipfsPath + '/metadata.json',
+          ipfsPath + '/index.json',
+        ];
 
-  const gateways = [
-    'https://ipfs.io/ipfs/',
-    'https://gateway.pinata.cloud/ipfs/',
-    'https://cloudflare-ipfs.com/ipfs/',
-    'https://nftstorage.link/ipfs/',
-  ];
+        const gateways = [
+          'https://ipfs.io/ipfs/',
+          'https://gateway.pinata.cloud/ipfs/',
+          'https://cloudflare-ipfs.com/ipfs/',
+          'https://nftstorage.link/ipfs/',
+        ];
 
-  for (const gateway of gateways) {
-    const ipfsUrl = `${gateway}${ipfsPath}`;
-    try {
-      const res = await fetchWithTimeout(ipfsUrl, 7000);
-      if (res.ok) {
-        metadata = await res.json();
-        collection = metadata.collection || metadata.name || null;
-        icon = metadata.image || null;
-        break;
-      } else {
-        console.warn(`Non-OK response from ${ipfsUrl}: ${res.status}`);
+        for (const gateway of gateways) {
+          for (const path of tryPaths) {
+            const ipfsUrl = `${gateway}${path}`;
+            try {
+              const res = await fetchWithTimeout(ipfsUrl, 7000);
+              if (res.ok) {
+                metadata = await res.json();
+                collection = metadata.collection || metadata.name || null;
+                icon = metadata.image || null;
+                break;
+              } else {
+                console.warn(`Non-OK response from ${ipfsUrl}: ${res.status}`);
+              }
+            } catch (e) {
+              console.warn(`Error fetching from ${ipfsUrl}:`, e.message);
+            }
+          }
+          if (metadata) break;
+        }
+
+        if (!metadata) {
+          metadata = { error: 'All IPFS gateways failed or invalid URI' };
+        }
       }
-    } catch (e) {
-      console.warn(`Error fetching from ${ipfsUrl}:`, e.message);
-    }
-  }
 
-  if (!metadata) {
-    metadata = { error: 'All IPFS gateways failed or invalid URI' };
-  }
-}
+      // Normalize traits safely
+      const traits = Array.isArray(metadata?.attributes)
+        ? metadata.attributes.map(attr => ({
+            trait_type: attr.trait_type || attr.traitType || '',
+            value: attr.value ?? attr,
+          }))
+        : [];
 
       const nftData = {
         wallet,
@@ -2925,10 +2936,9 @@ app.get('/nfts/:wallet', async (req, res) => {
         metadata,
         image: metadata?.image || null,
         name: metadata?.name || null,
-        traits: metadata?.attributes || []
+        traits,
       };
 
-      // Save or update in MongoDB
       try {
         await NFTModel.findOneAndUpdate(
           { wallet, NFTokenID: nft.NFTokenID },
@@ -2948,6 +2958,7 @@ app.get('/nfts/:wallet', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+
 
 
 

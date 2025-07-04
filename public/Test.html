@@ -337,8 +337,9 @@ localStorage.setItem('seagull_wallet', wallet);
         y: point.price
       }));
 
-    const xrpData = format(dataXRP);
-    const xauData = format(dataXAU);
+    const xrpData = filterDataByTimeframe(format(dataXRP), timeframe);
+    const xauData = filterDataByTimeframe(format(dataXAU), timeframe);
+
 
     const ctx = document.getElementById('priceChart').getContext('2d');
 
@@ -558,6 +559,19 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
   }
 };
 
+    function filterDataByTimeframe(data, timeframe) {
+  const now = Date.now();
+  const ranges = {
+    '1D': now - 24 * 60 * 60 * 1000,
+    '1W': now - 7 * 24 * 60 * 60 * 1000,
+    '1M': now - 30 * 24 * 60 * 60 * 1000,
+    'ALL': 0
+  };
+  const minTimestamp = ranges[timeframe];
+  return data.filter(point => point.x >= minTimestamp);
+}
+
+
 
 async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
   const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
@@ -686,38 +700,41 @@ async function loadChartData() {
     // Prepare labels and datasets
     const labels = historyXrp.map(entry => new Date(entry.timestamp));
 
-    const dataXrp = historyXrp.map(entry => parseFloat(entry.xrp_to_sglcn));
-    const dataXau = historyXau.map(entry => parseFloat(entry.xau_to_sglcn));
+const dataXrp = historyXrp.map(entry => parseFloat(entry.xrp_to_sglcn));
+const dataXau = historyXau.map(entry => parseFloat(entry.xau_to_sglcn));
 
-    const ctx = document.getElementById('priceChart').getContext('2d');
+// Filter labels and data by timeframe
+const filteredLabels = filterDataByTimeframe(format(labels), timeframe);
+const xrpData = filterDataByTimeframe(format(dataXrp), timeframe);
+const xauData = filterDataByTimeframe(format(dataXau), timeframe);
 
-    if (chartInstance) {
+ if (chartInstance) {
       chartInstance.destroy();
     }
-
-    chartInstance = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'XRP → SGLCN',
-            data: dataXrp,
-            fill: false,
-            borderColor: 'rgba(65,105,225,1)', // royal blue
-            tension: 0.2,
-            pointRadius: 2,
-            pointHoverRadius: 5
+    
+chartInstance = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: filteredLabels,
+    datasets: [
+      {
+        label: 'XRP → SGLCN',
+        data: xrpData,
+        fill: false,
+        borderColor: 'rgba(65,105,225,1)', // royal blue
+        tension: 0.2,
+        pointRadius: 2,
+        pointHoverRadius: 5
           },
-          {
-            label: 'XAU → SGLCN',
-            data: dataXau,
-            fill: false,
-            borderColor: 'rgba(255,165,0,1)', // orange
-            tension: 0.2,
-            pointRadius: 2,
-            pointHoverRadius: 5
-          }
+      {
+        label: 'XAU → SGLCN',
+        data: xauData,
+        fill: false,
+        borderColor: 'rgba(255,165,0,1)', // orange
+        tension: 0.2,
+        pointRadius: 2,
+        pointHoverRadius: 5
+      }
         ]
       },
       options: {
@@ -760,6 +777,8 @@ async function loadChartData() {
   }
 }
 
+    
+
 
 
 // Initial load
@@ -777,3 +796,85 @@ window.addEventListener('DOMContentLoaded', loadChartData);
   </script>
 </body>
 </html>
+
+
+
+
+
+
+// --- Express route to create swap offer via XUMM ---
+app.post('/swap', async (req, res) => {
+  const { from_currency, to_currency, amount, wallet_address } = req.body;
+
+  if (!from_currency || !to_currency || !amount || !wallet_address) {
+    return res.status(400).json({ error: 'Missing required fields.' });
+  }
+
+  if (from_currency === to_currency) {
+    return res.status(400).json({ error: 'Currencies must differ.' });
+  }
+
+  // Allow only the supported currencies
+  const supported = ['SeagullCoin', 'XRP', 'XAU'];
+  if (!supported.includes(from_currency) || !supported.includes(to_currency)) {
+    return res.status(400).json({ error: 'Unsupported currencies.' });
+  }
+
+  try {
+    const rate = await getMarketRate(from_currency, to_currency, issuers);
+    const fromAmt = parseFloat(amount);
+    // Calculate amount to receive
+    const toAmt = from_currency === 'SeagullCoin'
+     ? (fromAmt * rate)
+     : (fromAmt / rate);
+
+    // Compose currency objects for the transaction
+    const takerGets = getCurrencyObj(from_currency, fromAmt, issuers);
+    const takerPays = getCurrencyObj(to_currency, toAmt, issuers);
+
+    // XUMM payload to create the OfferCreate transaction
+    const payload = {
+      txjson: {
+        TransactionType: 'OfferCreate',
+        Account: wallet_address,
+        TakerGets: takerGets,
+        TakerPays: takerPays,
+        Flags: 0x00020000 // tfImmediateOrCancel
+      },
+      options: {
+        submit: true,
+        return_url: {
+          app: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
+          web: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
+        }
+      }
+    };
+
+    // Create payload on XUMM and get UUID + URLs
+    const { uuid, next } = await xumm.payload.create(payload);
+
+    // Respond with payload info and swap details
+    res.json({
+      success: true,
+      uuid,
+      next,
+      rate,
+      swap_details: {
+        from: {
+          currency: from_currency,
+          amount: fromAmt,
+          issuer: from_currency === 'XRP' ? null : (from_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
+        },
+        to: {
+          currency: to_currency,
+          amount: toAmt,
+          issuer: to_currency === 'XRP' ? null : (to_currency === 'SeagullCoin' ? issuers.SGLCN_ISSUER : issuers.XAU_ISSUER)
+        }
+      }
+    });
+
+  } catch (err) {
+    console.error('Swap error:', err);
+    res.status(500).json({ error: err.message || 'Swap failed.' });
+  }
+});

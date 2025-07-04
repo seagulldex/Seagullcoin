@@ -2920,7 +2920,10 @@ app.get('/nfts/:wallet', async (req, res) => {
 
     const parsed = await Promise.all(rawNFTs.slice(0, 20).map(async (nft) => {
       try {
-        const uri = hexToUtf8(nft?.URI);
+        console.log('NFT URI (hex):', nft.URI);
+        const uri = hexToUtf8(nft.URI);
+        console.log('NFT URI (utf8):', uri);
+
         let metadata = null, collection = null, icon = null;
 
         if (uri.startsWith('ipfs://')) {
@@ -2929,14 +2932,18 @@ app.get('/nfts/:wallet', async (req, res) => {
           icon = metadata?.image || null;
         }
 
-        const nftData = {
-          NFTokenID: nft.NFTokenID,
-          URI: uri,
-          collection,
-          icon,
-          metadata,
-          wallet
-        };
+          const nftData = {
+         NFTokenID: nft.NFTokenID,
+         URI: uri,
+         collection,
+         icon,
+         metadata,
+         image: metadata?.image || null,
+         name: metadata?.name || null,
+         traits: metadata?.attributes || [],
+         wallet
+         };
+
 
         await NFTModel.findOneAndUpdate(
           { NFTokenID: nft.NFTokenID },

@@ -424,6 +424,20 @@ document.getElementById('toggle-direction').addEventListener('click', () => {
   loadChartData(); // re-render chart with new direction
 });
 
+    function getIntervalFromTimeframe(timeframe) {
+  switch (timeframe) {
+    case '1H': return '1m';    // 1-minute resolution for 1 hour
+    case '1D': return '5m';    // 5-minute resolution for 1 day
+    case '1W': return '1h';    // 1-hour resolution for 1 week
+    case '1M': return '1d';    // 1-day resolution for 1 month
+    case '3M': return '1d';    // 1-day resolution
+    case '6M': return '1w';    // 1-week resolution
+    case '1Y': return '1w';    // 1-week resolution
+    default: return '1d';
+  }
+}
+
+
 
     async function updateCurrentPrice() {
       try {

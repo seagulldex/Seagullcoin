@@ -2871,7 +2871,7 @@ app.get('/nfts/:wallet', async (req, res) => {
     }
 
     const nfts = data.result.account_nfts || [];
-    const limitedNfts = nfts.slice(0, 20); // limit processing to 20
+    const limitedNfts = nfts; // process all NFTs
 
     const parsed = await Promise.all(limitedNfts.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);

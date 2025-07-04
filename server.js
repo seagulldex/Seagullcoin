@@ -2822,147 +2822,90 @@ app.get('/user/balance', async (req, res) => {
 const xrplApiUrl = 'https://s1.ripple.com:51234'; // For Mainnet
 
 
-function resolveIpfsUrl(ipfsUri, gateway = 'https://ipfs.io/ipfs/') {
-  if (!ipfsUri) return '';
-  if (ipfsUri.startsWith('ipfs://')) {
-    return gateway + ipfsUri.slice(7); // remove "ipfs://"
-  }
-  if (/^[a-zA-Z0-9]{46,}$/.test(ipfsUri)) {
-    return gateway + ipfsUri; // raw CID
-  }
-  return ipfsUri; // fallback, maybe already http
-}
-
 
 
 // Helper to convert hex-encoded URI to UTF-8 string
 function hexToUtf8(hex) {
-  if (!hex || typeof hex !== 'string' || !/^[0-9a-fA-F]+$/.test(hex)) return '';
+  if (!hex || typeof hex !== 'string') return '';
   try {
     return Buffer.from(hex, 'hex').toString('utf8').replace(/\0/g, '');
   } catch (e) {
-    console.error('Invalid hex string:', hex, e.message);
+    console.error('Invalid hex string:', hex);
     return '';
   }
 }
 
-
 // Helper for fetch with timeout
-const fetchWithTimeout = (url, options = {}, timeout = 7000) => {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("Timeout")), timeout);
-    fetch(url, options)
-      .then(res => {
-        clearTimeout(timer);
-        resolve(res);
-      })
-      .catch(err => {
-        clearTimeout(timer);
-        reject(err);
-      });
-  });
+const fetchWithTimeout = (url, timeout = 5000) => {
+  return Promise.race([
+    fetch(url),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+  ]);
 };
-
-// Define multiple IPFS gateways
-const ipfsGateways = [
-  'https://nftstorage.link/ipfs/',
-  'https://gateway.pinata.cloud/ipfs/',
-  'https://cloudflare-ipfs.com/ipfs/',
-  'https://ipfs.infura.io/ipfs/',
-  'https://ipfs.io/ipfs/'
-];
-
-// Helper to fetch metadata from IPFS with retries
-const fetchMetadataWithRetry = async (ipfsUrl, retries = 3) => {
-  let attempt = 0;
-  let metadata = null;
-
-  while (attempt < retries && !metadata) {
-    const gatewayUrl = ipfsGateways[attempt % ipfsGateways.length];  // Cycle through gateways
-    const resolvedUrl = resolveIpfsUrl(ipfsUrl, gatewayUrl);
-
-    try {
-      const res = await fetchWithTimeout(resolvedUrl, {}, 10000);  // 10 seconds
-      if (res.ok) {
-        metadata = await res.json();
-      } else {
-        console.warn(`Non-OK response: ${res.status} from ${resolvedUrl}`);
-      }
-    } catch (err) {
-      console.warn(`Retry attempt ${attempt + 1} failed with ${resolvedUrl}: ${err.message}`);
-    }
-
-    attempt++;
-  }
-
-  return metadata;
-};
-
 
 // Test route to fetch NFTs for a wallet (limit to 20 NFTs)
-
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
-  console.log(`Fetching NFTs for wallet: ${wallet}`);
+  console.log('Using wallet address:', wallet);
+
+  const requestBody = {
+    method: 'account_nfts',
+    params: [{
+      account: wallet,
+      ledger_index: 'validated'
+    }]
+  };
 
   try {
-    const existingNFTs = await NFTModel.find({ wallet }).select('-__v').lean();
-    console.log(`Found ${existingNFTs.length} NFTs in DB`);
+    const response = await fetch(xrplApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
 
-    if (existingNFTs.length > 0) return res.json({ nfts: existingNFTs });
+    const data = await response.json();
 
-    const rawNFTs = await fetchAllNFTs(wallet);
-    if (!Array.isArray(rawNFTs)) {
-      console.error('fetchAllNFTs returned:', rawNFTs);
-      throw new Error('fetchAllNFTs did not return an array');
+    if (data.result?.error) {
+      return res.status(500).json({ error: data.result.error_message });
     }
-    console.log(`Fetched ${rawNFTs.length} NFTs from external source`);
 
-    const parsed = await Promise.all(rawNFTs.slice(0, 20).map(async (nft) => {
-      try {
-        console.log('NFT URI (hex):', nft.URI);
-        const uri = hexToUtf8(nft.URI);
-        console.log('NFT URI (utf8):', uri);
+    const nfts = data.result.account_nfts || [];
+    const limitedNfts = nfts.slice(0, 20); // limit processing to 20
 
-        let metadata = null, collection = null, icon = null;
+    const parsed = await Promise.all(limitedNfts.map(async (nft) => {
+      const uri = hexToUtf8(nft.URI);
+      let metadata = null;
+      let collection = null;
+      let icon = null;
 
-        if (uri.startsWith('ipfs://')) {
-          metadata = await fetchMetadataWithRetry(uri);
-          collection = metadata?.collection || metadata?.name || null;
-          icon = metadata?.image || null;
+      if (uri.startsWith('ipfs://')) {
+        const ipfsUrl = `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`;
+        try {
+          const metaRes = await fetchWithTimeout(ipfsUrl, 5000);
+          if (metaRes.ok) {
+            metadata = await metaRes.json();
+            collection = metadata.collection || metadata.name || null;
+            icon = metadata.image || null;
+          } else {
+            metadata = { error: `IPFS status ${metaRes.status}` };
+          }
+        } catch (e) {
+          metadata = { error: 'IPFS fetch timeout or error' };
         }
-
-          const nftData = {
-         NFTokenID: nft.NFTokenID,
-         URI: uri,
-         collection,
-         icon,
-         metadata,
-         image: metadata?.image || null,
-         name: metadata?.name || null,
-         traits: metadata?.attributes || [],
-         wallet
-         };
-
-
-        await NFTModel.findOneAndUpdate(
-          { NFTokenID: nft.NFTokenID },
-          nftData,
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-
-        return nftData;
-      } catch (nftErr) {
-        console.error(`Failed to process NFT ${nft?.NFTokenID}:`, nftErr);
-        return null;
       }
+
+      return {
+        NFTokenID: nft.NFTokenID,
+        URI: uri,
+        collection,
+        icon,
+        metadata
+      };
     }));
 
-    console.log(`Processed ${parsed.filter(Boolean).length} NFTs successfully`);
-
-    res.json({ nfts: parsed.filter(Boolean) });
+    res.json({ nfts: parsed });
   } catch (err) {
-    console.error('NFT fetch error:', err.stack || err);
+    console.error('Error fetching NFTs:', err);
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });

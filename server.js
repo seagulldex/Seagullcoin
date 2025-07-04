@@ -2819,12 +2819,9 @@ app.get('/user/balance', async (req, res) => {
     }
 });
 
-const xrplApiUrl = 'https://s1.ripple.com:51234'; // For Mainnet
+const xrplApiUrl = 'https://s1.ripple.com:51234'; // Mainnet
 
-
-
-
-// Helper to convert hex-encoded URI to UTF-8 string
+// Convert hex-encoded URI to UTF-8 string
 function hexToUtf8(hex) {
   if (!hex || typeof hex !== 'string') return '';
   try {
@@ -2835,16 +2832,15 @@ function hexToUtf8(hex) {
   }
 }
 
-// Helper for fetch with timeout
-const fetchWithTimeout = (url, timeout = 5000) => {
+// Fetch with timeout helper
+const fetchWithTimeout = (url, timeout = 7000) => {
   return Promise.race([
     fetch(url),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout)),
   ]);
 };
 
-// Test route to fetch NFTs for a wallet (limit to 20 NFTs)
-// Assuming you're using Mongoose and have defined the model somewhere like this:
+// Express route to fetch all NFTs for a wallet and save to MongoDB
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   console.log('Fetching NFTs for wallet:', wallet);
@@ -2852,38 +2848,42 @@ app.get('/nfts/:wallet', async (req, res) => {
   const allNfts = [];
   let marker = null;
 
-  // Helper to fetch a batch of NFTs
-  async function fetchNfts(marker) {
+  // Fetch a page of NFTs from XRPL
+  async function fetchNftsPage(marker) {
     const requestBody = {
       method: 'account_nfts',
       params: [{
         account: wallet,
         ledger_index: 'validated',
         limit: 400,
-        ...(marker && { marker }),
-      }]
+        ...(marker ? { marker } : {}),
+      }],
     };
 
     const response = await fetch(xrplApiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
+
     if (data.result?.error) throw new Error(data.result.error_message);
+
     allNfts.push(...(data.result.account_nfts || []));
+
     return data.result.marker || null;
   }
 
   try {
-    // Recursively fetch all NFTs
+    // Fetch all pages recursively
     do {
-      marker = await fetchNfts(marker);
+      marker = await fetchNftsPage(marker);
     } while (marker);
 
     const parsed = await Promise.all(allNfts.map(async (nft) => {
-      const uri = "ipfs://QmZ4XKHWy..."; // Use a known-good IPFS link with metadata
+      const uri = hexToUtf8(nft.URI);
+
       let metadata = null;
       let collection = null;
       let icon = null;
@@ -2906,7 +2906,7 @@ app.get('/nfts/:wallet', async (req, res) => {
         for (const gateway of gateways) {
           const ipfsUrl = `${gateway}${ipfsPath}`;
           try {
-            const res = await fetchWithTimeout(ipfsUrl, 7000);
+            const res = await fetchWithTimeout(ipfsUrl);
             if (res.ok) {
               metadata = await res.json();
               collection = metadata.collection || metadata.name || null;
@@ -2923,24 +2923,28 @@ app.get('/nfts/:wallet', async (req, res) => {
         }
       }
 
+      // Normalize traits array
+      const traits = Array.isArray(metadata?.attributes)
+        ? metadata.attributes.map(attr => ({
+          trait_type: attr.trait_type || '',
+          value: attr.value ?? attr, // fallback if value missing
+        }))
+        : [];
+
       const nftData = {
         wallet,
         NFTokenID: nft.NFTokenID,
         URI: uri,
         image: metadata?.image || null,
         name: metadata?.name || null,
-        traits: Array.isArray(metadata?.attributes)
-          ? metadata.attributes.map(attr => ({
-              trait_type: attr.trait_type || '',
-              value: attr.value
-            }))
-          : [],
+        traits,
         collection,
         icon,
         metadata,
       };
 
       try {
+        // Upsert into MongoDB by wallet + NFTokenID
         await NFTModel.findOneAndUpdate(
           { wallet, NFTokenID: nft.NFTokenID },
           nftData,
@@ -2959,6 +2963,8 @@ app.get('/nfts/:wallet', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
+
+export default app;
 
 
 

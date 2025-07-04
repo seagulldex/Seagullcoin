@@ -2819,6 +2819,8 @@ app.get('/user/balance', async (req, res) => {
     }
 });
 
+const xrplApiUrl = 'https://s1.ripple.com:51234'; // For Mainnet
+
 // Helper to convert hex-encoded URI to UTF-8 string
 function hexToUtf8(hex) {
   if (!hex || typeof hex !== 'string' || hex.length === 0) return '';

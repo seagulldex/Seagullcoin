@@ -2925,6 +2925,23 @@ app.get('/nfts/:wallet', async (req, res) => {
             console.warn(`Error fetching IPFS URI (${ipfsUrl}):`, e.message);
           }
         }
+        
+        } else if (uri.startsWith('https://arweave.net/')) {
+    // 🔥 ADD THIS BLOCK
+    try {
+      const res = await fetchWithTimeout(uri, 7000);
+      if (res.ok) {
+        metadata = await res.json();
+        collection = metadata.collection || metadata.name || null;
+        icon = metadata.image || null;
+      } else {
+        console.warn(`Arweave fetch error: ${res.status}`);
+      }
+    } catch (e) {
+      console.warn(`Error fetching Arweave metadata:`, e.message);
+    }
+  }
+}
 
         if (!metadata) {
           metadata = { error: 'All IPFS gateways failed or invalid URI' };

@@ -139,9 +139,14 @@ nav ul li a {
       <option value="XAU">XAU</option>
     </select>
   </div>
+
+  <div style="flex: 1; min-width: 100px;">
+   <label for="swap-amount" id="recieve-label"><strong>Selling</strong></label>
+    <input type="number" id="swap-amount" placeholder="From" style="width: 90%; padding: 6px; background-color: black; color: white; border: 1px solid #444;" />
+  </div>
   
     <div style="flex: 1; min-width: 100px;">
-  <label for="swap-price" id="receive-label"><strong><span id='from-asset-label'>From</span> Cost</strong></label>
+  <label for="swap-price" id="receive-label"><strong><span id='to-asset-label'>To</span> Received</strong></label>
   <input
     type="number"
     id="swap-price"
@@ -150,10 +155,7 @@ nav ul li a {
     style="width: 90%; padding: 6px; background-color: black; color: white; border: 1px solid #444;" />
   </div>
   
-  <div style="flex: 1; min-width: 100px;">
-   <label for="swap-amount" id="recieve-label"><strong>Receive</strong></label>
-    <input type="number" id="swap-amount" placeholder="Purchasing" style="width: 90%; padding: 6px; background-color: black; color: white; border: 1px solid #444;" />
-  </div>
+  
 
 
   <div style="width: 100%; text-align: center; margin-top: 20px;">
@@ -337,9 +339,8 @@ localStorage.setItem('seagull_wallet', wallet);
         y: point.price
       }));
 
-    const xrpData = filterDataByTimeframe(format(dataXRP), timeframe);
-    const xauData = filterDataByTimeframe(format(dataXAU), timeframe);
-
+    const xrpData = format(dataXRP);
+    const xauData = format(dataXAU);
 
     const ctx = document.getElementById('priceChart').getContext('2d');
 
@@ -528,7 +529,7 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
 
     
     async function getRatePreview(from, to) {
-  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/rate-preview?from=${from}&to=${to}`);
+  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/rate-preview?to=${to}&from=${from}`);
   if (!res.ok) throw new Error('Rate preview failed');
   const data = await res.json();
   console.log('Rate:', data.rate);
@@ -559,118 +560,84 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
   }
 };
 
-    function filterDataByTimeframe(data, timeframe) {
-  const now = Date.now();
-  const ranges = {
-    '1D': now - 24 * 60 * 60 * 1000,
-    '1W': now - 7 * 24 * 60 * 60 * 1000,
-    '1M': now - 30 * 24 * 60 * 60 * 1000,
-    'ALL': 0
-  };
-  const minTimestamp = ranges[timeframe];
-  return data.filter(point => point.x >= minTimestamp);
-}
-
-
-
-async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
-  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from_currency: fromCurrency, to_currency: toCurrency, amount, wallet_address: walletAddress })
-  });
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.error || 'Swap failed');
-  }
-  const data = await res.json();
-  console.log('Swap Payload UUID:', data.uuid);
-  return data;
-}
-
-// Example usage:
-getRatePreview('SeagullCoin', 'XAU').then(rate => {
-  console.log('Current SGLCN to XAU rate:', rate);
-});
-
-createSwap('SeagullCoin', 'XAU', 10, 'rYourXRPWalletAddressHere')
-  .then(response => console.log('Swap started:', response))
-  .catch(err => console.error(err));
-
-    document.getElementById('swap-btn').addEventListener('click', () => {
-  const fromCurrency = document.getElementById('swap-from').value;
-  const toCurrency = document.getElementById('swap-to').value;
-
-  if (fromCurrency === toCurrency) {
-    alert('Please select different currencies to swap.');
-    return;
-  }
-
-  // Example payload trigger (replace with your real payload logic)
-  alert(`Swap request:\nFrom: ${fromCurrency}\nTo: ${toCurrency}`);
-
-  // TODO: Implement actual swap payload here, e.g., open XUMM payload URL, call API, etc.
-});
-
-    const toCurrency = document.getElementById('swap-to');
-  const amountLabel = document.getElementById('amount-label');
-
-  function updateAmountLabel() {
-    const selected = toCurrency.value;
-    amountLabel.innerHTML = `<strong>${selected} Amount</strong>`;
-  }
-
-  toCurrency.addEventListener('change', updateAmountLabel);
-
-  // Initialize on load
-  window.addEventListener('DOMContentLoaded', updateAmountLabel);
-    
-    document.getElementById('swap-btn').addEventListener('click', async () => {
-  const from = document.getElementById('swap-from').value;
-  const to = document.getElementById('swap-to').value;
-  const amount = document.getElementById('swap-amount').value;
-  const wallet = localStorage.getItem('xumm_wallet_address');
-
-  if (!wallet) {
-    alert('Please connect your wallet first.');
-    return;
-  }
-
-  if (!amount || isNaN(amount) || amount <= 0) {
-    alert('Please enter a valid amount to swap.');
-    return;
-  }
-
-  try {
+  async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, amount, wallet })
+      body: JSON.stringify({
+        from_currency: fromCurrency,
+        to_currency: toCurrency,
+        amount,
+        wallet_address: walletAddress
+      })
     });
 
     const data = await res.json();
 
-    if (data.payloadURL) {
-      window.open(data.payloadURL, '_blank');
-    } else {
-      alert('Error initiating swap: ' + (data.error || 'Unknown error.'));
+    if (!res.ok) {
+      throw new Error(data.error || 'Swap failed');
     }
-  } catch (err) {
-    alert('Swap failed: ' + err.message);
-  }
-});
 
-  document.getElementById('swap-from').addEventListener('change', function () {
-    document.getElementById('from-asset-label').textContent = this.value;
+    console.log('Swap Payload UUID:', data.uuid);
+    return data;
+  }
+
+  function updateLabels() {
+    const fromAsset = document.getElementById('swap-from').value;
+    const toAsset = document.getElementById('swap-to').value;
+    document.getElementById('from-asset-label').textContent = fromAsset;
+    document.getElementById('amount-label').innerHTML = `<strong>You Will Receive (${toAsset})</strong>`;
+  }
+
+  // Update labels when currency selection changes
+  document.getElementById('swap-from').addEventListener('change', updateLabels);
+  document.getElementById('swap-to').addEventListener('change', updateLabels);
+
+  // Initial label setup on page load
+  window.addEventListener('DOMContentLoaded', updateLabels);
+
+  // Swap button handler
+  document.getElementById('swap-btn').addEventListener('click', async () => {
+    const fromCurrency = document.getElementById('swap-from').value;
+    const toCurrency = document.getElementById('swap-to').value;
+    const amount = parseFloat(document.getElementById('swap-amount').value);
+    const walletAddress = localStorage.getItem('xumm_wallet_address');
+
+    if (!walletAddress) {
+      alert('Please connect your wallet first.');
+      return;
+    }
+
+    if (fromCurrency === toCurrency) {
+      alert('Please select different currencies to swap.');
+      return;
+    }
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+
+    try {
+      const response = await createSwap(fromCurrency, toCurrency, amount, walletAddress);
+
+      if (response.payloadURL) {
+        window.open(response.payloadURL, '_blank');
+      } else {
+        alert('Swap created, but no payload URL found.');
+      }
+    } catch (error) {
+      alert('Swap failed: ' + error.message);
+    }
   });
 
   // Trigger initial value
-  document.getElementById('from-asset-label').textContent = document.getElementById('swap-from').value;
+  document.getElementById('to-asset-label').textContent = document.getElementById('swap-from').value;
 
     function updateLabels() {
   const fromAsset = document.getElementById('swap-from').value;
   const toAsset = document.getElementById('swap-to').value;
-  document.getElementById('from-asset-label').textContent = fromAsset;
+  document.getElementById('to-asset-label').textContent = toAsset;
   document.getElementById('amount-label').innerHTML = `<strong>You Will Receive (${toAsset})</strong>`;
     }
 
@@ -700,41 +667,38 @@ async function loadChartData() {
     // Prepare labels and datasets
     const labels = historyXrp.map(entry => new Date(entry.timestamp));
 
-const dataXrp = historyXrp.map(entry => parseFloat(entry.xrp_to_sglcn));
-const dataXau = historyXau.map(entry => parseFloat(entry.xau_to_sglcn));
+    const dataXrp = historyXrp.map(entry => parseFloat(entry.xrp_to_sglcn));
+    const dataXau = historyXau.map(entry => parseFloat(entry.xau_to_sglcn));
 
-// Filter labels and data by timeframe
-const filteredLabels = filterDataByTimeframe(format(labels), timeframe);
-const xrpData = filterDataByTimeframe(format(dataXrp), timeframe);
-const xauData = filterDataByTimeframe(format(dataXau), timeframe);
+    const ctx = document.getElementById('priceChart').getContext('2d');
 
- if (chartInstance) {
+    if (chartInstance) {
       chartInstance.destroy();
     }
-    
-chartInstance = new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels: filteredLabels,
-    datasets: [
-      {
-        label: 'XRP → SGLCN',
-        data: xrpData,
-        fill: false,
-        borderColor: 'rgba(65,105,225,1)', // royal blue
-        tension: 0.2,
-        pointRadius: 2,
-        pointHoverRadius: 5
+
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'XRP → SGLCN',
+            data: dataXrp,
+            fill: false,
+            borderColor: 'rgba(65,105,225,1)', // royal blue
+            tension: 0.2,
+            pointRadius: 2,
+            pointHoverRadius: 5
           },
-      {
-        label: 'XAU → SGLCN',
-        data: xauData,
-        fill: false,
-        borderColor: 'rgba(255,165,0,1)', // orange
-        tension: 0.2,
-        pointRadius: 2,
-        pointHoverRadius: 5
-      }
+          {
+            label: 'XAU → SGLCN',
+            data: dataXau,
+            fill: false,
+            borderColor: 'rgba(255,165,0,1)', // orange
+            tension: 0.2,
+            pointRadius: 2,
+            pointHoverRadius: 5
+          }
         ]
       },
       options: {
@@ -776,8 +740,6 @@ chartInstance = new Chart(ctx, {
     console.error("Failed to load chart data:", err);
   }
 }
-
-    
 
 
 

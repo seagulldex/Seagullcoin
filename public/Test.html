@@ -105,14 +105,17 @@ nav ul li a {
 </div>
 
 
-
+<button id="toggle-direction" title="Swap direction">Invert ↔️</button>
     <h2>Price Chart SGLCN</h2>
 <div>
   <label for="timeframe">View:</label>
   <select id="timeframe" onchange="loadChartData()">
+    <option value="1H" selected>1 Hour</option>
     <option value="1D">1 Day</option>
     <option value="1W">1 Week</option>
-    <option value="1M" selected>1 Month</option>
+    <option value="1M">1 Month</option>
+    <option value="6M">6 Month</option>
+    <option value="1Y">1 Year</option>
     <option value="ALL">All Time</option>
   </select>
 </div>
@@ -120,6 +123,7 @@ nav ul li a {
   <canvas id="priceChart" height="350" style="width: 100%; margin-top: 20px;"></canvas>
 </div>
 
+    
 <!-- Add this right below your chart container and above #orderbook -->
 <!-- Add this right below your chart container and above #orderbook -->
 <div id="swap-section" style="max-width: 900px; margin: 30px auto; border: 1px solid #000; border-radius: 8px; padding: 15px; background: black; display: flex; flex-wrap: wrap; gap: 15px; color: white;">
@@ -415,6 +419,24 @@ localStorage.setItem('seagull_wallet', wallet);
     loadChartData();
   });
 
+document.getElementById('toggle-direction').addEventListener('click', () => {
+  invertChart = !invertChart;
+  loadChartData(); // re-render chart with new direction
+});
+
+    function getIntervalFromTimeframe(timeframe) {
+  switch (timeframe) {
+    case '1H': return '1m';    // 1-minute resolution for 1 hour
+    case '1D': return '5m';    // 5-minute resolution for 1 day
+    case '1W': return '1h';    // 1-hour resolution for 1 week
+    case '1M': return '1d';    // 1-day resolution for 1 month
+    case '3M': return '1d';    // 1-day resolution
+    case '6M': return '1w';    // 1-week resolution
+    case '1Y': return '1w';    // 1-week resolution
+    default: return '1d';
+  }
+}
+
 
 
     async function updateCurrentPrice() {
@@ -536,29 +558,7 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
   return data.rate;
 }
     
-    document.getElementById('swap-btn').onclick = async () => {
-  const wallet = localStorage.getItem('xumm_wallet_address');
-  if (!wallet) return alert("Please log in first.");
-
-  const from = document.getElementById('swap-from').value;
-  const to = document.getElementById('swap-to').value;
-  const amount = parseFloat(document.getElementById('swap-amount').value);
-
-  if (!amount || amount <= 0) return alert("Enter a valid amount");
-
-  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from, to, amount, wallet })
-  });
-
-  const result = await res.json();
-  if (result.payloadURL) {
-    window.open(result.payloadURL, "_blank");
-  } else {
-    alert("Swap failed: " + result.message);
-  }
-};
+    
 
   async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
@@ -596,7 +596,7 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
   // Initial label setup on page load
   window.addEventListener('DOMContentLoaded', updateLabels);
 
-  // Swap button handler
+// Swap button handler
   document.getElementById('swap-btn').addEventListener('click', async () => {
     const fromCurrency = document.getElementById('swap-from').value;
     const toCurrency = document.getElementById('swap-to').value;
@@ -631,6 +631,7 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
     }
   });
 
+
   // Trigger initial value
   document.getElementById('to-asset-label').textContent = document.getElementById('swap-from').value;
 
@@ -642,6 +643,8 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
     }
 
 let chartInstance;
+let invertChart = false;
+
 
 async function loadChartData() {
   const timeframe = document.getElementById('timeframe').value;
@@ -667,8 +670,15 @@ async function loadChartData() {
     // Prepare labels and datasets
     const labels = historyXrp.map(entry => new Date(entry.timestamp));
 
-    const dataXrp = historyXrp.map(entry => parseFloat(entry.xrp_to_sglcn));
-    const dataXau = historyXau.map(entry => parseFloat(entry.xau_to_sglcn));
+    const dataXrp = historyXrp.map(entry => {
+  const value = parseFloat(entry.xrp_to_sglcn);
+  return invertChart ? (1 / value) : value;
+});
+
+const dataXau = historyXau.map(entry => {
+  const value = parseFloat(entry.xau_to_sglcn);
+  return invertChart ? (1 / value) : value;
+});
 
     const ctx = document.getElementById('priceChart').getContext('2d');
 
@@ -682,7 +692,7 @@ async function loadChartData() {
         labels: labels,
         datasets: [
           {
-            label: 'XRP → SGLCN',
+            label: invertChart ? 'SGLCN → XRP' : 'XRP → SGLCN',
             data: dataXrp,
             fill: false,
             borderColor: 'rgba(65,105,225,1)', // royal blue
@@ -691,7 +701,7 @@ async function loadChartData() {
             pointHoverRadius: 5
           },
           {
-            label: 'XAU → SGLCN',
+            label: invertChart ? 'SGLCN → XAU' : 'XAU → SGLCN',
             data: dataXau,
             fill: false,
             borderColor: 'rgba(255,165,0,1)', // orange
@@ -710,31 +720,45 @@ async function loadChartData() {
             }
           },
           tooltip: {
-            callbacks: {
-              label: context => `Rate: ${context.raw.toLocaleString(undefined, { maximumFractionDigits: 4 })}`
-            }
-          }
-        },
-        scales: {
-          x: {
-            type: 'time',
-            time: {
-              unit: timeframe === '1D' ? 'minute' : 'hour',
-              tooltipFormat: 'yyyy-MM-dd HH:mm'
-            },
-            ticks: {
-              color: '#ccc'
-            }
-          },
-          y: {
-            beginAtZero: false,
-            ticks: {
-              color: '#ccc'
-            }
+        callbacks: {
+          label: context => {
+            const rate = context.raw;
+            if (typeof rate !== 'number' || isNaN(rate)) return 'Rate: N/A';
+            return `Rate: ${rate.toLocaleString(undefined, {
+              maximumFractionDigits: rate < 0.0001 ? 8 : 4
+            })}`;
           }
         }
       }
-    });
+    },
+        scales: {
+      x: {
+        type: 'time',
+        time: {
+          unit:
+            timeframe === '1H' ? 'minute' :
+            timeframe === '1D' ? 'minute' :
+            timeframe === '1W' ? 'hour' :
+            timeframe === '1M' ? 'day' :
+            timeframe === '3M' ? 'week' :
+           (timeframe === '6M' || timeframe === '1Y') ? 'month' :
+           'day',
+          tooltipFormat: 'yyyy-MM-dd HH:mm'
+        },
+        ticks: {
+          color: '#ccc'
+            }
+           },
+      y: {
+        beginAtZero: false,
+        ticks: {
+          color: '#ccc'
+        }
+      }
+    }
+  }
+});
+
 
   } catch (err) {
     console.error("Failed to load chart data:", err);
@@ -752,7 +776,6 @@ window.addEventListener('DOMContentLoaded', loadChartData);
     setInterval(fetchLiveSGLCNXAUPrice,30000);            // Fetch XAU price
     setInterval(fetchLiveSGLCNPrice, 30000);
     setInterval(updateCurrentPrice, 30000);
-    loadChartData();
     loadOrderBook();
     updateWalletStatus();
   </script>

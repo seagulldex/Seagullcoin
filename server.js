@@ -2821,7 +2821,8 @@ app.get('/user/balance', async (req, res) => {
 
 const xrplApiUrl = 'https://s1.ripple.com:51234'; // Mainnet
 
-// Convert hex-encoded URI to UTF-8 string
+
+// Helper to convert hex-encoded URI to UTF-8 string
 function hexToUtf8(hex) {
   if (!hex || typeof hex !== 'string') return '';
   try {
@@ -2832,144 +2833,121 @@ function hexToUtf8(hex) {
   }
 }
 
-// Fetch with timeout helper
-const fetchWithTimeout = (url, timeout = 7000) => {
+// Helper for fetch with timeout
+const fetchWithTimeout = (url, timeout = 5000) => {
   return Promise.race([
     fetch(url),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout)),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
   ]);
 };
 
-// Express route to fetch all NFTs for a wallet and save to MongoDB
+// Test route to fetch NFTs for a wallet (limit to 20 NFTs)
+// Assuming you're using Mongoose and have defined the model somewhere like this:
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
-  console.log('Fetching NFTs for wallet:', wallet);
+  console.log('Using wallet address:', wallet);
 
-  const allNfts = [];
-  let marker = null;
+  const requestBody = {
+    method: 'account_nfts',
+    params: [{
+      account: wallet,
+      ledger_index: 'validated'
+    }]
+  };
 
-  // Fetch a page of NFTs from XRPL
-  async function fetchNftsPage(marker) {
-    const requestBody = {
-      method: 'account_nfts',
-      params: [{
-        account: wallet,
-        ledger_index: 'validated',
-        limit: 400,
-        ...(marker ? { marker } : {}),
-      }],
-    };
-
+  try {
     const response = await fetch(xrplApiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
 
-    if (data.result?.error) throw new Error(data.result.error_message);
+    if (data.result?.error) {
+      return res.status(500).json({ error: data.result.error_message });
+    }
 
-    allNfts.push(...(data.result.account_nfts || []));
+    const nfts = data.result.account_nfts || [];
+    const limitedNfts = nfts; // process all NFTs
 
-    return data.result.marker || null;
-  }
-
-  try {
-    // Fetch all pages recursively
-    do {
-      marker = await fetchNftsPage(marker);
-    } while (marker);
-
-    const parsed = await Promise.all(allNfts.map(async (nft) => {
+    const parsed = await Promise.all(limitedNfts.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
-
       let metadata = null;
       let collection = null;
       let icon = null;
 
-      if (uri.includes('ipfs')) {
-        let ipfsPath = uri;
-        if (uri.startsWith('ipfs://')) {
-          ipfsPath = uri.replace('ipfs://', '');
-        } else if (uri.includes('/ipfs/')) {
-          ipfsPath = uri.split('/ipfs/')[1];
-        }
+      if (uri.startsWith('ipfs://') || uri.includes('ipfs.io/ipfs/') || uri.includes('ipfs/')) {
+  let ipfsPath = uri;
 
-        const gateways = [
-          'https://ipfs.io/ipfs/',
-          'https://gateway.pinata.cloud/ipfs/',
-          'https://cloudflare-ipfs.com/ipfs/',
-          'https://nftstorage.link/ipfs/',
-        ];
+  // Normalize to just the CID path if needed
+  if (uri.startsWith('ipfs://')) {
+    ipfsPath = uri.replace('ipfs://', '');
+  } else if (uri.includes('/ipfs/')) {
+    ipfsPath = uri.split('/ipfs/')[1]; // e.g., `bafy.../metadata.json`
+  }
 
-        for (const gateway of gateways) {
-          const ipfsUrl = `${gateway}${ipfsPath}`;
-          try {
-            const res = await fetchWithTimeout(ipfsUrl);
-            if (res.ok) {
-              metadata = await res.json();
-              collection = metadata.collection || metadata.name || null;
-              icon = metadata.image || null;
-              break;
-            }
-          } catch (err) {
-            console.warn(`IPFS gateway failed: ${ipfsUrl} → ${err.message}`);
-          }
-        }
+  const gateways = [
+    'https://ipfs.io/ipfs/',
+    'https://gateway.pinata.cloud/ipfs/',
+    'https://cloudflare-ipfs.com/ipfs/',
+    'https://nftstorage.link/ipfs/',
+  ];
 
-        if (!metadata) {
-          metadata = { error: 'All IPFS gateways failed or URI invalid' };
-        }
+  for (const gateway of gateways) {
+    const ipfsUrl = `${gateway}${ipfsPath}`;
+    try {
+      const res = await fetchWithTimeout(ipfsUrl, 7000);
+      if (res.ok) {
+        metadata = await res.json();
+        collection = metadata.collection || metadata.name || null;
+        icon = metadata.image || null;
+        break;
+      } else {
+        console.warn(`Non-OK response from ${ipfsUrl}: ${res.status}`);
       }
+    } catch (e) {
+      console.warn(`Error fetching from ${ipfsUrl}:`, e.message);
+    }
+  }
 
-      // Normalize traits array
-      const traits = Array.isArray(metadata?.attributes)
-        ? metadata.attributes.map(attr => ({
-          trait_type: attr.trait_type || '',
-          value: attr.value ?? attr, // fallback if value missing
-        }))
-        : [];
+  if (!metadata) {
+    metadata = { error: 'All IPFS gateways failed or invalid URI' };
+  }
+}
 
       const nftData = {
         wallet,
         NFTokenID: nft.NFTokenID,
         URI: uri,
-        image: metadata?.image || null,
-        name: metadata?.name || null,
-        traits,
         collection,
         icon,
         metadata,
+        image: metadata?.image || null,
+        name: metadata?.name || null,
+        traits: metadata?.attributes || []
       };
 
+      // Save or update in MongoDB
       try {
-        // Upsert into MongoDB by wallet + NFTokenID
         await NFTModel.findOneAndUpdate(
           { wallet, NFTokenID: nft.NFTokenID },
           nftData,
           { upsert: true, new: true, setDefaultsOnInsert: true }
         );
-      } catch (dbErr) {
-        console.error(`MongoDB error for ${nft.NFTokenID}:`, dbErr.message);
+      } catch (mongoErr) {
+        console.error(`Failed to save NFT ${nft.NFTokenID}:`, mongoErr.message);
       }
 
       return nftData;
     }));
 
-    res.json({ count: parsed.length, nfts: parsed });
+    res.json({ nfts: parsed });
   } catch (err) {
-    console.error('Fatal error fetching NFTs:', err.message);
+    console.error('Error fetching NFTs:', err);
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
-
-export default app;
-
-
-
-
-
 
 
 

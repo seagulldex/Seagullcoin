@@ -127,12 +127,26 @@ const PUBLIC_KEY_PEM = fs.readFileSync(path.resolve('./keys/public.pem'), 'utf-8
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 
 async function fetchIPFSMetadata(uri) {
-  if (!uri.startsWith("ipfs://")) return null;
-  const ipfsUrl = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
   try {
-    const res = await fetch(ipfsUrl);
-    if (!res.ok) throw new Error("Failed to fetch metadata from IPFS");
+    let fetchUrl;
+
+    if (uri.startsWith("ipfs://")) {
+      fetchUrl = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+    } else if (uri.startsWith("https://arweave.net/")) {
+      fetchUrl = uri;
+    } else if (uri.startsWith("http://") || uri.startsWith("https://")) {
+      fetchUrl = uri;
+    } else {
+      // Unsupported URI scheme
+      console.warn("Unsupported URI:", uri);
+      return null;
+    }
+
+    const res = await fetch(fetchUrl);
+    if (!res.ok) throw new Error(`Failed to fetch metadata from ${fetchUrl}`);
+
     const metadata = await res.json();
+
     return {
       name: metadata.name || "Untitled NFT",
       description: metadata.description || "",
@@ -141,14 +155,12 @@ async function fetchIPFSMetadata(uri) {
         : metadata.image || ""
     };
   } catch (err) {
-    console.error("IPFS metadata fetch error:", err.message);
-    return {
-      name: "Untitled NFT",
-      description: "",
-      image: ""
-    };
+    console.error("Metadata fetch error:", err.message);
+    return null; // Signal failure clearly
   }
 }
+
+
 
 // Fetch SGLCN-XRP price from the AMM pool
 

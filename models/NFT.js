@@ -6,6 +6,7 @@ const nftSchema = new mongoose.Schema({
   URI: String,
   image: String,
   name: String,
+  description: String, 
   traits: [{
   trait_type: String,
   value: mongoose.Schema.Types.Mixed

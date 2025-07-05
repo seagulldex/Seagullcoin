@@ -163,6 +163,10 @@ async function fetchIPFSMetadata(uri) {
 
 
 // Fetch SGLCN-XRP price from the AMM pool
+async function checkAndFixIndexes() {
+  const indexes = await NFTModel.collection.indexes();
+  console.log(indexes);
+}
 
 
 

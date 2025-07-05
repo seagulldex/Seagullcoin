@@ -2875,7 +2875,18 @@ app.get('/nfts/:wallet', async (req, res) => {
   console.log('Fetching NFTs for wallet:', wallet);
 
   const fixIPFS = (uri) => uri?.startsWith('ipfs://') ? uri.replace('ipfs://', 'https://ipfs.io/ipfs/') : uri;
-  
+
+  function normalizeImage(image) {
+  if (!image) return null;
+  if (image.startsWith('ipfs://')) {
+    return image.replace('ipfs://', 'https://ipfs.io/ipfs/');
+  }
+  if (/^[a-zA-Z0-9]{46,}$/.test(image)) {
+    return `https://ipfs.io/ipfs/${image}`;
+  }
+  return image;
+}
+
   // ✅ Check if we already have fresh cached NFTs in the DB
   const now = new Date();
   const cutoff = new Date(now.getTime() - 1000 * 60 * 60 * 6); // 6 hours ago

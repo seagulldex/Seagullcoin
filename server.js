@@ -2890,7 +2890,13 @@ app.get('/nfts/:wallet', async (req, res) => {
   // ✅ Skip NFTs with missing or invalid URI
   if (!uri || uri.trim() === '') {
     console.warn(`Skipping NFT with empty or invalid URI: ${nft.NFTokenID}`);
-    return null;
+    return {
+  wallet,
+  NFTokenID: nft.NFTokenID,
+  URI: uri,
+  metadata: { error: 'Fetch failed or incomplete' },
+};
+
   }
 
   let metadata = null;

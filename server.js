@@ -2992,7 +2992,9 @@ if (!metadata) {
       return nftData;
     }));
 
-    res.json({ nfts: parsed });
+    const filtered = parsed.filter(Boolean);
+console.log(`Saved ${filtered.length} of ${nfts.length} NFTs`);
+    res.json({ nfts: filtered });
   } catch (err) {
     console.error('Error fetching NFTs:', err);
     res.status(500).json({ error: 'Failed to fetch NFTs' });

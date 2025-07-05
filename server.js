@@ -2991,8 +2991,23 @@ const nftData = {
       );
 
     const filtered = parsed
-  .filter(Boolean) // remove nulls from skipped NFTs
-  .filter(nft => typeof nft.NFTokenID === 'string' && nft.NFTokenID.trim() !== '');
+  .filter(nft => {
+    if (!nft || typeof nft.NFTokenID !== 'string' || nft.NFTokenID.trim() === '') {
+      console.warn('Skipping invalid NFT:', nft);
+      return false;
+    }
+    return true;
+  });
+
+// Optional: deduplicate by wallet+NFTokenID
+const seen = new Set();
+const deduped = filtered.filter(nft => {
+  const key = `${nft.wallet}:${nft.NFTokenID}`;
+  if (seen.has(key)) return false;
+  seen.add(key);
+  return true;
+});
+
 
 
     // Prepare bulkWrite operations

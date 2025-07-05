@@ -151,19 +151,25 @@ async function updateWalletStatus() {
   const seagullWallet = localStorage.getItem('seagull_wallet');
   const indicator = document.getElementById('wallet-indicator');
 
+  console.log('Wallets from localStorage:', { xummWallet, seagullWallet });
+
   if (xummWallet && seagullWallet) {
     indicator.textContent = '🔵 Layer 2';
     indicator.classList.remove('red');
     indicator.classList.add('blue');
     document.getElementById('logout-btn').style.display = 'inline-block';
-    fetchNFTs(xummWallet); // or seagullWallet depending on which one your NFTs are tied to
+    console.log('Fetching NFTs for:', xummWallet);
+    fetchNFTs(xummWallet);
   } else {
+    console.log('No wallet found. Triggering login.');
     indicator.textContent = '🔴 Login';
     indicator.classList.remove('green');
     indicator.classList.add('red');
     indicator.onclick = startLoginFlow;
+    startLoginFlow(); // 🔁 force it
   }
 }
+
 
 async function startLoginFlow() {
   const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');

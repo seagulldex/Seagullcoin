@@ -3164,7 +3164,6 @@ const fixed = deduped.map(nft => ({
 }));
 
 // ✅ Send the final response here
-const filtered = fixed.filter(isValidNFT);
 return res.json({ nfts: filtered });
 
 

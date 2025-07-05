@@ -2977,6 +2977,7 @@ const nftData = {
   collection: mongoose.Schema.Types.Mixed, // instead of String
   icon: typeof icon === 'string' ? icon : null,
   metadata,
+  description: String,
   image: typeof metadata?.image === 'string' ? metadata.image : null,
   name: typeof metadata?.name === 'string'
     ? metadata.name

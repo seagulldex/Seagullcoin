@@ -2925,28 +2925,33 @@ app.get('/nfts/:wallet', async (req, res) => {
 }
 
         
-        } else if (uri.startsWith('https://arweave.net/')) {
-    // 🔥 ADD THIS BLOCK
-    try {
-      const res = await fetchWithTimeout(uri, 7000);
-      if (res.ok) {
-        metadata = await res.json();
-        collection = metadata.collection || metadata.name || null;
-        icon = metadata.image || null;
-      } else {
-        console.warn(`Arweave fetch error: ${res.status}`);
-      }
-    } catch (e) {
-      console.warn(`Error fetching Arweave metadata:`, e.message);
+        } else 
+                          if (
+  uri.startsWith('ipfs://') ||
+  uri.includes('ipfs.io/ipfs/') ||
+  uri.includes('ipfs/') ||
+  /^[a-zA-Z0-9]{46,}$/.test(uri) // raw CID
+) {
+  // --- IPFS logic here (unchanged) ---
+} else if (uri.startsWith('https://arweave.net/')) {
+  try {
+    const res = await fetchWithTimeout(uri, 7000);
+    if (res.ok) {
+      metadata = await res.json();
+      collection = metadata.collection || metadata.name || null;
+      icon = metadata.image || null;
+    } else {
+      console.warn(`Non-OK response from Arweave: ${res.status}`);
     }
+  } catch (e) {
+    console.warn('Failed to fetch from Arweave:', e.message);
+  }
+
+  if (!metadata) {
+    metadata = { error: 'Arweave URI failed or returned invalid data' };
   }
 }
-
-        if (!metadata) {
-          metadata = { error: 'All IPFS gateways failed or invalid URI' };
-        }
-      }
-
+                  
       const nftData = {
         wallet,
         NFTokenID: nft.NFTokenID,

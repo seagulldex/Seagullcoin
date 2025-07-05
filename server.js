@@ -2882,8 +2882,10 @@ app.get('/nfts/:wallet', async (req, res) => {
     const nfts = data.result.account_nfts || [];
     console.log(`XRPL returned ${nfts.length} NFTs`);
 
-    const parsed = await Promise.all(nfts.map(async (nft) => {
-    const uri = hexToUtf8(nft.URI);
+    // Fetch metadata for all NFTs
+    const parsed = await Promise.all(
+      nfts.map(async (nft) => {
+        const uri = hexToUtf8(nft.URI);
 
   // ✅ Skip NFTs with missing or invalid URI
   if (!uri || uri.trim() === '') {
@@ -2978,31 +2980,35 @@ if (!metadata) {
         image: metadata?.image || null,
         name: metadata?.name || null,
         traits: metadata?.attributes || []
+        };
       };
-
-      try {
-        await NFTModel.findOneAndUpdate(
-          { wallet, NFTokenID: nft.NFTokenID },
-          nftData,
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-      } catch (mongoErr) {
-        console.error(`MongoDB save failed for ${nft.NFTokenID}:`, mongoErr.message);
-      }
-
-      return nftData;
-    }));
+    );
 
     const filtered = parsed.filter(Boolean);
-console.log(`Saved ${filtered.length} of ${nfts.length} NFTs`);
+
+    // Prepare bulkWrite operations
+    const bulkOps = filtered.map((nftData) => ({
+      updateOne: {
+        filter: { wallet: nftData.wallet, NFTokenID: nftData.NFTokenID },
+        update: { $set: nftData },
+        upsert: true,
+      },
+    }));
+
+  // Execute bulkWrite once
+    try {
+      const result = await NFTModel.bulkWrite(bulkOps);
+      console.log('Bulk write result:', result);
+    } catch (bulkErr) {
+      console.error('MongoDB bulk write error:', bulkErr);
+    }
+
     res.json({ nfts: filtered });
   } catch (err) {
     console.error('Error fetching NFTs:', err);
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
-
-
         
         
 // /transfer-nft — direct transfer to another wallet

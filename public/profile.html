@@ -203,22 +203,26 @@ function displayNFTs() {
   container.innerHTML = '';
 
   const items = allNFTs.slice(currentIndex, currentIndex + nftsPerPage);
+
   for (const nft of items) {
     const metadata = nft.metadata || {};
     const card = document.createElement('div');
     card.className = "nft-card";
 
+    // Image
     const img = document.createElement('img');
     img.src = convertIPFSToURL(metadata.image);
     img.alt = metadata.name || "Unnamed NFT";
     card.appendChild(img);
 
+    // Basic info
     card.innerHTML += `
       <h3>${metadata.name || "Unnamed NFT"}</h3>
       <p>${metadata.description || "No description"}</p>
       ${metadata.collection ? `<p><strong>Collection:</strong> ${metadata.collection.name}</p>` : ''}
     `;
 
+    // Attributes
     if (Array.isArray(metadata.attributes)) {
       metadata.attributes.forEach(attr => {
         const trait = document.createElement('div');
@@ -227,6 +231,149 @@ function displayNFTs() {
         card.appendChild(trait);
       });
     }
+
+    // Transfer button
+    const transferButton = document.createElement('button');
+    transferButton.textContent = 'Transfer NFT';
+    transferButton.onclick = () => transferNFT(nft.NFTokenID);
+    card.appendChild(transferButton);
+
+    // Burn button
+    const burnButton = document.createElement('button');
+    burnButton.textContent = '🔥 Burn NFT';
+    burnButton.style.background = '#ff3b3b';
+    burnButton.onclick = () => burnNFT(nft.NFTokenID);
+    card.appendChild(burnButton);
+
+    // Sell or price label
+    if (nft.listed || nft.sellOffer) {
+      const priceLabel = document.createElement('p');
+      priceLabel.textContent = `Price: ${nft.sellOffer?.price || nft.listed?.price} SeagullCoin`;
+      priceLabel.style.color = "green";
+      priceLabel.style.fontWeight = "bold";
+      card.appendChild(priceLabel);
+    } else {
+      const sellButton = document.createElement('button');
+      sellButton.textContent = 'Sell (SGLCN)';
+      sellButton.onclick = async () => {
+        const amount = prompt("Enter price in SeagullCoin:");
+        if (!amount) return;
+        try {
+          const response = await fetch("/sell-nft", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              walletAddress: localStorage.getItem("xumm_wallet_address"),
+              nftId: nft.NFTokenID,
+              price: amount
+            }),
+          });
+          const result = await response.json();
+          if (result?.next?.always) {
+            window.open(result.next.always, "_blank");
+          } else {
+            alert("Error creating sell offer.");
+          }
+        } catch {
+          alert("Failed to create sell offer.");
+        }
+      };
+      card.appendChild(sellButton);
+    }
+
+    // Buy button if not owned by current user
+    if (nft.sellOffer && nft.sellOffer.owner !== localStorage.getItem('xumm_wallet_address')) {
+      const buyButton = document.createElement('button');
+      buyButton.textContent = 'Buy with SeagullCoin';
+      buyButton.onclick = async () => {
+        try {
+          const res = await fetch('https://sglcn-x20-api.glitch.me/buy-nft', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              walletAddress: localStorage.getItem('xumm_wallet_address'),
+              nftId: nft.NFTokenID
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert("Please approve purchase in your XUMM app.");
+            window.open(data.next.always, "_blank");
+          } else {
+            alert("Purchase failed: " + data.message);
+          }
+        } catch (err) {
+          console.error("Buy error:", err);
+          alert("An error occurred during purchase.");
+        }
+      };
+      card.appendChild(buyButton);
+    }
+
+    container.appendChild(card);
+  }
+}
+
+// Helper function to convert IPFS URLs to HTTP(S)
+function convertIPFSToURL(ipfsUrl) {
+  if (!ipfsUrl) return '';
+  return ipfsUrl.replace(/^ipfs:\/\//, 'https://ipfs.io/ipfs/');
+}
+
+// Transfer NFT function
+async function transferNFT(nftId) {
+  const recipient = prompt("Enter the wallet address to transfer this NFT to:");
+  const sender = localStorage.getItem("xumm_wallet_address");
+  if (!recipient || !sender) {
+    alert("Transfer cancelled or wallet not connected.");
+    return;
+  }
+  try {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/transfer-nft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: sender, nftId, recipientAddress: recipient })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert("Please sign the transfer in your XUMM app.");
+      window.open(data.next.always, "_blank");
+    } else {
+      alert("Transfer failed: " + data.message);
+    }
+  } catch (err) {
+    console.error("Transfer error:", err);
+    alert("An error occurred during transfer.");
+  }
+}
+
+// Burn NFT function
+async function burnNFT(nftId) {
+  const wallet = localStorage.getItem("xumm_wallet_address");
+  if (!wallet) {
+    alert("Please connect your wallet first.");
+    return;
+  }
+  const confirmBurn = confirm("Are you sure you want to burn this NFT? This action cannot be undone.");
+  if (!confirmBurn) return;
+  try {
+    const res = await fetch('https://sglcn-x20-api.glitch.me/burn-nft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: wallet, nftId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert("Please sign the burn transaction in your XUMM app.");
+      window.open(data.next.always, "_blank");
+    } else {
+      alert("Burn failed: " + data.message);
+    }
+  } catch (err) {
+    console.error("Burn error:", err);
+    alert("An error occurred during burn.");
+  }
+}
 
     async function transferNFT(nftId) {
       const recipient = prompt("Enter the wallet address to transfer this NFT to:");

@@ -2971,17 +2971,17 @@ if (!metadata) {
 
 
       const nftData = {
-        wallet,
-        NFTokenID: nft.NFTokenID,
-        URI: uri,
-        collection,
-        icon,
-        metadata,
-        image: metadata?.image || null,
-        name: metadata?.name || null,
-        traits: metadata?.attributes || []
-        };
-        return nftData; 
+  wallet,
+  NFTokenID: nft.NFTokenID,
+  URI: uri,
+  collection: typeof collection === 'string' ? collection : null,
+  icon: typeof icon === 'string' ? icon : null,
+  metadata,
+  image: typeof metadata?.image === 'string' ? metadata.image : null,
+  name: typeof metadata?.name === 'string' ? metadata.name : null,
+  traits: Array.isArray(metadata?.attributes) ? metadata.attributes : [],
+   };
+     return nftData; 
       })
       );
 

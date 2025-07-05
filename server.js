@@ -2874,6 +2874,8 @@ app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   console.log('Fetching NFTs for wallet:', wallet);
 
+  const fixIPFS = (uri) => uri?.startsWith('ipfs://') ? uri.replace('ipfs://', 'https://ipfs.io/ipfs/') : uri;
+  
   // ✅ Check if we already have fresh cached NFTs in the DB
   const now = new Date();
   const cutoff = new Date(now.getTime() - 1000 * 60 * 60 * 6); // 6 hours ago

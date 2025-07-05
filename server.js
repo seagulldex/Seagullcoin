@@ -2981,6 +2981,7 @@ if (!metadata) {
         name: metadata?.name || null,
         traits: metadata?.attributes || []
         };
+        return nftData; 
       };
     );
 

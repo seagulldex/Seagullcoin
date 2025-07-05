@@ -98,7 +98,20 @@
   </main>
 
   <script>
-    let allNFTs = [];
+    allNFTs = [{
+  metadata: {
+    name: "Test NFT",
+    description: "This is a test",
+    image: "https://via.placeholder.com/300",
+    attributes: [
+      { trait_type: "Background", value: "Blue" },
+      { trait_type: "Rarity", value: "Rare" }
+    ]
+  },
+  NFTokenID: "test123"
+}];
+displayNFTs();
+;
     let currentIndex = 0;
     const nftsPerPage = 20;
     let currentTab = 'single'; // or 'collections'

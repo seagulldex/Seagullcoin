@@ -10,10 +10,10 @@ const nftSchema = new mongoose.Schema({
   trait_type: String,
   value: mongoose.Schema.Types.Mixed
 }],
-  collection: String,
+  collection: mongoose.Schema.Types.Mixed, // ← now allows object
   icon: String,
   metadata: mongoose.Schema.Types.Mixed,
-  }, { timestamps: true });
+}, { timestamps: true });
 
 nftSchema.index({ wallet: 1, NFTokenID: 1 }, { unique: true });
 

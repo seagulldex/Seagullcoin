@@ -3089,6 +3089,16 @@ return nftData;
       })
       );
 
+    const isValidNFT = (nft) => {
+  return (
+    nft &&
+    typeof nft.name === 'string' &&
+    nft.name.trim() !== '' &&
+    typeof nft.image === 'string' &&
+    nft.image.startsWith('http') // or 'ipfs://' if you support IPFS directly
+  );
+};
+
     const filtered = parsed
   .filter(nft => {
     if (!nft || typeof nft.NFTokenID !== 'string' || nft.NFTokenID.trim() === '') {

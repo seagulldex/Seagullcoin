@@ -2880,9 +2880,10 @@ app.get('/nfts/:wallet', async (req, res) => {
     }
 
     const nfts = data.result.account_nfts || [];
+    console.log(`XRPL returned ${nfts.length} NFTs`);
 
     const parsed = await Promise.all(nfts.map(async (nft) => {
-  const uri = hexToUtf8(nft.URI);
+    const uri = hexToUtf8(nft.URI);
 
   // ✅ Skip NFTs with missing or invalid URI
   if (!uri || uri.trim() === '') {

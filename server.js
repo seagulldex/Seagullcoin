@@ -2982,7 +2982,7 @@ if (!metadata) {
         traits: metadata?.attributes || []
         };
         return nftData; 
-      };
+      )}
     );
 
     const filtered = parsed.filter(Boolean);

@@ -2882,10 +2882,18 @@ app.get('/nfts/:wallet', async (req, res) => {
     const nfts = data.result.account_nfts || [];
 
     const parsed = await Promise.all(nfts.map(async (nft) => {
-      const uri = hexToUtf8(nft.URI);
-      let metadata = null;
-      let collection = null;
-      let icon = null;
+  const uri = hexToUtf8(nft.URI);
+
+  // ✅ Skip NFTs with missing or invalid URI
+  if (!uri || uri.trim() === '') {
+    console.warn(`Skipping NFT with empty or invalid URI: ${nft.NFTokenID}`);
+    return null;
+  }
+
+  let metadata = null;
+  let collection = null;
+  let icon = null;
+
 
       try {
         if (

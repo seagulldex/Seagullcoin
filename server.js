@@ -3054,12 +3054,13 @@ const nftData = {
       ? metadata.description
       : null,
 
-  image:
+  image: normalizeImage(
     typeof metadata?.image === 'string'
       ? metadata.image
       : typeof metadata?.image?.url === 'string'
         ? metadata.image.url
-        : null,
+        : null
+  ),
 
   name:
     typeof metadata?.name === 'string'

@@ -2974,10 +2974,10 @@ const nftData = {
   wallet,
   NFTokenID: nft.NFTokenID,
   URI: uri,
-  collection: mongoose.Schema.Types.Mixed, // instead of String
+  collection: typeof metadata?.collection === 'object' ? metadata.collection : null, // actual data
   icon: typeof icon === 'string' ? icon : null,
   metadata,
-  description: String,
+  description: typeof metadata?.description === 'string' ? metadata.description : null,
   image: typeof metadata?.image === 'string' ? metadata.image : null,
   name: typeof metadata?.name === 'string'
     ? metadata.name

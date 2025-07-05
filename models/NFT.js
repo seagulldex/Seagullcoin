@@ -12,7 +12,7 @@ const nftSchema = new mongoose.Schema({
 }],
   collection: String,
   icon: String,
-  metadata: Object,
+  metadata: mongoose.Schema.Types.Mixed,
   }, { timestamps: true });
 
 nftSchema.index({ wallet: 1, NFTokenID: 1 }, { unique: true });

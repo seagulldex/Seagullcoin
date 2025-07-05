@@ -224,29 +224,34 @@ function displayNFTs() {
   container.innerHTML = '';
 
   const items = allNFTs.slice(currentIndex, currentIndex + nftsPerPage);
+  if(items.length === 0) {
+    container.textContent = 'No NFTs to display';
+    return;
+  }
+
   for (const nft of items) {
     const metadata = nft.metadata || {};
     const card = document.createElement('div');
     card.className = "nft-card";
 
     const img = document.createElement('img');
-    img.src = convertIPFSToURL(metadata.image);
+    img.src = convertIPFSToURL(metadata.image) || 'fallback-image.png';
     img.alt = metadata.name || "Unnamed NFT";
     card.appendChild(img);
 
     const title = document.createElement('h3');
-title.textContent = metadata.name || "Unnamed NFT";
-card.appendChild(title);
+    title.textContent = metadata.name || "Unnamed NFT";
+    card.appendChild(title);
 
-const description = document.createElement('p');
-description.textContent = metadata.description || "No description";
-card.appendChild(description);
+    const desc = document.createElement('p');
+    desc.textContent = metadata.description || "No description";
+    card.appendChild(desc);
 
-if (metadata.collection?.name) {
-  const collection = document.createElement('p');
-  collection.innerHTML = `<strong>Collection:</strong> ${metadata.collection.name}`;
-  card.appendChild(collection);
-}
+    if (metadata.collection?.name) {
+      const collection = document.createElement('p');
+      collection.innerHTML = `<strong>Collection:</strong> ${metadata.collection.name}`;
+      card.appendChild(collection);
+    }
 
     if (Array.isArray(metadata.attributes)) {
       metadata.attributes.forEach(attr => {
@@ -256,6 +261,7 @@ if (metadata.collection?.name) {
         card.appendChild(trait);
       });
     }
+
 
     async function transferNFT(nftId) {
       const recipient = prompt("Enter the wallet address to transfer this NFT to:");

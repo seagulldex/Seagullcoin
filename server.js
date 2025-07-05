@@ -2895,61 +2895,77 @@ app.get('/nfts/:wallet', async (req, res) => {
   let icon = null;
 
 
+ try {
+  if (
+    uri.startsWith('ipfs://') ||
+    uri.includes('ipfs.io/ipfs/') ||
+    uri.includes('ipfs/') ||
+    /^[a-zA-Z0-9]{46,}$/.test(uri) // raw CID
+  ) {
+    // IPFS handling
+    let ipfsPath = uri;
+
+    if (!uri.startsWith('ipfs://') && !uri.includes('/ipfs/')) {
+      ipfsPath = uri;
+    } else if (uri.startsWith('ipfs://')) {
+      ipfsPath = uri.replace('ipfs://', '');
+    } else if (uri.includes('/ipfs/')) {
+      ipfsPath = uri.split('/ipfs/')[1];
+    }
+
+    const gateways = [
+      'https://ipfs.io/ipfs/',
+      'https://gateway.pinata.cloud/ipfs/',
+      'https://cloudflare-ipfs.com/ipfs/',
+      'https://nftstorage.link/ipfs/',
+    ];
+
+    for (const gateway of gateways) {
+      const ipfsUrl = `${gateway}${ipfsPath}`;
       try {
-        if (
-          uri.startsWith('ipfs://') ||
-          uri.includes('ipfs.io/ipfs/') ||
-          uri.includes('ipfs/') ||
-          /^[a-zA-Z0-9]{46,}$/.test(uri) // raw CID
-        ) {
-          let ipfsPath = uri;
-
-          if (!uri.startsWith('ipfs://') && !uri.includes('/ipfs/')) {
-            ipfsPath = uri;
-          } else if (uri.startsWith('ipfs://')) {
-            ipfsPath = uri.replace('ipfs://', '');
-          } else if (uri.includes('/ipfs/')) {
-            ipfsPath = uri.split('/ipfs/')[1];
-          }
-
-          const gateways = [
-            'https://ipfs.io/ipfs/',
-            'https://gateway.pinata.cloud/ipfs/',
-            'https://cloudflare-ipfs.com/ipfs/',
-            'https://nftstorage.link/ipfs/',
-          ];
-
-          for (const gateway of gateways) {
-            const ipfsUrl = `${gateway}${ipfsPath}`;
-            try {
-              const res = await fetchWithTimeout(ipfsUrl, 7000);
-              if (res.ok) {
-                metadata = await res.json();
-                collection = metadata.collection || metadata.name || null;
-                icon = metadata.image || null;
-                break;
-              }
-            } catch (e) {
-              console.warn(`IPFS fetch failed from ${gateway}:`, e.message);
-            }
-          }
-        } else if (uri.startsWith('https://arweave.net/')) {
-          const res = await fetchWithTimeout(uri, 7000);
-          if (res.ok) {
-            metadata = await res.json();
-            collection = metadata.collection || metadata.name || null;
-            icon = metadata.image || null;
-          } else {
-            console.warn(`Arweave fetch failed: ${res.status}`);
-          }
+        const res = await fetchWithTimeout(ipfsUrl, 7000);
+        if (res.ok) {
+          metadata = await res.json();
+          collection = metadata.collection || metadata.name || null;
+          icon = metadata.image || null;
+          break;
         }
-      } catch (metaErr) {
-        console.warn(`Metadata fetch error for URI ${uri}:`, metaErr.message);
+      } catch (e) {
+        console.warn(`IPFS fetch failed from ${gateway}:`, e.message);
       }
+    }
 
-      if (!metadata) {
-        metadata = { error: 'Metadata unavailable or invalid URI' };
-      }
+  } else if (uri.startsWith('https://arweave.net/')) {
+    // Arweave handling
+    const res = await fetchWithTimeout(uri, 7000);
+    if (res.ok) {
+      metadata = await res.json();
+      collection = metadata.collection || metadata.name || null;
+      icon = metadata.image || null;
+    } else {
+      console.warn(`Arweave fetch failed: ${res.status}`);
+    }
+
+  } else if (uri.startsWith('http://') || uri.startsWith('https://')) {
+    // ✅ Generic HTTPS URI handling
+    const res = await fetchWithTimeout(uri, 7000);
+    if (res.ok) {
+      metadata = await res.json();
+      collection = metadata.collection || metadata.name || null;
+      icon = metadata.image || null;
+    } else {
+      console.warn(`Generic HTTPS fetch failed: ${res.status}`);
+    }
+  }
+} catch (metaErr) {
+  console.warn(`Metadata fetch error for URI ${uri}:`, metaErr.message);
+}
+
+if (!metadata) {
+  metadata = { error: 'Metadata unavailable or invalid URI' };
+}
+
+
 
       const nftData = {
         wallet,

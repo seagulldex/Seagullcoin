@@ -234,11 +234,19 @@ function displayNFTs() {
     img.alt = metadata.name || "Unnamed NFT";
     card.appendChild(img);
 
-    card.innerHTML += `
-      <h3>${metadata.name || "Unnamed NFT"}</h3>
-      <p>${metadata.description || "No description"}</p>
-      ${metadata.collection ? `<p><strong>Collection:</strong> ${metadata.collection.name}</p>` : ''}
-    `;
+    const title = document.createElement('h3');
+title.textContent = metadata.name || "Unnamed NFT";
+card.appendChild(title);
+
+const description = document.createElement('p');
+description.textContent = metadata.description || "No description";
+card.appendChild(description);
+
+if (metadata.collection?.name) {
+  const collection = document.createElement('p');
+  collection.innerHTML = `<strong>Collection:</strong> ${metadata.collection.name}`;
+  card.appendChild(collection);
+}
 
     if (Array.isArray(metadata.attributes)) {
       metadata.attributes.forEach(attr => {

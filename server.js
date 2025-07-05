@@ -2874,6 +2874,45 @@ app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   console.log('Fetching NFTs for wallet:', wallet);
 
+  // ✅ Check if we already have fresh cached NFTs in the DB
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 1000 * 60 * 60 * 6); // 6 hours ago
+
+  try {
+    const cachedNFTs = await NFTModel.find({
+      wallet,
+      lastUpdated: { $gte: cutoff }
+    }).lean();
+
+    if (cachedNFTs.length > 0) {
+      console.log('Serving NFTs from cache');
+      // Optional: fix IPFS links here too if needed
+      const fixIPFS = (uri) => uri?.startsWith('ipfs://') ? uri.replace('ipfs://', 'https://ipfs.io/ipfs/') : uri;
+
+      const fixed = cachedNFTs.map(nft => ({
+        ...nft,
+        icon: fixIPFS(nft.icon),
+        image: fixIPFS(nft.image),
+        URI: fixIPFS(nft.URI),
+        metadata: {
+          ...nft.metadata,
+          image: fixIPFS(nft.metadata?.image),
+          collection: {
+            ...nft.metadata?.collection,
+            image: fixIPFS(nft.metadata?.collection?.image)
+          }
+        }
+      }));
+
+      return res.json({ nfts: fixed });
+    }
+  } catch (dbErr) {
+    console.warn('Cache check failed:', dbErr.message);
+    // Fallback to fetch from XRPL below
+  }
+
+  // 👇 CONTINUE with XRPL + IPFS fetch logic here if no cache hit
+
   const requestBody = {
     method: 'account_nfts',
     params: [{

@@ -2970,18 +2970,25 @@ if (!metadata) {
 
 
 
-      const nftData = {
+const nftData = {
   wallet,
   NFTokenID: nft.NFTokenID,
   URI: uri,
-  collection: typeof collection === 'string' ? collection : null,
+  collection:
+    typeof metadata.collection === 'object' || typeof metadata.collection === 'string'
+      ? metadata.collection
+      : null,
   icon: typeof icon === 'string' ? icon : null,
   metadata,
   image: typeof metadata?.image === 'string' ? metadata.image : null,
-  name: typeof metadata?.name === 'string' ? metadata.name : null,
+  name: typeof metadata?.name === 'string'
+    ? metadata.name
+    : typeof metadata?.collection?.name === 'string'
+      ? metadata.collection.name
+      : null,
   traits: Array.isArray(metadata?.attributes) ? metadata.attributes : [],
-   };
-     return nftData; 
+};
+  return nftData; 
       })
       );
 

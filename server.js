@@ -2853,6 +2853,7 @@ const fetchWithTimeout = (url, timeout = 5000) => {
 };
 
 // Route: fetch NFTs
+// Route: fetch NFTs
 app.get('/nfts/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   console.log('Fetching NFTs for wallet:', wallet);
@@ -2882,76 +2883,66 @@ app.get('/nfts/:wallet', async (req, res) => {
 
     const parsed = await Promise.all(nfts.map(async (nft) => {
       const uri = hexToUtf8(nft.URI);
+      let metadata = null;
+      let collection = null;
+      let icon = null;
 
-      // Skip if URI is blank
-      if (
-  uri.startsWith('ipfs://') ||
-  uri.includes('ipfs.io/ipfs/') ||
-  uri.includes('ipfs/') ||
-  /^[a-zA-Z0-9]{46,}$/.test(uri) // ← detect raw CID
-) {
-  let ipfsPath = uri;
+      try {
+        if (
+          uri.startsWith('ipfs://') ||
+          uri.includes('ipfs.io/ipfs/') ||
+          uri.includes('ipfs/') ||
+          /^[a-zA-Z0-9]{46,}$/.test(uri) // raw CID
+        ) {
+          let ipfsPath = uri;
 
-  // Normalize to CID if it's raw CID
-  if (!uri.startsWith('ipfs://') && !uri.includes('/ipfs/')) {
-    ipfsPath = uri;
-  } else if (uri.startsWith('ipfs://')) {
-    ipfsPath = uri.replace('ipfs://', '');
-  } else if (uri.includes('/ipfs/')) {
-    ipfsPath = uri.split('/ipfs/')[1];
-  }
+          if (!uri.startsWith('ipfs://') && !uri.includes('/ipfs/')) {
+            ipfsPath = uri;
+          } else if (uri.startsWith('ipfs://')) {
+            ipfsPath = uri.replace('ipfs://', '');
+          } else if (uri.includes('/ipfs/')) {
+            ipfsPath = uri.split('/ipfs/')[1];
+          }
 
-  const gateways = [
-    'https://ipfs.io/ipfs/',
-    'https://gateway.pinata.cloud/ipfs/',
-    'https://cloudflare-ipfs.com/ipfs/',
-    'https://nftstorage.link/ipfs/',
-  ];
+          const gateways = [
+            'https://ipfs.io/ipfs/',
+            'https://gateway.pinata.cloud/ipfs/',
+            'https://cloudflare-ipfs.com/ipfs/',
+            'https://nftstorage.link/ipfs/',
+          ];
 
-  for (const gateway of gateways) {
-    const ipfsUrl = `${gateway}${ipfsPath}`;
-    try {
-      const res = await fetchWithTimeout(ipfsUrl, 7000);
-      if (res.ok) {
-        metadata = await res.json();
-        collection = metadata.collection || metadata.name || null;
-        icon = metadata.image || null;
-        break;
+          for (const gateway of gateways) {
+            const ipfsUrl = `${gateway}${ipfsPath}`;
+            try {
+              const res = await fetchWithTimeout(ipfsUrl, 7000);
+              if (res.ok) {
+                metadata = await res.json();
+                collection = metadata.collection || metadata.name || null;
+                icon = metadata.image || null;
+                break;
+              }
+            } catch (e) {
+              console.warn(`IPFS fetch failed from ${gateway}:`, e.message);
+            }
+          }
+        } else if (uri.startsWith('https://arweave.net/')) {
+          const res = await fetchWithTimeout(uri, 7000);
+          if (res.ok) {
+            metadata = await res.json();
+            collection = metadata.collection || metadata.name || null;
+            icon = metadata.image || null;
+          } else {
+            console.warn(`Arweave fetch failed: ${res.status}`);
+          }
+        }
+      } catch (metaErr) {
+        console.warn(`Metadata fetch error for URI ${uri}:`, metaErr.message);
       }
-    } catch (e) {
-      console.warn(`Error fetching from ${ipfsUrl}:`, e.message);
-    }
-  }
-}
 
-        
-        } else 
-                          if (
-  uri.startsWith('ipfs://') ||
-  uri.includes('ipfs.io/ipfs/') ||
-  uri.includes('ipfs/') ||
-  /^[a-zA-Z0-9]{46,}$/.test(uri) // raw CID
-) {
-  // --- IPFS logic here (unchanged) ---
-} else if (uri.startsWith('https://arweave.net/')) {
-  try {
-    const res = await fetchWithTimeout(uri, 7000);
-    if (res.ok) {
-      metadata = await res.json();
-      collection = metadata.collection || metadata.name || null;
-      icon = metadata.image || null;
-    } else {
-      console.warn(`Non-OK response from Arweave: ${res.status}`);
-    }
-  } catch (e) {
-    console.warn('Failed to fetch from Arweave:', e.message);
-  }
+      if (!metadata) {
+        metadata = { error: 'Metadata unavailable or invalid URI' };
+      }
 
-  if (!metadata) {
-    metadata = { error: 'Arweave URI failed or returned invalid data' };
-  }
-}
-                  
       const nftData = {
         wallet,
         NFTokenID: nft.NFTokenID,
@@ -2977,21 +2968,16 @@ app.get('/nfts/:wallet', async (req, res) => {
       return nftData;
     }));
 
-    // Filter out skipped NFTs
-    const filtered = parsed.filter(Boolean);
-
-    res.json({ nfts: filtered });
+    res.json({ nfts: parsed });
   } catch (err) {
     console.error('Error fetching NFTs:', err);
     res.status(500).json({ error: 'Failed to fetch NFTs' });
   }
 });
- 
 
 
-
-
-
+        
+        
 // /transfer-nft — direct transfer to another wallet
 app.post('/transfer-nft', async (req, res) => {
   const { walletAddress, nftId, recipientAddress } = req.body;

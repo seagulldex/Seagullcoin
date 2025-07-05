@@ -3037,19 +3037,43 @@ const nftData = {
   wallet,
   NFTokenID: nft.NFTokenID,
   URI: uri,
-  collection: typeof metadata?.collection === 'object' ? metadata.collection : null, // actual data
+
+  // Safely parse collection only if it's a non-empty object
+  collection:
+    metadata?.collection &&
+    typeof metadata.collection === 'object' &&
+    Object.keys(metadata.collection).length > 0
+      ? metadata.collection
+      : null,
+
   icon: typeof icon === 'string' ? icon : null,
   metadata,
-  description: typeof metadata?.description === 'string' ? metadata.description : null,
-  image: typeof metadata?.image === 'string' ? metadata.image : null,
-  name: typeof metadata?.name === 'string'
-    ? metadata.name
-    : typeof metadata?.collection?.name === 'string'
-      ? metadata.collection.name
+
+  description:
+    typeof metadata?.description === 'string'
+      ? metadata.description
       : null,
-  traits: Array.isArray(metadata?.attributes) ? metadata.attributes : [],
+
+  image:
+    typeof metadata?.image === 'string'
+      ? metadata.image
+      : typeof metadata?.image?.url === 'string'
+        ? metadata.image.url
+        : null,
+
+  name:
+    typeof metadata?.name === 'string'
+      ? metadata.name
+      : typeof metadata?.collection?.name === 'string'
+        ? metadata.collection.name
+        : null,
+
+  traits: Array.isArray(metadata?.attributes)
+    ? metadata.attributes
+    : [],
 };
-  return nftData; 
+
+return nftData;
       })
       );
 

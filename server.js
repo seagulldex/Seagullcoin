@@ -3017,23 +3017,48 @@ const deduped = filtered.filter(nft => {
 
 
     // Prepare bulkWrite operations
-    const bulkOps = filtered.map((nftData) => ({
-      updateOne: {
-        filter: { wallet: nftData.wallet, NFTokenID: nftData.NFTokenID },
-        update: { $set: nftData },
-        upsert: true,
-      },
-    }));
+    const bulkOps = deduped.map((nftData) => ({
+  updateOne: {
+    filter: { wallet: nftData.wallet, NFTokenID: nftData.NFTokenID },
+    update: { $set: nftData },
+    upsert: true,
+  },
+}));
 
-  // Execute bulkWrite once
-    try {
-      const result = await NFTModel.bulkWrite(bulkOps);
-      console.log('Bulk write result:', result);
-    } catch (bulkErr) {
-      console.error('MongoDB bulk write error:', bulkErr);
+// Execute bulkWrite once
+try {
+  const result = await NFTModel.bulkWrite(bulkOps);
+  console.log('Bulk write result:', result);
+} catch (bulkErr) {
+  console.error('MongoDB bulk write error:', bulkErr);
+}
+
+// ✅ Only define `fixIPFS` once, after DB write, before response
+function fixIPFS(uri) {
+  return uri?.startsWith("ipfs://")
+    ? uri.replace("ipfs://", "https://ipfs.io/ipfs/")
+    : uri;
+}
+
+const fixed = deduped.map(nft => ({
+  ...nft,
+  icon: fixIPFS(nft.icon),
+  image: fixIPFS(nft.image),
+  URI: fixIPFS(nft.URI),
+  metadata: {
+    ...nft.metadata,
+    image: fixIPFS(nft.metadata?.image),
+    collection: {
+      ...nft.metadata?.collection,
+      image: fixIPFS(nft.metadata?.collection?.image)
     }
+  }
+}));
 
-    res.json({ nfts: filtered });
+// ✅ Send the final response here
+res.json({ nfts: fixed });
+
+
   } catch (err) {
     console.error('Error fetching NFTs:', err);
     res.status(500).json({ error: 'Failed to fetch NFTs' });

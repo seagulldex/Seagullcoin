@@ -3105,8 +3105,13 @@ return nftData;
       console.warn('Skipping invalid NFT:', nft);
       return false;
     }
+    if (!isValidNFT(nft)) {
+      console.warn('Skipping NFT with missing metadata or image:', nft.NFTokenID);
+      return false;
+    }
     return true;
   });
+
 
 // Optional: deduplicate by wallet+NFTokenID
 const seen = new Set();

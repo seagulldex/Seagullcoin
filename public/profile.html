@@ -276,13 +276,19 @@
         }
 
         if (Array.isArray(metadata.attributes)) {
+  const traitsWrapper = document.createElement('div');
+  traitsWrapper.className = 'traits-wrapper truncated'; // NEW CLASS HERE
+
   metadata.attributes.forEach(attr => {
     const trait = document.createElement('div');
-    trait.className = "trait truncated";
+    trait.className = "trait"; // No truncation here
     trait.textContent = `${attr.trait_type} : ${attr.value}`;
-    card.appendChild(trait);
+    traitsWrapper.appendChild(trait);
   });
+
+  card.appendChild(traitsWrapper);
 }
+
 
         // Sell or price label
         if (nft.listed || nft.sellOffer) {

@@ -3221,32 +3221,33 @@ app.post('/transfer-nft', async (req, res) => {
 });
 
 app.post('/sell-nft', async (req, res) => {
-  const { walletAddress, nftId, price, buyerAddress } = req.body;
+  const { walletAddress, nftId, price } = req.body;
 
-  if (!walletAddress || !nftId || !price || !buyerAddress) {
-    return res.status(400).json({ error: 'Missing walletAddress, nftId, price, or buyerAddress' });
+  if (!walletAddress || !nftId || !price) {
+    return res.status(400).json({ error: 'Missing walletAddress, nftId, or price' });
   }
 
   try {
-    // Check if buyer has trustline to XAU issuer
+    // Check trustline for XAU
     const accountLines = await api.request({
       command: 'account_lines',
-      account: buyerAddress,
+      account: walletAddress,
       ledger_index: 'validated',
     });
 
-    const hasXauLine = accountLines.lines.some(line =>
+    const hasXauTrustline = accountLines.lines.some(line =>
       line.currency === 'XAU' && line.account === 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
     );
 
-    if (!hasXauLine) {
+    if (!hasXauTrustline) {
       return res.status(400).json({
-        error: 'Buyer does not have a trustline to XAU.',
-        instruction: 'Please add trustline to XAU from rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ in XUMM before proceeding.',
+        error: 'Missing trustline to XAU',
+        instruction: 'Please add trustline to XAU from rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ in XUMM.',
+        trustlineRequired: true,
       });
     }
 
-    // Construct sell offer transaction
+    // If trustline exists, continue
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
@@ -3256,7 +3257,7 @@ app.post('/sell-nft', async (req, res) => {
         issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
         value: price.toString(),
       },
-      Flags: 1, // Sell offer
+      Flags: 1,
     };
 
     const payload = {
@@ -3275,6 +3276,7 @@ app.post('/sell-nft', async (req, res) => {
     return res.status(500).json({ error: 'Failed to create sell offer', details: err.message });
   }
 });
+
 
 
 

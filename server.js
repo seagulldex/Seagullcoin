@@ -3280,11 +3280,14 @@ app.post('/sell-nft', async (req, res) => {
 
     return res.json({ next, uuid });
 
-  } catch (err) {
-    console.error('Sell NFT error:', err?.data ?? err, err.message);
-    return res.status(500).json({ error: 'Failed to create sell offer', details: err.message });
-  }
-});
+} catch (err) {
+  console.error('Sell NFT error:', err); // Full error logged in server
+  return res.status(500).json({
+    error: 'Failed to create sell offer',
+    details: err?.data ?? err?.message ?? JSON.stringify(err)
+  });
+}
+
 
 
 

@@ -263,13 +263,13 @@
         }
 
         if (Array.isArray(metadata.attributes)) {
-          metadata.attributes.forEach(attr => {
-            const trait = document.createElement('div');
-            trait.className = "trait";
-            trait.textContent = `${attr.trait_type} : ${attr.value}`;
-            card.appendChild(trait);
-          });
-        }
+  metadata.attributes.forEach(attr => {
+    const trait = document.createElement('div');
+    trait.className = "trait truncated";
+    trait.textContent = `${attr.trait_type} : ${attr.value}`;
+    card.appendChild(trait);
+  });
+}
 
         // Sell or price label
         if (nft.listed || nft.sellOffer) {

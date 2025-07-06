@@ -4338,7 +4338,7 @@ app.post('/create-trustline', async (req, res) => {
 
 // Issuer wallet and token details
 const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // SeagullMansions hex
+const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // "SXAU" in hex (20 chars)
 
 app.post('/issue-tokens', async (req, res) => {
   const { destination, amount } = req.body;
@@ -4371,12 +4371,18 @@ app.post('/issue-tokens', async (req, res) => {
       message: 'Sign the issuance in XUMM',
       payload_uuid: payload.uuid,
       payload_url: payload.next.always,
+      qr: payload.refs.qr_png, // add QR in case user needs to scan
     });
+
   } catch (error) {
     console.error('Failed to create issuance payload:', error);
-    res.status(500).json({ error: 'Failed to create issuance payload' });
+    res.status(500).json({
+      error: 'Failed to create issuance payload',
+      details: error?.data ?? error?.message ?? error,
+    });
   }
 });
+
 
 app.post("/backup-pay", async (req, res) => {
   const { destination } = req.body;

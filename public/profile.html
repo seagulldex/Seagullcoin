@@ -9,10 +9,20 @@
   <style>
     .nft-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
 }
-    main {
+
+/* Force minimum 2 columns on medium+ screens */
+@media (min-width: 650px) {
+  .nft-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+   main {
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;

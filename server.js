@@ -4296,53 +4296,6 @@ app.get('/check-payment', async (req, res) => {
   }
 });
 
-
-
-// Issuer wallet and token details
-const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-const TOKEN_CURRENCY = '53656167756C6C4D616E73696F6E730000000000'; // SeagullMansions hex
-
-app.post('/issue-tokens', async (req, res) => {
-  const { destination, amount } = req.body;
-
-  if (!destination || !amount) {
-    return res.status(400).json({ error: 'Destination address and amount are required' });
-  }
-
-  try {
-    const tx = {
-      TransactionType: 'Payment',
-      Account: ISSUER_ACCOUNT,
-      Destination: destination,
-      Amount: {
-        currency: TOKEN_CURRENCY,
-        issuer: ISSUER_ACCOUNT,
-        value: amount.toString(),
-      },
-    };
-
-    const payload = await xumm.payload.create({
-      txjson: tx,
-      options: {
-        submit: true,
-        expire: 300, // expires in 5 minutes
-      },
-    });
-
-    res.json({
-      message: 'Sign the issuance in XUMM',
-      payload_uuid: payload.uuid,
-      payload_url: payload.next.always,
-    });
-  } catch (error) {
-    console.error('Failed to create issuance payload:', error);
-    res.status(500).json({ error: 'Failed to create issuance payload' });
-  }
-});
-      
-
-
-
 app.post("/backup-pay", async (req, res) => {
   const { destination } = req.body;
 
@@ -6691,6 +6644,50 @@ app.get('/api/rlusd-sglcn', async (req, res) => {
   } catch (err) {
     console.error("❌ Failed to fetch RLUSD-SGLCN:", err.message);
     res.status(500).json({ error: "Failed to fetch RLUSD price history." });
+  }
+});
+
+
+
+const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
+
+app.post('/issue', async (req, res) => {
+  const { destination, amount } = req.body;
+
+  if (!destination || !amount) {
+    return res.status(400).json({ error: 'Destination and amount required' });
+  }
+
+  try {
+    const txJson = {
+      TransactionType: 'Payment',
+      Account: ISSUER_ACCOUNT,
+      Destination: destination,
+      Amount: (parseFloat(amount) * 1000000).toString(), // Convert XRP to drops
+    };
+
+    const payload = await xumm.payload.create({
+      txjson: txJson,
+      options: {
+        submit: true,
+        expire: 300,
+      },
+    });
+
+    console.log('Payload created:', payload);
+
+    res.json({
+      message: 'Sign this in XUMM',
+      payload_uuid: payload.uuid,
+      payload_url: payload.next.always,
+      qr: payload.refs.qr_png,
+    });
+  } catch (err) {
+    console.error('Payload error:', err);
+    res.status(500).json({
+      error: 'Failed to create payload',
+      details: err.message || err,
+    });
   }
 });
 

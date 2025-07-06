@@ -4356,7 +4356,8 @@ app.post('/issue-tokens', async (req, res) => {
     });
 
     const hasTrustline = trustlines.result.lines.some(
-      line => line.currency === TOKEN_CODE && line.account === ISSUER_ACCOUNT
+      line => line.currency === TOKEN_CURRENCY && line.account === ISSUER_ACCOUNT
+
     );
 
     if (!hasTrustline) {

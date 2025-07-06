@@ -3228,18 +3228,18 @@ app.post('/sell-nft', async (req, res) => {
   }
 
   try {
-    // Verify ownership and trustline
+    // ✅ 1. Verify NFT ownership
     const nfts = await api.request({
       command: 'account_nfts',
       account: walletAddress,
     });
 
     const ownsNFT = nfts.account_nfts.some(nft => nft.NFTokenID === nftId);
-
     if (!ownsNFT) {
       return res.status(400).json({ error: 'Wallet does not own this NFT.' });
     }
 
+    // ✅ 2. Check trustline to XAU
     const accountLines = await api.request({
       command: 'account_lines',
       account: walletAddress,
@@ -3250,10 +3250,13 @@ app.post('/sell-nft', async (req, res) => {
     );
 
     if (!hasTrustline) {
-      return res.status(400).json({ error: 'Wallet does not have trustline to XAU.' });
+      return res.status(400).json({
+        error: 'Wallet does not have a trustline to XAU.',
+        instruction: 'Please add trustline to XAU (issuer: rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ) in XUMM or XRPL wallet.'
+      });
     }
 
-    // Prepare transaction
+    // ✅ 3. Create Sell Offer TX
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
@@ -3274,19 +3277,21 @@ app.post('/sell-nft', async (req, res) => {
       },
     };
 
-    // Create XUMM payload
+    // ✅ 4. Create XUMM payload
     const { uuid, next } = await xumm.payload.create(payload);
     console.log('XUMM payload created:', { uuid, next });
 
     return res.json({ next, uuid });
 
-} catch (err) {
-  console.error('Sell NFT error:', err); // Full error logged in server
-  return res.status(500).json({
-    error: 'Failed to create sell offer',
-    details: err?.data ?? err?.message ?? JSON.stringify(err)
-  });
-}
+  } catch (err) {
+    console.error('Sell NFT error:', err);
+    return res.status(500).json({
+      error: 'Failed to create sell offer',
+      details: err?.data ?? err?.message ?? JSON.stringify(err)
+    });
+  }
+});
+
 
 
 

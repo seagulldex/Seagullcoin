@@ -6649,7 +6649,6 @@ app.get('/api/rlusd-sglcn', async (req, res) => {
 
 
 
-const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 
 app.post('/issue', async (req, res) => {
   const { destination, amount } = req.body;
@@ -6691,8 +6690,8 @@ app.post('/issue', async (req, res) => {
   }
 });
 
-
-const TOKEN_CODE = 'SXAU'; // or use hex string if needed
+const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
+const TOKEN_CODE = 'SXAU';
 
 app.post('/issue-tokens', async (req, res) => {
   const { destination, amount } = req.body;
@@ -6702,25 +6701,7 @@ app.post('/issue-tokens', async (req, res) => {
   }
 
   try {
-    // Check trustlines of destination account
-    const trustlinesResponse = await client.request({
-      command: 'account_lines',
-      account: destination,
-      api_version: 1,  // Explicitly set API version 1
-    });
-
-    const hasTrustline = trustlinesResponse.result.lines.some(
-      line => line.currency === TOKEN_CODE && line.account === ISSUER_ACCOUNT
-    );
-
-    if (!hasTrustline) {
-      // Destination needs to approve TrustSet
-      return res.status(400).json({
-        error: 'Destination does not have a trustline for SXAU. TrustSet approval required first.'
-      });
-    }
-
-    // Build payment transaction with issued token
+    // Build payment transaction
     const txJson = {
       TransactionType: 'Payment',
       Account: ISSUER_ACCOUNT,
@@ -6732,7 +6713,7 @@ app.post('/issue-tokens', async (req, res) => {
       },
     };
 
-    // Create XUMM payload for user to sign
+    // Create XUMM payload
     const payload = await xumm.payload.create({
       txjson: txJson,
       options: {
@@ -6753,6 +6734,8 @@ app.post('/issue-tokens', async (req, res) => {
     return res.status(500).json({ error: 'Failed to issue tokens', details: error.message });
   }
 });
+
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

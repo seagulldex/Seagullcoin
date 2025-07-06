@@ -4338,7 +4338,7 @@ app.post('/create-trustline', async (req, res) => {
 
 // Issuer wallet and token details
 const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // "SXAU" in hex (20 chars)
+const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // "SXAU" in hex
 
 app.post('/issue-tokens', async (req, res) => {
   const { destination, amount } = req.body;
@@ -4359,29 +4359,32 @@ app.post('/issue-tokens', async (req, res) => {
       },
     };
 
+    // Create XUMM payload
     const payload = await xumm.payload.create({
       txjson: tx,
       options: {
         submit: true,
-        expire: 300, // expires in 5 minutes
+        expire: 300,
       },
     });
 
     res.json({
       message: 'Sign the issuance in XUMM',
       payload_uuid: payload.uuid,
-      payload_url: payload.next.always,
-      qr: payload.refs.qr_png, // add QR in case user needs to scan
+      sign_url: payload.next.always,     // For redirect or embed
+      qr_image: payload.refs.qr_png,     // For QR code display
+      deep_link: `xumm://xapp-sign/${payload.uuid}`, // For mobile apps (optional)
     });
 
   } catch (error) {
     console.error('Failed to create issuance payload:', error);
     res.status(500).json({
       error: 'Failed to create issuance payload',
-      details: error?.data ?? error?.message ?? error,
+      details: error?.data ?? error?.message ?? String(error),
     });
   }
 });
+
 
 
 app.post("/backup-pay", async (req, res) => {

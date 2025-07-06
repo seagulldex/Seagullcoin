@@ -33,6 +33,19 @@
 .truncated.expanded {
   max-height: none;
 }
+  .truncated::after {
+  content: '... (click to expand)';
+  color: #aaa;
+  font-size: 0.85em;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(to right, transparent, #1e1e1e 70%);
+  padding-left: 10px;
+}
+.truncated.expanded::after {
+  content: '';
+}
     .nft-card img {
       width: 100%;
       max-height: 200px;

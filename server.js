@@ -3235,10 +3235,10 @@ app.post('/sell-nft', async (req, res) => {
       Account: walletAddress,
       NFTokenID: nftId,
       Amount: {
-        currency: '5841550000000000000000000000000000000000', // SeagullCash (Hex code)
-        issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ', // SeagullCash issuer
-        value: price.toString(), // Convert price to a string
-      },
+       currency: 'XAU',
+       issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
+       value: price.toString(), // e.g. "5" means 5 XAU
+     },
       Flags: 1, // Ensure you're setting the correct flag for selling
     };
 

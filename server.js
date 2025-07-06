@@ -3228,33 +3228,27 @@ app.post('/sell-nft', async (req, res) => {
   }
 
   try {
-
-    // The transaction object for the NFT sell offer
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
       NFTokenID: nftId,
       Amount: {
-       currency: 'XAU',
-       issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
-       value: price.toString(), // e.g. "5" means 5 XAU
-     },
-      Flags: 1, // Ensure you're setting the correct flag for selling
+        currency: 'XAU',
+        issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
+        value: price.toString(),
+      },
+      Flags: 1, // Sell offer
     };
 
-    // Create the payload for XUMM
     const payload = {
       txjson: tx,
       options: {
-        submit: true, // Automatically submit after signing
-        expire: 60, // Expiration time in seconds
+        submit: true,
+        expire: 60,
       },
     };
 
-    // Create the payload with XUMM API
     const { uuid, next } = await xumm.payload.create(payload);
-
-    // Return the payload URL and UUID to the client for signing
     return res.json({ next, uuid });
 
   } catch (err) {
@@ -3262,8 +3256,6 @@ app.post('/sell-nft', async (req, res) => {
     return res.status(500).json({ error: 'Failed to create sell offer', details: err.message });
   }
 });
-
-
 
 
 // XRPL ping function (without disconnecting)

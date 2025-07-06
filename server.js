@@ -6691,7 +6691,67 @@ app.post('/issue', async (req, res) => {
   }
 });
 
+const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
+const TOKEN_CODE = 'SXAU'; // or use hex string if needed
 
+app.post('/issue-tokens', async (req, res) => {
+  const { destination, amount } = req.body;
+
+  if (!destination || !amount) {
+    return res.status(400).json({ error: 'Destination and amount are required' });
+  }
+
+  try {
+    // Check trustlines of destination account
+    const trustlinesResponse = await client.request({
+      command: 'account_lines',
+      account: destination,
+    });
+
+    const hasTrustline = trustlinesResponse.result.lines.some(
+      line => line.currency === TOKEN_CODE && line.account === ISSUER_ACCOUNT
+    );
+
+    if (!hasTrustline) {
+      // Destination needs to approve TrustSet
+      return res.status(400).json({
+        error: 'Destination does not have a trustline for SXAU. TrustSet approval required first.'
+      });
+    }
+
+    // Build payment transaction with issued token
+    const txJson = {
+      TransactionType: 'Payment',
+      Account: ISSUER_ACCOUNT,
+      Destination: destination,
+      Amount: {
+        currency: TOKEN_CODE,
+        issuer: ISSUER_ACCOUNT,
+        value: amount.toString(),
+      },
+    };
+
+    // Create XUMM payload for user to sign
+    const payload = await xumm.payload.create({
+      txjson: txJson,
+      options: {
+        submit: true,
+        expire: 300,
+      },
+    });
+
+    return res.json({
+      message: 'Please sign the token issuance in XUMM',
+      payload_uuid: payload.uuid,
+      payload_url: payload.next.always,
+      qr: payload.refs.qr_png,
+    });
+
+  } catch (error) {
+    console.error('Token issuance error:', error);
+    return res.status(500).json({ error: 'Failed to issue tokens', details: error.message });
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

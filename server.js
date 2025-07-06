@@ -3228,26 +3228,32 @@ app.post('/sell-nft', async (req, res) => {
   }
 
   try {
-    // Check trustline for XAU
+    // Verify ownership and trustline
+    const nfts = await api.request({
+      command: 'account_nfts',
+      account: walletAddress,
+    });
+
+    const ownsNFT = nfts.account_nfts.some(nft => nft.NFTokenID === nftId);
+
+    if (!ownsNFT) {
+      return res.status(400).json({ error: 'Wallet does not own this NFT.' });
+    }
+
     const accountLines = await api.request({
       command: 'account_lines',
       account: walletAddress,
-      ledger_index: 'validated',
     });
 
-    const hasXauTrustline = accountLines.lines.some(line =>
+    const hasTrustline = accountLines.lines.some(line =>
       line.currency === 'XAU' && line.account === 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
     );
 
-    if (!hasXauTrustline) {
-      return res.status(400).json({
-        error: 'Missing trustline to XAU',
-        instruction: 'Please add trustline to XAU from rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ in XUMM.',
-        trustlineRequired: true,
-      });
+    if (!hasTrustline) {
+      return res.status(400).json({ error: 'Wallet does not have trustline to XAU.' });
     }
 
-    // If trustline exists, continue
+    // Prepare transaction
     const tx = {
       TransactionType: 'NFTokenCreateOffer',
       Account: walletAddress,
@@ -3257,7 +3263,7 @@ app.post('/sell-nft', async (req, res) => {
         issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
         value: price.toString(),
       },
-      Flags: 1,
+      Flags: 1, // Sell offer
     };
 
     const payload = {
@@ -3268,14 +3274,18 @@ app.post('/sell-nft', async (req, res) => {
       },
     };
 
+    // Create XUMM payload
     const { uuid, next } = await xumm.payload.create(payload);
+    console.log('XUMM payload created:', { uuid, next });
+
     return res.json({ next, uuid });
 
   } catch (err) {
-    console.error('Sell NFT error:', err?.data ?? err);
+    console.error('Sell NFT error:', err?.data ?? err, err.message);
     return res.status(500).json({ error: 'Failed to create sell offer', details: err.message });
   }
 });
+
 
 
 

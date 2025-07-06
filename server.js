@@ -4296,49 +4296,6 @@ app.get('/check-payment', async (req, res) => {
   }
 });
 
-
-
-
-// Endpoint to mint and send NFTs
-// 1. Create payment payload endpoint
-const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // SXAU in hex
-//POST /create-trustline
-app.post('/create-trustline', async (req, res) => {
-  const { userAddress } = req.body;
-  if (!userAddress) return res.status(400).json({ error: 'Missing user address' });
-
-  const txJson = {
-    TransactionType: 'TrustSet',
-    Account: userAddress,
-    LimitAmount: {
-      currency: CURRENCY_HEX,
-      issuer: ISSUER,
-      value: '9'
-    }
-  };
-
-  try {
-    const payload = await xumm.payload.create({
-      txjson: txJson,
-      options: {
-        submit: true,
-        expire: 300
-      }
-    });
-
-    res.json({
-      message: 'Sign the trustline in XUMM',
-      payload_uuid: payload.uuid,
-      payload_url: payload.next.always
-    });
-  } catch (e) {
-    console.error('Error creating trustline payload:', e?.message || e);
-    res.status(500).json({ error: 'Failed to create trustline payload' });
-  }
-});
-
-// Issuer wallet and token details
 const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
 const TOKEN_CODE = 'SXAU';
 const TOKEN_CURRENCY = '5358415500000000000000000000000000000000';
@@ -4423,6 +4380,8 @@ app.post('/issue-tokens', async (req, res) => {
     });
   }
 });
+
+
 
 app.post("/backup-pay", async (req, res) => {
   const { destination } = req.body;

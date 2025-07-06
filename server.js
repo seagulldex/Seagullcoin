@@ -6691,7 +6691,7 @@ app.post('/issue', async (req, res) => {
   }
 });
 
-const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
+
 const TOKEN_CODE = 'SXAU'; // or use hex string if needed
 
 app.post('/issue-tokens', async (req, res) => {

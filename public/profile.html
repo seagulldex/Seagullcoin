@@ -371,6 +371,11 @@
         alert("Error burning NFT.");
       }
     }
+    document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('truncated')) {
+    e.target.classList.toggle('expanded');
+  }
+});
   </script>
 </body>
 </html>

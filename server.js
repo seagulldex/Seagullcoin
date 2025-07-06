@@ -4338,7 +4338,7 @@ app.post('/create-trustline', async (req, res) => {
 
 // Issuer wallet and token details
 const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // "SXAU" in hex
+const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // SXAU in hex
 
 app.post('/issue-tokens', async (req, res) => {
   const { destination, amount } = req.body;
@@ -4348,6 +4348,46 @@ app.post('/issue-tokens', async (req, res) => {
   }
 
   try {
+    // Step 1: Check trustline
+    const trustlines = await client.request({
+      command: 'account_lines',
+      account: destination,
+    });
+
+    const hasTrustline = trustlines.result.lines.some(
+      line => line.currency === TOKEN_CURRENCY && line.account === ISSUER_ACCOUNT
+    );
+
+    // Step 2: If trustline missing, return a TrustSet payload
+    if (!hasTrustline) {
+      const trustSetTx = {
+        TransactionType: 'TrustSet',
+        Account: destination,
+        LimitAmount: {
+          currency: TOKEN_CURRENCY,
+          issuer: ISSUER_ACCOUNT,
+          value: '1000000000', // Large enough for any usage
+        },
+      };
+
+      const trustPayload = await xumm.payload.create({
+        txjson: trustSetTx,
+        options: {
+          submit: true,
+          expire: 300,
+        },
+      });
+
+      return res.status(200).json({
+        message: 'Destination must sign TrustSet to receive SXAU',
+        action: 'trustline_required',
+        payload_uuid: trustPayload.uuid,
+        payload_url: trustPayload.next.always,
+        qr: trustPayload.refs.qr_png,
+      });
+    }
+
+    // Step 3: Trustline exists, create payment
     const tx = {
       TransactionType: 'Payment',
       Account: ISSUER_ACCOUNT,
@@ -4359,8 +4399,7 @@ app.post('/issue-tokens', async (req, res) => {
       },
     };
 
-    // Create XUMM payload
-    const payload = await xumm.payload.create({
+    const paymentPayload = await xumm.payload.create({
       txjson: tx,
       options: {
         submit: true,
@@ -4369,21 +4408,21 @@ app.post('/issue-tokens', async (req, res) => {
     });
 
     res.json({
-      message: 'Sign the issuance in XUMM',
-      payload_uuid: payload.uuid,
-      sign_url: payload.next.always,     // For redirect or embed
-      qr_image: payload.refs.qr_png,     // For QR code display
-      deep_link: `xumm://xapp-sign/${payload.uuid}`, // For mobile apps (optional)
+      message: 'Sign the token payment in XUMM',
+      payload_uuid: paymentPayload.uuid,
+      payload_url: paymentPayload.next.always,
+      qr: paymentPayload.refs.qr_png,
     });
 
   } catch (error) {
-    console.error('Failed to create issuance payload:', error);
+    console.error('Token issue error:', error);
     res.status(500).json({
-      error: 'Failed to create issuance payload',
-      details: error?.data ?? error?.message ?? String(error),
+      error: 'Failed to issue or trust SXAU',
+      details: error?.data ?? error?.message ?? error,
     });
   }
 });
+
 
 
 

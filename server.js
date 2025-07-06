@@ -4301,6 +4301,8 @@ app.get('/check-payment', async (req, res) => {
 
 // Endpoint to mint and send NFTs
 // 1. Create payment payload endpoint
+const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
+const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // SXAU in hex
 //POST /create-trustline
 app.post('/create-trustline', async (req, res) => {
   const { userAddress } = req.body;
@@ -4338,33 +4340,30 @@ app.post('/create-trustline', async (req, res) => {
 
 // Issuer wallet and token details
 const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-const TOKEN_CODE = 'SXAU'; // Plaintext for account_lines comparison
-const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // 20-byte hex for XRPL txns
+const TOKEN_CODE = 'SXAU';
+const TOKEN_CURRENCY = '5358415500000000000000000000000000000000';
 
 app.post('/issue-tokens', async (req, res) => {
   const { destination, amount } = req.body;
 
   if (!destination || !amount) {
-    return res.status(400).json({ error: 'Destination address and amount are required' });
+    return res.status(400).json({ error: 'Destination and amount required' });
   }
 
   try {
-    // Check trustline
     const trustlines = await client.request({
       command: 'account_lines',
       account: destination,
     });
 
     const hasTrustline = trustlines.result.lines.some(
-  line => line.currency === TOKEN_CURRENCY && line.account === ISSUER_ACCOUNT
-);
-
+      line => line.currency === TOKEN_CURRENCY && line.account === ISSUER_ACCOUNT
+    );
 
     if (!hasTrustline) {
-      // Prompt user to sign TrustSet
+      // DON’T set Account manually – let XUMM populate it after user signs
       const trustSetTx = {
         TransactionType: 'TrustSet',
-        Account: destination,
         LimitAmount: {
           currency: TOKEN_CURRENCY,
           issuer: ISSUER_ACCOUNT,
@@ -4381,7 +4380,7 @@ app.post('/issue-tokens', async (req, res) => {
       });
 
       return res.status(200).json({
-        message: 'Destination must approve trustline for SXAU',
+        message: 'Sign the trustline in XUMM',
         action: 'trustline_required',
         payload_uuid: trustPayload.uuid,
         payload_url: trustPayload.next.always,
@@ -4389,7 +4388,7 @@ app.post('/issue-tokens', async (req, res) => {
       });
     }
 
-    // Trustline exists: Issue token
+    // Trustline exists: send SXAU
     const tx = {
       TransactionType: 'Payment',
       Account: ISSUER_ACCOUNT,
@@ -4409,7 +4408,7 @@ app.post('/issue-tokens', async (req, res) => {
       },
     });
 
-    return res.json({
+    return res.status(200).json({
       message: 'Sign the SXAU payment in XUMM',
       payload_uuid: paymentPayload.uuid,
       payload_url: paymentPayload.next.always,
@@ -4424,10 +4423,6 @@ app.post('/issue-tokens', async (req, res) => {
     });
   }
 });
-
-
-
-
 
 app.post("/backup-pay", async (req, res) => {
   const { destination } = req.body;

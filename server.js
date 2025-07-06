@@ -4338,7 +4338,8 @@ app.post('/create-trustline', async (req, res) => {
 
 // Issuer wallet and token details
 const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // SXAU in hex
+const TOKEN_CODE = 'SXAU'; // Plaintext for account_lines comparison
+const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // 20-byte hex for XRPL txns
 
 app.post('/issue-tokens', async (req, res) => {
   const { destination, amount } = req.body;
@@ -4348,25 +4349,25 @@ app.post('/issue-tokens', async (req, res) => {
   }
 
   try {
-    // Step 1: Check trustline
+    // Check trustline
     const trustlines = await client.request({
       command: 'account_lines',
       account: destination,
     });
 
     const hasTrustline = trustlines.result.lines.some(
-      line => line.currency === TOKEN_CURRENCY && line.account === ISSUER_ACCOUNT
+      line => line.currency === TOKEN_CODE && line.account === ISSUER_ACCOUNT
     );
 
-    // Step 2: If trustline missing, return a TrustSet payload
     if (!hasTrustline) {
+      // Prompt user to sign TrustSet
       const trustSetTx = {
         TransactionType: 'TrustSet',
         Account: destination,
         LimitAmount: {
           currency: TOKEN_CURRENCY,
           issuer: ISSUER_ACCOUNT,
-          value: '1000000000', // Large enough for any usage
+          value: '1000000000',
         },
       };
 
@@ -4379,7 +4380,7 @@ app.post('/issue-tokens', async (req, res) => {
       });
 
       return res.status(200).json({
-        message: 'Destination must sign TrustSet to receive SXAU',
+        message: 'Destination must approve trustline for SXAU',
         action: 'trustline_required',
         payload_uuid: trustPayload.uuid,
         payload_url: trustPayload.next.always,
@@ -4387,7 +4388,7 @@ app.post('/issue-tokens', async (req, res) => {
       });
     }
 
-    // Step 3: Trustline exists, create payment
+    // Trustline exists: Issue token
     const tx = {
       TransactionType: 'Payment',
       Account: ISSUER_ACCOUNT,
@@ -4407,8 +4408,8 @@ app.post('/issue-tokens', async (req, res) => {
       },
     });
 
-    res.json({
-      message: 'Sign the token payment in XUMM',
+    return res.json({
+      message: 'Sign the SXAU payment in XUMM',
       payload_uuid: paymentPayload.uuid,
       payload_url: paymentPayload.next.always,
       qr: paymentPayload.refs.qr_png,
@@ -4416,12 +4417,13 @@ app.post('/issue-tokens', async (req, res) => {
 
   } catch (error) {
     console.error('Token issue error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to issue or trust SXAU',
       details: error?.data ?? error?.message ?? error,
     });
   }
 });
+
 
 
 

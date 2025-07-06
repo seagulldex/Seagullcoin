@@ -23,6 +23,16 @@
       color: #fff;
       text-align: center;
     }
+    .truncated {
+  max-height: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  cursor: pointer;
+}
+.truncated.expanded {
+  max-height: none;
+}
     .nft-card img {
       width: 100%;
       max-height: 200px;

@@ -6706,6 +6706,7 @@ app.post('/issue-tokens', async (req, res) => {
     const trustlinesResponse = await client.request({
       command: 'account_lines',
       account: destination,
+      api_version: 1,  // Explicitly set API version 1
     });
 
     const hasTrustline = trustlinesResponse.result.lines.some(
@@ -6752,7 +6753,6 @@ app.post('/issue-tokens', async (req, res) => {
     return res.status(500).json({ error: 'Failed to issue tokens', details: error.message });
   }
 });
-
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

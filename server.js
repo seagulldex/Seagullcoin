@@ -4297,34 +4297,36 @@ app.get('/check-payment', async (req, res) => {
 });
 
 const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-const TOKEN_CODE = 'SXAU';
-const TOKEN_CURRENCY = '5358415500000000000000000000000000000000';
+// 20-byte hex of "SeagullMansions" padded with zeros (must be exactly 40 hex chars)
+const TOKEN_CURRENCY = '53656167756C6C4D616E73696F6E73000000000000'; 
 
 app.post('/issue-tokens', async (req, res) => {
   const { destination, amount } = req.body;
 
   if (!destination || !amount) {
-    return res.status(400).json({ error: 'Destination and amount required' });
+    return res.status(400).json({ error: 'Destination address and amount are required' });
   }
 
   try {
+    // 1. Check trustlines using plain string (not hex)
     const trustlines = await client.request({
       command: 'account_lines',
       account: destination,
     });
 
     const hasTrustline = trustlines.result.lines.some(
-      line => line.currency === TOKEN_CURRENCY && line.account === ISSUER_ACCOUNT
+      (line) => line.currency === 'SeagullMansions' && line.account === ISSUER_ACCOUNT
     );
 
+    // 2. If no trustline, create TrustSet payload and ask user to sign it
     if (!hasTrustline) {
-      // DON’T set Account manually – let XUMM populate it after user signs
       const trustSetTx = {
         TransactionType: 'TrustSet',
+        Account: destination,
         LimitAmount: {
           currency: TOKEN_CURRENCY,
           issuer: ISSUER_ACCOUNT,
-          value: '1000000000',
+          value: '1000000000', // generous limit
         },
       };
 
@@ -4337,7 +4339,7 @@ app.post('/issue-tokens', async (req, res) => {
       });
 
       return res.status(200).json({
-        message: 'Sign the trustline in XUMM',
+        message: 'Destination must approve trustline for SeagullMansions',
         action: 'trustline_required',
         payload_uuid: trustPayload.uuid,
         payload_url: trustPayload.next.always,
@@ -4345,8 +4347,8 @@ app.post('/issue-tokens', async (req, res) => {
       });
     }
 
-    // Trustline exists: send SXAU
-    const tx = {
+    // 3. Trustline exists - create payment issuance payload
+    const paymentTx = {
       TransactionType: 'Payment',
       Account: ISSUER_ACCOUNT,
       Destination: destination,
@@ -4358,24 +4360,23 @@ app.post('/issue-tokens', async (req, res) => {
     };
 
     const paymentPayload = await xumm.payload.create({
-      txjson: tx,
+      txjson: paymentTx,
       options: {
         submit: true,
         expire: 300,
       },
     });
 
-    return res.status(200).json({
-      message: 'Sign the SXAU payment in XUMM',
+    return res.json({
+      message: 'Sign the SeagullMansions token payment in XUMM',
       payload_uuid: paymentPayload.uuid,
       payload_url: paymentPayload.next.always,
       qr: paymentPayload.refs.qr_png,
     });
-
   } catch (error) {
     console.error('Token issue error:', error);
     return res.status(500).json({
-      error: 'Failed to issue or trust SXAU',
+      error: 'Failed to issue or trust SeagullMansions',
       details: error?.data ?? error?.message ?? error,
     });
   }

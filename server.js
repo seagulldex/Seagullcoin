@@ -4337,9 +4337,8 @@ app.post('/create-trustline', async (req, res) => {
 });
 
 // Issuer wallet and token details
-// Issuer wallet and token details
 const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-const TOKEN_CURRENCY = '53656167756C6C4D616E73696F6E730000000000'; // SeagullMansions hex
+const TOKEN_CURRENCY = '5358415500000000000000000000000000000000'; // SeagullMansions hex
 
 app.post('/issue-tokens', async (req, res) => {
   const { destination, amount } = req.body;

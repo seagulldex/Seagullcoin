@@ -6821,6 +6821,49 @@ app.post('/creates-trustline', async (req, res) => {
   }
 });
 
+app.post('/clear-rippling', async (req, res) => {
+  const { destination } = req.body; // destination = user's wallet address
+
+  if (!destination) {
+    return res.status(400).json({ error: 'Destination is required' });
+  }
+
+  try {
+    const trustSetTx = {
+      TransactionType: 'TrustSet',
+      Account: destination, // user wallet
+      LimitAmount: {
+        currency: 'SXAU',
+        issuer: ISSUER_ACCOUNT, // your issuing wallet
+        value: '1000000000'
+      },
+      Flags: 0 // clearing No Ripple
+    };
+
+    const payload = await xumm.payload.create({
+      txjson: trustSetTx,
+      options: {
+        submit: true,
+        expire: 300
+      }
+    });
+
+    return res.json({
+      message: `Please sign to CLEAR No Ripple for SXAU in XUMM.`,
+      payload_uuid: payload.uuid,
+      payload_url: payload.next.always,
+      qr: payload.refs.qr_png
+    });
+
+  } catch (error) {
+    console.error('Trustline update error:', error);
+    return res.status(500).json({
+      error: 'Failed to clear No Ripple',
+      details: error.message
+    });
+  }
+});
+
 
 
 // Call the XRPL ping when the server starts

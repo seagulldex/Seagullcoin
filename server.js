@@ -2682,15 +2682,17 @@ app.get('/all-nfts', (req, res) => {
   });
 });
 
-app.get('/.well-known/xrp-ledger.toml', (req, res) => {
-  const tomlPath = path.join(__dirname, '.well-known', 'xrp-ledger.toml');
-  fs.readFile(tomlPath, 'utf8', (err, data) => {
-    if (err) {
-      return res.status(500).send('Could not read TOML file');
-    }
-    res.set('Content-Type', 'text/plain');
-    res.send(data);
-  });
+// Serve xrpl.toml from .well-known directory
+app.get('/.well-known/xrpl.toml', (req, res) => {
+  const tomlPath = path.join(__dirname, '.well-known', 'xrpl.toml');
+  fs.readFile(tomlPath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('TOML read error:', err);
+      return res.status(500).send('Could not read TOML file');
+    }
+    res.set('Content-Type', 'text/plain');
+    res.send(data);
+  });
 });
 
 app.get('/balance/:address', async (req, res) => {

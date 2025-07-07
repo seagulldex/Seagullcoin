@@ -6650,48 +6650,9 @@ app.get('/api/rlusd-sglcn', async (req, res) => {
 
 
 
-app.post('/issue', async (req, res) => {
-  const { destination, amount } = req.body;
-
-  if (!destination || !amount) {
-    return res.status(400).json({ error: 'Destination and amount required' });
-  }
-
-  try {
-    const txJson = {
-      TransactionType: 'Payment',
-      Account: ISSUER_ACCOUNT,
-      Destination: destination,
-      Amount: (parseFloat(amount) * 1000000).toString(), // Convert XRP to drops
-    };
-
-    const payload = await xumm.payload.create({
-      txjson: txJson,
-      options: {
-        submit: true,
-        expire: 300,
-      },
-    });
-
-    console.log('Payload created:', payload);
-
-    res.json({
-      message: 'Sign this in XUMM',
-      payload_uuid: payload.uuid,
-      payload_url: payload.next.always,
-      qr: payload.refs.qr_png,
-    });
-  } catch (err) {
-    console.error('Payload error:', err);
-    res.status(500).json({
-      error: 'Failed to create payload',
-      details: err.message || err,
-    });
-  }
-});
-
-const ISSUER_ACCOUNT = 'rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV';
-const TOKEN_CODE = 'SXAU';
+const ISSUER_ACCOUNT = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U';  // Issuer Account
+const TOKEN_CODE = 'SXAU';  // Custom Token Code
+const SUPPLY = '4000';  // Token Supply
 
 app.post('/issue-tokens', async (req, res) => {
   const { destination, amount } = req.body;
@@ -6701,32 +6662,66 @@ app.post('/issue-tokens', async (req, res) => {
   }
 
   try {
-    // Build payment transaction
-    const txJson = {
-      TransactionType: 'Payment',
-      Account: ISSUER_ACCOUNT,
-      Destination: destination,
-      Amount: {
+    // Step 1: Check if the destination has a trustline
+    const trustlineTx = {
+      TransactionType: 'TrustSet',
+      Account: destination,
+      LimitAmount: {
         currency: TOKEN_CODE,
         issuer: ISSUER_ACCOUNT,
-        value: amount.toString(),
+        value: SUPPLY,  // Max they can hold, 4000 in this case
       },
     };
 
-    // Create XUMM payload
-    const payload = await xumm.payload.create({
-      txjson: txJson,
-      options: {
-        submit: true,
-        expire: 300,
-      },
+    // Create XUMM payload to add the trustline
+    const trustPayload = await xumm.payload.createAndSubscribe({
+      txjson: trustlineTx,
     });
 
     return res.json({
-      message: 'Please sign the token issuance in XUMM',
-      payload_uuid: payload.uuid,
-      payload_url: payload.next.always,
-      qr: payload.refs.qr_png,
+      message: 'Please set the trustline for SXAU.',
+      payload_uuid: trustPayload.uuid,
+      payload_url: trustPayload.next.always,
+      qr: trustPayload.refs.qr_png,
+    });
+
+  } catch (error) {
+    console.error('Trustline error:', error);
+    return res.status(500).json({ error: 'Failed to set trustline', details: error.message });
+  }
+});
+
+
+app.post('/send-tokens', async (req, res) => {
+  const { destination, amount } = req.body;
+
+  if (!destination || !amount) {
+    return res.status(400).json({ error: 'Destination and amount are required' });
+  }
+
+  try {
+    // Step 2: Send the token once trustline is set
+    const paymentTx = {
+      TransactionType: 'Payment',
+      Account: ISSUER_ACCOUNT,  // Issuer's address
+      Destination: destination, // The recipient's address
+      Amount: {
+        currency: TOKEN_CODE,   // Token code (SXAU)
+        issuer: ISSUER_ACCOUNT, // Issuer account (rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U)
+        value: amount.toString(), // Amount to send
+      },
+    };
+
+    // Create XUMM payload to issue the payment
+    const paymentPayload = await xumm.payload.createAndSubscribe({
+      txjson: paymentTx,
+    });
+
+    return res.json({
+      message: 'Please sign the token issuance in XUMM.',
+      payload_uuid: paymentPayload.uuid,
+      payload_url: paymentPayload.next.always,
+      qr: paymentPayload.refs.qr_png,
     });
 
   } catch (error) {

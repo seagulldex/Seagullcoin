@@ -6651,7 +6651,6 @@ app.get('/api/rlusd-sglcn', async (req, res) => {
 
 
 const ISSUER_ACCOUNT = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U';  // Issuer Account
-const TOKEN_CODE = 'SXAU';  // Custom Token Code
 const SUPPLY = '4000';  // Token Supply
 
 app.post('/issue-tokens', async (req, res) => {
@@ -6666,11 +6665,12 @@ app.post('/issue-tokens', async (req, res) => {
     const trustlineTx = {
   TransactionType: 'TrustSet',
   LimitAmount: {
-    currency: TOKEN_CODE,
+    currency: '5358415500000000000000000000000000000000', // HEX-encoded SXAU
     issuer: ISSUER_ACCOUNT,
-    value: SUPPLY
+    value: SUPPLY,
   }
 };
+
 
 
     const trustPayload = await xumm.payload.create({

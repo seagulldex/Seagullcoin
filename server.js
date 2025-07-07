@@ -6790,23 +6790,24 @@ app.post('/creates-trustline', async (req, res) => {
 
   try {
     const trustSetTx = {
-      TransactionType: 'TrustSet',
-      Account: destination,  // The user setting the trustline (usually their own address)
-      LimitAmount: {
-        currency: TOKEN_HEXS,    // "SXAU"
-        issuer: ISSUER_ACCOUNT,
-        value: '1000000000',     // Max trust limit
-      },
-    };
+  TransactionType: 'TrustSet',
+  Account: userAddress, // the wallet holding the trustline
+  LimitAmount: {
+    currency: 'SXAU', // or hex if you're using it that way
+    issuer: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U',
+    value: '1000000000'
+  },
+  Flags: 262144 // tfClearNoRipple
+};
 
-    // Create XUMM payload for trustline setup
-    const payload = await xumm.payload.create({
-      txjson: trustSetTx,
-      options: {
-        submit: true,
-        expire: 300,
-      }
-    });
+const payload = await xumm.payload.create({
+  txjson: trustSetTx,
+  options: {
+    submit: true,
+    expire: 300
+  }
+});
+
 
     return res.json({
       message: `Please sign the trustline for SXAU with No Ripple flag in XUMM.`,

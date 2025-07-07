@@ -6810,7 +6810,7 @@ app.post('/creates-trustline', async (req, res) => {
     });
 
     return res.json({
-      message: `Please sign the trustline for ${TOKEN_CODE} with No Ripple flag in XUMM.`,
+      message: `Please sign the trustline for SXAU with No Ripple flag in XUMM.`,
       payload_uuid: payload.uuid,
       payload_url: payload.next.always,
       qr: payload.refs.qr_png,

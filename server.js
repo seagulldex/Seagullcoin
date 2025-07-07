@@ -6778,6 +6778,48 @@ app.post('/issues-tokens', async (req, res) => {
   }
 });
 
+app.post('/creates-trustline', async (req, res) => {
+  const { destination } = req.body; // The user who will hold the trustline
+
+  if (!destination) {
+    return res.status(400).json({ error: 'Destination is required' });
+  }
+
+  try {
+    const trustSetTx = {
+      TransactionType: 'TrustSet',
+      Account: destination,  // The user setting the trustline (usually their own address)
+      LimitAmount: {
+        currency: TOKEN_CODE,    // "SXAU"
+        issuer: ISSUER_ACCOUNT,
+        value: '1000000000',     // Max trust limit
+      },
+      Flags: 131072 // tfSetNoRipple — disables rippling on this trustline
+    };
+
+    // Create XUMM payload for trustline setup
+    const payload = await xumm.payload.create({
+      txjson: trustSetTx,
+      options: {
+        submit: true,
+        expire: 300,
+      }
+    });
+
+    return res.json({
+      message: `Please sign the trustline for ${TOKEN_CODE} with No Ripple flag in XUMM.`,
+      payload_uuid: payload.uuid,
+      payload_url: payload.next.always,
+      qr: payload.refs.qr_png,
+    });
+
+  } catch (error) {
+    console.error('Trustline creation error:', error);
+    return res.status(500).json({ error: 'Failed to create trustline', details: error.message });
+  }
+});
+
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

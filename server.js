@@ -6821,7 +6821,7 @@ app.post('/creates-trustline', async (req, res) => {
   }
 });
 
-app.post('/clear-rippling', async (req, res) => {
+app.post('/clear-noripple', async (req, res) => {
   const { destination } = req.body;
 
   if (!destination) {
@@ -6831,42 +6831,41 @@ app.post('/clear-rippling', async (req, res) => {
   try {
     const trustSetTx = {
       TransactionType: 'TrustSet',
-      Account: destination, // user's wallet
+      Account: destination,
       LimitAmount: {
         currency: 'SXAU',
-        issuer: ISSUER_ACCOUNT, // your issuer address
-        value: '1000000000'
+        issuer: ISSUER_ACCOUNT,
+        value: '1000000000' // or match their existing trustline limit
       },
-      Flags: 262144 // tfClearNoRipple = 0x40000
+      Flags: 262144 // tfClearNoRipple
     };
 
     const payload = await xumm.payload.create({
       txjson: trustSetTx,
-      options: {
-        submit: true,
-        expire: 300
-      }
+      options: { submit: true, expire: 300 }
     });
 
     if (!payload?.uuid) {
+      console.error('XUMM response:', payload);
       throw new Error('No payload returned from XUMM');
     }
 
     return res.json({
-      message: `Please sign to CLEAR No Ripple for SXAU in XUMM.`,
+      message: 'Please sign to clear No Ripple on SXAU.',
       payload_uuid: payload.uuid,
       payload_url: payload.next.always,
       qr: payload.refs.qr_png
     });
 
   } catch (error) {
-    console.error('Trustline update error:', error);
+    console.error('TrustSet error:', error.message);
     return res.status(500).json({
       error: 'Failed to clear No Ripple',
       details: error.message
     });
   }
 });
+
 
 
 

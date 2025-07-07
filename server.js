@@ -6778,6 +6778,9 @@ app.post('/issues-tokens', async (req, res) => {
   }
 });
 
+const TOKEN_HEX = '5358415500000000000000000000000000000000'; // 'SXAU' in 40-char hex
+
+
 app.post('/creates-trustline', async (req, res) => {
   const { destination } = req.body; // The user who will hold the trustline
 
@@ -6790,7 +6793,7 @@ app.post('/creates-trustline', async (req, res) => {
       TransactionType: 'TrustSet',
       Account: destination,  // The user setting the trustline (usually their own address)
       LimitAmount: {
-        currency: TOKEN_CODE,    // "SXAU"
+        currency: TOKEN_HEX,    // "SXAU"
         issuer: ISSUER_ACCOUNT,
         value: '1000000000',     // Max trust limit
       },

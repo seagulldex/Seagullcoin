@@ -6664,14 +6664,14 @@ app.post('/issue-tokens', async (req, res) => {
   try {
     // Step 1: Check if the destination has a trustline
     const trustlineTx = {
-      TransactionType: 'TrustSet',
-      Account: destination,
-      LimitAmount: {
-        currency: TOKEN_CODE,
-        issuer: ISSUER_ACCOUNT,
-        value: SUPPLY,  // Max they can hold, 4000 in this case
-      },
-    };
+  TransactionType: 'TrustSet',
+  LimitAmount: {
+    currency: TOKEN_CODE,
+    issuer: ISSUER_ACCOUNT,
+    value: SUPPLY
+  }
+};
+
 
     // Create XUMM payload to add the trustline
     const trustPayload = await xumm.payload.createAndSubscribe({

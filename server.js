@@ -3248,13 +3248,13 @@ app.post('/sell-nft', async (req, res) => {
     });
 
     const hasTrustline = accountLines.lines.some(line =>
-      line.currency === 'XAU' && line.account === 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
+      line.currency === 'sXAU' && line.account === 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'
     );
 
     if (!hasTrustline) {
       return res.status(400).json({
         error: 'Wallet does not have a trustline to XAU.',
-        instruction: 'Please add trustline to XAU (issuer: rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ) in XUMM or XRPL wallet.'
+        instruction: 'Please add trustline to XAU (issuer: rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U) in XUMM or XRPL wallet.'
       });
     }
 
@@ -3264,8 +3264,8 @@ app.post('/sell-nft', async (req, res) => {
       Account: walletAddress,
       NFTokenID: nftId,
       Amount: {
-        currency: 'XAU',
-        issuer: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ',
+        currency: 'sXAU',
+        issuer: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U',
         value: price.toString(),
       },
       Flags: 1, // Sell offer

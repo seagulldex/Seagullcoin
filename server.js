@@ -6734,6 +6734,48 @@ app.post('/send-tokens', async (req, res) => {
   }
 });
 
+app.post('/issues-tokens', async (req, res) => {
+  const { destination, amount } = req.body;
+
+  if (!destination || !amount) {
+    return res.status(400).json({ error: 'Destination and amount are required' });
+  }
+
+  try {
+    // Payment transaction sending SXAU tokens
+    const paymentTx = {
+      TransactionType: 'Payment',
+      Account: ISSUER_ACCOUNT,
+      Destination: destination,
+      Amount: {
+        currency: '5358415500000000000000000000000000000000', // HEX encoded SXAU
+        issuer: ISSUER_ACCOUNT,
+        value: amount.toString(),
+      }
+    };
+
+    // Create XUMM payload for signing
+    const payload = await xumm.payload.create({
+      txjson: paymentTx,
+      options: {
+        submit: true,
+        expire: 300,
+      }
+    });
+
+    return res.json({
+      message: `Please sign the payment of ${amount} SXAU to ${destination} in XUMM.`,
+      payload_uuid: payload.uuid,
+      payload_url: payload.next.always,
+      qr: payload.refs.qr_png,
+    });
+
+  } catch (error) {
+    console.error('Token issuance error:', error);
+    return res.status(500).json({ error: 'Failed to issue tokens', details: error.message });
+  }
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

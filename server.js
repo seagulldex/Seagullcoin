@@ -6712,7 +6712,7 @@ app.post('/send-tokens', async (req, res) => {
       Account: ISSUER_ACCOUNT,  // Issuer's address
       Destination: destination, // The recipient's address
       Amount: {
-        currency: TOKEN_CODE,   // Token code (SXAU)
+        currency: TOKEN_HEXS,   // Token code (SXAU)
         issuer: ISSUER_ACCOUNT, // Issuer account (rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U)
         value: amount.toString(), // Amount to send
       },

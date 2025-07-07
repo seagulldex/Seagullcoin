@@ -6822,7 +6822,7 @@ app.post('/creates-trustline', async (req, res) => {
 });
 
 app.post('/clear-rippling', async (req, res) => {
-  const { destination } = req.body; // destination = user's wallet address
+  const { destination } = req.body;
 
   if (!destination) {
     return res.status(400).json({ error: 'Destination is required' });
@@ -6831,13 +6831,13 @@ app.post('/clear-rippling', async (req, res) => {
   try {
     const trustSetTx = {
       TransactionType: 'TrustSet',
-      Account: destination, // user wallet
+      Account: destination, // user's wallet
       LimitAmount: {
         currency: 'SXAU',
-        issuer: ISSUER_ACCOUNT, // your issuing wallet
+        issuer: ISSUER_ACCOUNT, // your issuer address
         value: '1000000000'
       },
-      Flags: 0 // clearing No Ripple
+      Flags: 262144 // tfClearNoRipple = 0x40000
     };
 
     const payload = await xumm.payload.create({
@@ -6847,6 +6847,10 @@ app.post('/clear-rippling', async (req, res) => {
         expire: 300
       }
     });
+
+    if (!payload?.uuid) {
+      throw new Error('No payload returned from XUMM');
+    }
 
     return res.json({
       message: `Please sign to CLEAR No Ripple for SXAU in XUMM.`,
@@ -6863,6 +6867,7 @@ app.post('/clear-rippling', async (req, res) => {
     });
   }
 });
+
 
 
 

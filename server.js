@@ -6797,7 +6797,6 @@ app.post('/creates-trustline', async (req, res) => {
         issuer: ISSUER_ACCOUNT,
         value: '1000000000',     // Max trust limit
       },
-      Flags: 131072 // tfSetNoRipple — disables rippling on this trustline
     };
 
     // Create XUMM payload for trustline setup

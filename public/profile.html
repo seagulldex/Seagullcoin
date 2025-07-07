@@ -320,9 +320,9 @@
           card.appendChild(priceLabel);
         } else {
           const sellButton = document.createElement('button');
-          sellButton.textContent = 'Sell (XAU)';
+          sellButton.textContent = 'Sell (sXAU)';
           sellButton.onclick = async () => {
-            const amount = prompt("Enter price in XAU:");
+            const amount = prompt("Enter price in sXAU:");
             if (!amount) return;
             try {
               const response = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/sell-nft", {

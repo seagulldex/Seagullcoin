@@ -6673,10 +6673,14 @@ app.post('/issue-tokens', async (req, res) => {
 };
 
 
-    // Create XUMM payload to add the trustline
-    const trustPayload = await xumm.payload.createAndSubscribe({
-      txjson: trustlineTx,
-    });
+    const trustPayload = await xumm.payload.create({
+  txjson: trustlineTx,
+  options: {
+    submit: true,
+    expire: 300, // optional: expire after 5 mins
+  }
+});
+
 
     return res.json({
       message: 'Please set the trustline for SXAU.',

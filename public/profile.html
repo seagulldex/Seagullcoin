@@ -456,7 +456,7 @@ document.getElementById('set-trustline-btn').addEventListener('click', async () 
   if (!wallet) return alert("Please connect your wallet first.");
 
   try {
-    const response = await fetch("https://your-backend-url.com/set-trustline", {
+    const response = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ walletAddress: wallet })

@@ -6876,8 +6876,8 @@ app.post('/create-trustline', async (req, res) => {
     TransactionType: 'TrustSet',
     Account: userAddress,
     LimitAmount: {
-      currency: CURRENCY_HEX,
-      issuer: ISSUER,
+      currency: CURRENCY_HEXS,
+      issuer: ISSUER_ACCOUNT,
       value: '9'
     }
   };

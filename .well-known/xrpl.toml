@@ -51,4 +51,5 @@ name = "SXAU"
 description = "Bored Seagull Club Ecosystem Stable gold-backed asset"
 value = "1"
 decimals = 6
-logo = "https://static.vecteezy.com/system/resources/previews/045/904/042/non_2x/gold-circle-logo-free-png.png"
+logo = "https://raw.githubusercontent.com/seagulldex/Seagullcoin/main/1000017904-removebg-preview.png"
+image = "https://raw.githubusercontent.com/seagulldex/Seagullcoin/main/1000017904-removebg-preview.png"

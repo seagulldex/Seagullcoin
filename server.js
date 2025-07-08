@@ -2691,9 +2691,11 @@ app.get('/.well-known/xrpl.toml', (req, res) => {
       return res.status(500).send('Could not read TOML file');
     }
     res.set('Content-Type', 'text/plain');
+    res.set('Access-Control-Allow-Origin', '*'); // ✅ Required for wallets
     res.send(data);
   });
 });
+
 
 app.get('/balance/:address', async (req, res) => {
   const address = req.params.address;

@@ -45,11 +45,10 @@ symbol = "SGLAPRT"
 token_hex = "53454147554C4C41504152544D454E5453000000"
 
 [[currencies]]
-code = "SXAU"
+code = "sXAU"
 issuer = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U"
-name = "SXAU"
-description = "Bored Seagull Club Ecosystem Stable gold-backed asset"
-value = "1"
-decimals = 6
+name = "Seagull XAU"
+description = "Bored Seagull Club ecosystem gold-backed stablecoin."
+symbol = "SXAU"
 logo = "https://raw.githubusercontent.com/seagulldex/Seagullcoin/main/1000017904-removebg-preview.png"
-image = "https://raw.githubusercontent.com/seagulldex/Seagullcoin/main/1000017904-removebg-preview.png"
+token_hex = "7358415500000000000000000000000000000000"

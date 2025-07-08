@@ -6888,7 +6888,8 @@ app.post('/create-trustline', async (req, res) => {
       options: {
         submit: true,
         expire: 300
-      }
+      },
+      Destination: userAddress
     });
 
     res.json({

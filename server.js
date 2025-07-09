@@ -6846,7 +6846,7 @@ app.post('/create-trustline', async (req, res) => {
     LimitAmount: {
       currency: '7358415500000000000000000000000000000000', // sXAU in hex
       issuer: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // example issuer
-      value: '1000000000' // "infinite" trustline for most purposes
+      value: '454'
     }
   };
 

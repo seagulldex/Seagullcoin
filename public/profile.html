@@ -471,6 +471,32 @@
       alert("Error burning NFT.");
     }
   }
+    async function createTrustline() {
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) return alert("No wallet address found.");
+
+  try {
+    const response = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletAddress: wallet }),
+    });
+
+    const data = await response.json();
+
+    if (data.sign_url) {
+      // Redirect user to sign the trustline in XUMM
+      window.location.href = data.sign_url;
+    } else {
+      alert("Failed to create trustline payload.");
+      console.error("Unexpected response:", data);
+    }
+  } catch (err) {
+    console.error("Error creating trustline:", err);
+    alert("Error creating trustline.");
+  }
+}
+
 
   async function checkSXAULine() {
     const wallet = localStorage.getItem('xumm_wallet_address');

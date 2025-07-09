@@ -430,12 +430,25 @@
   if (!wallet) return;
 
   try {
-    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline`);
-    const data = await res.json();
+const response = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ walletAddress }),
+});
 
-    const hasSXAU = data.lines.some(line =>
+
+    async function checkSXAULine() {
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) return;
+
+  try {
+    // Fetch trustlines from XRPL
+    const response = await fetch(`https://xrplcluster.com/accounts/${wallet}`);
+    const data = await response.json();
+
+    const hasSXAU = data.account_data?.lines?.some(line =>
       line.currency === "SXAU" &&
-      line.account === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U" // your issuer
+      line.account === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U"
     );
 
     if (hasSXAU) {
@@ -450,6 +463,7 @@
     document.getElementById('trustline-status').innerHTML = `⚠️ Failed to check trustline.`;
   }
 }
+
 
 document.getElementById('set-trustline-btn').addEventListener('click', async () => {
   const wallet = localStorage.getItem('xumm_wallet_address');

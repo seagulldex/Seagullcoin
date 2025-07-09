@@ -535,8 +535,7 @@
     const targetCurrency = "7358415500000000000000000000000000000000"; // Hex encoded sXAU
 
     // Check for the trustline
-    const hasSXAU = data.lines?.some(line =>
-      line.currency === targetCurrency && line.issuer === targetIssuer
+    const hasSXAU = data.hasTrustline === true;
     );
 
     const trustlineStatus = document.getElementById("trustline-status");

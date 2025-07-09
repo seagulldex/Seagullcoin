@@ -520,38 +520,36 @@
 
 
   async function checkSXAULine() {
-    const wallet = localStorage.getItem('xumm_wallet_address');
-    if (!wallet) return;
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) return;
 
-    try {
-      const response = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: wallet }),
-      });
+  try {
+    const response = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-trustline?wallet=${wallet}`);
+    const data = await response.json();
 
-      const data = await response.json();
+    const hasSXAU = data.lines?.some(line =>
+      line.currency === "SXAU" &&
+      line.account === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U"
+    );
 
-      const hasSXAU = data.lines?.some(line =>
-        line.currency === "SXAU" &&
-        line.account === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U"
-      );
+    const statusEl = document.getElementById('trustline-status');
+    const button = document.getElementById('set-trustline-btn');
 
-      if (hasSXAU) {
-        document.getElementById('trustline-status').textContent = "✅ Trustline exists.";
-        document.getElementById('swap-area').style.display = 'block';
-        document.getElementById('trustline-area').style.display = 'none';
-      } else {
-        document.getElementById('trustline-status').textContent = "❌ Trustline not found. Please set it.";
-        document.getElementById('swap-area').style.display = 'none';
-        document.getElementById('trustline-area').style.display = 'block';
-      }
-
-    } catch (err) {
-      console.error("Trustline check failed:", err);
-      document.getElementById('trustline-status').textContent = "⚠️ Error checking trustline.";
+    if (hasSXAU) {
+      statusEl.textContent = "✅ Trustline exists.";
+      button.disabled = true;
+      button.style.background = "#777";
+      button.textContent = "Trustline Set";
+    } else {
+      statusEl.textContent = "❌ Trustline not found.";
+      button.disabled = false;
     }
+  } catch (err) {
+    console.error("Error checking trustline:", err);
+    document.getElementById('trustline-status').textContent = "❌ Failed to verify trustline.";
   }
+}
+
 </script>
 </body>
 </html>

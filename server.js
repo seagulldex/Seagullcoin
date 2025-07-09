@@ -6915,10 +6915,12 @@ app.post("/check-trustline", async (req, res) => {
 
     const trustlines = accountLines.result.lines;
     const hasTrustline = trustlines.some(
-      (line) =>
-        line.currency === "SXAU" &&
-        line.account === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U"
-    );
+  (line) =>
+    line.currency === "SXAU" &&
+    (line.account === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U" ||
+     line.issuer === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U")
+);
+
 
     await client.disconnect();
     return res.json({ hasTrustline });

@@ -6652,6 +6652,27 @@ app.get('/api/rlusd-sglcn', async (req, res) => {
 });
 
 
+app.get("/check-trustline", async (req, res) => {
+  const { wallet } = req.query;
+  if (!wallet) return res.status(400).json({ error: "Missing wallet" });
+
+  try {
+    const client = new xrpl.Client("wss://s1.ripple.com");
+    await client.connect();
+
+    const result = await client.request({
+      command: "account_lines",
+      account: wallet
+    });
+
+    await client.disconnect();
+
+    res.json({ lines: result.result.lines });
+  } catch (err) {
+    console.error("Trustline check failed", err);
+    res.status(500).json({ error: "Failed to fetch trustlines" });
+  }
+});
 
 
 const ISSUER_ACCOUNT = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U';  // Issuer Account

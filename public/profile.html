@@ -504,7 +504,7 @@
     const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ walletAddress: wallet })
+      body: JSON.stringify({ userAddress: wallet })
     });
     const data = await res.json();
     if (data?.next?.always) {

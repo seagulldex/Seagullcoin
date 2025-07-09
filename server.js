@@ -7007,6 +7007,48 @@ app.post('/swap-xau', async (req, res) => {
   }
 });
 
+app.post('/create-offer', async (req, res) => {
+  const { from_currency, to_currency, amount, wallet_address } = req.body;
+
+  if (!from_currency || !to_currency || !amount || !wallet_address) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+
+  if (from_currency === to_currency) {
+    return res.status(400).json({ error: 'Currencies must differ' });
+  }
+
+  const amt = parseFloat(amount);
+  if (isNaN(amt) || amt <= 0) {
+    return res.status(400).json({ error: 'Invalid amount' });
+  }
+
+  try {
+    const payload = {
+      txjson: {
+        TransactionType: 'OfferCreate',
+        Account: wallet_address,
+        TakerGets: getCurrencyObj2(from_currency, amt),
+        TakerPays: getCurrencyObj2(to_currency, amt), // 1:1 by default
+        Flags: 0 // no tfImmediateOrCancel
+      },
+      options: { submit: true }
+    };
+
+    const { uuid, next } = await xumm.payload.create(payload);
+
+    res.json({
+      success: true,
+      uuid,
+      payloadURL: next.always
+    });
+
+  } catch (err) {
+    console.error('Create Offer error:', err);
+    res.status(500).json({ error: err.message || 'Offer failed' });
+  }
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

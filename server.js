@@ -6880,13 +6880,15 @@ app.post('/create-trustline', async (req, res) => {
   if (!userAddress) return res.status(400).json({ error: 'Missing user address' })
 
   const txJson = {
-    TransactionType: 'TrustSet',
-    LimitAmount: {
-      currency: CURRENCY_HEXS,
-      issuer: ISSUERS,
-      value: '9'
-    }
+  TransactionType: 'TrustSet',
+  Account: userAddress,
+  LimitAmount: {
+    currency: 'SXAU', // Use 4-letter string here, not hex
+    issuer: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // example issuer
+    value: '1000000000' // large limit for trustline
   }
+};
+
 
   try {
     const payload = await xumm.payload.create({

@@ -426,7 +426,7 @@
       }
     }
  
-  async function checkSXAULine() {
+  
   async function checkSXAULine() {
   const wallet = localStorage.getItem('xumm_wallet_address');
   if (!wallet) return;
@@ -460,6 +460,12 @@
     document.getElementById('trustline-status').textContent = "⚠️ Error checking trustline.";
   }
 }
+
+    window.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem("xumm_wallet_address")) {
+    checkSXAULine();
+  }
+});
 
 
   // Trigger trustline check when wallet connects

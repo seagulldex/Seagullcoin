@@ -6861,11 +6861,14 @@ app.post('/create-trustline', async (req, res) => {
     });
 
     res.json({
-      message: 'Sign the trustline in XUMM',
-      uuid: payload.uuid,
-      sign_url: payload.next.always,
-      qr_url: payload.refs.qr_png
-    });
+  message: 'Sign the trustline in XUMM',
+  uuid: payload.uuid,
+  next: {
+    always: payload.next.always,
+  },
+  qr_url: payload.refs.qr_png
+});
+
   } catch (e) {
     console.error('Error creating trustline payload:', e?.message || e);
     res.status(500).json({ error: 'Failed to create trustline payload' });

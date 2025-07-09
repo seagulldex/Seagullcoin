@@ -6983,7 +6983,7 @@ app.post('/swap-xau', async (req, res) => {
         Account: wallet_address,
         TakerGets: getCurrencyObj2(from_currency, amt),
         TakerPays: getCurrencyObj2(to_currency, toAmt),
-        Flags: 0x00020000 // tfImmediateOrCancel to only fill immediately
+        Flags: 0
       },
       options: {
   submit: true

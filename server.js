@@ -6936,7 +6936,7 @@ const issuers2 = {
   XAU_ISSUER: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
 };
 
-function getCurrencyObj(currency, amount) {
+function getCurrencyObj2(currency, amount) {
   if (currency === 'sXAU') {
     return {
       currency: '7358415500000000000000000000000000000000', // hex for sXAU
@@ -6981,8 +6981,8 @@ app.post('/swap-xau', async (req, res) => {
       txjson: {
         TransactionType: 'OfferCreate',
         Account: wallet_address,
-        TakerGets: getCurrencyObj(from_currency, amt),
-        TakerPays: getCurrencyObj(to_currency, toAmt),
+        TakerGets: getCurrencyObj2(from_currency, amt),
+        TakerPays: getCurrencyObj2(to_currency, toAmt),
         Flags: 0x00020000 // tfImmediateOrCancel to only fill immediately
       },
       options: {

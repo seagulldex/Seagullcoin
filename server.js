@@ -6986,13 +6986,9 @@ app.post('/swap-xau', async (req, res) => {
         Flags: 0x00020000 // tfImmediateOrCancel to only fill immediately
       },
       options: {
-        submit: true,
-        return_url: {
-          app: process.env.RETURN_URL || 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/profile.html',
-          web: process.env.RETURN_URL || 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/profile.html',
-        }
-      }
-    };
+  submit: true
+  }
+};
 
     const { uuid, next } = await xumm.payload.create(payload);
 

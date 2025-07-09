@@ -6872,15 +6872,18 @@ app.post('/clear-noripple', async (req, res) => {
 
 app.post('/create-trustline', async (req, res) => {
   const { userAddress } = req.body;
-  if (!userAddress) return res.status(400).json({ error: 'Missing user address' });
+
+  if (!userAddress) {
+    return res.status(400).json({ error: 'Missing user address' });
+  }
 
   const txJson = {
     TransactionType: 'TrustSet',
     Account: userAddress,
     LimitAmount: {
-      currency: CURRENCY_HEXS,
-      issuer: ISSUER_ACCOUNT,
-      value: '9'
+      currency: '7358415500000000000000000000000000000000', // sXAU in hex
+      issuer: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // example issuer
+      value: '1000000000' // "infinite" trustline for most purposes
     }
   };
 
@@ -6891,19 +6894,21 @@ app.post('/create-trustline', async (req, res) => {
         submit: true,
         expire: 300
       },
-      Destination: userAddress
+      user_token: true, // Optional: Only if using OAuth or stored user tokens
     });
 
     res.json({
       message: 'Sign the trustline in XUMM',
-      payload_uuid: payload.uuid,
-      payload_url: payload.next.always
+      uuid: payload.uuid,
+      sign_url: payload.next.always,
+      qr_url: payload.refs.qr_png
     });
   } catch (e) {
     console.error('Error creating trustline payload:', e?.message || e);
     res.status(500).json({ error: 'Failed to create trustline payload' });
   }
 });
+
 
 
 // Call the XRPL ping when the server starts

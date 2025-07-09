@@ -6780,49 +6780,7 @@ app.post('/issues-tokens', async (req, res) => {
   }
 });
 
-const TOKEN_HEXS = '5358415500000000000000000000000000000000'; // 'SXAU' in 40-char hex
 
-
-app.post('/creates-trustline', async (req, res) => {
-  const { destination } = req.body; // The user who will hold the trustline
-
-  if (!destination) {
-    return res.status(400).json({ error: 'Destination is required' });
-  }
-
-  try {
-    const trustSetTx = {
-  TransactionType: 'TrustSet',
-  Account: userAddress, // the wallet holding the trustline
-  LimitAmount: {
-    currency: 'SXAU', // or hex if you're using it that way
-    issuer: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U',
-    value: '1000000000'
-  },
-  Flags: 262144 // tfClearNoRipple
-};
-
-const payload = await xumm.payload.create({
-  txjson: trustSetTx,
-  options: {
-    submit: true,
-    expire: 300
-  }
-});
-
-
-    return res.json({
-      message: `Please sign the trustline for SXAU with No Ripple flag in XUMM.`,
-      payload_uuid: payload.uuid,
-      payload_url: payload.next.always,
-      qr: payload.refs.qr_png,
-    });
-
-  } catch (error) {
-    console.error('Trustline creation error:', error);
-    return res.status(500).json({ error: 'Failed to create trustline', details: error.message });
-  }
-});
 
 app.post('/clear-noripple', async (req, res) => {
   const { destination } = req.body;
@@ -6876,43 +6834,42 @@ const ISSUERS = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'
 
 // Route to create trustline
 app.post('/create-trustline', async (req, res) => {
-  const { userAddress } = req.body
-  if (!userAddress) return res.status(400).json({ error: 'Missing user address' })
+  const { userAddress } = req.body;
+  if (!userAddress) return res.status(400).json({ error: 'Missing user address' });
 
   const txJson = {
-  TransactionType: 'TrustSet',
-  Account: userAddress,
-  LimitAmount: {
-    currency: 'SXAU', // Use 4-letter string here, not hex
-    issuer: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // example issuer
-    value: '1000000000' // large limit for trustline
-  }
-};
-
+    TransactionType: 'TrustSet',
+    Account: userAddress,
+    LimitAmount: {
+      currency: 'SXAU',
+      issuer: ISSUERS,
+      value: '1000000000'
+    }
+  };
 
   try {
+    console.log("Creating trustline transaction:", txJson);
+
     const payload = await xumm.payload.create({
       txjson: txJson,
       options: {
         submit: true,
         expire: 300
       }
-    })
-
-    // ✅ This URL is the one you open in browser or in a frontend
-    const payloadUrl = payload?.next?.always
+    });
 
     res.json({
       message: 'Sign the trustline in XUMM',
       uuid: payload.uuid,
-      sign_url: payloadUrl,
+      sign_url: payload.next.always,
       qr_url: payload.refs.qr_png
-    })
+    });
   } catch (e) {
-    console.error('❌ Error creating trustline payload:', e?.message || e)
-    res.status(500).json({ error: 'Failed to create trustline payload' })
+    console.error('❌ Error creating trustline payload:', e);
+    res.status(500).json({ error: 'Failed to create trustline payload', details: e });
   }
-})
+});
+
 
 
 

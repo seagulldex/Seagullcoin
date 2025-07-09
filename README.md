@@ -13,3 +13,6 @@
 **Twitter:** [@bored_club](https://twitter.com/bored_club)
 
 This repo serves as our public proof and timeline of being first to bring DeFi + NFT + gold-backed stablecoins to the XRP Ledger.
+
+**Launch Date:** July 2025  
+**Issuer Wallet:** `rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U`  

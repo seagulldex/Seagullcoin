@@ -524,7 +524,7 @@
   if (!wallet) return;
 
   try {
-    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-trustline`, {
+    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-trustline', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ walletAddress: wallet })

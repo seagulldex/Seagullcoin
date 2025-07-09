@@ -6931,6 +6931,85 @@ app.post("/check-trustline", async (req, res) => {
   }
 });
 
+const issuers = {
+  SXAU_ISSUER: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U',
+  XAU_ISSUER: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
+};
+
+function getCurrencyObj(currency, amount) {
+  if (currency === 'sXAU') {
+    return {
+      currency: '7358415500000000000000000000000000000000', // hex for sXAU
+      issuer: issuers.SXAU_ISSUER,
+      value: parseFloat(amount).toFixed(6)
+    };
+  }
+  if (currency === 'XAU') {
+    return {
+      currency: 'XAU',
+      issuer: issuers.XAU_ISSUER,
+      value: parseFloat(amount).toFixed(6)
+    };
+  }
+  throw new Error('Unsupported currency');
+}
+
+app.post('/swap-xau', async (req, res) => {
+  const { from_currency, to_currency, amount, wallet_address } = req.body;
+
+  // Basic validation
+  if (!from_currency || !to_currency || !amount || !wallet_address) {
+    return res.status(400).json({ error: 'Missing required fields.' });
+  }
+  if (from_currency === to_currency) {
+    return res.status(400).json({ error: 'Currencies must differ.' });
+  }
+  if (!['sXAU', 'XAU'].includes(from_currency) || !['sXAU', 'XAU'].includes(to_currency)) {
+    return res.status(400).json({ error: 'Only sXAU and XAU supported.' });
+  }
+
+  const amt = parseFloat(amount);
+  if (isNaN(amt) || amt <= 0) {
+    return res.status(400).json({ error: 'Invalid amount.' });
+  }
+
+  // 1:1 swap means output amount = input amount
+  const toAmt = amt;
+
+  try {
+    const payload = {
+      txjson: {
+        TransactionType: 'OfferCreate',
+        Account: wallet_address,
+        TakerGets: getCurrencyObj(from_currency, amt),
+        TakerPays: getCurrencyObj(to_currency, toAmt),
+        Flags: 0x00020000 // tfImmediateOrCancel to only fill immediately
+      },
+      options: {
+        submit: true,
+        return_url: {
+          app: process.env.RETURN_URL || 'https://your-return-url.app',
+          web: process.env.RETURN_URL || 'https://your-return-url.app'
+        }
+      }
+    };
+
+    const { uuid, next } = await xumm.payload.create(payload);
+
+    res.json({
+      success: true,
+      uuid,
+      payloadURL: next.always,
+      swap_details: {
+        from: { currency: from_currency, amount: amt, issuer: issuers[from_currency === 'sXAU' ? 'SXAU_ISSUER' : 'XAU_ISSUER'] },
+        to: { currency: to_currency, amount: toAmt, issuer: issuers[to_currency === 'sXAU' ? 'SXAU_ISSUER' : 'XAU_ISSUER'] }
+      }
+    });
+  } catch (err) {
+    console.error('Swap error:', err);
+    res.status(500).json({ error: err.message || 'Swap failed.' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

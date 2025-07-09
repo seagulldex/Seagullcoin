@@ -524,42 +524,39 @@
   if (!wallet) return;
 
   try {
-    const response = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-trustline?wallet=${wallet}`);
-    const data = await response.json();
+    const res = await fetch(`https://.../check-trustline`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: wallet })
+    });
+    const data = await res.json();
 
-    console.log("Trustlines:", data.lines);  // DEBUG: See what's returned
-
-    const targetIssuer = "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U";  // Your sXAU issuer
-
-    // Use the exact currency format returned in the trustline
-    const targetCurrency = "7358415500000000000000000000000000000000"; // Hex encoded sXAU
-
-    // Check for the trustline
     const hasSXAU = data.hasTrustline === true;
-    );
 
-    const trustlineStatus = document.getElementById("trustline-status");
+    const statusEl = document.getElementById("trustline-status");
     const swapArea = document.getElementById("swap-area");
     const trustlineBtn = document.getElementById("set-trustline-btn");
 
     if (hasSXAU) {
-      trustlineStatus.textContent = "✅ Trustline is set for sXAU.";
-      trustlineStatus.style.color = "green";
+      statusEl.textContent = "✅ Trustline exists for sXAU";
+      statusEl.style.color = "green";
       swapArea.style.display = "block";
-      trustlineBtn.style.display = "none";
+      trustlineBtn.disabled = true;
+      trustlineBtn.style.background = "#777";
+      trustlineBtn.textContent = "Trustline Set";
     } else {
-      trustlineStatus.textContent = "❌ No trustline for sXAU found.";
-      trustlineStatus.style.color = "red";
+      statusEl.textContent = "❌ No trustline for sXAU found.";
+      statusEl.style.color = "red";
       swapArea.style.display = "none";
-      trustlineBtn.style.display = "inline-block";
+      trustlineBtn.disabled = false;
+      trustlineBtn.style.background = ""; // original color
+      trustlineBtn.textContent = "Set sXAU Trustline";
     }
   } catch (err) {
     console.error("Error checking trustline:", err);
-    alert("Failed to check trustline.");
+    document.getElementById('trustline-status').textContent = "⚠️ Error checking trustline.";
   }
 }
-
-
 
 </script>
 </body>

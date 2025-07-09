@@ -6897,7 +6897,36 @@ app.post('/create-trustline', async (req, res) => {
 });
 
 
+app.post("/check-trustline", async (req, res) => {
+  const { walletAddress } = req.body;
 
+  if (!walletAddress) {
+    return res.status(400).json({ error: "walletAddress is required" });
+  }
+
+  try {
+    const client = new xrpl.Client("wss://s1.ripple.com"); // Public Mainnet server
+    await client.connect();
+
+    const accountLines = await client.request({
+      command: "account_lines",
+      account: walletAddress,
+    });
+
+    const trustlines = accountLines.result.lines;
+    const hasTrustline = trustlines.some(
+      (line) =>
+        line.currency === "SXAU" &&
+        line.account === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U"
+    );
+
+    await client.disconnect();
+    return res.json({ hasTrustline });
+  } catch (error) {
+    console.error("Error checking trustline:", error);
+    return res.status(500).json({ error: "Failed to check trustline" });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

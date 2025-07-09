@@ -6835,27 +6835,29 @@ const ISSUERS = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'
 // Route to create trustline
 app.post('/create-trustline', async (req, res) => {
   const { userAddress } = req.body;
-  if (!userAddress) return res.status(400).json({ error: 'Missing user address' });
+
+  if (!userAddress) {
+    return res.status(400).json({ error: 'Missing user address' });
+  }
 
   const txJson = {
     TransactionType: 'TrustSet',
     Account: userAddress,
     LimitAmount: {
-      currency: 'SXAU',
-      issuer: ISSUERS,
-      value: '1000000000'
+      currency: '7358415500000000000000000000000000000000', // sXAU in hex
+      issuer: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U', // example issuer
+      value: '1000000000' // "infinite" trustline for most purposes
     }
   };
 
   try {
-    console.log("Creating trustline transaction:", txJson);
-
     const payload = await xumm.payload.create({
       txjson: txJson,
       options: {
         submit: true,
         expire: 300
-      }
+      },
+      user_token: true, // Optional: Only if using OAuth or stored user tokens
     });
 
     res.json({
@@ -6865,10 +6867,11 @@ app.post('/create-trustline', async (req, res) => {
       qr_url: payload.refs.qr_png
     });
   } catch (e) {
-    console.error('❌ Error creating trustline payload:', e);
-    res.status(500).json({ error: 'Failed to create trustline payload', details: e });
+    console.error('Error creating trustline payload:', e?.message || e);
+    res.status(500).json({ error: 'Failed to create trustline payload' });
   }
 });
+
 
 
 

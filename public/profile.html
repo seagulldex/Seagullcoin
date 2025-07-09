@@ -430,7 +430,7 @@
   if (!wallet) return;
 
   try {
-    const res = await fetch(`https://s1.ripple.com/v1/accounts/${wallet}/trustlines`);
+    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline`);
     const data = await res.json();
 
     const hasSXAU = data.lines.some(line =>

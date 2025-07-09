@@ -425,107 +425,76 @@
         alert("Error burning NFT.");
       }
     }
-    async function checkSXAULine() {
-  const wallet = localStorage.getItem('xumm_wallet_address');
-  if (!wallet) return;
+ 
+  async function checkSXAULine() {
+    const wallet = localStorage.getItem('xumm_wallet_address');
+    if (!wallet) return;
 
-  try {
-const response = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ walletAddress }),
-});
+    try {
+      const response = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: wallet }),
+      });
 
+      const data = await response.json();
 
-    async function checkSXAULine() {
-  const wallet = localStorage.getItem('xumm_wallet_address');
-  if (!wallet) return;
+      const hasSXAU = data.lines?.some(line =>
+        line.currency === "SXAU" &&
+        line.account === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U"
+      );
 
-  try {
-    // Fetch trustlines from XRPL
-    const response = await fetch(`https://xrplcluster.com/accounts/${wallet}`);
-    const data = await response.json();
+      if (!hasSXAU) {
+        alert("SXAU trustline not found. Please add the trustline.");
+      }
 
-    const hasSXAU = data.account_data?.lines?.some(line =>
-      line.currency === "SXAU" &&
-      line.account === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U"
-    );
-
-    if (hasSXAU) {
-      document.getElementById('trustline-status').innerHTML = `✅ sXAU Trustline detected.`;
-      document.getElementById('swap-area').style.display = "block";
-      document.getElementById('trustline-area').style.display = "none";
-    } else {
-      document.getElementById('trustline-status').innerHTML = `❌ No sXAU Trustline found.`;
+    } catch (err) {
+      console.error("Trustline check failed:", err);
     }
-  } catch (err) {
-    console.error("Trustline check failed", err);
-    document.getElementById('trustline-status').innerHTML = `⚠️ Failed to check trustline.`;
   }
-}
 
-
-document.getElementById('set-trustline-btn').addEventListener('click', async () => {
-  const wallet = localStorage.getItem('xumm_wallet_address');
-  if (!wallet) return alert("Please connect your wallet first.");
-
-  try {
-    const response = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ walletAddress: wallet })
-    });
-
-    const result = await response.json();
-    if (result?.payload_url) {
-      window.open(result.payload_url, "_blank");
-    } else {
-      alert("Could not generate trustline payload.");
+  // Trigger trustline check when wallet connects
+  window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem("xumm_wallet_address")) {
+      checkSXAULine();
     }
-  } catch {
-    alert("Trustline setup failed.");
-  }
-});
+  });
 
-// Optional: Trigger trustline check when wallet connects
-window.addEventListener('DOMContentLoaded', () => {
-  if (localStorage.getItem("xumm_wallet_address")) {
-    checkSXAULine();
-  }
-});
+  // Swap button click handler
+  document.getElementById('swap-btn').addEventListener('click', async () => {
+    const grams = document.getElementById('grams-input').value;
+    const wallet = localStorage.getItem('xumm_wallet_address');
 
-document.getElementById('swap-btn').addEventListener('click', async () => {
-  const grams = document.getElementById('grams-input').value;
-  const wallet = localStorage.getItem('xumm_wallet_address');
-
-  if (!wallet || !grams || isNaN(grams) || grams <= 0) {
-    return alert("Enter a valid number of grams.");
-  }
-
-  try {
-    const res = await fetch("https://your-backend-url.com/swap-xau-sxau", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ walletAddress: wallet, grams })
-    });
-
-    const data = await res.json();
-    if (data?.payload_url) {
-      window.open(data.payload_url, "_blank");
-    } else {
-      alert("Swap payload creation failed.");
+    if (!wallet || !grams || isNaN(grams) || grams <= 0) {
+      return alert("Enter a valid number of grams.");
     }
-  } catch {
-    alert("Swap failed.");
-  }
-});
 
-    
-    document.addEventListener('click', (e) => {
-  if (e.target.classList.contains('truncated')) {
-    e.target.classList.toggle('expanded');
-  }
-});
-  </script>
+    try {
+      const res = await fetch("https://your-backend-url.com/swap-xau-sxau", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: wallet, grams })
+      });
+
+      const data = await res.json();
+
+      if (data?.payload_url) {
+        window.open(data.payload_url, "_blank");
+      } else {
+        alert("Swap payload creation failed.");
+      }
+    } catch (err) {
+      console.error("Swap failed:", err);
+      alert("Swap failed.");
+    }
+  });
+
+  // For expanding wallet address view
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('truncated')) {
+      e.target.classList.toggle('expanded');
+    }
+  });
+</script>
 </body>
 </html>

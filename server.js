@@ -6931,7 +6931,7 @@ app.post("/check-trustline", async (req, res) => {
   }
 });
 
-const issuers = {
+const issuers2 = {
   SXAU_ISSUER: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U',
   XAU_ISSUER: 'rcoef87SYMJ58NAFx7fNM5frVknmvHsvJ'
 };
@@ -6940,14 +6940,14 @@ function getCurrencyObj(currency, amount) {
   if (currency === 'sXAU') {
     return {
       currency: '7358415500000000000000000000000000000000', // hex for sXAU
-      issuer: issuers.SXAU_ISSUER,
+      issuer: issuers2.SXAU_ISSUER,
       value: parseFloat(amount).toFixed(6)
     };
   }
   if (currency === 'XAU') {
     return {
       currency: 'XAU',
-      issuer: issuers.XAU_ISSUER,
+      issuer: issuers2.XAU_ISSUER,
       value: parseFloat(amount).toFixed(6)
     };
   }
@@ -6988,8 +6988,8 @@ app.post('/swap-xau', async (req, res) => {
       options: {
         submit: true,
         return_url: {
-          app: process.env.RETURN_URL || 'https://your-return-url.app',
-          web: process.env.RETURN_URL || 'https://your-return-url.app'
+          app: process.env.RETURN_URL || 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/profile.html',
+          web: process.env.RETURN_URL || 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/profile.html',
         }
       }
     };
@@ -7001,8 +7001,8 @@ app.post('/swap-xau', async (req, res) => {
       uuid,
       payloadURL: next.always,
       swap_details: {
-        from: { currency: from_currency, amount: amt, issuer: issuers[from_currency === 'sXAU' ? 'SXAU_ISSUER' : 'XAU_ISSUER'] },
-        to: { currency: to_currency, amount: toAmt, issuer: issuers[to_currency === 'sXAU' ? 'SXAU_ISSUER' : 'XAU_ISSUER'] }
+        from: { currency: from_currency, amount: amt, issuer: issuers2[from_currency === 'sXAU' ? 'SXAU_ISSUER' : 'XAU_ISSUER'] },
+        to: { currency: to_currency, amount: toAmt, issuer: issuers2[to_currency === 'sXAU' ? 'SXAU_ISSUER' : 'XAU_ISSUER'] }
       }
     });
   } catch (err) {

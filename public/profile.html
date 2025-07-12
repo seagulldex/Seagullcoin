@@ -225,28 +225,30 @@
     });
 
     document.getElementById('swap-btn').addEventListener('click', async () => {
-  // Parse grams as float to avoid string being sent
-  const grams = parseFloat(document.getElementById('grams-input').value);
+  const gramsInput = document.getElementById('grams-input').value;
+  const grams = parseFloat(gramsInput);
   const wallet = localStorage.getItem('xumm_wallet_address');
 
-  // Basic validation
   if (!wallet || isNaN(grams) || grams <= 0) {
     return alert("Enter a valid number of grams.");
   }
 
   try {
-    // Make POST request to your backend
     const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap-xau", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ walletAddress: wallet, grams })
+      body: JSON.stringify({
+        from_currency: "sXAU",        // make this dynamic if needed
+        to_currency: "XAU",
+        amount: grams,
+        wallet_address: wallet
+      })
     });
 
     const data = await res.json();
 
-    // Check for payload URL to open
-    if (data?.payload_url) {
-      window.open(data.payload_url, "_blank");
+    if (data?.payloadURL) {
+      window.open(data.payloadURL, "_blank");
     } else {
       alert(data?.error || "Swap payload creation failed.");
     }
@@ -255,6 +257,7 @@
     alert("Swap failed. Check console for details.");
   }
 });
+
 
     document.addEventListener('click', (e) => {
       if (e.target.classList.contains('truncated')) {

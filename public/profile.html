@@ -225,28 +225,36 @@
     });
 
     document.getElementById('swap-btn').addEventListener('click', async () => {
-      const grams = document.getElementById('grams-input').value;
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet || !grams || isNaN(grams) || grams <= 0) {
-        return alert("Enter a valid number of grams.");
-      }
-      try {
-        const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap-xau", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ walletAddress: wallet, grams })
-        });
-        const data = await res.json();
-        if (data?.payload_url) {
-          window.open(data.payload_url, "_blank");
-        } else {
-          alert("Swap payload creation failed.");
-        }
-      } catch (err) {
-        console.error("Swap failed:", err);
-        alert("Swap failed.");
-      }
+  // Parse grams as float to avoid string being sent
+  const grams = parseFloat(document.getElementById('grams-input').value);
+  const wallet = localStorage.getItem('xumm_wallet_address');
+
+  // Basic validation
+  if (!wallet || isNaN(grams) || grams <= 0) {
+    return alert("Enter a valid number of grams.");
+  }
+
+  try {
+    // Make POST request to your backend
+    const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap-xau", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletAddress: wallet, grams })
     });
+
+    const data = await res.json();
+
+    // Check for payload URL to open
+    if (data?.payload_url) {
+      window.open(data.payload_url, "_blank");
+    } else {
+      alert(data?.error || "Swap payload creation failed.");
+    }
+  } catch (err) {
+    console.error("Swap failed:", err);
+    alert("Swap failed. Check console for details.");
+  }
+});
 
     document.addEventListener('click', (e) => {
       if (e.target.classList.contains('truncated')) {

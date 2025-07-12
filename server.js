@@ -6954,18 +6954,19 @@ function getCurrencyObj2(currency, amount) {
   throw new Error('Unsupported currency');
 }
 
+const XRPL_FLAGS = {
+  tfSell: 0x00080000,
+  tfImmediateOrCancel: 0x00020000
+};
+
 app.post('/swap-xau', async (req, res) => {
   const { from_currency, to_currency, amount, wallet_address } = req.body;
 
-  // Basic validation
   if (!from_currency || !to_currency || !amount || !wallet_address) {
     return res.status(400).json({ error: 'Missing required fields.' });
   }
   if (from_currency === to_currency) {
     return res.status(400).json({ error: 'Currencies must differ.' });
-  }
-  if (!['sXAU', 'XAU'].includes(from_currency) || !['sXAU', 'XAU'].includes(to_currency)) {
-    return res.status(400).json({ error: 'Only sXAU and XAU supported.' });
   }
 
   const amt = parseFloat(amount);
@@ -6973,22 +6974,35 @@ app.post('/swap-xau', async (req, res) => {
     return res.status(400).json({ error: 'Invalid amount.' });
   }
 
-  // 1:1 swap means output amount = input amount
   const toAmt = amt;
+  let takerGets, takerPays;
+  let flags = XRPL_FLAGS.tfImmediateOrCancel;
 
   try {
+    if (from_currency === 'sXAU' && to_currency === 'XAU') {
+      takerGets = getCurrencyObj2('sXAU', amt);
+      takerPays = getCurrencyObj2('XAU', toAmt);
+      flags |= XRPL_FLAGS.tfSell;
+    } else if (from_currency === 'XAU' && to_currency === 'sXAU') {
+      takerGets = getCurrencyObj2('XAU', amt);
+      takerPays = getCurrencyObj2('sXAU', toAmt);
+      flags |= XRPL_FLAGS.tfSell;
+    } else {
+      return res.status(400).json({ error: 'Unsupported currency direction.' });
+    }
+
     const payload = {
       txjson: {
         TransactionType: 'OfferCreate',
         Account: wallet_address,
-        TakerGets: getCurrencyObj2(from_currency, amt),
-        TakerPays: getCurrencyObj2(to_currency, toAmt),
-        Flags: 0
+        TakerGets: takerGets,
+        TakerPays: takerPays,
+        Flags: flags
       },
       options: {
-  submit: true
-  }
-};
+        submit: true
+      }
+    };
 
     const { uuid, next } = await xumm.payload.create(payload);
 
@@ -6997,8 +7011,8 @@ app.post('/swap-xau', async (req, res) => {
       uuid,
       payloadURL: next.always,
       swap_details: {
-        from: { currency: from_currency, amount: amt, issuer: issuers2[from_currency === 'sXAU' ? 'SXAU_ISSUER' : 'XAU_ISSUER'] },
-        to: { currency: to_currency, amount: toAmt, issuer: issuers2[to_currency === 'sXAU' ? 'SXAU_ISSUER' : 'XAU_ISSUER'] }
+        from: { currency: from_currency, amount: amt },
+        to: { currency: to_currency, amount: toAmt }
       }
     });
   } catch (err) {
@@ -7006,6 +7020,7 @@ app.post('/swap-xau', async (req, res) => {
     res.status(500).json({ error: err.message || 'Swap failed.' });
   }
 });
+
 
 app.post('/create-offer', async (req, res) => {
   const { from_currency, to_currency, amount, wallet_address } = req.body;

@@ -231,7 +231,7 @@
         return alert("Enter a valid number of grams.");
       }
       try {
-        const res = await fetch("https://your-backend-url.com/swap-xau-sxau", {
+        const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap-xau", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ walletAddress: wallet, grams })

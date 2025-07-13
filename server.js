@@ -7060,11 +7060,14 @@ app.post('/request-unstake', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Wallet address is required.' });
     }
 
-    // Match wallet field name and optionally filter by status
-    const stake = await Stake.findOne({
-      walletAddress: wallet,
-      status: 'confirmed'
-    }).sort({ timestamp: -1 });
+    const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
+
+    // Find latest confirmed stake for wallet
+    const stake = await stakesCollection.findOne(
+      { walletAddress: wallet, status: 'confirmed' },
+      { sort: { timestamp: -1 } }
+    );
 
     if (!stake) {
       return res.status(404).json({ success: false, message: 'No confirmed stake found for this wallet.' });
@@ -7085,6 +7088,7 @@ app.post('/request-unstake', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
+
 
 
 

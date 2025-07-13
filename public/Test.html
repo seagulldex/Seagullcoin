@@ -3,201 +3,215 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Trading - SGLCN Charts</title>
-
-  <link rel="stylesheet" href="style.css" />
+  <title>SGLCN-X20 Minting Platform</title>
+  <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="header.css" />
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
+  <script src="https://unpkg.com/xrpl@2.12.0/dist/xrpl.js"></script>
   <style>
-    #priceChart {
-      width: 1200px;
-      height: 350px;
-      display: block;
-      margin: 0 auto;
-    }
-    
-    .green { color: green; }
-    .red { color: red; }
-    .blue { color: white; }
-.purple { color: white; }
-    }
-    .orderbook-table {
-      width: 70%;
-      border-collapse: collapse;
-      margin-top: 8px;
-    }
-    .orderbook-table th,
-    .orderbook-table td {
+    #qr-code {
+      margin-top: 10px;
+      max-width: 200px;
+      max-height: 200px;
       border: 1px solid #ccc;
-      padding: 8px;
-      text-align: right;
+      padding: 10px;
+      display: none;
     }
-    .orderbook-header {
-      font-weight: bold;
-      margin-top: 20px;
-    }
-    #price-value, #price-xau {
+    #staking-status {
+      margin-top: 10px;
       font-weight: bold;
     }
-    #logout-btn {
-      background-color: #ff4d4d;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background-color 0.3s ease;
+    #rewards-list {
+      max-height: 150px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 5px;
     }
-    #logout-btn:hover {
-      background-color: #e04343;
+    #rewards-list li {
+      margin-bottom: 5px;
     }
-    header {
-  background-color: #000;
-  color: Black;
-  padding: 10px;
-  width: 100%;
+    #top-bar {
+  background-color: #fff;
+  border-bottom: 1px solid #ccc;
+  z-index: 1000;
 }
 
-nav ul {
-  display: flex;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-nav ul li a {
-  color: white;
-  text-decoration: none;
+    .wallet-container {
+  background-color: #f5f5f5;
   padding: 8px 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: background-color 0.3s;
 }
-    </style>
+.wallet-container:hover {
+  background-color: #e0e0e0;
+}
+
+#wallet-address-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#wallet-indicator.green {
+  color: green;
+}
+
+#wallet-indicator.red {
+  color: red;
+}
+  </style>
 </head>
 <body>
 
-  <header style="padding: 10px;">
-    <span id="wallet-indicator" class="red" title="Click to login" onclick="startLoginFlow()">🔴 Login</span>
-    <button id="logout-btn" style="display:none; margin-left: 10px;">Logout</button>
-  </header>
-
+  <div id="top-bar">
+    <div style="flex:1;"><button id="logout-btn">Logout</button></div>
+    <div id="wallet-container" class="wallet-container">
+  <div id="wallet-address-container">
+    <span id="wallet-indicator" class="red">🔴 Login</span>
+    <span id="wallet-short" style="display:none;"></span>
+  </div>
+</div>
+      </div>
   <header>
     <nav>
       <ul>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/index.html">Home</a></li>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake.html">Stake</a></li>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullmansionsV2.html" target="_blank">SGLMN V2 (mint)</a></li>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/profile.html">Profile</a></li>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="SeagullDex.html">Trading</a></li>
+        <li><a href="profile.html">Profile</a></li>
+        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
       </ul>
     </nav>
   </header>
 
-  <main style="padding: 20px;">
-    <h1> SeagullCoin Dex </h1>
-  <div style="display: flex; align-items: center; margin-bottom: 20px;">
-  <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" alt="SGLCN Logo" width="50" height="50" style="border-radius: 50%; margin-right: 12px;">
-  <div style="display: flex; flex-direction: column; font-size: 1.1em; line-height: 1.2;">
-    <div><strong>SGLCN/XRP:</strong> <span id="price-value">Loading...</span></div>
-    <div style="font-size: 0.9em; color: #ccc;"><strong>SGLCN/XAU:</strong> <span id="price-xau">Loading...</span></div>
-  </div>
-</div>
-
-
-<button id="toggle-direction" title="Swap direction">Invert ↔️</button>
-    <h2>Price Chart SGLCN</h2>
-<div>
-  <label for="timeframe">View:</label>
-  <select id="timeframe" onchange="loadChartData()">
-    <option value="1H" selected>1 Hour</option>
-    <option value="1D">1 Day</option>
-    <option value="1W">1 Week</option>
-    <option value="1M">1 Month</option>
-    <option value="6M">6 Month</option>
-    <option value="1Y">1 Year</option>
-    <option value="ALL">All Time</option>
-  </select>
-</div>
-<div style="width: 125%; max-width: 1000px; margin: auto;">
-  <canvas id="priceChart" height="350" style="width: 100%; margin-top: 20px;"></canvas>
-</div>
-
-    
-<!-- Add this right below your chart container and above #orderbook -->
-<!-- Add this right below your chart container and above #orderbook -->
-<div id="swap-section" style="max-width: 900px; margin: 30px auto; border: 1px solid #000; border-radius: 8px; padding: 15px; background: black; display: flex; flex-wrap: wrap; gap: 15px; color: white;">
-  <div style="flex: 1; min-width: 120px;">
-    <label for="swap-from"><strong>From</strong></label>
-    <select id="swap-from" style="width: 100%; padding: 6px; background-color: black; color: white; border: 1px solid #444;">
-      <option value="XRP">XRP</option>
-      <option value="SeagullCoin">SeagullCoin</option>
-      <option value="XAU">XAU</option>
-    </select>
-  </div>
-  <div style="flex: 1; min-width: 120px;">
-    <label for="swap-to"><strong>To</strong></label>
-    <select id="swap-to" style="width: 100%; padding: 6px; background-color: black; color: white; border: 1px solid #444;">
-      <option value="SeagullCoin">SeagullCoin</option>
-      <option value="XRP">XRP</option>
-      <option value="XAU">XAU</option>
-    </select>
-  </div>
-
-  <div style="flex: 1; min-width: 100px;">
-   <label for="swap-amount" id="recieve-label"><strong>Selling</strong></label>
-    <input type="number" id="swap-amount" placeholder="From" style="width: 90%; padding: 6px; background-color: black; color: white; border: 1px solid #444;" />
-  </div>
-  
-    <div style="flex: 1; min-width: 100px;">
-  <label for="swap-price" id="receive-label"><strong><span id='to-asset-label'>To</span> Received</strong></label>
-  <input
-    type="number"
-    id="swap-price"
-    placeholder="Fetching..."
-    readonly
-    style="width: 90%; padding: 6px; background-color: black; color: white; border: 1px solid #444;" />
-  </div>
-  
-  
-
-
-  <div style="width: 100%; text-align: center; margin-top: 20px;">
-    <button id="swap-btn"
-      style="padding: 10px 30px; font-size: 1.1em; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer;">
-      Squak
-    </button>
-  </div>
-    </div>
-
-
-    <div id="orderbook">
-      <div class="orderbook-header">Order Book</div>
-      <div class="orderbook-scroll">
-        <table class="orderbook-table" aria-label="Order Book">
-          <thead>
-            <tr>
-              <th class="green">Buy Price (XRP)</th>
-              <th class="green">Amount (SGLCN)</th>
-              <th class="red">Sell Price (XRP)</th>
-              <th class="red">Amount (SGLCN)</th>
-            </tr>
-          </thead>
-          <tbody id="orderbook-body"></tbody>
-        </table>
+ <main>
+      <section class="hero">
+        <img src="https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH.jpg" alt="SGLCN Logo" width="120" height="120" style="border-radius: 50%; margin-right: 12px;">
+      <h1>SeagullCoin Staking</h1>
+      <p>Stake and Earn with long-term and short-term options</p>
+      <div id="wallet-info" style="display:none;">
+        Connected: <span id="wallet-address"></span>
       </div>
-    </div>
-    
-  <script>
-    
-// On page load, check login
-    window.addEventListener('DOMContentLoaded', () => {
-      loadWalletFromStorage();
-      updateWalletUI();
-      setupTrustlineButton();
-    });
+    </section>
 
-    function loadWalletFromStorage() {
+    <div id="user-info">
+      <p id="user-balance"></p>
+      <div id="user-nfts"></div>
+    </div>
+
+    <div id="staking-section">
+      <h2>Monthly Staking</h2>
+      <p id="staking-status"></p>
+      
+      <div class="staking-details-top">
+          <p><strong>50,000 SeagullCoin</strong></p>
+          <p>Short-term Stake</p>
+      </div>
+
+      <button id="stake-btn" disabled>Stake SeagullCoin</button>
+      <button id="unstake-btn" disabled>Unstake</button>
+      <div class="staking-details-bottom">
+          <p>Earn 16.7 SeagullCoin per day</p>
+          <p>30 day 🔒 lockup</p>
+      </div>
+      
+      
+      
+      <div id="qr-code-container">
+        <img id="qr-code" alt="XUMM QR Code" />
+      </div>
+
+  
+    
+    <div id="staking-section-2" style="margin-top:40px; border-top:2px solid #ccc; padding-top:20px;">
+  <h2>Yearly Staking</h2>
+  <p id="staking-status-2"></p>
+  
+  <div class="staking-details-top">
+    <p><strong>2,500,000 SeagullCoin</strong></p>
+    <p>Long-term Stake</p>
+  </div>
+
+  <button id="stake-btn-2" disabled>Stake SeagullCoin</button>
+  <button id="unstake-btn-2" disabled>Unstake</button>
+  
+  <div class="staking-details-bottom">
+    <p>Earn 171.23 SeagullCoin per day</p>
+    <p> 1 Year 🔒 lockup</p>
+  </div>
+
+  <div id="qr-code-container-2">
+    <img id="qr-code-2" alt="XUMM QR Code" style="display:none; max-width:200px; max-height:200px; border:1px solid #ccc; padding:10px; margin-top:10px;"/>
+  </div>
+      
+      </div> <!-- CLOSE section 2 -->
+      
+      <div id="staking-section-3" style="margin-top:40px; border-top:2px solid #ccc; padding-top:20px;">
+  <h2> 5 Year Staking</h2>
+  <p id="staking-status-3"></p>
+  
+  <div class="staking-details-top">
+    <p><strong>5,000,000 SeagullCoin</strong></p>
+    <p>Macro-Stake</p>
+  </div>
+
+  <button id="stake-btn-3" disabled>Stake SeagullCoin</button>
+  <button id="unstake-btn-3" disabled>Unstake</button>
+  
+  <div class="staking-details-bottom">
+    <p>Earn 547.94 SeagullCoin per day</p>
+    <p>5 year 🔒 lockup</p>
+  </div>
+
+  <div id="qr-code-container-3">
+    <img id="qr-code-3" alt="XUMM QR Code" style="display:none; max-width:200px; max-height:200px; border:1px solid #ccc; padding:10px; margin-top:10px;"/>
+        </div>
+
+        <div id="stake-confirmed-modal" style="
+  display:none; 
+  position:fixed; 
+  top:0; left:0; width:100%; height:100%; 
+  background:rgba(0,0,0,0.6); 
+  z-index:9999; 
+  justify-content:center; 
+  align-items:center;">
+  <div style="
+    background:black; 
+    padding:20px 30px; 
+    border-radius:12px; 
+    text-align:center;">
+    <h2>✅ Stake Confirmed</h2>
+    <p>Your SeagullCoin stake has been successfully confirmed.</p>
+    <button onclick="closeStakeConfirmedModal()">Close</button>
+  </div>
+</div>
+
+
+  <!-- Place inside your script tag at the bottom -->
+<script>
+  let wallet = localStorage.getItem('xumm_wallet_address') || null;
+  let currentUUID = null;
+  let pollInterval = null;
+  
+
+  window.addEventListener('DOMContentLoaded', () => {
+  updateWalletStatus();
+  updateWalletUI();
+  setupStakingButtonListeners();
+  
+    
+  // Only show the “stake confirmed” modal if we just finished polling
+  const justStakedUUID = localStorage.getItem('justStakedUUID');
+  if (justStakedUUID) {
+    showStakeConfirmedModal();
+    localStorage.removeItem('justStakedUUID'); // don’t show again on refresh
+  }
+});
+
+  function loadWalletFromStorage() {
   const xummWallet = localStorage.getItem('xumm_wallet_address');
   const seagullWallet = localStorage.getItem('seagull_wallet');
 
@@ -227,65 +241,56 @@ nav ul li a {
   } else {
     return 'default';
   }
-}
+    }
 
-
-function updateWalletUI() {
+async function updateWalletStatus() {
   const indicator = document.getElementById('wallet-indicator');
-  const state = getWalletState();
+  const generateBtn = document.getElementById('generate-wallet-btn');
 
-  // Reset all color classes
+  // Reset color classes
   indicator.classList.remove('red', 'green', 'blue', 'purple');
 
-  switch (state) {
+  switch (getWalletState()) {
     case 'layer2':
       indicator.textContent = '🔵 Layer 2';
       indicator.classList.add('blue');
       indicator.onclick = null;
-      document.getElementById('wallet-info').style.display = 'block';
+      document.getElementById('logout-menu').style.display = 'inline-block';
       fetchNFTs(localStorage.getItem('xumm_wallet_address'));
+      generateBtn.style.display = 'none';
+      disableWalletButton('Wallet Already Created');
       break;
 
     case 'seagull_only':
       indicator.textContent = '🟣 SGLCN-X20';
       indicator.classList.add('purple');
-      indicator.title = 'Click to login';
-      indicator.onclick = startLoginFlow;
-      document.getElementById('wallet-info').style.display = 'block';
+      indicator.onclick = null;
+      document.getElementById('logout-btn').style.display = 'inline-block';
+      generateBtn.style.display = 'none';
+      disableWalletButton('Wallet Already Created');
       break;
 
     case 'xumm_only':
-      indicator.textContent = '🟢 Connected';
+      indicator.textContent = '🟢 Connected (XUMM)';
       indicator.classList.add('green');
-      indicator.title = 'Go to profile';
-      indicator.onclick = () => {
-        const user = JSON.parse(localStorage.getItem('xumm_user'));
-        if (user && user.uuid) {
-          window.location.href = `/profile.html?uuid=${user.uuid}`;
-        }
-      };
-      if (seagullAddress) {
-        walletInfo.style.display = 'block';
-        document.getElementById('xumm-wallet-address').textContent = xummAddress;
-        document.getElementById('seagull-wallet-address').textContent = seagullAddress;
-      } else {
-        walletInfo.style.display = 'none'; // hide if only XUMM with no seagull
-      }
-
-      fetchSeagullCoinBalance(xummAddress);
+      indicator.onclick = null;
+      document.getElementById('logout-btn').style.display = 'inline-block';
+      generateBtn.style.display = 'inline-block';
+      enableWalletButton();
       break;
 
     default:
       indicator.textContent = '🔴 Login';
       indicator.classList.add('red');
-      indicator.title = 'Click to login';
       indicator.onclick = startLoginFlow;
-      document.getElementById('wallet-info').style.display = 'none';
+      document.getElementById('logout-btn').style.display = 'none';
+      generateBtn.style.display = 'inline-block';
+      enableWalletButton();
   }
 }
 
 
-      async function startLoginFlow() {
+  async function startLoginFlow() {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
     const data = await res.json();
     window.open(data.payloadURL, "_blank");
@@ -305,485 +310,536 @@ localStorage.setItem('seagull_wallet', wallet);
     }
   }, 3000); // Only ONE closing brace before this
 }
-    
-    
-
-    document.getElementById('logout-btn').onclick = () => {
-  localStorage.removeItem('xumm_wallet_address');
-  localStorage.removeItem('seagull_wallet');
-  localStorage.removeItem('xumm_user');
-  updateWalletUI();  // Instead of updateWalletStatus()
-};
 
 
-    function formatPrice(price) {
-      return !price || isNaN(price) ? '' : Number(price).toFixed(6);
-    }
+  function updateWalletUI() {
+    const indicator = document.getElementById('wallet-indicator');
+    const short = document.getElementById('wallet-short');
+    const walletInfo = document.getElementById('wallet-info');
+    const container = document.getElementById('wallet-container');
 
-    function formatAmount(amount) {
-      return !amount || isNaN(amount) ? '' : Number(amount).toLocaleString(undefined, {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-      });
-    }
-    
-    let chart;
-    
-  async function loadChartData() {
-    const timeframe = document.getElementById('timeframe').value;
-    const resXRP = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcns-xrp?history=true`);
-    const resXAU = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau?history=true`);
-    const dataXRP = await resXRP.json();
-    const dataXAU = await resXAU.json();
-    console.log('dataXRP', dataXRP);
-    console.log('dataXAU', dataXAU); 
-    
-    const format = (data) =>
-      data.map(point => ({
-        x: new Date(point.timestamp),
-        y: point.price
-      }));
+    const stakeBtn = document.getElementById('stake-btn');
+    const unstakeBtn = document.getElementById('unstake-btn');
+    const stakeBtn2 = document.getElementById('stake-btn-2');
+    const unstakeBtn2 = document.getElementById('unstake-btn-2');
+    const stakeBtn3 = document.getElementById('stake-btn-3');
+    const unstakeBtn3 = document.getElementById('unstake-btn-3');
 
-    const xrpData = format(dataXRP);
-    const xauData = format(dataXAU);
+    if (wallet) {
+      walletInfo.style.display = 'block';
+      document.getElementById('wallet-address').textContent = wallet;
+      indicator.textContent = '🟢 Connected';
+      indicator.className = 'green';
+      short.style.display = 'inline';
+      short.textContent = wallet.slice(0, 6) + '...' + wallet.slice(-4);
+      container.onclick = () => alert('Profile page coming soon.');
 
-    const ctx = document.getElementById('priceChart').getContext('2d');
-
-    if (chart) chart.destroy(); // Clear previous chart
-
-    chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        datasets: [
-          {
-            label: 'SGLCN/XRP',
-            data: xrpData,
-            borderColor: 'rgba(0,123,255,1)',
-            yAxisID: 'y-xrp',
-            tension: 0.3
-          },
-          {
-            label: 'SGLCN/XAU',
-            data: xauData,
-            borderColor: 'rgba(255,193,7,1)',
-            yAxisID: 'y-xau',
-            tension: 0.3
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: {
-            type: 'time',
-            time: {
-              tooltipFormat: 'PPpp',
-              unit: timeframe === '1D' ? 'hour' : 'day'
-            },
-            title: {
-              display: true,
-              text: 'Date'
-            }
-          },
-          'y-xrp': {
-            type: 'linear',
-            position: 'left',
-            title: {
-              display: true,
-              text: 'XRP'
-            }
-          },
-          'y-xau': {
-            type: 'linear',
-            position: 'right',
-            grid: {
-              drawOnChartArea: false
-            },
-            title: {
-              display: true,
-              text: 'XAU'
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            display: true
-          }
-        }
-      }
-    });
-  }
-
-  window.addEventListener('DOMContentLoaded', () => {
-    updateWalletUI();
-    updateWalletStatus();
-    loadChartData();
-  });
-
-document.getElementById('toggle-direction').addEventListener('click', () => {
-  invertChart = !invertChart;
-  loadChartData(); // re-render chart with new direction
-});
-
-    function getIntervalFromTimeframe(timeframe) {
-  switch (timeframe) {
-    case '1H': return '1m';    // 1-minute resolution for 1 hour
-    case '1D': return '5m';    // 5-minute resolution for 1 day
-    case '1W': return '1h';    // 1-hour resolution for 1 week
-    case '1M': return '1d';    // 1-day resolution for 1 month
-    case '3M': return '1d';    // 1-day resolution
-    case '6M': return '1w';    // 1-week resolution
-    case '1Y': return '1w';    // 1-week resolution
-    default: return '1d';
-  }
-}
-
-
-
-    async function updateCurrentPrice() {
-      try {
-        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/orderbook');
-        const data = await res.json();
-        const bids = Array.isArray(data.bids) ? data.bids.slice(0, 100) : [];
-        const asks = Array.isArray(data.asks) ? data.asks.slice(0, 100) : [];
-
-        asks.sort((a, b) => parseFloat(a.price) - parseFloat(b.price)).reverse();
-        bids.sort((a, b) => parseFloat(b.price) - parseFloat(a.price)).reverse();
-
-        const tbody = document.getElementById('orderbook-body');
-        tbody.innerHTML = '';
-
-        const maxRows = Math.max(asks.length, bids.length);
-        for (let i = 0; i < maxRows; i++) {
-          const ask = asks[i];
-          const bid = bids[i];
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td class="green">${ask ? formatPrice(ask.price) : ''}</td>
-            <td class="green">${ask ? formatAmount(ask.amount) : ''}</td>
-            <td class="red">${bid ? formatPrice(bid.price) : ''}</td>
-            <td class="red">${bid ? formatAmount(bid.amount) : ''}</td>
-          `;
-          tbody.appendChild(row);
-        }
-
-        if (tbody.children.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4">No orderbook data available</td></tr>`;
-        }
-      } catch (err) {
-        console.error('Orderbook error:', err);
-        document.getElementById('orderbook-body').innerHTML = `<tr><td colspan="4">Failed to load orderbook</td></tr>`;
-      }
-    }
-
-    async function fetchLiveSGLCNPrice() {
-      try {
-        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcns-xrp');
-        const data = await res.json();
-        if (data && data.sglcn_to_xrp) {
-          const latestPrice = parseFloat(data.sglcn_to_xrp).toFixed(6);
-          document.getElementById('price-value').textContent = `${latestPrice} XRP`;
-        } else {
-          document.getElementById('price-value').textContent = 'Unavailable';
-        }
-      } catch (err) {
-        console.error('Failed to fetch live SGLCN price:', err);
-        document.getElementById('price-value').textContent = 'Error';
-      }
-    }
-    
-    async function fetchLiveSGLCNXAUPrice() {
-  try {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau');
-    const data = await res.json();
-    if (data && data.sglcn_to_xau) {
-      const latestPriceXAU = parseFloat(data.sglcn_to_xau).toFixed(6);
-      document.getElementById('price-xau').textContent = `${latestPriceXAU} XAU`;
+      stakeBtn.disabled = false;
+      unstakeBtn.disabled = false;
+      stakeBtn2.disabled = false;
+      unstakeBtn2.disabled = false;
+      stakeBtn3.disabled = false;
+      unstakeBtn3.disabled = false;
     } else {
-      document.getElementById('price-xau').textContent = 'Unavailable';
+      walletInfo.style.display = 'none';
+      indicator.textContent = '🔴 Login';
+      indicator.className = 'red';
+      short.style.display = 'none';
+      container.onclick = () => startLoginFlow();
+
+      stakeBtn.disabled = true;
+      unstakeBtn.disabled = true;
+      stakeBtn2.disabled = true;
+      unstakeBtn2.disabled = true;
+      stakeBtn3.disabled = true;
+      unstakeBtn3.disabled = true;
     }
-  } catch (err) {
-    console.error('Error fetching SGLCN XAU price:', err);
-    document.getElementById('price-xau').textContent = 'Error';
   }
+
+  function getTimeLeft(startTimestamp, durationYears) {
+  const now = Date.now();
+  const end = new Date(startTimestamp).getTime() + durationYears * 365 * 24 * 60 * 60 * 1000;
+  const diff = end - now;
+
+  if (diff <= 0) return "00:00:00";
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+
+  return `${days}d ${hours}h ${minutes}m`;
 }
 
-    async function placeBuyOrder() {
-      const wallet = localStorage.getItem('xumm_wallet_address');
-      if (!wallet) return alert("Please log in first.");
-      const price = parseFloat(document.getElementById('buy-price').value);
-      const amount = parseFloat(document.getElementById('buy-amount').value);
-      if (isNaN(price) || isNaN(amount) || price <= 0 || amount <= 0) {
-        return alert("Enter valid price and amount.");
-      }
 
-      try {
-        const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/place-buy-offer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet, price, amount })
-        });
-        const result = await res.json();
-        if (result.success) {
-          alert("Buy offer submitted successfully.");
-          updateCurrentPrice();
-        } else {
-          alert("Offer failed: " + (result.error || "Unknown error"));
-        }
-      } catch (err) {
-        alert("Error submitting offer: " + err.message);
-      }
-    }
-
-    async function updateSwapPrice() {
-  const from = document.getElementById('swap-from').value;
-  const to = document.getElementById('swap-to').value;
-  try {
-    const rate = await getRatePreview(from, to);
-    document.getElementById('swap-price').value = rate;
-  } catch (err) {
-    document.getElementById('swap-price').value = 'Error';
-  }
-}
-
-document.getElementById('swap-from').addEventListener('change', updateSwapPrice);
-document.getElementById('swap-to').addEventListener('change', updateSwapPrice);
-window.addEventListener('DOMContentLoaded', updateSwapPrice);
-
-    
-    async function getRatePreview(from, to) {
-  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/rate-preview?to=${to}&from=${from}`);
-  if (!res.ok) throw new Error('Rate preview failed');
-  const data = await res.json();
-  console.log('Rate:', data.rate);
-  return data.rate;
-}
-    
-    
-
-  async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from_currency: fromCurrency,
-        to_currency: toCurrency,
-        amount,
-        wallet_address: walletAddress
-      })
+  function setupStakingButtonListeners() {
+  // Monthly Staking (Already exists)
+  document.getElementById('stake-btn').addEventListener('click', async () => {
+    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/start-stake?wallet=${wallet}&plan=monthly`);
+    const json = await res.json();
+    showQRCode(json.qrUrl);
+    pollStatus(json.uuid, () => {
+      showStakeConfirmedModal();
+      loadStakingData(); // or loadStakingData3()
     });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Swap failed');
-    }
-
-    console.log('Swap Payload UUID:', data.uuid);
-    return data;
-  }
-
-  function updateLabels() {
-    const fromAsset = document.getElementById('swap-from').value;
-    const toAsset = document.getElementById('swap-to').value;
-    document.getElementById('from-asset-label').textContent = fromAsset;
-    document.getElementById('amount-label').innerHTML = `<strong>You Will Receive (${toAsset})</strong>`;
-  }
-
-  // Update labels when currency selection changes
-  document.getElementById('swap-from').addEventListener('change', updateLabels);
-  document.getElementById('swap-to').addEventListener('change', updateLabels);
-
-  // Initial label setup on page load
-  window.addEventListener('DOMContentLoaded', updateLabels);
-
-// Swap button handler
-  document.getElementById('swap-btn').addEventListener('click', async () => {
-    const fromCurrency = document.getElementById('swap-from').value;
-    const toCurrency = document.getElementById('swap-to').value;
-    const amount = parseFloat(document.getElementById('swap-amount').value);
-    const walletAddress = localStorage.getItem('xumm_wallet_address');
-
-    if (!walletAddress) {
-      alert('Please connect your wallet first.');
-      return;
-    }
-
-    if (fromCurrency === toCurrency) {
-      alert('Please select different currencies to swap.');
-      return;
-    }
-
-    if (!amount || isNaN(amount) || amount <= 0) {
-      alert('Please enter a valid amount.');
-      return;
-    }
-
-    try {
-      const response = await createSwap(fromCurrency, toCurrency, amount, walletAddress);
-
-      if (response.payloadURL) {
-        window.open(response.payloadURL, '_blank');
-      } else {
-        alert('Swap created, but no payload URL found.');
-      }
-    } catch (error) {
-      alert('Swap failed: ' + error.message);
-    }
   });
 
+  // Yearly Staking
+  document.getElementById('stake-btn-2').addEventListener('click', async () => {
+    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/start-stake?wallet=${wallet}&plan=yearly`);
+    const json = await res.json();
+    document.getElementById('qr-code-2').src = json.qrUrl;
+    document.getElementById('qr-code-2').style.display = 'block';
+    pollStatus2(json.uuid, () => {
+      showStakeConfirmedModal();
+      loadStakingData(); // or loadStakingData3()
+    });
+  });
 
-  // Trigger initial value
-  document.getElementById('to-asset-label').textContent = document.getElementById('swap-from').value;
+  // 5-Year Staking
+  document.getElementById('stake-btn-3').addEventListener('click', async () => {
+    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/start-stake?wallet=${wallet}&plan=fiveyear`);
+    const json = await res.json();
+    document.getElementById('qr-code-3').src = json.qrUrl;
+    document.getElementById('qr-code-3').style.display = 'block';
+    pollStatus3(json.uuid, () => {
+      showStakeConfirmedModal();
+      loadStakingData(); // or loadStakingData3()
+    });
+  });
+}
 
-    function updateLabels() {
-  const fromAsset = document.getElementById('swap-from').value;
-  const toAsset = document.getElementById('swap-to').value;
-  document.getElementById('to-asset-label').textContent = toAsset;
-  document.getElementById('amount-label').innerHTML = `<strong>You Will Receive (${toAsset})</strong>`;
+  function calculateEarnings(entry) {
+  const { amount, timestamp, tier } = entry;
+  const now = new Date();
+  const start = new Date(timestamp);
+  const daysElapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+
+  let dailyRate = 0;
+  if (tier === 'Monthly') dailyRate = 16.7;
+  else if (tier === '1 Year') dailyRate = 171.23;
+  else if (tier === '5 Year') dailyRate = 547.94;
+
+  const earned = amount * dailyRate * daysElapsed;
+  return earned;
+}
+
+
+function showStakeConfirmedModal() {
+  const modal = document.getElementById('stake-confirmed-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeStakeConfirmedModal() {
+  const modal = document.getElementById('stake-confirmed-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+
+
+ // Utility to show QR code image
+    function showQRCode(url) {
+      const qr = document.getElementById('qr-code');
+      qr.src = url;
+      qr.style.display = 'block';
     }
 
-let chartInstance;
-let invertChart = false;
+    // Poll stake/unstake status by UUID
+    function pollStatus(uuid, successCallback) {
+  const statusEl = document.getElementById('staking-status');
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
+      const json = await res.json();
 
-async function loadChartData() {
-  const timeframe = document.getElementById('timeframe').value;
-  const interval = getIntervalFromTimeframe(timeframe);
+      if (json.signed) {
+        clearInterval(pollInterval);
+        statusEl.textContent = 'Transaction confirmed! ✅️';
+        document.getElementById('qr-code').style.display = 'none';
+        localStorage.setItem('justStakedUUID', uuid);
+        successCallback();
+      } else if (json.error) {
+        clearInterval(pollInterval);
+        statusEl.textContent = 'Transaction failed or cancelled.';
+        document.getElementById('qr-code').style.display = 'none';
+      } else {
+        statusEl.textContent = 'Waiting for transaction confirmation...';
+      }
+    } catch {
+      statusEl.textContent = 'Error checking transaction status.';
+    }
+  }, 3000);
+}
 
-const [xrpRes, xauRes] = await Promise.all([
-  fetch(`/api/ohlcv?symbol=SGLCN/XRP&interval=${interval}`),
-  fetch(`/api/ohlcv?symbol=SGLCN/XAU&interval=${interval}`)
-]);
+    
+     // You also need a duplicate pollStatus2 and loadStakingData2 functions
+  // that are identical to your original ones but target the "-2" IDs
 
-const [xrpJson, xauJson] = await Promise.all([xrpRes.json(), xauRes.json()]);
+  // Example pollStatus2:
+  function pollStatus2(uuid, successCallback) {
+  const statusEl = document.getElementById('staking-status-2');
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
+      const json = await res.json();
 
-const labels = xrpJson.map(entry => new Date(entry.timestamp));
-const dataXrp = xrpJson.map(entry => {
-  const rate = parseFloat(entry.close);
-  return invertChart ? (1 / rate) : rate;
-});
-const dataXau = xauJson.map(entry => {
-  const rate = parseFloat(entry.close);
-  return invertChart ? (1 / rate) : rate;
-});
+      if (json.signed) {
+        clearInterval(pollInterval);
+        statusEl.textContent = 'Transaction confirmed! ✅️';
+        document.getElementById('qr-code-2').style.display = 'none';
+        localStorage.setItem('justStakedUUID', uuid);
+        successCallback();
+      } else if (json.error) {
+        clearInterval(pollInterval);
+        statusEl.textContent = 'Transaction failed or cancelled.';
+        document.getElementById('qr-code-2').style.display = 'none';
+      } else {
+        statusEl.textContent = 'Waiting for transaction confirmation...';
+      }
+    } catch {
+      statusEl.textContent = 'Error checking transaction status.';
+    }
+  }, 3000);
+}
 
+function pollStatus3(uuid, successCallback) {
+  const statusEl = document.getElementById('staking-status-3');
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/checking-login?uuid=${uuid}`);
+      const json = await res.json();
 
+      if (json.signed) {
+        clearInterval(pollInterval);
+        statusEl.textContent = 'Transaction confirmed! ✅️';
+        document.getElementById('qr-code-3').style.display = 'none';
+        localStorage.setItem('justStakedUUID', uuid);
+        successCallback();
+      } else if (json.error) {
+        clearInterval(pollInterval);
+        statusEl.textContent = 'Transaction failed or cancelled.';
+        document.getElementById('qr-code-3').style.display = 'none';
+      } else {
+        statusEl.textContent = 'Waiting for transaction confirmation...';
+      }
+    } catch {
+      statusEl.textContent = 'Error checking transaction status.';
+    }
+  }, 3000);
+}
   
-  // ✅ Fetch chart data based on selected pair and interval
-  const response = await fetch(`/api/ohlcv?symbol=${pair}&interval=${interval}`);
-  if (!response.ok) {
-    console.error('Failed to fetch OHLCV data');
+
+  window.addEventListener('load', () => {
+  const walletAddress = localStorage.getItem('walletAddress');
+  if (walletAddress) loadStakingData(walletAddress); // Remove the space between function name and parentheses
+});
+
+
+  // Call loadStakingData and loadStakingData2 and loadStakingData3 on login or wallet change
+// Example loadStakingData to fetch rewards and status for second section
+  async function loadStakingData() {
+  if (!wallet) {
+    document.getElementById('staking-status').textContent = 'Please login to view staking data.';
     return;
   }
 
-  const ohlcvData = await response.json();
-
-  // Transform OHLCV data into chart format
-  const labels = ohlcvData.map(entry => new Date(entry.timestamp));
-  const data = ohlcvData.map(entry => {
-    const value = parseFloat(entry.close);
-    return invertChart ? (1 / value) : value;
-  });
-
-  
-   const ctx = document.getElementById('priceChart').getContext('2d');
-
-
-    if (chartInstance) {
-      chartInstance.destroy();
+  try {
+    // Load rewards
+    const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-rewards/${wallet}`);
+    const rewards = await rewardsRes.json();
+    const rewardsList = document.getElementById('rewards-list');
+    rewardsList.innerHTML = '';
+    if (rewards.length === 0) {
+      rewardsList.innerHTML = '<li>No rewards yet.</li>';
+    } else {
+      rewards.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = `Reward: ${r.amount} SeagullCoin at ${new Date(r.timestamp).toLocaleString()}`;
+        rewardsList.appendChild(li);
+      });
     }
 
-    chartInstance = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: invertChart ? 'SGLCN → XRP' : 'XRP → SGLCN',
-            data: dataXrp,
-            fill: false,
-            borderColor: 'rgba(65,105,225,1)', // royal blue
-            tension: 0.2,
-            pointRadius: 2,
-            pointHoverRadius: 5
-          },
-          {
-            label: invertChart ? 'SGLCN → XAU' : 'XAU → SGLCN',
-            data: dataXau,
-            fill: false,
-            borderColor: 'rgba(255,165,0,1)', // orange
-            tension: 0.2,
-            pointRadius: 2,
-            pointHoverRadius: 5
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            labels: {
-              color: '#fff'
-            }
-          },
-          tooltip: {
-        callbacks: {
-          label: context => {
-            const rate = context.raw;
-            if (typeof rate !== 'number' || isNaN(rate)) return 'Rate: N/A';
-            return `Rate: ${rate.toLocaleString(undefined, {
-              maximumFractionDigits: rate < 0.0001 ? 8 : 4
-            })}`;
-          }
-        }
+    // Load latest staking status
+    const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
+    if (statusRes.ok) {
+      const status = await statusRes.json();
+      const tier = status.plan || status.tier || 'unknown';
+      const stakedAmount = status.stakedAmount || 0;
+      const earnings = calculateEarnings({ timestamp: status.timestamp, tier });
+
+      // Default Section
+      document.getElementById('staking-status').textContent = `Currently Staked: ${stakedAmount} SeagullCoin`;
+
+      // Yearly Section
+      if (tier === 'yearly') {
+        document.getElementById('staking-status-2').textContent = 'Yearly staking active';
+        document.getElementById('amount-staked-2').textContent = stakedAmount;
+        document.getElementById('accumulated-rewards-2').textContent = earnings;
+        document.getElementById('time-left-2').textContent = getTimeLeft(status.timestamp, 1); // 1 year
       }
-    },
-        scales: {
-      x: {
-        type: 'time',
-        time: {
-          unit:
-            timeframe === '1H' ? 'minute' :
-            timeframe === '1D' ? 'minute' :
-            timeframe === '1W' ? 'hour' :
-            timeframe === '1M' ? 'day' :
-            timeframe === '3M' ? 'week' :
-           (timeframe === '6M' || timeframe === '1Y') ? 'month' :
-           'day',
-          tooltipFormat: 'yyyy-MM-dd HH:mm'
-        },
-        ticks: {
-          color: '#ccc'
-            }
-           },
-      y: {
-        beginAtZero: false,
-        ticks: {
-          color: '#ccc'
-        }
+
+      // 5-Year Section
+      else if (tier === '5year') {
+        document.getElementById('staking-status-3').textContent = '5 Year staking active';
+        document.getElementById('amount-staked-3').textContent = stakedAmount;
+        document.getElementById('accumulated-rewards-3').textContent = earnings;
+        document.getElementById('time-left-3').textContent = getTimeLeft(status.timestamp, 5); // 5 years
       }
+
+    } else {
+      document.getElementById('staking-status').textContent = 'No active stake found.';
     }
-  }
-});
 
-
-  } catch (err) {
-    console.error("Failed to load chart data:", err);
+  } catch (error) {
+    console.error('Error loading staking data:', error);
+    document.getElementById('staking-status').textContent = 'Error loading staking data.';
   }
 }
 
 
+  
+  // Example loadStakingData2 to fetch rewards and status for second section
+  async function loadStakingData2() {
+  if (!wallet) {
+    document.getElementById('staking-status-2').textContent = 'Please login to view staking data.';
+    return;
+  }
 
-// Initial load
-window.addEventListener('DOMContentLoaded', loadChartData);
+  try {
+    // Fetch rewards
+    const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${wallet}`);
+    const rewards = await rewardsRes.json();
 
-    fetchLiveSGLCNPrice();           // Live price from /api/sglcn-xrp
-    updateCurrentPrice();            // Orderbook data
-    fetchLiveSGLCNXAUPrice();  
-    setInterval(fetchLiveSGLCNXAUPrice,30000);            // Fetch XAU price
-    setInterval(fetchLiveSGLCNPrice, 30000);
-    setInterval(updateCurrentPrice, 30000);
-    loadOrderBook();
-    updateWalletStatus();
+    const rewardsList = document.getElementById('rewards-list-2');
+    rewardsList.innerHTML = '';
+
+    if (rewards.length === 0) {
+      rewardsList.innerHTML = '<li>No rewards yet.</li>';
+    } else {
+      rewards.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = `Reward: ${r.amount} SeagullCoin at ${new Date(r.timestamp).toLocaleString()}`;
+        rewardsList.appendChild(li);
+      });
+    }
+
+    // Fetch latest staking status
+    const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${wallet}`);
+    const statusText = document.getElementById('staking-status-2');
+
+    if (statusRes.ok) {
+      const status = await statusRes.json();
+
+      const earnings = calculateEarnings({
+        timestamp: status.timestamp,
+        tier: status.plan || status.tier
+      });
+
+      statusText.textContent = `Currently Staked: ${status.stakedAmount || 0} SeagullCoin — Est. Earnings: ${earnings.toFixed(2)} SeagullCoin`;
+    } else {
+      statusText.textContent = 'No active stake found.';
+    }
+  } catch (error) {
+    console.error('Error loading staking data:', error);
+    document.getElementById('staking-status-2').textContent = 'Error loading staking data.';
+  }
+}
+
+
+// Example loadStakingData3 to fetch rewards and status for second section
+  async function loadStakingData3() {
+  if (!wallet) {
+    document.getElementById('staking-status-3').textContent = 'Please login to view staking data.';
+    return;
+  }
+
+  try {
+    // Fetch rewards
+    const rewardsRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${wallet}`);
+    const rewards = await rewardsRes.json();
+
+    const rewardsList = document.getElementById('rewards-list-3');
+    rewardsList.innerHTML = '';
+
+    if (rewards.length === 0) {
+      rewardsList.innerHTML = '<li>No rewards yet.</li>';
+    } else {
+      rewards.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = `Reward: ${r.amount} SeagullCoin at ${new Date(r.timestamp).toLocaleString()}`;
+        rewardsList.appendChild(li);
+      });
+    }
+
+    // Fetch latest staking status
+    const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${wallet}`);
+    const statusText = document.getElementById('staking-status-3');
+
+    if (statusRes.ok) {
+      const status = await statusRes.json();
+
+      const earnings = calculateEarnings({
+        timestamp: status.timestamp,
+        tier: status.plan || status.tier
+      });
+
+      statusText.textContent = `Currently Staked: ${status.stakedAmount || 0} SeagullCoin — Est. Earnings: ${earnings.toFixed(2)} SeagullCoin`;
+    } else {
+      statusText.textContent = 'No active stake found.';
+    }
+  } catch (error) {
+    console.error('Error loading staking data:', error);
+    document.getElementById('staking-status-3').textContent = 'Error loading staking data.';
+  }
+}
+
+
+  async function loadStakingData() {
+    const address = localStorage.getItem('xumm_wallet_address');
+    if (!address) return;
+
+    try {
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${address}`);
+      const data = await res.json();
+
+      const stakingSection = document.getElementById('staking-section');
+      const statusEl = document.createElement('div');
+      statusEl.style.marginTop = '20px';
+      statusEl.style.background = '#111';
+      statusEl.style.color = 'white';
+      statusEl.style.padding = '12px';
+      statusEl.style.borderRadius = '12px';
+
+      if (data.length === 0) {
+        statusEl.innerHTML = `<p>No active stakes found.</p>`;
+      } else {
+        statusEl.innerHTML = '<h3>✅️ Active Stakes</h3>';
+        data.forEach(stake => {
+          const stakeStart = new Date(stake.timestamp);
+          const stakeEnd = new Date(stake.stakeEndDate);
+          const now = new Date();
+          const daysLeft = Math.max(0, Math.ceil((stakeEnd - now) / (1000 * 60 * 60 * 24)));
+
+          const earned = Number(stake.earned || 0).toFixed(2);
+
+
+          const stakeHtml = `
+            <div style="margin-top:10px; padding:10px; border:1px solid #333; border-radius:10px; background:#222;">
+              <p><strong>Tier:</strong> ${stake.tier}</p>
+              <p><strong>Amount:</strong> ${stake.amount.toLocaleString()} SGLCN</p>
+              <p><strong>Earned so far:</strong> ${earned} SGLCN</p>
+              <p><strong>Days left:</strong> ${daysLeft} day(s)</p>
+              <p><strong>Status:</strong> ${stake.status}</p>
+            </div>
+          `;
+          statusEl.innerHTML += stakeHtml;
+        });
+      }
+
+      // Remove old status if any
+      const oldStatus = document.getElementById('staking-data-block');
+      if (oldStatus) oldStatus.remove();
+
+      statusEl.id = 'staking-data-block';
+      stakingSection.insertBefore(statusEl, stakingSection.firstChild);
+    } catch (err) {
+      console.error('Error loading staking info:', err);
+    }
+  }
+
+  // Call this on wallet connection
+  window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('xumm_wallet_address')) {
+      loadStakingData();
+    }
+  });
+
+
+    // Stake button
+    document.getElementById('stake-btn').onclick = async () => {
+      if (!wallet) {
+        alert('Please login first.');
+        return;
+      }
+      try {
+        const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-payload/${wallet}`);
+        const data = await res.json();
+        if (!data.uuid) {
+          alert('Error getting stake payload.');
+          return;
+        }
+
+        currentUUID = data.uuid;
+        showQRCode(data.refs.qr_png);
+        window.open(data.next.always, '_blank');
+        document.getElementById('staking-status').textContent = 'Please sign the stake transaction in your wallet.';
+
+        pollStatus(currentUUID, () => {
+          loadStakingData();
+        });
+      } catch {
+        alert('Error initiating stake transaction.');
+      }
+    };
+    
+    //stake button #2
+    document.getElementById('stake-btn-2').onclick = async () => {
+    if (!wallet) {
+      alert('Please login first.');
+      return;
+    }
+    try {
+      // Call your existing stake API (same as first section)
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-payload-two/${wallet}`);
+      const data = await res.json();
+      if (!data.uuid) {
+        alert('Error getting stake payload.');
+        return;
+      }
+      currentUUID2 = data.uuid;
+      const qr = document.getElementById('qr-code-2');
+      qr.src = data.refs.qr_png;
+      qr.style.display = 'block';
+      window.open(data.next.always, '_blank');
+      document.getElementById('staking-status-2').textContent = 'Please sign the stake transaction in your wallet.';
+      pollStatus2(currentUUID2, () => loadStakingData2());
+    } catch {
+      alert('Error creating stake transaction.');
+    }
+  };
+  
+   //stake button #3
+    document.getElementById('stake-btn-3').onclick = async () => {
+    if (!wallet) {
+      alert('Please login first.');
+      return;
+    }
+    try {
+      // Call your existing stake API (same as first section)
+      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-payload-three/${wallet}`);
+      const data = await res.json();
+      if (!data.uuid) {
+        alert('Error getting stake payload.');
+        return;
+      }
+      currentUUID3 = data.uuid;
+      const qr = document.getElementById('qr-code-2');
+      qr.src = data.refs.qr_png;
+      qr.style.display = 'block';
+      window.open(data.next.always, '_blank');
+      document.getElementById('staking-status-2').textContent = 'Please sign the stake transaction in your wallet.';
+      pollStatus3(currentUUID3, () => loadStakingData3());
+    } catch {
+      alert('Error creating stake transaction.');
+    }
+  };
+
+  
+  document.getElementById('logout-btn').onclick = () => {
+    localStorage.removeItem('xumm_wallet_address');
+    location.reload();
+  };
+
+    
   </script>
 </body>
-</html>
+      </html>

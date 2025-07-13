@@ -833,6 +833,40 @@ function pollStatus3(uuid, successCallback) {
     }
   };
 
+  function setupUnstakeButtonListeners() {
+  const unstakeButtons = [
+    { id: 'unstake-btn', duration: 1 / 12 }, // Monthly = ~0.083 years
+    { id: 'unstake-btn-2', duration: 1 },    // Yearly
+    { id: 'unstake-btn-3', duration: 5 }     // 5-Year
+  ];
+
+  unstakeButtons.forEach(({ id, duration }) => {
+  unstakeButtons.forEach(({ id, duration }) => {
+  document.getElementById(id).addEventListener('click', async () => {
+    try {
+      if (!wallet) {
+        alert('Please connect your wallet before unstaking.');
+        return;
+      }
+
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/request-unstake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || 'Unstake request failed');
+
+      alert(data.message);
+
+    } catch (err) {
+      console.error('Error unstaking:', err);
+      alert('Failed to unstake: ' + err.message);
+    }
+  });
+});
   
   document.getElementById('logout-btn').onclick = () => {
     localStorage.removeItem('xumm_wallet_address');

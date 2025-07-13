@@ -701,20 +701,25 @@ function pollStatus3(uuid, successCallback) {
   ];
 
   unstakeButtons.forEach(({ id, duration }) => {
+  unstakeButtons.forEach(({ id, duration }) => {
   document.getElementById(id).addEventListener('click', async () => {
     try {
-      // Call your unstake endpoint instead of stake-status
+      if (!wallet) {
+        alert('Please connect your wallet before unstaking.');
+        return;
+      }
+
       const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/request-unstake', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet }) // make sure wallet variable is set correctly in your scope
+        body: JSON.stringify({ wallet })
       });
 
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.message || 'Unstake request failed');
 
-      alert(data.message); // or update UI accordingly
+      alert(data.message);
 
     } catch (err) {
       console.error('Error unstaking:', err);
@@ -722,6 +727,7 @@ function pollStatus3(uuid, successCallback) {
     }
   });
 });
+
 
 
 

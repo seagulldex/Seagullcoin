@@ -839,6 +839,47 @@ function pollStatus3(uuid, successCallback) {
     location.reload();
   };
 
+  unstakeButtons.forEach(({ id, duration }) => {
+  const button = document.getElementById(id);
+  if (!button) {
+    console.warn(`Button with ID "${id}" not found.`);
+    return;
+  }
+
+  button.addEventListener('click', async () => {
+    if (!wallet) {
+      alert('Please connect your wallet before unstaking.');
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/request-unstake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet })
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        throw new Error('Invalid server response');
+      }
+
+      if (!res.ok) throw new Error(data.message || 'Unstake request failed');
+
+      alert(data.message);
+    } catch (err) {
+      console.error('Error unstaking:', err);
+      alert('Failed to unstake: ' + err.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
+
     
   </script>
 </body>

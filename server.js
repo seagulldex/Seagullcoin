@@ -6878,37 +6878,46 @@ app.post('/create-trustline', async (req, res) => {
 
 
 app.post("/check-trustline", async (req, res) => {
-  const { walletAddress } = req.body;
+  const { walletAddress } = req.body;
 
-  if (!walletAddress) {
-    return res.status(400).json({ error: "walletAddress is required" });
-  }
+  if (!walletAddress) {
+    return res.status(400).json({ error: "walletAddress is required" });
+  }
 
-  try {
-    const client = new xrpl.Client("wss://s1.ripple.com");
-    await client.connect();
+  try {
+    const client = new xrpl.Client("wss://s1.ripple.com");
+    await client.connect();
 
-    const accountLines = await client.request({
-      command: "account_lines",
-      account: walletAddress,
-    });
+    const accountLines = await client.request({
+      command: "account_lines",
+      account: walletAddress,
+    });
 
-    const trustlines = accountLines.result.lines;
+    const trustlines = accountLines.result.lines;
 
-    const hasTrustline = trustlines.some(
-      (line) =>
-        line.currency === "7358415500000000000000000000000000000000" &&
-        (line.account === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U" ||
-         line.issuer === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U")
-    );
+    const sxauTrustline = trustlines.find(
+      (line) =>
+        line.currency === "7358415500000000000000000000000000000000" &&
+        line.issuer === "rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U"
+    );
 
-    await client.disconnect();
-    return res.json({ hasTrustline });
-  } catch (error) {
-    console.error("Error checking trustline:", error);
-    return res.status(500).json({ error: "Failed to check trustline" });
-  }
+    await client.disconnect();
+
+    if (sxauTrustline) {
+      return res.json({
+        hasTrustline: true,
+        balance: sxauTrustline.balance, // e.g., "0.120000"
+        limit: sxauTrustline.limit,
+      });
+    } else {
+      return res.json({ hasTrustline: false });
+    }
+  } catch (error) {
+    console.error("Error checking trustline:", error);
+    return res.status(500).json({ error: "Failed to check trustline" });
+  }
 });
+
 
 const issuers2 = {
   SXAU_ISSUER: 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U',

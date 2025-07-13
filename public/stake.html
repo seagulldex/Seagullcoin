@@ -701,34 +701,27 @@ function pollStatus3(uuid, successCallback) {
   ];
 
   unstakeButtons.forEach(({ id, duration }) => {
-    document.getElementById(id).addEventListener('click', async () => {
-      try {
-        const statusRes = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/request-unstake');
-        if (!statusRes.ok) throw new Error("Stake info unavailable");
+  document.getElementById(id).addEventListener('click', async () => {
+    try {
+      // Call your unstake endpoint instead of stake-status
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/request-unstake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet }) // make sure wallet variable is set correctly in your scope
+      });
 
-        const status = await statusRes.json();
-        const timeLeft = getTimeLeft(status.timestamp, duration);
+      const data = await res.json();
 
-        if (timeLeft.startsWith("0d")) {
-          alert("✅ Lock period ended. Please wait 12–24 🕐 hours for returned funds.");
-          
-          // OPTIONAL: call a backend endpoint to initiate the unstake
-          await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/request-unstake`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ wallet, plan: status.plan || status.tier })
-          });
+      if (!res.ok) throw new Error(data.message || 'Unstake request failed');
 
-        } else {
-          alert(`🔒 Funds still locked. Time left: ${timeLeft}`);
-        }
-      } catch (error) {
-        console.error("Unstake error:", error);
-        alert("Error processing unstake request.");
-      }
-    });
+      alert(data.message); // or update UI accordingly
+
+    } catch (err) {
+      console.error('Error unstaking:', err);
+      alert('Failed to unstake: ' + err.message);
+    }
   });
-}
+});
 
 
 

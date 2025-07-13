@@ -703,7 +703,7 @@ function pollStatus3(uuid, successCallback) {
   unstakeButtons.forEach(({ id, duration }) => {
     document.getElementById(id).addEventListener('click', async () => {
       try {
-        const statusRes = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake-status/latest/${wallet}`);
+        const statusRes = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/request-unstake');
         if (!statusRes.ok) throw new Error("Stake info unavailable");
 
         const status = await statusRes.json();

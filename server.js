@@ -7052,6 +7052,41 @@ app.post('/create-offer', async (req, res) => {
   }
 });
 
+app.post('/request-unstake', async (req, res) => {
+  try {
+    const { wallet } = req.body;
+
+    if (!wallet) {
+      return res.status(400).json({ success: false, message: 'Wallet address is required.' });
+    }
+
+    // Match wallet field name and optionally filter by status
+    const stake = await Stake.findOne({
+      walletAddress: wallet,
+      status: 'confirmed'
+    }).sort({ timestamp: -1 });
+
+    if (!stake) {
+      return res.status(404).json({ success: false, message: 'No confirmed stake found for this wallet.' });
+    }
+
+    const now = new Date();
+    const unlockDate = new Date(stake.stakeEndDate);
+
+    if (now >= unlockDate) {
+      return res.json({ success: true, message: 'Unstake request submitted.' });
+    } else {
+      const daysLeft = Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24));
+      return res.json({ success: false, message: `You still have ${daysLeft} day(s) left before you can unstake.` });
+    }
+
+  } catch (err) {
+    console.error('Unstake check error:', err);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

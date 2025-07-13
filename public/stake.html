@@ -202,6 +202,7 @@
   updateWalletUI();
   setupStakingButtonListeners();
   
+
     
   // Only show the “stake confirmed” modal if we just finished polling
   const justStakedUUID = localStorage.getItem('justStakedUUID');
@@ -355,6 +356,11 @@ localStorage.setItem('seagull_wallet', wallet);
       unstakeBtn3.disabled = true;
     }
   }
+
+  function disableButtonsOnLoad() {
+  document.getElementById('stake-btn').disabled = true;
+  document.getElementById('unstake-btn').disabled = true;
+  // Add other buttons if needed
 
   function getTimeLeft(startTimestamp, durationYears) {
   const now = Date.now();

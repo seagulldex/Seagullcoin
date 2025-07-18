@@ -195,12 +195,19 @@
   let wallet = localStorage.getItem('xumm_wallet_address') || null;
   let currentUUID = null;
   let pollInterval = null;
-  
 
-  window.addEventListener('DOMContentLoaded', () => {
-  updateWalletStatus();
-  updateWalletUI();
-  setupStakingButtonListeners();
+  const unstakeButtons = [
+    { id: 'unstake-btn', duration: 'monthly' },
+    { id: 'unstake-btn-2', duration: 'yearly' },
+    { id: 'unstake-btn-3', duration: 'fiveyear' },
+  ];
+
+
+    window.addEventListener('DOMContentLoaded', () => {
+    updateWalletStatus();
+    updateWalletUI();
+    setupStakingButtonListeners();
+  });
   
     
   // Only show the “stake confirmed” modal if we just finished polling

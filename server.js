@@ -7054,7 +7054,7 @@ app.post('/create-offer', async (req, res) => {
 
 app.post('/request-unstake', async (req, res) => {
   try {
-    const { wallet } = req.body;
+    const { wallet, type } = req.body;
 
     if (!wallet) {
       return res.status(400).json({ success: false, message: 'Wallet address is required.' });
@@ -7063,31 +7063,52 @@ app.post('/request-unstake', async (req, res) => {
     const db = await connectDB();
     const stakesCollection = db.collection('stakes');
 
-    // Find latest confirmed stake for wallet
-    const stake = await stakesCollection.findOne(
-      { walletAddress: wallet, status: 'confirmed' },
-      { sort: { timestamp: -1 } }
-    );
+    let stakes;
 
-    if (!stake) {
-      return res.status(404).json({ success: false, message: 'No confirmed stake found for this wallet.' });
+    if (type) {
+      // Find latest confirmed stake for wallet and given type
+      const stake = await stakesCollection.findOne(
+        { walletAddress: wallet, status: 'confirmed', type: type },
+        { sort: { timestamp: -1 } }
+      );
+
+      if (!stake) {
+        return res.status(404).json({ success: false, message: `No confirmed stake found for wallet and type: ${type}` });
+      }
+
+      stakes = [stake];
+    } else {
+      // Find all confirmed stakes for wallet
+      stakes = await stakesCollection.find(
+        { walletAddress: wallet, status: 'confirmed' }
+      ).toArray();
+
+      if (!stakes.length) {
+        return res.status(404).json({ success: false, message: 'No confirmed stakes found for this wallet.' });
+      }
     }
 
     const now = new Date();
-    const unlockDate = new Date(stake.stakeEndDate);
 
-    if (now >= unlockDate) {
-      return res.json({ success: true, message: 'Unstake request submitted.' });
-    } else {
+    // Map stakes to days left info
+    const results = stakes.map(stake => {
+      const unlockDate = new Date(stake.stakeEndDate);
       const daysLeft = Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24));
-      return res.json({ success: false, message: `You still have ${daysLeft} day(s) left before you can unstake.` });
-    }
+      return {
+        type: stake.type,
+        daysLeft: daysLeft > 0 ? daysLeft : 0,
+        canUnstake: daysLeft <= 0,
+      };
+    });
+
+    res.json({ success: true, stakes: results });
 
   } catch (err) {
     console.error('Unstake check error:', err);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
+
 
 
 

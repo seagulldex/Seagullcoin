@@ -362,6 +362,21 @@ localStorage.setItem('seagull_wallet', wallet);
     { id: 'unstake-btn-3', duration: 'fiveyear' },
   ];
 
+  document.addEventListener('DOMContentLoaded', () => {
+  if (CanUnstake === true) {
+    unstakeButtons.forEach(btn => {
+      const el = document.getElementById(btn.id);
+      if (el) {
+        el.addEventListener('click', () => {
+          localStorage.setItem('unstakeStartedAt', Date.now().toString());
+          showUnstakeModal(86400); // 24 hours countdown
+        });
+      }
+    });
+  }
+});
+
+
   function getTimeLeft(startTimestamp, durationYears) {
   const now = Date.now();
   const end = new Date(startTimestamp).getTime() + durationYears * 365 * 24 * 60 * 60 * 1000;

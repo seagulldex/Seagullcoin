@@ -195,7 +195,6 @@
   let wallet = localStorage.getItem('xumm_wallet_address') || null;
   let currentUUID = null;
   let pollInterval = null;
-  
 
   
     window.addEventListener('DOMContentLoaded', () => {
@@ -377,36 +376,6 @@ localStorage.setItem('seagull_wallet', wallet);
   return `${days}d ${hours}h ${minutes}m`;
 }
 
-  let countdownInterval;
-
-function startCountdown(seconds) {
-  clearInterval(countdownInterval);
-  let remaining = seconds;
-  const countdownEl = document.getElementById('unstake-countdown');
-
-  function formatTime(sec) {
-    const h = Math.floor(sec / 3600).toString().padStart(2, '0');
-    const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
-    const s = (sec % 60).toString().padStart(2, '0');
-    return `${h}:${m}:${s}`;
-  }
-
-  countdownEl.textContent = formatTime(remaining);
-
-  countdownInterval = setInterval(() => {
-    remaining--;
-    if (remaining < 0) {
-      clearInterval(countdownInterval);
-      countdownEl.textContent = "00:00:00";
-      hideUnstakeModal();
-      localStorage.removeItem('unstakeStartedAt');
-    } else {
-      countdownEl.textContent = formatTime(remaining);
-    }
-  }, 1000);
-}
-
-
 
   function setupStakingButtonListeners() {
   // Monthly Staking (Already exists)
@@ -444,15 +413,6 @@ function startCountdown(seconds) {
     });
   });
 }
-
-  function showUnstakeModal(secondsLeft) {
-  const modal = document.getElementById('unstake-modal');
-  const backdrop = document.getElementById('modal-backdrop');
-  modal.style.display = 'block';
-  backdrop.style.display = 'block';
-  startCountdown(secondsLeft);
-}
-
 
   function calculateEarnings(entry) {
   const { amount, timestamp, tier } = entry;

@@ -757,8 +757,22 @@ function closeRewardsProcessingModal() {
 
 
   async function loadStakingData() {
-    const address = localStorage.getItem('xumm_wallet_address');
-    if (!address) return;
+  const address = localStorage.getItem('xumm_wallet_address');
+  if (!address) return;
+
+  // ✅ Check for 24-hour reward countdown
+  const countdownStart = localStorage.getItem('rewardsCountdownStart');
+  if (countdownStart) {
+    const now = Date.now();
+    const elapsed = now - parseInt(countdownStart, 10);
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+
+    if (elapsed < twentyFourHours) {
+      showRewardsProcessingModal(parseInt(countdownStart, 10));
+    } else {
+      localStorage.removeItem('rewardsCountdownStart');
+    }
+  }
 
     try {
       const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${address}`);

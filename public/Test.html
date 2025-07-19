@@ -464,6 +464,15 @@ function closeStakeConfirmedModal() {
   if (modal) modal.style.display = 'none';
 }
 
+function showUnstakeConfirmedModal() {
+  const modal = document.getElementById('unstake-confirmed-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeUnstakeConfirmedModal() {
+  const modal = document.getElementById('unstake-confirmed-modal');
+  if (modal) modal.style.display = 'none';
+}
 
 
  // Utility to show QR code image

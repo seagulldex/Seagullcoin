@@ -356,11 +356,11 @@ localStorage.setItem('seagull_wallet', wallet);
     }
   }
 
-    // ✅ Correctly define the button list and match your HTML IDs
+    // ✅ Correctly define the button list and match your HTML IDs and TIER names
 const unstakeButtons = [
-  { id: 'unstake-btn-1', type: '1_month' },
-  { id: 'unstake-btn-2', type: '1_year' },
-  { id: 'unstake-btn-3', type: '5_year' },
+  { id: 'unstake-btn-1', type: 'Monthly' },
+  { id: 'unstake-btn-2', type: 'Yearly' },
+  { id: 'unstake-btn-3', type: '5Yearly' },
 ];
 
 
@@ -846,6 +846,7 @@ function pollStatus3(uuid, successCallback) {
     localStorage.removeItem('xumm_wallet_address');
     location.reload();
   };
+
 
 
 

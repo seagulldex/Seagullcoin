@@ -7127,10 +7127,6 @@ app.post('/create-offer', async (req, res) => {
 });
 
 
-// Use your existing Stake model (assumes already defined somewhere else)
-const Stake = mongoose.model('Stake'); 
-const UnstakeEvent = mongoose.model('UnstakeEvent'); // Assuming this is already defined
-
 app.post('/request-unstake', async (req, res) => {
   try {
     const { wallet, type } = req.body;
@@ -7139,82 +7135,83 @@ app.post('/request-unstake', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Wallet address is required.' });
     }
 
-    const query = { walletAddress: wallet, status: 'confirmed' };
-    if (type) query.tier = type;
+    const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
 
-    const stakes = await Stake.find(query).sort({ timestamp: -1 });
+    let stakes;
 
-    if (!stakes.length) {
-      return res.status(404).json({ success: false, message: 'No confirmed stakes found.' });
+    if (type) {
+      // Find latest confirmed stake for wallet and given type
+      const stake = await stakesCollection.findOne(
+        { walletAddress: wallet, status: 'confirmed', type: type },
+        { sort: { timestamp: -1 } }
+      );
+
+      if (!stake) {
+        return res.status(404).json({ success: false, message: `No confirmed stake found for wallet and type: ${type}` });
+      }
+
+      stakes = [stake];
+    } else {
+      // Find all confirmed stakes for wallet
+      stakes = await stakesCollection.find(
+        { walletAddress: wallet, status: 'confirmed' }
+      ).toArray();
+
+      if (!stakes.length) {
+        return res.status(404).json({ success: false, message: 'No confirmed stakes found for this wallet.' });
+      }
     }
 
     const now = new Date();
+
+    // Update stakes that can be unstaked, set the 24h countdown
     const updatedStakes = [];
 
     for (const stake of stakes) {
       const unlockDate = new Date(stake.stakeEndDate);
-      const canUnstake = unlockDate <= now;
+      const daysLeft = Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24));
+      const canUnstake = daysLeft <= 0;
 
-      if (!canUnstake) {
-        updatedStakes.push({
-          tier: stake.tier,
-          daysLeft: Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24)),
-          canUnstake: false,
-          status: stake.status
-        });
-        continue;
-      }
-
-      const unstakePayoutAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      const unstakeId = `UNSTK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-      const estimatedReward = stake.dailyRewardRate * stake.lockDurationDays || 0;
-      const totalExpected = stake.amount + estimatedReward;
-
-      await Stake.updateOne(
-        { _id: stake._id },
-        {
-          $set: {
-            unstaked: true,
-            unstakedAt: now,
-            unstakePayoutAt,
-            status: 'unstaked'
+      if (canUnstake) {
+        // Update to mark as unstaking with countdown
+        await stakesCollection.updateOne(
+          { _id: stake._id },
+          {
+            $set: {
+              unstaked: true,
+              unstakedAt: now,
+              unstakePayoutAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), // 24 hours later
+              status: 'unstaked',
+            }
           }
-        }
-      );
-
-      await UnstakeEvent.create({
-        unstakeId,
-        walletAddress: stake.walletAddress,
-        stakeId: stake._id,
-        type: stake.tier,
-        amount: stake.amount,
-        estimatedReward,
-        totalExpected,
-        createdAt: now,
-        unlockDate,
-        payoutScheduledAt: unstakePayoutAt,
-        status: 'processing'
-      });
-
-      updatedStakes.push({
-        tier: stake.tier,
-        canUnstake: true,
-        status: 'unstaked',
-        unstakedAt: now,
-        unstakePayoutAt,
-        unstakeId,
-        estimatedReward,
-        totalExpected
-      });
+        );
+        updatedStakes.push({
+          type: stake.type,
+          daysLeft: 0,
+          canUnstake: true,
+          status: 'unstaked',
+          unstakedAt: now,
+          unstakePayoutAt: new Date(now.getTime() + 24 * 60 * 60 * 1000)
+        });
+      } else {
+        updatedStakes.push({
+          type: stake.type,
+          daysLeft,
+          canUnstake: false,
+          status: stake.status,
+        });
+      }
     }
 
-    return res.json({ success: true, stakes: updatedStakes });
+    res.json({ success: true, stakes: updatedStakes });
 
   } catch (err) {
-    console.error('Unstake error:', err);
+    console.error('Unstake check error:', err);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
+
 
 
 app.post('/test-auto-unstake', async (req, res) => {

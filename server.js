@@ -243,36 +243,59 @@ async function createStakePayload(req, res, amount) {
 
 // Auto-unstake function
 async function autoUnstakeExpiredUsers() {
-  const db = await connectDB();
-  const stakesCollection = db.collection('stakes');
-  const now = new Date();
+  const db = await connectDB();
+  const stakesCollection = db.collection('stakes');
+  const now = new Date();
 
-  const expiredStakes = await stakesCollection.find({
-    stakeEndDate: { $lte: now },
-    $or: [{ unstaked: { $exists: false } }, { unstaked: false }],
-    status: 'confirmed'
-  }).toArray();
+  const expiredStakes = await stakesCollection.find({
+    stakeEndDate: { $lte: now },
+    $or: [{ unstaked: { $exists: false } }, { unstaked: false }],
+    status: 'confirmed'
+  }).toArray();
 
-  for (const stake of expiredStakes) {
-    try {
-      await stakesCollection.updateOne(
-        { _id: stake._id },
-        {
-          $set: {
-            unstaked: true,
-            unstakedAt: now,
-            unstakePayoutAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), // 24 hrs later
-            status: 'unstaked' // Status = processing
-          }
-        }
-      );
-      console.log(`✅ Set processing for wallet: ${stake.walletAddress}`);
-    } catch (err) {
-      console.error(`❌ Unstaking failed for ${stake.walletAddress}`, err);
-    }
-  }
+  for (const stake of expiredStakes) {
+    try {
+      const payoutScheduledAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const unstakeId = `UNSTK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+      // Optional reward calculation
+      const estimatedReward = 0; // or calc based on stake.tier
+      const totalExpected = stake.amount + estimatedReward;
+
+      await stakesCollection.updateOne(
+        { _id: stake._id },
+        {
+          $set: {
+            unstaked: true,
+            unstakedAt: now,
+            unstakePayoutAt: payoutScheduledAt,
+            status: 'unstaked'
+          }
+        }
+      );
+
+      // Optional: Log unstake event (not required)
+      const unstakeEventsCollection = db.collection('unstakeEvents');
+      await unstakeEventsCollection.insertOne({
+        unstakeId,
+        walletAddress: stake.walletAddress,
+        stakeId: stake._id,
+        type: stake.tier,
+        amount: stake.amount,
+        estimatedReward,
+        totalExpected,
+        createdAt: now,
+        unlockDate: stake.stakeEndDate,
+        payoutScheduledAt,
+        status: 'processing'
+      });
+
+      console.log(`✅ Unstaked ${stake.walletAddress}`);
+    } catch (err) {
+      console.error(`❌ Failed unstaking ${stake.walletAddress}`, err);
+    }
+  }
 }
-
 
 
 

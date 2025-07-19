@@ -289,6 +289,14 @@ async function updateWalletStatus() {
   }
 }
 
+  const stakeEndDate = new Date(stake.stakeEndDate);
+const now = new Date();
+const hoursSinceEnd = (now.getTime() - stakeEndDate.getTime()) / (1000 * 60 * 60);
+
+if (hoursSinceEnd >= 0 && hoursSinceEnd <= 24) {
+  // ✅ Show unstaking modal with countdown (24 - hoursSinceEnd)
+}
+
 
   async function startLoginFlow() {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');

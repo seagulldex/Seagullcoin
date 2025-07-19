@@ -243,34 +243,37 @@ async function createStakePayload(req, res, amount) {
 
 // Auto-unstake function
 async function autoUnstakeExpiredUsers() {
-  const db = await connectDB();
-  const stakesCollection = db.collection('stakes');
-  const now = new Date();
+  const db = await connectDB();
+  const stakesCollection = db.collection('stakes');
+  const now = new Date();
 
-  const expiredStakes = await stakesCollection.find({
-    stakeEndDate: { $lte: now },
-    $or: [{ unstaked: { $exists: false } }, { unstaked: false }],
-    status: 'confirmed'  // Optional, if you want to only unstake confirmed stakes
-  }).toArray();
+  const expiredStakes = await stakesCollection.find({
+    stakeEndDate: { $lte: now },
+    $or: [{ unstaked: { $exists: false } }, { unstaked: false }],
+    status: 'confirmed'
+  }).toArray();
 
-  for (const stake of expiredStakes) {
-    try {
-      await stakesCollection.updateOne(
-        { _id: stake._id },
-        {
-          $set: {
-            unstaked: true,
-            unstakedAt: new Date(),
-            status: 'unstaked' // Optional
-          }
-        }
-      );
-      console.log(`✅ Unstaked wallet: ${stake.walletAddress}`);
-    } catch (err) {
-      console.error(`❌ Unstaking failed for ${stake.walletAddress}`, err);
-    }
-  }
+  for (const stake of expiredStakes) {
+    try {
+      await stakesCollection.updateOne(
+        { _id: stake._id },
+        {
+          $set: {
+            unstaked: true,
+            unstakedAt: now,
+            unstakePayoutAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), // 24 hrs later
+            status: 'unstaked' // Status = processing
+          }
+        }
+      );
+      console.log(`✅ Set processing for wallet: ${stake.walletAddress}`);
+    } catch (err) {
+      console.error(`❌ Unstaking failed for ${stake.walletAddress}`, err);
+    }
+  }
 }
+
+
 
 
 async function cleanUpOldProcessedNotifications() {

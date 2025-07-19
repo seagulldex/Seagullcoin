@@ -7141,24 +7141,53 @@ app.post('/request-unstake', async (req, res) => {
 
     const now = new Date();
 
-    // Map stakes to days left info
-    const results = stakes.map(stake => {
+    // Update stakes that can be unstaked, set the 24h countdown
+    const updatedStakes = [];
+
+    for (const stake of stakes) {
       const unlockDate = new Date(stake.stakeEndDate);
       const daysLeft = Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24));
-      return {
-        type: stake.type,
-        daysLeft: daysLeft > 0 ? daysLeft : 0,
-        canUnstake: daysLeft <= 0,
-      };
-    });
+      const canUnstake = daysLeft <= 0;
 
-    res.json({ success: true, stakes: results });
+      if (canUnstake) {
+        // Update to mark as unstaking with countdown
+        await stakesCollection.updateOne(
+          { _id: stake._id },
+          {
+            $set: {
+              unstaked: true,
+              unstakedAt: now,
+              unstakePayoutAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), // 24 hours later
+              status: 'unstaked',
+            }
+          }
+        );
+        updatedStakes.push({
+          type: stake.type,
+          daysLeft: 0,
+          canUnstake: true,
+          status: 'unstaked',
+          unstakedAt: now,
+          unstakePayoutAt: new Date(now.getTime() + 24 * 60 * 60 * 1000)
+        });
+      } else {
+        updatedStakes.push({
+          type: stake.type,
+          daysLeft,
+          canUnstake: false,
+          status: stake.status,
+        });
+      }
+    }
+
+    res.json({ success: true, stakes: updatedStakes });
 
   } catch (err) {
     console.error('Unstake check error:', err);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
+
 
 
 app.post('/test-auto-unstake', async (req, res) => {

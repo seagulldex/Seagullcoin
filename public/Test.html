@@ -189,6 +189,30 @@
   </div>
 </div>
 
+        <div id="rewards-processing-modal" style="
+  display:none; 
+  position:fixed; 
+  top:0; 
+  left:0; 
+  width:100%; 
+  height:100%; 
+  background:rgba(0,0,0,0.6); 
+  z-index:9999; 
+  justify-content:center; 
+  align-items:center;">
+  <div style="
+    background:black; 
+    padding:20px 30px; 
+    border-radius:12px; 
+    text-align:center; 
+    color: white;">
+    <h2>⏳ Processing Rewards Payment</h2>
+    <p>4 tt 24 hour wait period</p>
+    <p id="rewards-timer">(24:00)</p>
+    <button onclick="closeRewardsProcessingModal()">Close</button>
+  </div>
+</div>
+
 
   <!-- Place inside your script tag at the bottom -->
 <script>
@@ -600,6 +624,39 @@ function pollStatus3(uuid, successCallback) {
     document.getElementById('staking-status').textContent = 'Error loading staking data.';
   }
 }
+
+  function showRewardsProcessingModal(startTimestamp) {
+  const modal = document.getElementById('rewards-processing-modal');
+  const timerDisplay = document.getElementById('rewards-timer');
+
+  function updateTimer() {
+    const now = Date.now();
+    const elapsed = now - startTimestamp;
+    const total = 24 * 60 * 60 * 1000; // 24 hours in ms
+    const remaining = total - elapsed;
+
+    if (remaining <= 0) {
+      timerDisplay.textContent = '00:00';
+      clearInterval(countdownInterval);
+      return;
+    }
+
+    const hours = Math.floor(remaining / (1000 * 60 * 60));
+    const minutes = Math.floor((remaining / (1000 * 60)) % 60);
+    timerDisplay.textContent = `(${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')})`;
+  }
+
+  updateTimer();
+  const countdownInterval = setInterval(updateTimer, 60000); // update every 1 min
+
+  modal.style.display = 'flex';
+}
+
+function closeRewardsProcessingModal() {
+  const modal = document.getElementById('rewards-processing-modal');
+  modal.style.display = 'none';
+}
+
 
 
   

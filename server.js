@@ -273,6 +273,23 @@ async function autoUnstakeExpiredUsers() {
 }
 
 
+async function cleanUpOldProcessedNotifications() {
+  const db = await connectDB();
+  const notificationsCollection = db.collection('notifications');
+
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+
+  const result = await notificationsCollection.deleteMany({
+    type: 'processed',
+    createdAt: { $lte: cutoff }
+  });
+
+  console.log(`🧹 Deleted ${result.deletedCount} processed notifications`);
+}
+
+
+
 function calculateEarnings(entry) {
   const { timestamp, tier } = entry;
   const now = new Date();

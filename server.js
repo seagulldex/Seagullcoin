@@ -7182,7 +7182,8 @@ console.log(requireLogin.session); // Log session data to verify its content
 // Run the cleanup job periodically (every 48 hours for example)
 setInterval(cleanupExpiredPayloads, 48 * 60 * 60 * 1000); // Every 24 hours
 
-setInterval(autoUnstakeExpiredUsers, 60 * 60 * 1000);
+setInterval(autoUnstakeExpiredUsers, 2 * 60 * 1000); // every 2 minutes
+
 
     
     console.log("XRPL client connected");

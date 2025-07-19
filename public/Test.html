@@ -362,21 +362,6 @@ localStorage.setItem('seagull_wallet', wallet);
     { id: 'unstake-btn-3', duration: 'fiveyear' },
   ];
 
-  document.addEventListener('DOMContentLoaded', () => {
-  if (CanUnstake === true) {
-    unstakeButtons.forEach(btn => {
-      const el = document.getElementById(btn.id);
-      if (el) {
-        el.addEventListener('click', () => {
-          localStorage.setItem('unstakeStartedAt', Date.now().toString());
-          showUnstakeModal(86400); // 24 hours countdown
-        });
-      }
-    });
-  }
-});
-
-
   function getTimeLeft(startTimestamp, durationYears) {
   const now = Date.now();
   const end = new Date(startTimestamp).getTime() + durationYears * 365 * 24 * 60 * 60 * 1000;
@@ -390,72 +375,6 @@ localStorage.setItem('seagull_wallet', wallet);
 
   return `${days}d ${hours}h ${minutes}m`;
 }
-
-
-  function showUnstakeModal(secondsLeft) {
-    const modal = document.getElementById('unstake-modal');
-    const backdrop = document.getElementById('modal-backdrop');
-    modal.style.display = 'block';
-    backdrop.style.display = 'block';
-    startCountdown(secondsLeft);
-  }
-
-  function hideUnstakeModal() {
-    document.getElementById('unstake-modal').style.display = 'none';
-    document.getElementById('modal-backdrop').style.display = 'none';
-  }
-
-
-  function startCountdown(seconds) {
-    clearInterval(window.countdownInterval);
-    let remaining = seconds;
-    const countdownEl = document.getElementById('unstake-countdown');
-
-    function formatTime(sec) {
-      const h = Math.floor(sec / 3600).toString().padStart(2, '0');
-      const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
-      const s = (sec % 60).toString().padStart(2, '0');
-      return `${h}:${m}:${s}`;
-    }
-
-    countdownEl.textContent = formatTime(remaining);
-
-    window.countdownInterval = setInterval(() => {
-      remaining--;
-      if (remaining < 0) {
-        clearInterval(window.countdownInterval);
-        countdownEl.textContent = "00:00:00";
-        hideUnstakeModal();
-        localStorage.removeItem('unstakeStartedAt');
-      } else {
-        countdownEl.textContent = formatTime(remaining);
-      }
-    }, 1000);
-  }
-
-  // Auto-resume countdown on page load
-  // Auto-resume countdown on page load
-window.addEventListener('DOMContentLoaded', () => {
-  const started = localStorage.getItem('unstakeStartedAt');
-  if (started) {
-    const now = Date.now();
-    const elapsed = Math.floor((now - parseInt(started)) / 1000);
-    const remaining = 86400 - elapsed;
-    if (remaining > 0) {
-      showUnstakeModal(remaining);
-    } else {
-      localStorage.removeItem('unstakeStartedAt');
-    }
-  }
-
-  // ✅ Move this here so the element exists
-  document.getElementById('unstake-modal-close').addEventListener('click', () => {
-    hideUnstakeModal();
-  });
-});
-
-
-
 
 
   function setupStakingButtonListeners() {

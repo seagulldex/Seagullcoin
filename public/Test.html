@@ -720,26 +720,46 @@ function pollStatus3(uuid, successCallback) {
       } else {
         statusEl.innerHTML = '<h3>✅️ Active Stakes</h3>';
         data.forEach(stake => {
-          const stakeStart = new Date(stake.timestamp);
-          const stakeEnd = new Date(stake.stakeEndDate);
-          const now = new Date();
-          const daysLeft = Math.max(0, Math.ceil((stakeEnd - now) / (1000 * 60 * 60 * 24)));
+  const stakeStart = new Date(stake.timestamp);
+  const stakeEnd = new Date(stake.stakeEndDate);
+  const now = new Date();
+  const daysLeft = Math.max(0, Math.ceil((stakeEnd - now) / (1000 * 60 * 60 * 24)));
+  const earned = Number(stake.earned || 0).toFixed(2);
 
-          const earned = Number(stake.earned || 0).toFixed(2);
+  // New logic for status display
+  let statusDisplay = '';
+  if (stake.status === 'unstaked') {
+    // Show processing status
+    statusDisplay = `
+      <div>
+        ⏳️ <strong>Processing Reward Payment</strong><br/>
+        ( 4 - 24 Hours )
+        <span class="spinner" style="margin-left: 5px;">🔄</span>
+      </div>
+    `;
+  } else if (stake.status === 'paid') {
+    // Show processed status with a check mark
+    statusDisplay = `
+      <div>
+        🎯 <strong>Processed</strong>
+      </div>
+    `;
+  } else {
+    // fallback to the normal status string
+    statusDisplay = `<div>${stake.status}</div>`;
+  }
 
-
-          const stakeHtml = `
-            <div style="margin-top:10px; padding:10px; border:1px solid #333; border-radius:10px; background:#222;">
-              <p><strong>Tier:</strong> ${stake.tier}</p>
-              <p><strong>Amount:</strong> ${stake.amount.toLocaleString()} SGLCN</p>
-              <p><strong>Earned so far:</strong> ${earned} SGLCN</p>
-              <p><strong>Days left:</strong> ${daysLeft} day(s)</p>
-              <p><strong>Status:</strong> ${stake.status}</p>
-            </div>
-          `;
-          statusEl.innerHTML += stakeHtml;
-        });
-      }
+  const stakeHtml = `
+    <div style="margin-top:10px; padding:10px; border:1px solid #333; border-radius:10px; background:#222;">
+      <p><strong>Tier:</strong> ${stake.tier}</p>
+      <p><strong>Amount:</strong> ${stake.amount.toLocaleString()} SGLCN</p>
+      <p><strong>Earned so far:</strong> ${earned} SGLCN</p>
+      <p><strong>Days left:</strong> ${daysLeft} day(s)</p>
+      <p><strong>Status:</strong> ${statusDisplay}</p>
+    </div>
+  `;
+  statusEl.innerHTML += stakeHtml;
+});
 
       // Remove old status if any
       const oldStatus = document.getElementById('staking-data-block');

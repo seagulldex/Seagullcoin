@@ -189,6 +189,44 @@
   </div>
 </div>
 
+<!-- Modal markup -->
+<div id="unstake-modal" style="
+  display: none;
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #222;
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.7);
+  z-index: 1000;
+  width: 300px;
+  text-align: center;
+">
+  <h2>⏳ Processing Reward Payment</h2>
+  <p id="unstake-countdown">24:00:00</p>
+  <div style="font-size: 24px; margin-top: 10px;">🔄</div>
+  <button id="unstake-modal-close" style="
+    margin-top: 15px;
+    background: #444;
+    border: none;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+  ">Close</button>
+</div>
+
+<!-- Modal backdrop -->
+<div id="modal-backdrop" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 999;
+"></div>
+
 
   <!-- Place inside your script tag at the bottom -->
 <script>

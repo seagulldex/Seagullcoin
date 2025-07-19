@@ -241,28 +241,30 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
+// Auto-unstake function
 async function autoUnstakeExpiredUsers() {
   const now = new Date();
 
-  // Find all stakes where stakeEndDate is in the past or now, and not unstaked yet
-  const users = await db.collection('stakes').find({
+  const users = await Stake.find({
     stakeEndDate: { $lte: now },
     unstaked: { $ne: true }
-  }).toArray();
+  });
 
   for (const user of users) {
     try {
-      // Mark the stake as unstaked and add timestamp
-      await db.collection('stakes').updateOne(
-        { _id: user._id },
-        { $set: { unstaked: true, unstakedAt: new Date() } }
-      );
-      console.log(`Unstaked wallet: ${user.walletAddress}`);
+      user.unstaked = true;
+      user.unstakedAt = new Date();
+      await user.save();
+
+      console.log(`✅ Unstaked wallet: ${user.walletAddress}`);
     } catch (err) {
-      console.error(`Unstaking failed for ${user.walletAddress}`, err);
+      console.error(`❌ Unstaking failed for ${user.walletAddress}`, err);
     }
   }
 }
+
+
+
 
 
 

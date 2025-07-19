@@ -422,19 +422,26 @@ localStorage.setItem('seagull_wallet', wallet);
   }
 
   // Auto-resume countdown on page load
-  window.addEventListener('DOMContentLoaded', () => {
-    const started = localStorage.getItem('unstakeStartedAt');
-    if (started) {
-      const now = Date.now();
-      const elapsed = Math.floor((now - parseInt(started)) / 1000);
-      const remaining = 86400 - elapsed;
-      if (remaining > 0) {
-        showUnstakeModal(remaining);
-      } else {
-        localStorage.removeItem('unstakeStartedAt');
-      }
+  // Auto-resume countdown on page load
+window.addEventListener('DOMContentLoaded', () => {
+  const started = localStorage.getItem('unstakeStartedAt');
+  if (started) {
+    const now = Date.now();
+    const elapsed = Math.floor((now - parseInt(started)) / 1000);
+    const remaining = 86400 - elapsed;
+    if (remaining > 0) {
+      showUnstakeModal(remaining);
+    } else {
+      localStorage.removeItem('unstakeStartedAt');
     }
+  }
+
+  // ✅ Move this here so the element exists
+  document.getElementById('unstake-modal-close').addEventListener('click', () => {
+    hideUnstakeModal();
   });
+});
+
 
 
 

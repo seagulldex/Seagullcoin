@@ -243,32 +243,27 @@ async function createStakePayload(req, res, amount) {
 
 async function autoUnstakeExpiredUsers() {
   const now = new Date();
-  
-  // Find stakes where stakeEndDate is in the past and status is confirmed
+
+  // Find all stakes where stakeEndDate is in the past or now, and not unstaked yet
   const users = await db.collection('stakes').find({
     stakeEndDate: { $lte: now },
-    status: "confirmed"
+    unstaked: { $ne: true }
   }).toArray();
 
   for (const user of users) {
     try {
-      // Your unstaking process here
-      // For example, you might:
-      // - Update status to "unstaked"
-      // - Trigger XUMM payload or XRP transaction if needed
-      
+      // Mark the stake as unstaked and add timestamp
       await db.collection('stakes').updateOne(
         { _id: user._id },
-        { $set: { status: "unstaked", unstakedAt: new Date() } }
+        { $set: { unstaked: true, unstakedAt: new Date() } }
       );
-
-      console.log(`Unstaked wallet ${user.walletAddress}`);
-      
+      console.log(`Unstaked wallet: ${user.walletAddress}`);
     } catch (err) {
       console.error(`Unstaking failed for ${user.walletAddress}`, err);
     }
   }
 }
+
 
 
 function calculateEarnings(entry) {

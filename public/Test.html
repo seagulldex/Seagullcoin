@@ -357,10 +357,11 @@ localStorage.setItem('seagull_wallet', wallet);
   }
 
   const unstakeButtons = [
-    { id: 'unstake-btn', duration: 'monthly' },
-    { id: 'unstake-btn-2', duration: 'yearly' },
-    { id: 'unstake-btn-3', duration: 'fiveyear' },
-  ];
+  { id: 'unstake-button-tier1', type: 'tier1' },
+  { id: 'unstake-button-tier2', type: 'tier2' },
+  { id: 'unstake-button-tier3', type: 'tier3' },
+];
+
 
   function getTimeLeft(startTimestamp, durationYears) {
   const now = Date.now();

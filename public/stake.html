@@ -189,6 +189,51 @@
   </div>
 </div>
 
+        <div id="unstake-confirmed-modal" style="
+  display:none; 
+  position:fixed; 
+  top:0; left:0; width:100%; height:100%; 
+  background:rgba(0,0,0,0.6); 
+  z-index:9999; 
+  justify-content:center; 
+  align-items:center;">
+  <div style="
+    background:black; 
+    padding:20px 30px; 
+    border-radius:12px; 
+    text-align:center;
+    color:white;">
+    <h2>✅ Unstake Confirmed</h2>
+    <p>Your unstake request has been successfully processed.</p>
+    <button onclick="closeUnstakeConfirmedModal()">Close</button>
+  </div>
+</div>
+
+
+        <div id="rewards-processing-modal" style="
+  display:none; 
+  position:fixed; 
+  top:0; 
+  left:0; 
+  width:100%; 
+  height:100%; 
+  background:rgba(0,0,0,0.6); 
+  z-index:9999; 
+  justify-content:center; 
+  align-items:center;">
+  <div style="
+    background:black; 
+    padding:20px 30px; 
+    border-radius:12px; 
+    text-align:center; 
+    color: white;">
+    <h2>⏳ Processing Rewards Payment</h2>
+    <p>4 tt 24 hour wait period</p>
+    <p id="rewards-timer">(24:00)</p>
+    <button onclick="closeRewardsProcessingModal()">Close</button>
+  </div>
+</div>
+
 
   <!-- Place inside your script tag at the bottom -->
 <script>
@@ -201,7 +246,8 @@
     updateWalletStatus();
     updateWalletUI();
     setupStakingButtonListeners();
-  
+    showUnstakeConfirmedModal();
+
     
   // Only show the “stake confirmed” modal if we just finished polling
   const justStakedUUID = localStorage.getItem('justStakedUUID');
@@ -306,6 +352,8 @@ localStorage.setItem('seagull_wallet', wallet);
       updateWalletStatus();
       updateWalletUI();
       loadStakingData();
+      showUnstakeConfirmedModal();
+      showRewardsProcessingModal();
       getTimeLeft();// <- This is fine
     }
   }, 3000); // Only ONE closing brace before this
@@ -440,6 +488,15 @@ function closeStakeConfirmedModal() {
   if (modal) modal.style.display = 'none';
 }
 
+function showUnstakeConfirmedModal() {
+  const modal = document.getElementById('unstake-confirmed-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeUnstakeConfirmedModal() {
+  const modal = document.getElementById('unstake-confirmed-modal');
+  if (modal) modal.style.display = 'none';
+}
 
 
  // Utility to show QR code image
@@ -601,6 +658,39 @@ function pollStatus3(uuid, successCallback) {
   }
 }
 
+  function showRewardsProcessingModal(startTimestamp) {
+  const modal = document.getElementById('rewards-processing-modal');
+  const timerDisplay = document.getElementById('rewards-timer');
+
+  function updateTimer() {
+    const now = Date.now();
+    const elapsed = now - startTimestamp;
+    const total = 24 * 60 * 60 * 1000; // 24 hours in ms
+    const remaining = total - elapsed;
+
+    if (remaining <= 0) {
+      timerDisplay.textContent = '00:00';
+      clearInterval(countdownInterval);
+      return;
+    }
+
+    const hours = Math.floor(remaining / (1000 * 60 * 60));
+    const minutes = Math.floor((remaining / (1000 * 60)) % 60);
+    timerDisplay.textContent = `(${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')})`;
+  }
+
+  updateTimer();
+  const countdownInterval = setInterval(updateTimer, 60000); // update every 1 min
+
+  modal.style.display = 'flex';
+}
+
+function closeRewardsProcessingModal() {
+  const modal = document.getElementById('rewards-processing-modal');
+  modal.style.display = 'none';
+}
+
+
 
   
   // Example loadStakingData2 to fetch rewards and status for second section
@@ -700,8 +790,22 @@ function pollStatus3(uuid, successCallback) {
 
 
   async function loadStakingData() {
-    const address = localStorage.getItem('xumm_wallet_address');
-    if (!address) return;
+  const address = localStorage.getItem('xumm_wallet_address');
+  if (!address) return;
+
+  // ✅ Check for 24-hour reward countdown
+  const countdownStart = localStorage.getItem('rewardsCountdownStart');
+  if (countdownStart) {
+    const now = Date.now();
+    const elapsed = now - parseInt(countdownStart, 10);
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+
+    if (elapsed < twentyFourHours) {
+      showRewardsProcessingModal(parseInt(countdownStart, 10));
+    } else {
+      localStorage.removeItem('rewardsCountdownStart');
+    }
+  }
 
     try {
       const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/staking-info/${address}`);

@@ -7141,6 +7141,10 @@ app.post('/request-unstake', async (req, res) => {
 });
 
 
+app.post('/test-auto-unstake', async (req, res) => {
+  await autoUnstakeExpiredUsers();
+  res.send('Auto unstake run');
+});
 
 
 

@@ -246,36 +246,41 @@ async function createStakePayload(req, res, amount) {
 // import Stake from './models/stake.js';  // example import
 
 async function autoUnstakeExpiredUsers() {
+  const db = await connectDB(); // Make sure this returns the connected DB instance
+  const stakesCollection = db.collection('stakes');
+  const unstakeEventsCollection = db.collection('unstakeEvents');
   const now = new Date();
 
-  // Find expired stakes (case-insensitive status match)
-  const expiredStakes = await Stake.find({
+  // Use case-insensitive regex for status match to avoid case issues
+  const expiredStakes = await stakesCollection.find({
     stakeEndDate: { $lte: now },
     $or: [{ unstaked: { $exists: false } }, { unstaked: false }],
-    status: /confirmed/i
-  });
+    status: { $regex: /^confirmed$/i }
+  }).toArray();
 
   for (const stake of expiredStakes) {
     try {
       const payoutScheduledAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
       const unstakeId = `UNSTK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
-      // Optional reward calculation
-      const estimatedReward = 0; // Or add your logic here
+      const estimatedReward = 0; // Customize if needed
       const totalExpected = stake.amount + estimatedReward;
 
-      // Update stake fields
-      stake.unstaked = true;
-      stake.unstakedAt = now;
-      stake.unstakePayoutAt = payoutScheduledAt;
-      stake.status = 'unstaked';
+      // Update the stake document
+      await stakesCollection.updateOne(
+        { _id: stake._id },
+        {
+          $set: {
+            unstaked: true,
+            unstakedAt: now,
+            unstakePayoutAt: payoutScheduledAt,
+            status: 'unstaked'
+          }
+        }
+      );
 
-      await stake.save();
-
-      // Log unstake event - use mongoose if you have a model, or fallback to native
-      // Example with mongoose model `UnstakeEvent`:
-      /*
-      await UnstakeEvent.create({
+      // Log the unstake event
+      await unstakeEventsCollection.insertOne({
         unstakeId,
         walletAddress: stake.walletAddress,
         stakeId: stake._id,
@@ -288,9 +293,9 @@ async function autoUnstakeExpiredUsers() {
         payoutScheduledAt,
         status: 'processing'
       });
-      */
 
       console.log(`✅ Unstaked ${stake.walletAddress}`);
+
     } catch (err) {
       console.error(`❌ Failed unstaking ${stake.walletAddress}`, err);
     }

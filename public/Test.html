@@ -424,6 +424,11 @@ localStorage.setItem('seagull_wallet', wallet);
   return `${days}d ${hours}h ${minutes}m`;
 }
 
+  function generateUnstakeId() {
+  return 'UNSTK-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+}
+
+
 
   function setupStakingButtonListeners() {
   // Monthly Staking (Already exists)

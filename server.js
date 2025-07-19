@@ -242,16 +242,18 @@ async function createStakePayload(req, res, amount) {
 })();
 
 // Auto-unstake function
+// Assuming Stake is your mongoose model, imported already
+// import Stake from './models/stake.js';  // example import
+
 async function autoUnstakeExpiredUsers() {
-  const db = await connectDB();
-  const stakesCollection = db.collection('stakes');
   const now = new Date();
 
-  const expiredStakes = await stakesCollection.find({
+  // Find expired stakes (case-insensitive status match)
+  const expiredStakes = await Stake.find({
     stakeEndDate: { $lte: now },
     $or: [{ unstaked: { $exists: false } }, { unstaked: false }],
-    status: 'confirmed'
-  }).toArray();
+    status: /confirmed/i
+  });
 
   for (const stake of expiredStakes) {
     try {
@@ -259,24 +261,21 @@ async function autoUnstakeExpiredUsers() {
       const unstakeId = `UNSTK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
       // Optional reward calculation
-      const estimatedReward = 0; // or calc based on stake.tier
+      const estimatedReward = 0; // Or add your logic here
       const totalExpected = stake.amount + estimatedReward;
 
-      await stakesCollection.updateOne(
-        { _id: stake._id },
-        {
-          $set: {
-            unstaked: true,
-            unstakedAt: now,
-            unstakePayoutAt: payoutScheduledAt,
-            status: 'unstaked'
-          }
-        }
-      );
+      // Update stake fields
+      stake.unstaked = true;
+      stake.unstakedAt = now;
+      stake.unstakePayoutAt = payoutScheduledAt;
+      stake.status = 'unstaked';
 
-      // Optional: Log unstake event (not required)
-      const unstakeEventsCollection = db.collection('unstakeEvents');
-      await unstakeEventsCollection.insertOne({
+      await stake.save();
+
+      // Log unstake event - use mongoose if you have a model, or fallback to native
+      // Example with mongoose model `UnstakeEvent`:
+      /*
+      await UnstakeEvent.create({
         unstakeId,
         walletAddress: stake.walletAddress,
         stakeId: stake._id,
@@ -289,6 +288,7 @@ async function autoUnstakeExpiredUsers() {
         payoutScheduledAt,
         status: 'processing'
       });
+      */
 
       console.log(`✅ Unstaked ${stake.walletAddress}`);
     } catch (err) {
@@ -296,6 +296,7 @@ async function autoUnstakeExpiredUsers() {
     }
   }
 }
+
 
 
 

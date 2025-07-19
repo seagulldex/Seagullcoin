@@ -414,6 +414,15 @@ localStorage.setItem('seagull_wallet', wallet);
   });
 }
 
+  function showUnstakeModal(secondsLeft) {
+  const modal = document.getElementById('unstake-modal');
+  const backdrop = document.getElementById('modal-backdrop');
+  modal.style.display = 'block';
+  backdrop.style.display = 'block';
+  startCountdown(secondsLeft);
+}
+
+
   function calculateEarnings(entry) {
   const { amount, timestamp, tier } = entry;
   const now = new Date();

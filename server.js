@@ -243,29 +243,34 @@ async function createStakePayload(req, res, amount) {
 
 // Auto-unstake function
 async function autoUnstakeExpiredUsers() {
+  const db = await connectDB();
+  const stakesCollection = db.collection('stakes');
   const now = new Date();
 
-  const users = await Stake.find({
+  const expiredStakes = await stakesCollection.find({
     stakeEndDate: { $lte: now },
-    unstaked: { $ne: true }
-  });
+    $or: [{ unstaked: { $exists: false } }, { unstaked: false }],
+    status: 'confirmed'  // Optional, if you want to only unstake confirmed stakes
+  }).toArray();
 
-  for (const user of users) {
+  for (const stake of expiredStakes) {
     try {
-      user.unstaked = true;
-      user.unstakedAt = new Date();
-      await user.save();
-
-      console.log(`✅ Unstaked wallet: ${user.walletAddress}`);
+      await stakesCollection.updateOne(
+        { _id: stake._id },
+        {
+          $set: {
+            unstaked: true,
+            unstakedAt: new Date(),
+            status: 'unstaked' // Optional
+          }
+        }
+      );
+      console.log(`✅ Unstaked wallet: ${stake.walletAddress}`);
     } catch (err) {
-      console.error(`❌ Unstaking failed for ${user.walletAddress}`, err);
+      console.error(`❌ Unstaking failed for ${stake.walletAddress}`, err);
     }
   }
 }
-
-
-
-
 
 
 function calculateEarnings(entry) {

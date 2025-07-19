@@ -352,6 +352,8 @@ localStorage.setItem('seagull_wallet', wallet);
       updateWalletStatus();
       updateWalletUI();
       loadStakingData();
+      showUnstakeConfirmedModal();
+      showRewardsProcessingModal();
       getTimeLeft();// <- This is fine
     }
   }, 3000); // Only ONE closing brace before this

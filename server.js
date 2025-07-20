@@ -7225,7 +7225,21 @@ app.post('/test-auto-unstake', async (req, res) => {
   res.send('Auto unstake run');
 });
 
+app.get('/unstake-events', async (req, res) => {
+  try {
+    const db = client.db(dbName);
+    const unstakeEvents = await db.collection('unstakeEvents')
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .toArray();
 
+    res.json(unstakeEvents);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Failed to fetch unstake events');
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

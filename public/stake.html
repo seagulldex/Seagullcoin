@@ -21,6 +21,14 @@
       margin-top: 10px;
       font-weight: bold;
     }
+    .status-processing {
+  background-color: black;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  display: inline-block;
+}
     #rewards-list {
       max-height: 150px;
       overflow-y: auto;
@@ -532,18 +540,14 @@ async function showUnstakeModule() {
           const li = document.createElement('li');
           const date = new Date(entry.createdAt).toLocaleString();
 
-          // Add processing status emoji + styling here as before
-          let statusText = entry.status;
-          let statusHtml = statusText;
-          if (statusText === 'processing') {
+          let statusHtml = entry.status;
+          if (entry.status === 'processing') {
             statusHtml = `<span class="status-processing">⏳️ processing</span>`;
-          } else {
-            statusHtml = statusText;
           }
 
           li.innerHTML = `
             <div style="margin-bottom: 10px; background-color: #ffffff; color: #000; padding: 10px; border-radius: 10px;">
-              <strong>Unstake ID#:</strong> ${entry.stakeId}<br/>
+              <strong>Unstake ID#:</strong> ${entry.unstakeId}<br/>
               <strong>Type:</strong> ${entry.type}<br/>
               <strong>Amount:</strong> ${entry.amount} SGLCN<br/>
               <strong>Status:</strong> ${statusHtml}<br/>
@@ -561,9 +565,10 @@ async function showUnstakeModule() {
 
   } catch (err) {
     console.error('Error fetching unstaked data:', err);
-    document.getElementById('unstake-confirmed-list').innerHTML = '<li>Error loading unstake history.</li>';
+    list.innerHTML = '<li>Error loading unstake history.</li>';
   }
 }
+
 
 
 

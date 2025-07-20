@@ -7224,8 +7224,33 @@ app.post('/test-auto-unstake', async (req, res) => {
   res.send('Auto unstake run');
 });
 
-
 app.get('/unstake-events', async (req, res) => {
+  try {
+    const { wallet } = req.query;
+
+    if (!wallet) {
+      return res.status(400).json({ error: 'Missing wallet address in query' });
+    }
+
+    const db = await connectDB();
+    const unstakeEventsCollection = db.collection('unstakeEvents');
+
+    const events = await unstakeEventsCollection
+      .find({ wallet: { $regex: new RegExp(`^${wallet}$`, 'i') } }) // case-insensitive match
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .toArray();
+
+    res.json(events);
+  } catch (err) {
+    console.error('❌ Error fetching unstake events:', err);
+    res.status(500).json({ error: 'Failed to fetch unstake events' });
+  }
+});
+
+
+
+app.get('/unstake-wallets', async (req, res) => {
   try {
     const db = await connectDB();
     const unstakeEventsCollection = db.collection('unstakeEvents');

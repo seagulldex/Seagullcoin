@@ -232,6 +232,14 @@
     setupStakingButtonListeners();
     showUnstakeConfirmedModal();
     loadUnstakeEvents();
+
+      // Show modal
+document.getElementById("unstake-confirmed-modal").style.display = "flex";
+
+// Start countdown
+const unstakeStartedAt = Date.now(); // or get from your backend
+showUnstakeCountdown(unstakeStartedAt);
+
     
   // Only show the “stake confirmed” modal if we just finished polling
   const justStakedUUID = localStorage.getItem('justStakedUUID');

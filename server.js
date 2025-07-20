@@ -4399,46 +4399,66 @@ app.get('/check-payment', async (req, res) => {
 app.post("/backup-pay", async (req, res) => {
   const { destination } = req.body;
 
-  // Validate address
+  // Validate destination
   if (!destination || typeof destination !== "string") {
     return res.status(400).json({ error: "Destination address is required." });
   }
 
-  // Basic XRPL address validation
   if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(destination)) {
     return res.status(400).json({ error: "Invalid XRPL address." });
   }
 
   try {
+    const db = await connectDB();
+    const unstakeEventsCollection = db.collection("unstakeEvents");
+
+    // Find the most recent "processing" unstake event
+    const event = await unstakeEventsCollection.findOne(
+      { walletAddress: destination, status: "processing" },
+      { sort: { createdAt: -1 } }
+    );
+
+    if (!event) {
+      return res.status(404).json({ error: "No processing unstake found for this address." });
+    }
+
     const payload = {
-  txjson: {
-    TransactionType: "Payment",
-    Destination: destination,
-    Amount: {
-      currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
-      issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-      value: "50501"
-    },
-    Memos: [
-      {
-        Memo: {
-          MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
-          MemoData: Buffer.from("Monthly", "utf8").toString("hex")
+      txjson: {
+        TransactionType: "Payment",
+        Destination: destination,
+        Amount: {
+          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
+          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+          value: event.totalExpected.toString()
+        },
+        Memos: [
+          {
+            Memo: {
+              MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
+              MemoData: Buffer.from(event.type, "utf8").toString("hex")
+            }
+          }
+        ]
+      },
+      options: {
+        submit: true,
+        expire: 300,
+        return_url: {
+          app: "https://yourdomain.com/thank-you",
+          web: "https://yourdomain.com/thank-you"
         }
       }
-    ]
-  },
-  options: {
-    submit: true,
-    expire: 300,
-    return_url: {
-      app: "https://yourdomain.com/thank-you",
-      web: "https://yourdomain.com/thank-you"
-    }
-  }
-};
-    
+    };
+
     const created = await xumm.payload.create(payload);
+
+    // Mark the event as paid
+    await unstakeEventsCollection.updateOne(
+      { _id: event._id },
+      { $set: { status: "paid", paidAt: new Date() } }
+    );
+
+    console.log(`✅ Marked unstake ${event.unstakeId} as paid.`);
 
     res.json({
       uuid: created.uuid,
@@ -4450,6 +4470,7 @@ app.post("/backup-pay", async (req, res) => {
     res.status(500).json({ error: "Failed to create backup payment." });
   }
 });
+
 
 app.get('/stake-payload-two/:walletAddress', async (req, res) => {
   try {

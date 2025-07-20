@@ -434,35 +434,52 @@ localStorage.setItem('seagull_wallet', wallet);
   return 'UNSTK-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
 }
 
+function calculateReward(amount) {
+  if (amount === 50000) {
+    return 501;
+  } else if (amount === 2500000) {
+    return 62500;
+  } else if (amount === 5000000) {
+    return 1000000;
+  } else {
+    return 0; // fallback if any other amount
+  }
+}
+
 async function loadUnstakeEvents() {
-  const statusElem = document.getElementById('unstake-status');
-  const listElem = document.getElementById('unstake-list');
+  const statusEl = document.getElementById('unstake-status');
+  const listEl = document.getElementById('unstake-list');
 
   try {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/unstake-events'); // Your actual API path here
-    if (!res.ok) throw new Error('Failed to fetch');
-    const events = await res.json();
+    const response = await fetch('/unstake-events');
+    if (!response.ok) throw new Error('Network response was not ok');
 
-    if (events.length === 0) {
-      statusElem.textContent = 'No unstake events found.';
+    const events = await response.json();
+
+    if (!events.length) {
+      statusEl.textContent = 'No unstake events found.';
       return;
     }
 
-    statusElem.textContent = ''; // Clear loading text
-    listElem.innerHTML = ''; // Clear existing list
+    statusEl.style.display = 'none';
 
     events.forEach(event => {
+      const reward = calculateReward(event.amount);
+      const total = event.amount + reward;
+
       const li = document.createElement('li');
-      li.textContent = `${event.walletAddress} | Amount: ${event.amount} | Status: ${event.status} | Unlock Date: ${new Date(event.unlockDate).toLocaleString()}`;
-      listElem.appendChild(li);
+      li.textContent = `${event.walletAddress} — Amount: ${event.amount.toLocaleString()} — Reward: ${reward.toLocaleString()} — Total: ${total.toLocaleString()} — Status: ${event.status}`;
+      listEl.appendChild(li);
     });
+
   } catch (err) {
-    statusElem.textContent = 'Error loading unstake events.';
+    statusEl.textContent = 'Failed to load unstake events.';
     console.error(err);
   }
 }
 
 loadUnstakeEvents();
+
 
 
   function setupStakingButtonListeners() {

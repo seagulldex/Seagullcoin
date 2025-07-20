@@ -564,15 +564,56 @@ async function loadUnstakeEvents() {
 }
 
 
-function showStakeConfirmedModal() {
-  const modal = document.getElementById('stake-confirmed-modal');
-  if (modal) modal.style.display = 'flex';
+async function showUnstakeModule(userWallet) {
+  const container = document.getElementById('unstake-module-container');
+  container.innerHTML = ''; // Clear existing content
+
+  const events = await fetchUnstakeEvents(userWallet); // Fetch from MongoDB
+  console.log('unstake events:', events);
+
+  if (!events.length) {
+    container.style.display = 'none'; // No events? Hide module & skip modal
+    return;
+  }
+
+  container.style.display = 'block';
+
+  // OPTIONAL: Show the modal only for the first "Pending" event
+  const firstPending = events.find(event => event.status === 'Pending');
+  if (firstPending) {
+    showUnstakeModal(firstPending._id || 'N/A', firstPending.timestamp);
+  }
+
+  // Display list of all events
+  const header = document.createElement('h2');
+  header.textContent = 'Your Unstaking Events';
+  container.appendChild(header);
+
+  const list = document.createElement('ul');
+  list.style.listStyle = 'none';
+  list.style.padding = '0';
+
+  events.forEach(event => {
+    const listItem = document.createElement('li');
+    listItem.style.marginBottom = '12px';
+    listItem.style.padding = '10px';
+    listItem.style.border = '1px solid #ccc';
+    listItem.style.borderRadius = '8px';
+    listItem.style.backgroundColor = '#fafafa';
+
+    listItem.innerHTML = `
+      <strong>Plan:</strong> ${event.plan || 'Unknown'} <br/>
+      <strong>Amount:</strong> ${event.amount || 0} SGLCN <br/>
+      <strong>Unstake Requested:</strong> ${new Date(event.timestamp).toLocaleString()} <br/>
+      <strong>Status:</strong> ${event.status || 'Pending'}
+    `;
+
+    list.appendChild(listItem);
+  });
+
+  container.appendChild(list);
 }
 
-function closeStakeConfirmedModal() {
-  const modal = document.getElementById('stake-confirmed-modal');
-  if (modal) modal.style.display = 'none';
-}
 
 function showUnstakeConfirmedModal() {
   const modal = document.getElementById('unstake-confirmed-modal');

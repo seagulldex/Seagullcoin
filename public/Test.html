@@ -497,27 +497,58 @@ function closeStakeConfirmedModal() {
   if (modal) modal.style.display = 'none';
 }
 
-async function showUnstakeModule(userWallet) {
-  console.log('showUnstakeModule called for wallet:', userWallet);
+async function showUnstakeModule() {
   const container = document.getElementById('unstake-module-container');
-  container.innerHTML = ''; // Clear existing content
+  container.innerHTML = '';
 
-  const events = await fetchUnstakeEvents(userWallet);
-  console.log('unstake events:', events);
+  const connectedWallet = await getConnectedWallet();
+  const events = await fetchUnstakeEvents(); // already scoped to this wallet
 
   if (!events.length) {
-    console.log('No active unstake events, hiding container');
-    container.style.display = 'none'; // Hide if no active unstake events
+    container.style.display = 'none';
     return;
   }
 
   container.style.display = 'block';
-  console.log('Showing unstake module');
+
+  const header = document.createElement('h2');
+  header.textContent = 'Your Unstaking Events';
+  container.appendChild(header);
+
+  const list = document.createElement('ul');
+  list.style.listStyle = 'none';
+  list.style.padding = '0';
 
   events.forEach(event => {
-    // Your existing code
+    const listItem = document.createElement('li');
+    listItem.style.marginBottom = '12px';
+    listItem.style.padding = '10px';
+    listItem.style.border = '1px solid #ccc';
+    listItem.style.borderRadius = '8px';
+    listItem.style.backgroundColor = '#fafafa';
+
+    const createdAt = new Date(event.timestamp).toLocaleString();
+    const rewardInfo = event.reward ? `<strong>Reward:</strong> ${event.reward} SGLCN<br/>` : '';
+
+    let statusMessage = `<strong>Status:</strong> ${event.status || 'Pending'}<br/>`;
+    if (event.status === 'processing') {
+      statusMessage += `<em>⏳ Processing request<br/>Estimated wait: 4–24 hours</em><br/>`;
+    }
+
+    listItem.innerHTML = `
+      <strong>Plan:</strong> ${event.plan || 'Unknown'}<br/>
+      <strong>Amount:</strong> ${event.amount || 0} SGLCN<br/>
+      <strong>Unstake Requested:</strong> ${createdAt}<br/>
+      ${statusMessage}
+      ${rewardInfo}
+    `;
+
+    list.appendChild(listItem);
   });
+
+  container.appendChild(list);
 }
+
 
 
 

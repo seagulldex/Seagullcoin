@@ -254,41 +254,33 @@
     loadUnstakeEvents();
 
       // Show modal
-document.getElementById("unstake-confirmed-modal").style.display = "flex";
 
-// Start countdown
-const unstakeStartedAt = Date.now(); // or get from your backend
-showUnstakeCountdown(unstakeStartedAt);
+  function updateAllCountdowns() {
+    const countdowns = document.querySelectorAll('.countdown');
+    const now = Date.now();
 
-      
-  // Show countdown when unstake event is registered
-  function showUnstakeCountdown(startTimestamp) {
-    const countdownContainer = document.getElementById("countdown-container");
-    const countdownEl = document.getElementById("unstake-countdown");
-    countdownContainer.style.display = 'block';
-
-    const endTimestamp = startTimestamp + 24 * 60 * 60 * 1000; // 24 hours later
-
-    function updateCountdown() {
-      const now = Date.now();
-      const remaining = endTimestamp - now;
+    countdowns.forEach(el => {
+      const start = parseInt(el.getAttribute('data-start'));
+      const end = start + 24 * 60 * 60 * 1000;
+      const remaining = end - now;
 
       if (remaining <= 0) {
-        countdownEl.textContent = "Complete 🎉";
-        clearInterval(interval);
+        el.textContent = "Complete 🎉";
+        el.style.color = "lightgreen";
         return;
       }
 
-      const hours = Math.floor(remaining / (1000 * 60 * 60));
-      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-
-      countdownEl.textContent = `${hours}h ${minutes}m ${seconds}s`;
-    }
-
-    updateCountdown(); // initial call
-    const interval = setInterval(updateCountdown, 1000);
+      const hrs = Math.floor(remaining / (1000 * 60 * 60));
+      const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((remaining % (1000 * 60)) / 1000);
+      el.textContent = `${hrs}h ${mins}m ${secs}s`;
+    });
   }
+
+  // Initial call + interval updater
+  updateAllCountdowns();
+  setInterval(updateAllCountdowns, 1000);
+
 
   
 

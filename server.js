@@ -4543,51 +4543,68 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
 });
 
 
-
-    app.post("/backup-pay-two", async (req, res) => {
+app.post("/backup-pay-two", async (req, res) => {
   const { destination } = req.body;
 
-  // Validate address
   if (!destination || typeof destination !== "string") {
     return res.status(400).json({ error: "Destination address is required." });
   }
 
-  // Basic XRPL address validation
   if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(destination)) {
     return res.status(400).json({ error: "Invalid XRPL address." });
   }
 
   try {
+    const db = await connectDB();
+    const unstakeEventsCollection = db.collection("unstakeEvents");
+
+    // Find the latest processing unstake for this wallet
+    const event = await unstakeEventsCollection.findOne(
+      { walletAddress: destination, status: "processing" },
+      { sort: { createdAt: -1 } } // Get the most recent one
+    );
+
+    if (!event) {
+      return res.status(404).json({ error: "No processing unstake found for this address." });
+    }
+
     const payload = {
-  txjson: {
-    TransactionType: "Payment",
-    Destination: destination,
-    Amount: {
-      currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
-      issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
-      value: "2562500"
-    },
-    Memos: [
-      {
-        Memo: {
-          MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
-          MemoData: Buffer.from("Yearly", "utf8").toString("hex")
+      txjson: {
+        TransactionType: "Payment",
+        Destination: destination,
+        Amount: {
+          currency: "53656167756C6C436F696E000000000000000000", // SeagullCoin
+          issuer: "rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno",
+          value: event.totalExpected.toString()
+        },
+        Memos: [
+          {
+            Memo: {
+              MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
+              MemoData: Buffer.from(event.type, "utf8").toString("hex")
+            }
+          }
+        ]
+      },
+      options: {
+        submit: true,
+        expire: 300,
+        return_url: {
+          app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
+          web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
         }
       }
-    ]
-  },
-  options: {
-    submit: true,
-    expire: 300,
-    return_url: {
-      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
-      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
-    }
-  }
-};
-
+    };
 
     const created = await xumm.payload.create(payload);
+
+    // Update status to 'paid'
+    await unstakeEventsCollection.updateOne(
+      { _id: event._id },
+      { $set: { status: "paid", paidAt: new Date() } }
+    );
+
+    console.log(`✅ Marked unstake ${event.unstakeId} as paid.`);
 
     res.json({
       uuid: created.uuid,
@@ -4599,6 +4616,8 @@ app.get('/stake-payload-two/:walletAddress', async (req, res) => {
     res.status(500).json({ error: "Failed to create backup payment." });
   }
 });
+
+    
 
 
 app.post("/backup-pay-three", async (req, res) => {

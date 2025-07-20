@@ -97,13 +97,16 @@
       </div>
     </section>
 
+   <section id="unstake-section" style="margin-top:40px; border-top:2px solid #ccc; padding-top:20px;">
+  <h2>Unstake Events</h2>
+  <p id="unstake-status">Loading unstake data...</p>
+  <ul id="unstake-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; list-style-type: none;"></ul>
+   </section>
+
     <div id="user-info">
       <p id="user-balance"></p>
       <div id="user-nfts"></div>
-      </div>
-
-   <div id="unstake-module-container" style="display:none;"></div>
-
+    </div>
 
     <div id="staking-section">
       <h2>Monthly Staking</h2>
@@ -173,13 +176,6 @@
     <img id="qr-code-3" alt="XUMM QR Code" style="display:none; max-width:200px; max-height:200px; border:1px solid #ccc; padding:10px; margin-top:10px;"/>
         </div>
 
-        <section id="unstake-section" style="margin-top:40px; border-top:2px solid #ccc; padding-top:20px;">
-  <h2>Unstake Events</h2>
-  <p id="unstake-status">Loading unstake data...</p>
-  <ul id="unstake-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; list-style-type: none;"></ul>
-</section>
-
-
         <div id="stake-confirmed-modal" style="
   display:none; 
   position:fixed; 
@@ -199,31 +195,29 @@
   </div>
 </div>
 
-        <div id="unstake-confirmed-modal" style="
+ <div id="unstake-confirmed-modal" style="
   display:none; 
   position:fixed; 
   top:0; left:0; width:100%; height:100%; 
   background:rgba(0,0,0,0.6); 
   z-index:9999; 
   justify-content:center; 
-  align-items:center;">
+  align-items:center;
+  font-family: sans-serif;">
   <div style="
-    background:black; 
-    padding:20px 30px; 
-    border-radius:12px; 
+    background:#1a1a1a; 
+    padding:30px 40px; 
+    border-radius:16px; 
     text-align:center;
-    color:white;
-    max-width:400px;">
+    color:#fff;
+    max-width:400px;
+    box-shadow:0 0 15px rgba(0,0,0,0.5);">
     
-    <h2>✅ Unstake Confirmed</h2>
-    <p>Your unstake request has been successfully processed.</p>
+    <h2 style="color:#6efc6e;">⏳ Unstake Processing</h2>
+    <p style="margin-bottom:12px;">Your unstake request has been received and is processing.</p>
+    <p><strong>Estimated wait: 4–24 hours</strong></p>
 
-    <div style="margin: 20px 0;">
-      <p style="margin: 5px 0; font-size: 14px; color: #ccc;">Customer Service ID:</p>
-      <p id="unstake-id-display" style="font-size: 16px; font-weight: bold; color: #6efc6e;"></p>
-    </div>
-
-    <div id="countdown-container" style="display:none; margin-top:16px;">
+    <div id="countdown-container" style="margin-top:16px; display:none;">
       <p style="margin: 10px 0;">⏱ Time Remaining:</p>
       <p id="unstake-countdown" style="font-size:24px; font-weight:bold;"></p>
     </div>
@@ -242,6 +236,9 @@
 
 
 
+        
+
+
   <!-- Place inside your script tag at the bottom -->
 <script>
   let wallet = localStorage.getItem('xumm_wallet_address') || null;
@@ -254,7 +251,38 @@
     updateWalletUI();
     setupStakingButtonListeners();
     showUnstakeConfirmedModal();
-    showUnstakeModule();
+    loadUnstakeEvents();
+
+      // Show modal
+
+  function updateAllCountdowns() {
+    const countdowns = document.querySelectorAll('.countdown');
+    const now = Date.now();
+
+    countdowns.forEach(el => {
+      const start = parseInt(el.getAttribute('data-start'));
+      const end = start + 24 * 60 * 60 * 1000;
+      const remaining = end - now;
+
+      if (remaining <= 0) {
+        el.textContent = "Complete 🎉";
+        el.style.color = "lightgreen";
+        return;
+      }
+
+      const hrs = Math.floor(remaining / (1000 * 60 * 60));
+      const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((remaining % (1000 * 60)) / 1000);
+      el.textContent = `${hrs}h ${mins}m ${secs}s`;
+    });
+  }
+
+  // Initial call + interval updater
+  updateAllCountdowns();
+  setInterval(updateAllCountdowns, 1000);
+
+
+  
 
     
   // Only show the “stake confirmed” modal if we just finished polling
@@ -436,6 +464,51 @@ localStorage.setItem('seagull_wallet', wallet);
   return 'UNSTK-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
 }
 
+function calculateReward(amount) {
+  if (amount === 50000) {
+    return 501;
+  } else if (amount === 2500000) {
+    return 62500;
+  } else if (amount === 5000000) {
+    return 1000000;
+  } else {
+    return 0; // fallback if any other amount
+  }
+}
+
+async function loadUnstakeEvents() {
+  const statusEl = document.getElementById('unstake-status');
+  const listEl = document.getElementById('unstake-list');
+
+  try {
+    const response = await fetch('/unstake-events');
+    if (!response.ok) throw new Error('Network response was not ok');
+
+    const events = await response.json();
+
+    if (!events.length) {
+      statusEl.textContent = 'No unstake events found.';
+      return;
+    }
+
+    statusEl.style.display = 'none';
+
+    events.forEach(event => {
+      const reward = calculateReward(event.amount);
+      const total = event.amount + reward;
+
+      const li = document.createElement('li');
+      li.textContent = `${event.walletAddress} — Amount: ${event.amount.toLocaleString()} — Reward: ${reward.toLocaleString()} — Total: ${total.toLocaleString()} — Status: ${event.status}`;
+      listEl.appendChild(li);
+    });
+
+  } catch (err) {
+    statusEl.textContent = 'Failed to load unstake events.';
+    console.error(err);
+  }
+}
+
+
 
 
   function setupStakingButtonListeners() {
@@ -491,83 +564,25 @@ localStorage.setItem('seagull_wallet', wallet);
 }
 
 
-async function fetchUnstakeEvents(userWallet) {
-  if (!userWallet) return [];
-  try {
-    const response = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/get-unstake-events?wallet=${userWallet}`);
-    const data = await response.json();
-    return data.events || [];
-  } catch (e) {
-    console.error('Error fetching unstake events:', e);
-    return [];
-  }
+function showStakeConfirmedModal() {
+  const modal = document.getElementById('stake-confirmed-modal');
+  if (modal) modal.style.display = 'flex';
 }
 
-function showUnstakeModal(unstakeId, createdAt) {
-  document.getElementById("unstake-confirmed-modal").style.display = "flex";
-  document.getElementById("unstake-id-display").textContent = unstakeId;
-
-  const countdownEl = document.getElementById("unstake-countdown");
-  const countdownContainer = document.getElementById("countdown-container");
-  const endTime = new Date(new Date(createdAt).getTime() + 24 * 60 * 60 * 1000);
-
-  function updateCountdown() {
-    const now = Date.now();
-    const remaining = endTime - now;
-
-    if (remaining <= 0) {
-      countdownEl.textContent = "Complete 🎉";
-      clearInterval(interval);
-      return;
-    }
-
-    const hrs = Math.floor(remaining / (1000 * 60 * 60));
-    const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-    const secs = Math.floor((remaining % (1000 * 60)) / 1000);
-    countdownEl.textContent = `${hrs}h ${mins}m ${secs}s`;
-  }
-
-  countdownContainer.style.display = "block";
-  updateCountdown();
-  const interval = setInterval(updateCountdown, 1000);
+function closeStakeConfirmedModal() {
+  const modal = document.getElementById('stake-confirmed-modal');
+  if (modal) modal.style.display = 'none';
 }
 
-// ⬇️ This must be inside its own function (e.g. showUnstakeModule)
-async function showUnstakeModule(events, container) {
-  const header = document.createElement('h2');
-  header.textContent = 'Your Unstaking Events';
-  container.appendChild(header);
-
-  const list = document.createElement('ul');
-  list.style.listStyle = 'none';
-  list.style.padding = '0';
-
-  events.forEach(event => {
-    const listItem = document.createElement('li');
-    listItem.style.marginBottom = '12px';
-    listItem.style.padding = '10px';
-    listItem.style.border = '1px solid #ccc';
-    listItem.style.borderRadius = '8px';
-    listItem.style.backgroundColor = '#fafafa';
-
-    listItem.innerHTML = `
-      <strong>Plan:</strong> ${event.plan || 'Unknown'} <br/>
-      <strong>Amount:</strong> ${event.amount || 0} SGLCN <br/>
-      <strong>Unstake Requested:</strong> ${new Date(event.timestamp).toLocaleString()} <br/>
-      <strong>Status:</strong> ${event.status || 'Pending'}
-    `;
-
-    if (event.status === 'Pending') {
-      // 👉 Show modal directly
-      showUnstakeModal(event._id || 'N/A', event.timestamp);
-    }
-
-    list.appendChild(listItem);
-  });
-
-  container.appendChild(list);
+function showUnstakeConfirmedModal() {
+  const modal = document.getElementById('unstake-confirmed-modal');
+  if (modal) modal.style.display = 'flex';
 }
 
+function closeUnstakeConfirmedModal() {
+  const modal = document.getElementById('unstake-confirmed-modal');
+  if (modal) modal.style.display = 'none';
+}
 
 
  // Utility to show QR code image
@@ -1065,11 +1080,6 @@ function closeRewardsProcessingModal() {
       button.disabled = false;
     }
   });
-});
-
-  document.addEventListener('DOMContentLoaded', () => {
-  const wallet = 'rQrd9HrDAwq2ehHe9rNFLQMwoJ1G4puA55';
-  showUnstakeModule(wallet);
 });
 
     

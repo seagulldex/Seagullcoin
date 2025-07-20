@@ -568,12 +568,7 @@ async function showUnstakeModule() {
   const container = document.getElementById('unstake-module-container');
   container.innerHTML = ''; // Clear existing content
 
-  const connectedWallet = await getConnectedWallet();
-  const allEvents = await fetchUnstakeEvents(); // no param
-  const events = allEvents.filter(event =>
-    event.wallet?.toLowerCase() === connectedWallet.toLowerCase()
-  );
-
+  const events = await fetchUnstakeEvents(); // Already filtered by wallet
   console.log('Filtered unstake events:', events);
 
   if (!events.length) {

@@ -72,6 +72,19 @@
   color: red;
 }
   </style>
+  <!-- Crisp Chat Integration -->
+<script type="text/javascript">
+  window.$crisp = [];
+  window.CRISP_WEBSITE_ID = "cc2e96d5-e50e-41f8-9bfc-63d4c6268f08"; // 🔁 Replace with your actual Crisp ID
+  (function () {
+    const d = document;
+    const s = d.createElement("script");
+    s.src = "https://client.crisp.chat/l.js";
+    s.async = 1;
+    d.getElementsByTagName("head")[0].appendChild(s);
+  })();
+</script>
+
 </head>
 <body>
 
@@ -257,6 +270,7 @@
   </div>
 </div>
 
+        
 
   <!-- Place inside your script tag at the bottom -->
 <script>
@@ -1196,6 +1210,20 @@ async function fetchUnstakeEvents() {
     }
   });
 });
+
+  function openSupportChat(unstakeId) {
+  window.$crisp.push(["do", "chat:open"]);
+  window.$crisp.push(["do", "message:send", ["text", `Hi, I need help with my unstake: ${unstakeId}`]]);
+}
+
+function setCrispUser(wallet, unstakeId, stakeType) {
+  window.$crisp.push(["set", "user:nickname", [wallet]]);
+  window.$crisp.push(["set", "session:data", [
+    ["wallet", wallet],
+    ["unstakeId", unstakeId],
+    ["stakeType", stakeType]
+  ]]);
+}
 
     
   </script>

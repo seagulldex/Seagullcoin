@@ -258,7 +258,6 @@
     setupStakingButtonListeners();
     showUnstakeConfirmedModal();
     showUnstakeModule();
-
     
   // Only show the “stake confirmed” modal if we just finished polling
   const justStakedUUID = localStorage.getItem('justStakedUUID');
@@ -364,6 +363,7 @@ localStorage.setItem('seagull_wallet', wallet);
       updateWalletUI();
       loadStakingData();
       showUnstakeConfirmedModal();
+      showUnstakeModule();
       showRewardsProcessingModal();
       getTimeLeft();// <- This is fine
     }

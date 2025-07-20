@@ -531,11 +531,22 @@ async function showUnstakeModule() {
           found = true;
           const li = document.createElement('li');
           const date = new Date(entry.createdAt).toLocaleString();
+
+          // Add processing status emoji + styling here as before
+          let statusText = entry.status;
+          let statusHtml = statusText;
+          if (statusText === 'processing') {
+            statusHtml = `<span class="status-processing">⏳️ processing</span>`;
+          } else {
+            statusHtml = statusText;
+          }
+
           li.innerHTML = `
             <div style="margin-bottom: 10px; background-color: #ffffff; color: #000; padding: 10px; border-radius: 10px;">
+              <strong>Unstake ID#:</strong> ${entry.stakeId}<br/>
               <strong>Type:</strong> ${entry.type}<br/>
               <strong>Amount:</strong> ${entry.amount} SGLCN<br/>
-              <strong>Status:</strong> ${entry.status}<br/>
+              <strong>Status:</strong> ${statusHtml}<br/>
               <strong>Date:</strong> ${date}
             </div>
           `;
@@ -553,6 +564,7 @@ async function showUnstakeModule() {
     document.getElementById('unstake-confirmed-list').innerHTML = '<li>Error loading unstake history.</li>';
   }
 }
+
 
 
  // Utility to show QR code image

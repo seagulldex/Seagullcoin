@@ -506,7 +506,10 @@ function closeStakeConfirmedModal() {
 
 async function showUnstakeModule() {
   const wallet = localStorage.getItem('xumm_wallet_address');
-  if (!wallet) return;
+  if (!wallet) {
+    console.warn('No wallet found in localStorage');
+    return;
+  }
 
   try {
     const response = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/unstake-events', {
@@ -518,6 +521,7 @@ async function showUnstakeModule() {
     });
 
     const data = await response.json();
+    console.log('Fetched unstake data:', data);
 
     const list = document.getElementById('unstaked-list');
     list.innerHTML = ''; // Clear previous entries
@@ -525,13 +529,13 @@ async function showUnstakeModule() {
     if (Array.isArray(data) && data.length > 0) {
       data.forEach(entry => {
         const li = document.createElement('li');
-        // Use createdAt as the date
-        const date = new Date(entry.createdAt).toLocaleString();
+        const createdAt = entry.createdAt || entry.timestamp || null;
+        const date = createdAt ? new Date(createdAt).toLocaleString() : 'Unknown';
 
         li.innerHTML = `
           <div style="margin-bottom: 10px; background-color: #f0f0f0; padding: 10px; border-radius: 10px;">
-            <strong>Type:</strong> ${entry.type}<br/>
-            <strong>Amount:</strong> ${entry.amount} SGLCN<br/>
+            <strong>Type:</strong> ${entry.type || 'N/A'}<br/>
+            <strong>Amount:</strong> ${entry.amount || '0'} SGLCN<br/>
             <strong>Date:</strong> ${date}
           </div>
         `;

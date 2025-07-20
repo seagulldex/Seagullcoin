@@ -547,7 +547,7 @@ async function showUnstakeModule() {
               <strong>Unstake ID#:</strong> ${entry.unstakeId}<br/>
               <strong>Type:</strong> ${entry.type}<br/>
               <strong>Amount:</strong> ${entry.totalExpected.toLocaleString()} SGLCN<br/>
-              <strong>Status:</strong> ${entry.status === 'processing' ? '⏳️ processing' : entry.status}<br/>
+              <strong>Status:</strong> ${entry.status === 'processing' ? 'processing' : entry.status}<br/>
               <strong>Payout In:</strong> <span id="${countdownId}">Loading...</span>
             </div>
           `;

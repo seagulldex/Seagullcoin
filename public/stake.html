@@ -532,48 +532,73 @@ async function showUnstakeModule() {
     const container = document.getElementById('unstake-module-container');
     container.style.display = 'block';
 
+    // Add close button if not exists
+    if (!document.getElementById('unstake-close-btn')) {
+      const closeBtn = document.createElement('button');
+      closeBtn.id = 'unstake-close-btn';
+      closeBtn.textContent = '✖';
+      closeBtn.style = `
+        position: absolute; top: 10px; right: 10px;
+        background: transparent; border: none; color: white;
+        font-size: 20px; cursor: pointer;
+      `;
+      closeBtn.onclick = () => {
+        container.style.display = 'none';
+      };
+      container.appendChild(closeBtn);
+    }
+
     let found = false;
 
     if (Array.isArray(data)) {
       data.forEach(entry => {
-        if (['completed', 'processing', 'pending'].includes(entry.status)) {
+        if (['completed', 'processing', 'pending', 'paid'].includes(entry.status)) {
           found = true;
 
           const li = document.createElement('li');
           const countdownId = `countdown-${entry.unstakeId}`;
 
+          // For paid, no countdown needed
+          const payoutContent = entry.status === 'paid'
+            ? '<span style="color: #0f0;">— Payout completed</span>'
+            : `<span id="${countdownId}">Loading...</span>`;
+
           li.innerHTML = `
-            <div style="margin-bottom: 10px; background-color: #000000; color: #ffffff; padding: 10px; border-radius: 10px;">
+            <div style="margin-bottom: 10px; background-color: #000000; color: #ffffff; padding: 10px; border-radius: 10px; position: relative;">
               <strong>Unstake ID#:</strong> ${entry.unstakeId}<br/>
               <strong>Type:</strong> ${entry.type}<br/>
               <strong>Amount:</strong> ${entry.totalExpected.toLocaleString()} SGLCN<br/>
-              <strong>Status:</strong> ${entry.status === 'processing' ? 'processing' : entry.status}<br/>
-              <strong>Payout In:</strong> <span id="${countdownId}">Loading...</span>
+              <strong>Status:</strong> ${entry.status === 'processing' ? '⏳ processing' :
+                                  entry.status === 'paid' ? '💰 paid' :
+                                  entry.status}<br/>
+              <strong>Payout In:</strong> ${payoutContent}
             </div>
           `;
           list.appendChild(li);
 
-          // 👇 Wrap countdown function in a closure to isolate variables
-          (function startCountdown(id, payoutTime) {
-            const update = () => {
-              const now = new Date();
-              const diff = new Date(payoutTime) - now;
-              const el = document.getElementById(id);
-              if (!el) return;
+          if (entry.status !== 'paid') {
+            // Start countdown for non-paid statuses
+            (function startCountdown(id, payoutTime) {
+              const update = () => {
+                const now = new Date();
+                const diff = new Date(payoutTime) - now;
+                const el = document.getElementById(id);
+                if (!el) return;
 
-              if (diff <= 0) {
-                el.textContent = '✅ Payout ready';
-              } else {
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                el.textContent = `⏳ ${hours}h ${minutes}m ${seconds}s`;
-              }
-            };
+                if (diff <= 0) {
+                  el.textContent = '✅ Payout ready';
+                } else {
+                  const hours = Math.floor(diff / (1000 * 60 * 60));
+                  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                  el.textContent = `⏳ ${hours}h ${minutes}m ${seconds}s`;
+                }
+              };
 
-            update(); // initial call
-            setInterval(update, 1000); // continuous updates
-          })(countdownId, entry.payoutScheduledAt); // pass unique ID and date
+              update();
+              setInterval(update, 1000);
+            })(countdownId, entry.payoutScheduledAt);
+          }
         }
       });
     }
@@ -584,6 +609,7 @@ async function showUnstakeModule() {
 
   } catch (err) {
     console.error('Error fetching unstaked data:', err);
+    const list = document.getElementById('unstake-confirmed-list');
     list.innerHTML = '<li>Error loading unstake history.</li>';
   }
 }

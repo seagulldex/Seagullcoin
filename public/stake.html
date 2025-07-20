@@ -525,10 +525,12 @@ async function showUnstakeModule() {
     if (Array.isArray(data) && data.length > 0) {
       data.forEach(entry => {
         const li = document.createElement('li');
-        const date = new Date(entry.timestamp).toLocaleString();
+        // Use createdAt as the date
+        const date = new Date(entry.createdAt).toLocaleString();
+
         li.innerHTML = `
           <div style="margin-bottom: 10px; background-color: #f0f0f0; padding: 10px; border-radius: 10px;">
-            <strong>Tier:</strong> ${entry.tier}<br/>
+            <strong>Type:</strong> ${entry.type}<br/>
             <strong>Amount:</strong> ${entry.amount} SGLCN<br/>
             <strong>Date:</strong> ${date}
           </div>

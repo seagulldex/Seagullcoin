@@ -7229,12 +7229,13 @@ app.get('/unstake-events', async (req, res) => {
     const db = await connectDB();
     const unstakeEventsCollection = db.collection('unstakeEvents');
 
-    const wallet = req.query.wallet; // get wallet from query string
+    const wallet = req.query.wallet; // wallet address from client request
+
     if (!wallet) {
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    // Find events for this wallet only
+    // This query returns ONLY events for the given wallet address
     const events = await unstakeEventsCollection
       .find({ wallet: wallet })
       .sort({ createdAt: -1 })
@@ -7247,6 +7248,7 @@ app.get('/unstake-events', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch unstake events' });
   }
 });
+
 
 
 

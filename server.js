@@ -292,6 +292,15 @@ async function autoUnstakeExpiredUsers() {
 }
 
 
+// ✅ This is what the frontend should call via API
+async function fetchUnstakeEvents(walletAddress) {
+  const db = await connectDB(); // or however your DB connects
+  const unstakeEventsCollection = db.collection('unstakeEvents');
+
+  return await unstakeEventsCollection.find({
+    walletAddress: walletAddress.toLowerCase()  // 👈 match only this wallet
+  }).sort({ createdAt: -1 }).toArray();
+}
 
 
 

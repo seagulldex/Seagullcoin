@@ -503,20 +503,38 @@ async function fetchUnstakeEvents(userWallet) {
   }
 }
 
-async function showUnstakeModule(userWallet) {
-  console.log('showUnstakeModule called for wallet:', userWallet);
-  const container = document.getElementById('unstake-module-container');
-  container.innerHTML = ''; // Clear existing content
+function showUnstakeModal(unstakeId, createdAt) {
+  // Show modal
+  document.getElementById("unstake-confirmed-modal").style.display = "flex";
 
-  const events = await fetchUnstakeEvents(userWallet);
-  console.log('unstake events:', events);
+  // Show unstake ID
+  document.getElementById("unstake-id-display").textContent = unstakeId;
 
-  if (!events.length) {
-    container.style.display = 'none'; // Hide if no active unstake events
-    return;
+  // Show countdown (24hr from createdAt)
+  const countdownEl = document.getElementById("unstake-countdown");
+  const countdownContainer = document.getElementById("countdown-container");
+  const endTime = new Date(new Date(createdAt).getTime() + 24 * 60 * 60 * 1000);
+
+  function updateCountdown() {
+    const now = Date.now();
+    const remaining = endTime - now;
+
+    if (remaining <= 0) {
+      countdownEl.textContent = "Complete 🎉";
+      clearInterval(interval);
+      return;
+    }
+
+    const hrs = Math.floor(remaining / (1000 * 60 * 60));
+    const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+    const secs = Math.floor((remaining % (1000 * 60)) / 1000);
+    countdownEl.textContent = `${hrs}h ${mins}m ${secs}s`;
   }
 
-  container.style.display = 'block';
+  countdownContainer.style.display = "block";
+  updateCountdown();
+  const interval = setInterval(updateCountdown, 1000);
+}
 
   // Create a header
   const header = document.createElement('h2');

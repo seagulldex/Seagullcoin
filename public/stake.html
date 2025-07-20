@@ -878,9 +878,11 @@ async function fetchUnstakeEvents() {
 }
 
   function openSupportChat(unstakeId) {
-  // This could link to Intercom, Crisp, or your own system
-  alert(`Starting support chat for ${unstakeId}`);
+  // Replace with actual integration
+  window.ChatWidget.open();
+  window.ChatWidget.sendMessage(`Hi, I need help with my unstake: ${unstakeId}`);
 }
+
 
 
 // Example loadStakingData3 to fetch rewards and status for second section

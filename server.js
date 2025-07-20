@@ -7225,21 +7225,27 @@ app.post('/test-auto-unstake', async (req, res) => {
   res.send('Auto unstake run');
 });
 
+
 app.get('/unstake-events', async (req, res) => {
   try {
-    const db = client.db(dbName);
-    const unstakeEvents = await db.collection('unstakeEvents')
+    const db = await connectDB();
+    const unstakeEventsCollection = db.collection('unstakeEvents');
+
+    const events = await unstakeEventsCollection
       .find({})
       .sort({ createdAt: -1 })
       .limit(50)
       .toArray();
 
-    res.json(unstakeEvents);
+    res.json(events);
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Failed to fetch unstake events');
+    console.error('❌ Error fetching unstake events:', err);
+    res.status(500).json({ error: 'Failed to fetch unstake events' });
   }
 });
+
+// your other routes and app.listen here
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

@@ -497,53 +497,25 @@ function closeStakeConfirmedModal() {
   if (modal) modal.style.display = 'none';
 }
 
-async function showUnstakeModule(wallet) {
+async function showUnstakeModule(userWallet) {
+  console.log('showUnstakeModule called for wallet:', userWallet);
   const container = document.getElementById('unstake-module-container');
   container.innerHTML = ''; // Clear existing content
 
-  const events = await fetchUnstakeEvents(wallet);
+  const events = await fetchUnstakeEvents(userWallet);
+  console.log('unstake events:', events);
+
   if (!events.length) {
+    console.log('No active unstake events, hiding container');
     container.style.display = 'none'; // Hide if no active unstake events
     return;
   }
 
   container.style.display = 'block';
+  console.log('Showing unstake module');
 
   events.forEach(event => {
-    const eventDiv = document.createElement('div');
-    eventDiv.className = 'unstake-event';
-
-    // Unstake ID with copy button
-    const unstakeIdP = document.createElement('p');
-    unstakeIdP.innerHTML = `<strong>Unstake ID:</strong> ${event.unstakeId} `;
-
-    const copyBtn = document.createElement('button');
-    copyBtn.textContent = '📋';
-    copyBtn.title = 'Copy Unstake ID';
-    copyBtn.style.marginLeft = '8px';
-    copyBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(event.unstakeId)
-        .then(() => alert('Unstake ID copied to clipboard!'))
-        .catch(() => alert('Failed to copy.'));
-    });
-
-    unstakeIdP.appendChild(copyBtn);
-    eventDiv.appendChild(unstakeIdP);
-
-    // Other event details
-    const amountP = document.createElement('p');
-    amountP.innerHTML = `<strong>Amount:</strong> ${event.amount}`;
-    eventDiv.appendChild(amountP);
-
-    const statusP = document.createElement('p');
-    statusP.innerHTML = `<strong>Status:</strong> ${event.status}`;
-    eventDiv.appendChild(statusP);
-
-    const payoutP = document.createElement('p');
-    payoutP.innerHTML = `<strong>Payout Scheduled At:</strong> ${new Date(event.payoutScheduledAt).toLocaleString()}`;
-    eventDiv.appendChild(payoutP);
-
-    container.appendChild(eventDiv);
+    // Your existing code
   });
 }
 

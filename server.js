@@ -7226,17 +7226,17 @@ app.post('/test-auto-unstake', async (req, res) => {
 
 app.get('/unstake-events', async (req, res) => {
   try {
-    const { wallet } = req.query;
-
-    if (!wallet) {
-      return res.status(400).json({ error: 'Missing wallet address in query' });
-    }
-
     const db = await connectDB();
     const unstakeEventsCollection = db.collection('unstakeEvents');
 
+    const wallet = req.query.wallet; // get wallet from query string
+    if (!wallet) {
+      return res.status(400).json({ error: 'Wallet address is required' });
+    }
+
+    // Find events for this wallet only
     const events = await unstakeEventsCollection
-      .find({ wallet: { $regex: new RegExp(`^${wallet}$`, 'i') } }) // case-insensitive match
+      .find({ wallet: wallet })
       .sort({ createdAt: -1 })
       .limit(50)
       .toArray();
@@ -7247,6 +7247,7 @@ app.get('/unstake-events', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch unstake events' });
   }
 });
+
 
 
 

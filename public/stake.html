@@ -564,27 +564,32 @@ async function loadUnstakeEvents() {
 }
 
 
-async function showUnstakeModule(userWallet) {
+async function showUnstakeModule() {
   const container = document.getElementById('unstake-module-container');
   container.innerHTML = ''; // Clear existing content
 
-  const events = await fetchUnstakeEvents(userWallet); // Fetch from MongoDB
-  console.log('unstake events:', events);
+  const connectedWallet = await getConnectedWallet();
+  const allEvents = await fetchUnstakeEvents(); // no param
+  const events = allEvents.filter(event =>
+    event.wallet?.toLowerCase() === connectedWallet.toLowerCase()
+  );
+
+  console.log('Filtered unstake events:', events);
 
   if (!events.length) {
-    container.style.display = 'none'; // No events? Hide module & skip modal
+    container.style.display = 'none';
     return;
   }
 
   container.style.display = 'block';
 
-  // OPTIONAL: Show the modal only for the first "Pending" event
+  // Optional: Show modal for first "Pending" event
   const firstPending = events.find(event => event.status === 'Pending');
   if (firstPending) {
     showUnstakeModal(firstPending._id || 'N/A', firstPending.timestamp);
   }
 
-  // Display list of all events
+  // Display unstake events
   const header = document.createElement('h2');
   header.textContent = 'Your Unstaking Events';
   container.appendChild(header);

@@ -7224,20 +7224,19 @@ app.post('/test-auto-unstake', async (req, res) => {
   res.send('Auto unstake run');
 });
 
-app.get('/unstake-events', async (req, res) => {
+app.post('/unstake-events', async (req, res) => {
   try {
-    const db = await connectDB();
-    const unstakeEventsCollection = db.collection('unstakeEvents');
-
-    const wallet = req.query.wallet; // wallet address from client request
+    const { wallet } = req.body;
 
     if (!wallet) {
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    // This query returns ONLY events for the given wallet address
+    const db = await connectDB();
+    const unstakeEventsCollection = db.collection('unstakeEvents');
+
     const events = await unstakeEventsCollection
-      .find({ wallet: wallet })
+      .find({ walletAddress: wallet }) // Use correct field name
       .sort({ createdAt: -1 })
       .limit(50)
       .toArray();
@@ -7248,6 +7247,7 @@ app.get('/unstake-events', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch unstake events' });
   }
 });
+
 
 
 

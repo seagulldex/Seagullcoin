@@ -240,6 +240,38 @@ document.getElementById("unstake-confirmed-modal").style.display = "flex";
 const unstakeStartedAt = Date.now(); // or get from your backend
 showUnstakeCountdown(unstakeStartedAt);
 
+      
+  // Show countdown when unstake event is registered
+  function showUnstakeCountdown(startTimestamp) {
+    const countdownContainer = document.getElementById("countdown-container");
+    const countdownEl = document.getElementById("unstake-countdown");
+    countdownContainer.style.display = 'block';
+
+    const endTimestamp = startTimestamp + 24 * 60 * 60 * 1000; // 24 hours later
+
+    function updateCountdown() {
+      const now = Date.now();
+      const remaining = endTimestamp - now;
+
+      if (remaining <= 0) {
+        countdownEl.textContent = "Complete 🎉";
+        clearInterval(interval);
+        return;
+      }
+
+      const hours = Math.floor(remaining / (1000 * 60 * 60));
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+      countdownEl.textContent = `${hours}h ${minutes}m ${seconds}s`;
+    }
+
+    updateCountdown(); // initial call
+    const interval = setInterval(updateCountdown, 1000);
+  }
+
+  
+
     
   // Only show the “stake confirmed” modal if we just finished polling
   const justStakedUUID = localStorage.getItem('justStakedUUID');

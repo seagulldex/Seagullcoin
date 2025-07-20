@@ -713,6 +713,11 @@ function closeRewardsProcessingModal() {
   modal.style.display = 'none';
 }
 
+async function fetchUnstakeEvents() {
+  const connectedWallet = await getConnectedWallet(); // e.g. '0x123abc...'
+  const res = await fetch(`/unstake-events?wallet=${connectedWallet}`);
+  return await res.json(); // returns only that wallet's events
+}
 
 
   

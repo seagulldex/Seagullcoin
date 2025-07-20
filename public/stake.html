@@ -504,13 +504,9 @@ async function fetchUnstakeEvents(userWallet) {
 }
 
 function showUnstakeModal(unstakeId, createdAt) {
-  // Show modal
   document.getElementById("unstake-confirmed-modal").style.display = "flex";
-
-  // Show unstake ID
   document.getElementById("unstake-id-display").textContent = unstakeId;
 
-  // Show countdown (24hr from createdAt)
   const countdownEl = document.getElementById("unstake-countdown");
   const countdownContainer = document.getElementById("countdown-container");
   const endTime = new Date(new Date(createdAt).getTime() + 24 * 60 * 60 * 1000);
@@ -536,12 +532,12 @@ function showUnstakeModal(unstakeId, createdAt) {
   const interval = setInterval(updateCountdown, 1000);
 }
 
-  // Create a header
+// ⬇️ This must be inside its own function (e.g. showUnstakeModule)
+async function showUnstakeModule(events, container) {
   const header = document.createElement('h2');
   header.textContent = 'Your Unstaking Events';
   container.appendChild(header);
 
-  // Create a list for unstake events
   const list = document.createElement('ul');
   list.style.listStyle = 'none';
   list.style.padding = '0';
@@ -554,7 +550,6 @@ function showUnstakeModal(unstakeId, createdAt) {
     listItem.style.borderRadius = '8px';
     listItem.style.backgroundColor = '#fafafa';
 
-    // Basic event info
     listItem.innerHTML = `
       <strong>Plan:</strong> ${event.plan || 'Unknown'} <br/>
       <strong>Amount:</strong> ${event.amount || 0} SGLCN <br/>
@@ -562,13 +557,9 @@ function showUnstakeModal(unstakeId, createdAt) {
       <strong>Status:</strong> ${event.status || 'Pending'}
     `;
 
-    // If you want to add a button for confirmation or details:
     if (event.status === 'Pending') {
-      const confirmBtn = document.createElement('button');
-      confirmBtn.textContent = 'View Details';
-      confirmBtn.style.marginTop = '6px';
-      confirmBtn.onclick = () => alert(`Unstake Event ID: ${event.id || 'N/A'}`);
-      listItem.appendChild(confirmBtn);
+      // 👉 Show modal directly
+      showUnstakeModal(event._id || 'N/A', event.timestamp);
     }
 
     list.appendChild(listItem);
@@ -576,6 +567,7 @@ function showUnstakeModal(unstakeId, createdAt) {
 
   container.appendChild(list);
 }
+
 
 
  // Utility to show QR code image

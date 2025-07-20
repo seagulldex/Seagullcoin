@@ -253,7 +253,7 @@
     updateWalletUI();
     setupStakingButtonListeners();
     showUnstakeConfirmedModal();
-
+    loadUnstakeEvents();
     
   // Only show the “stake confirmed” modal if we just finished polling
   const justStakedUUID = localStorage.getItem('justStakedUUID');

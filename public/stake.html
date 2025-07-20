@@ -497,11 +497,11 @@ function closeStakeConfirmedModal() {
   if (modal) modal.style.display = 'none';
 }
 
-async function showUnstakeModule(userWallet) {
+async function showUnstakeModule(wallet) {
   const container = document.getElementById('unstake-module-container');
   container.innerHTML = ''; // Clear existing content
 
-  const events = await fetchUnstakeEvents(userWallet);
+  const events = await fetchUnstakeEvents(wallet);
   if (!events.length) {
     container.style.display = 'none'; // Hide if no active unstake events
     return;

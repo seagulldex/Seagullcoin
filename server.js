@@ -246,12 +246,11 @@ async function createStakePayload(req, res, amount) {
 // import Stake from './models/stake.js';  // example import
 
 async function autoUnstakeExpiredUsers() {
-  const db = await connectDB(); // Make sure this returns the connected DB instance
+  const db = await connectDB();
   const stakesCollection = db.collection('stakes');
   const unstakeEventsCollection = db.collection('unstakeEvents');
   const now = new Date();
 
-  // Use case-insensitive regex for status match to avoid case issues
   const expiredStakes = await stakesCollection.find({
     stakeEndDate: { $lte: now },
     $or: [{ unstaked: { $exists: false } }, { unstaked: false }],
@@ -266,20 +265,7 @@ async function autoUnstakeExpiredUsers() {
       const estimatedReward = 0; // Customize if needed
       const totalExpected = stake.amount + estimatedReward;
 
-      // Update the stake document
-      await stakesCollection.updateOne(
-        { _id: stake._id },
-        {
-          $set: {
-            unstaked: true,
-            unstakedAt: now,
-            unstakePayoutAt: payoutScheduledAt,
-            status: 'unstaked'
-          }
-        }
-      );
-
-      // Log the unstake event
+      // Log the unstake event first
       await unstakeEventsCollection.insertOne({
         unstakeId,
         walletAddress: stake.walletAddress,
@@ -294,13 +280,17 @@ async function autoUnstakeExpiredUsers() {
         status: 'processing'
       });
 
-      console.log(`✅ Unstaked ${stake.walletAddress}`);
+      // Then delete the original stake
+      await stakesCollection.deleteOne({ _id: stake._id });
+
+      console.log(`✅ Unstaked & removed stake for ${stake.walletAddress}`);
 
     } catch (err) {
       console.error(`❌ Failed unstaking ${stake.walletAddress}`, err);
     }
   }
 }
+
 
 
 

@@ -494,14 +494,16 @@ localStorage.setItem('seagull_wallet', wallet);
 }
 
 
-function showStakeConfirmedModal() {
-  const modal = document.getElementById('stake-confirmed-modal');
-  if (modal) modal.style.display = 'flex';
-}
-
-function closeStakeConfirmedModal() {
-  const modal = document.getElementById('stake-confirmed-modal');
-  if (modal) modal.style.display = 'none';
+async function fetchUnstakeEvents(userWallet) {
+  if (!userWallet) return [];
+  try {
+    const response = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/get-unstake-events?wallet=${userWallet}`);
+    const data = await response.json();
+    return data.events || [];
+  } catch (e) {
+    console.error('Error fetching unstake events:', e);
+    return [];
+  }
 }
 
 async function showUnstakeModule(userWallet) {
@@ -513,19 +515,52 @@ async function showUnstakeModule(userWallet) {
   console.log('unstake events:', events);
 
   if (!events.length) {
-    console.log('No active unstake events, hiding container');
     container.style.display = 'none'; // Hide if no active unstake events
     return;
   }
 
   container.style.display = 'block';
-  console.log('Showing unstake module');
+
+  // Create a header
+  const header = document.createElement('h2');
+  header.textContent = 'Your Unstaking Events';
+  container.appendChild(header);
+
+  // Create a list for unstake events
+  const list = document.createElement('ul');
+  list.style.listStyle = 'none';
+  list.style.padding = '0';
 
   events.forEach(event => {
-    // Your existing code
-  });
-}
+    const listItem = document.createElement('li');
+    listItem.style.marginBottom = '12px';
+    listItem.style.padding = '10px';
+    listItem.style.border = '1px solid #ccc';
+    listItem.style.borderRadius = '8px';
+    listItem.style.backgroundColor = '#fafafa';
 
+    // Basic event info
+    listItem.innerHTML = `
+      <strong>Plan:</strong> ${event.plan || 'Unknown'} <br/>
+      <strong>Amount:</strong> ${event.amount || 0} SGLCN <br/>
+      <strong>Unstake Requested:</strong> ${new Date(event.timestamp).toLocaleString()} <br/>
+      <strong>Status:</strong> ${event.status || 'Pending'}
+    `;
+
+    // If you want to add a button for confirmation or details:
+    if (event.status === 'Pending') {
+      const confirmBtn = document.createElement('button');
+      confirmBtn.textContent = 'View Details';
+      confirmBtn.style.marginTop = '6px';
+      confirmBtn.onclick = () => alert(`Unstake Event ID: ${event.id || 'N/A'}`);
+      listItem.appendChild(confirmBtn);
+    }
+
+    list.appendChild(listItem);
+  });
+
+  container.appendChild(list);
+}
 
 
  // Utility to show QR code image

@@ -502,7 +502,7 @@ async function showUnstakeModule() {
   container.innerHTML = '';
 
   const connectedWallet = await getConnectedWallet();
-  const events = await fetchUnstakeEvents(); // already scoped to this wallet
+  const events = await fetchUnstakeEvents(); // Already filtered by wallet in backend
 
   if (!events.length) {
     container.style.display = 'none';
@@ -527,20 +527,21 @@ async function showUnstakeModule() {
     listItem.style.borderRadius = '8px';
     listItem.style.backgroundColor = '#fafafa';
 
-    const createdAt = new Date(event.timestamp).toLocaleString();
-    const rewardInfo = event.reward ? `<strong>Reward:</strong> ${event.reward} SGLCN<br/>` : '';
+    const createdAt = new Date(event.createdAt).toLocaleString();
+    const unlockDate = new Date(event.unlockDate).toLocaleString();
+    const payoutDate = new Date(event.payoutScheduledAt).toLocaleString();
 
-    let statusMessage = `<strong>Status:</strong> ${event.status || 'Pending'}<br/>`;
+    let statusMsg = `<strong>Status:</strong> ${event.status}<br/>`;
     if (event.status === 'processing') {
-      statusMessage += `<em>⏳ Processing request<br/>Estimated wait: 4–24 hours</em><br/>`;
+      statusMsg += `<em>⏳ Unstake Processing<br/>Estimated wait: 4–24 hours</em><br/>`;
     }
 
     listItem.innerHTML = `
-      <strong>Plan:</strong> ${event.plan || 'Unknown'}<br/>
-      <strong>Amount:</strong> ${event.amount || 0} SGLCN<br/>
-      <strong>Unstake Requested:</strong> ${createdAt}<br/>
-      ${statusMessage}
-      ${rewardInfo}
+      <strong>Amount:</strong> ${event.amount} SGLCN<br/>
+      <strong>Requested:</strong> ${createdAt}<br/>
+      <strong>Unlock Date:</strong> ${unlockDate}<br/>
+      <strong>Payout Scheduled:</strong> ${payoutDate}<br/>
+      ${statusMsg}
     `;
 
     list.appendChild(listItem);

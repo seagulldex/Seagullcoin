@@ -509,13 +509,20 @@ async function showUnstakeModule() {
   if (!wallet) return;
 
   try {
-    const response = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/unstakes?wallet=${wallet}`);
+    const response = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/unstakes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ wallet })
+    });
+
     const data = await response.json();
 
     const list = document.getElementById('unstaked-list');
     list.innerHTML = ''; // Clear previous entries
 
-    if (data && data.length > 0) {
+    if (Array.isArray(data) && data.length > 0) {
       data.forEach(entry => {
         const li = document.createElement('li');
         const date = new Date(entry.timestamp).toLocaleString();
@@ -536,6 +543,7 @@ async function showUnstakeModule() {
     document.getElementById('unstaked-list').innerHTML = '<li>Error loading unstake history.</li>';
   }
 }
+
 
 
 

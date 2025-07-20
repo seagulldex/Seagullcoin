@@ -563,6 +563,12 @@ async function loadUnstakeEvents() {
   return earned;
 }
 
+  async function fetchUnstakeEvents() {
+  const connectedWallet = await getConnectedWallet();
+  const res = await fetch(`/unstake-events?wallet=${connectedWallet}`);
+  return await res.json();
+}
+
 
 async function showUnstakeModule() {
   const container = document.getElementById('unstake-module-container');

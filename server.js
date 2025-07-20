@@ -260,10 +260,27 @@ async function autoUnstakeExpiredUsers() {
   for (const stake of expiredStakes) {
     try {
       const payoutScheduledAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      const unstakeId = `UNSTK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+const unstakeId = `UNSTK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
-      const estimatedReward = 0; // Customize if needed
-      const totalExpected = stake.amount + estimatedReward;
+// Reward calculation
+let rewardMultiplier = 0;
+
+switch (stake.amount) {
+  case 50000:
+    rewardMultiplier = 0.01;
+    break;
+  case 2500000:
+    rewardMultiplier = 0.025;
+    break;
+  case 5000000:
+    rewardMultiplier = 0.20;
+    break;
+  default:
+    rewardMultiplier = 0.01;
+}
+
+const estimatedReward = Math.floor(stake.amount * rewardMultiplier);
+const totalExpected = stake.amount + estimatedReward;
 
       // Log the unstake event first
       await unstakeEventsCollection.insertOne({

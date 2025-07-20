@@ -546,14 +546,14 @@ async function showUnstakeModule() {
           }
 
           li.innerHTML = `
-            <div style="margin-bottom: 10px; background-color: #000000; color: #ffffff; padding: 10px; border-radius: 10px;">
-              <strong>Unstake ID#:</strong> ${entry.unstakeId}<br/>
-              <strong>Type:</strong> ${entry.type}<br/>
-              <strong>Amount:</strong> ${entry.amount} SGLCN<br/>
-              <strong>Status:</strong> ${statusHtml}<br/>
-              <strong>Date:</strong> ${date}
-            </div>
-          `;
+  <div style="margin-bottom: 10px; background-color: #000000; color: #ffffff; padding: 10px; border-radius: 10px;">
+    <strong>Unstake ID#:</strong> ${entry.unstakeId}<br/>
+    <strong>Type:</strong> ${entry.type}<br/>
+    <strong>Amount:</strong> ${entry.totalExpected.toLocaleString()} SGLCN<br/>
+    <strong>Status:</strong> ${statusHtml}<br/>
+    <strong>Date:</strong> ${date}
+  </div>
+`;
           list.appendChild(li);
         }
       });

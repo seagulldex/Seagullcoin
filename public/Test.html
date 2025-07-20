@@ -428,6 +428,35 @@ localStorage.setItem('seagull_wallet', wallet);
   return 'UNSTK-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
 }
 
+async function loadUnstakeEvents() {
+  const statusElem = document.getElementById('unstake-status');
+  const listElem = document.getElementById('unstake-list');
+
+  try {
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/unstake-events'); // Your actual API path here
+    if (!res.ok) throw new Error('Failed to fetch');
+    const events = await res.json();
+
+    if (events.length === 0) {
+      statusElem.textContent = 'No unstake events found.';
+      return;
+    }
+
+    statusElem.textContent = ''; // Clear loading text
+    listElem.innerHTML = ''; // Clear existing list
+
+    events.forEach(event => {
+      const li = document.createElement('li');
+      li.textContent = `${event.walletAddress} | Amount: ${event.amount} | Status: ${event.status} | Unlock Date: ${new Date(event.unlockDate).toLocaleString()}`;
+      listElem.appendChild(li);
+    });
+  } catch (err) {
+    statusElem.textContent = 'Error loading unstake events.';
+    console.error(err);
+  }
+}
+
+loadUnstakeEvents();
 
 
   function setupStakingButtonListeners() {

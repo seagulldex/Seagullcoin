@@ -530,31 +530,50 @@ async function showUnstakeModule() {
     list.innerHTML = '';
 
     const container = document.getElementById('unstake-module-container');
-    container.style.display = 'block'; // ✅ SHOW the container
+    container.style.display = 'block';
 
     let found = false;
+
     if (Array.isArray(data)) {
       data.forEach(entry => {
         if (['completed', 'processing', 'pending'].includes(entry.status)) {
           found = true;
-          const li = document.createElement('li');
-          const date = new Date(entry.createdAt).toLocaleString();
 
-          let statusHtml = entry.status;
-          if (entry.status === 'processing') {
-            statusHtml = `<span class="status-processing">⏳️ processing</span>`;
-          }
+          const li = document.createElement('li');
+          const countdownId = `countdown-${entry.unstakeId}`;
 
           li.innerHTML = `
-  <div style="margin-bottom: 10px; background-color: #000000; color: #ffffff; padding: 10px; border-radius: 10px;">
-    <strong>Unstake ID#:</strong> ${entry.unstakeId}<br/>
-    <strong>Type:</strong> ${entry.type}<br/>
-    <strong>Amount:</strong> ${entry.totalExpected.toLocaleString()} SGLCN<br/>
-    <strong>Status:</strong> ${statusHtml}<br/>
-    <strong>Date:</strong> ${date}
-  </div>
-`;
+            <div style="margin-bottom: 10px; background-color: #000000; color: #ffffff; padding: 10px; border-radius: 10px;">
+              <strong>Unstake ID#:</strong> ${entry.unstakeId}<br/>
+              <strong>Type:</strong> ${entry.type}<br/>
+              <strong>Amount:</strong> ${entry.totalExpected.toLocaleString()} SGLCN<br/>
+              <strong>Status:</strong> ${entry.status === 'processing' ? '⏳️ processing' : entry.status}<br/>
+              <strong>Payout In:</strong> <span id="${countdownId}">Loading...</span>
+            </div>
+          `;
           list.appendChild(li);
+
+          // 👇 Wrap countdown function in a closure to isolate variables
+          (function startCountdown(id, payoutTime) {
+            const update = () => {
+              const now = new Date();
+              const diff = new Date(payoutTime) - now;
+              const el = document.getElementById(id);
+              if (!el) return;
+
+              if (diff <= 0) {
+                el.textContent = '✅ Payout ready';
+              } else {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                el.textContent = `⏳ ${hours}h ${minutes}m ${seconds}s`;
+              }
+            };
+
+            update(); // initial call
+            setInterval(update, 1000); // continuous updates
+          })(countdownId, entry.payoutScheduledAt); // pass unique ID and date
         }
       });
     }
@@ -568,6 +587,7 @@ async function showUnstakeModule() {
     list.innerHTML = '<li>Error loading unstake history.</li>';
   }
 }
+
 
 
 

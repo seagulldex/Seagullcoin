@@ -214,6 +214,7 @@
       loadWalletFromStorage();
       updateWalletUI();
       setupTrustlineButton();
+      loadNFTPreviews();
     });
 
     function loadWalletFromStorage() {
@@ -461,14 +462,7 @@ async function loadNFTPreviews() {
   } catch (e) {
     console.error('Failed to load NFTs:', e);
   }
-}
-
-// Run on page load
-window.addEventListener('DOMContentLoaded', () => {
-  loadNFTPreviews();
-});
-
-    
+}    
   </script>
 </body>
 </html>

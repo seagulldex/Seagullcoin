@@ -467,9 +467,10 @@ async function loadNFTPreviews() {
     loadingEl.style.display = 'none'; // Hide loading
 
     if (!nfts || nfts.length === 0) {
-      container.innerHTML = `<div style="color: white;">No NFTs found.</div>`;
-      return;
-    }
+  loadingEl.style.display = 'none';
+  container.innerHTML = `<div style="color: white;">No NFTs found.</div>`;
+  return;
+}
 
     nfts.forEach(nft => {
       const rawImg = nft.image || nft.metadata?.image || nft.icon || '';

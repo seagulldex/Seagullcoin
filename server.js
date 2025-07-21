@@ -7490,6 +7490,28 @@ app.get('/api/daily-stats', async (req, res) => {
   }
 });
 
+app.get('/nft-previews', async (req, res) => {
+  try {
+    const db = await connectDB();
+    const stakes = await db.collection('stakes')
+      .find({ metadata: { $exists: true } })
+      .sort({ timestamp: -1 })
+      .limit(8)
+      .toArray();
+
+    const nftData = stakes.map(nft => ({
+      image: nft.metadata?.image || '',
+      name: nft.metadata?.name || 'Unnamed NFT',
+      description: nft.metadata?.description || '',
+    }));
+
+    res.json(nftData);
+  } catch (err) {
+    res.status(500).json({ error: 'Could not fetch NFTs' });
+  }
+});
+
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

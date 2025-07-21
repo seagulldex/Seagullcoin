@@ -319,18 +319,50 @@ async function fetchUnstakeEvents(walletAddress) {
   }).sort({ createdAt: -1 }).toArray();
 }
 
-async function archivePaidEventsLoop() {
+export async function archivePaidEventsLoop() {
   const db = await connectDB();
+
+  // Check if paidCollection exists
+  const collections = await db.listCollections({ name: 'paidCollection' }).toArray();
+  if (collections.length === 0) {
+    // Create paidCollection with schema validation
+    await db.createCollection('paidCollection', {
+      validator: {
+        $jsonSchema: {
+          bsonType: 'object',
+          required: [
+            'unstakeId',
+            'walletAddress',
+            'stakeId',
+            'amount',
+            'status',
+            'paidAt',
+            'createdAt'
+          ],
+          properties: {
+            unstakeId: { bsonType: 'string' },
+            walletAddress: { bsonType: 'string' },
+            stakeId: { bsonType: 'objectId' },
+            amount: { bsonType: 'int' },
+            estimatedReward: { bsonType: 'int' },
+            totalExpected: { bsonType: 'int' },
+            status: { enum: ['processing', 'paid', 'archived'] },
+            paidAt: { bsonType: 'date' },
+            createdAt: { bsonType: 'date' },
+            unlockDate: { bsonType: 'date' },
+            payoutScheduledAt: { bsonType: 'date' }
+          }
+        }
+      }
+    });
+    console.log('✅ Created paidCollection with schema validation');
+  }
+
   const unstakeEventsCollection = db.collection('unstakeEvents');
   const paidCollection = db.collection('paidCollection');
 
-  console.log('[archivePaidEventsLoop] Started');
-
   async function archiveOnce() {
-    const now = new Date();
-    const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    console.log(`[archiveOnce] Looking for events with paidAt <= ${cutoff.toISOString()}`);
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     try {
       const expired = await unstakeEventsCollection.find({
@@ -338,26 +370,27 @@ async function archivePaidEventsLoop() {
         paidAt: { $lte: cutoff }
       }).toArray();
 
-      console.log(`[archiveOnce] Found ${expired.length} expired events`);
-
-      if (!expired.length) return;
+      if (!expired.length) {
+        console.log('[archiveOnce] No events to archive.');
+        return;
+      }
 
       await paidCollection.insertMany(expired);
       const ids = expired.map(e => e._id);
       await unstakeEventsCollection.deleteMany({ _id: { $in: ids } });
 
-      console.log(`[archivePaidEvents] Archived and removed ${ids.length} event(s).`);
+      console.log(`[archiveOnce] Archived and deleted ${ids.length} events.`);
     } catch (err) {
-      console.error('[archivePaidEvents] Error:', err);
+      console.error('[archiveOnce] Error archiving paid events:', err);
     }
   }
 
-  while (true) {
-    await archiveOnce();
-    await new Promise(resolve => setTimeout(resolve, 2 * 60 * 1000)); // 2 minutes
-  }
-}
+  // Run once immediately
+  await archiveOnce();
 
+  // Then every hour
+  setInterval(archiveOnce, 60 * 60 * 1000);
+}
 
 
 

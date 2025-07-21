@@ -535,6 +535,10 @@ async function showUnstakeModule() {
   const wallet = localStorage.getItem('xumm_wallet_address');
   if (!wallet) return;
 
+  // If all unstake events are already closed, do not open the module again
+  const closedFlag = localStorage.getItem('unstake_fully_closed');
+  if (closedFlag === 'true') return;
+
   try {
     const response = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/unstake-events', {
       method: 'POST',
@@ -547,44 +551,23 @@ async function showUnstakeModule() {
     list.innerHTML = '';
 
     const container = document.getElementById('unstake-module-container');
-    container.style.display = 'block';
-
-    // Add close button if not exists
-    // Add close button to the module container if not already added
-if (!document.getElementById('unstake-close-btn')) {
-  const closeBtn = document.createElement('button');
-  closeBtn.id = 'unstake-close-btn';
-  closeBtn.textContent = '✖';
-  closeBtn.style = `
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: transparent;
-    border: none;
-    color: #fff;
-    font-size: 24px;
-    cursor: pointer;
-    z-index: 10;
-  `;
-  closeBtn.onclick = () => {
-    container.style.display = 'none';
-  };
-  container.appendChild(closeBtn);
-  container.style.position = 'relative'; // Ensure positioning works
-}
-
 
     let found = false;
+    let allPaid = true; // Will become false if any entry is not paid
 
     if (Array.isArray(data)) {
       data.forEach(entry => {
         if (['completed', 'processing', 'pending', 'paid'].includes(entry.status)) {
           found = true;
 
+          // If we find any entry not paid, set allPaid to false
+          if (entry.status !== 'paid') {
+            allPaid = false;
+          }
+
           const li = document.createElement('li');
           const countdownId = `countdown-${entry.unstakeId}`;
 
-          // For paid, no countdown needed
           const payoutContent = entry.status === 'paid'
             ? '<span style="color: #0f0;">— Payout completed</span>'
             : `<span id="${countdownId}">Loading...</span>`;
@@ -603,7 +586,6 @@ if (!document.getElementById('unstake-close-btn')) {
           list.appendChild(li);
 
           if (entry.status !== 'paid') {
-            // Start countdown for non-paid statuses
             (function startCountdown(id, payoutTime) {
               const update = () => {
                 const now = new Date();
@@ -631,6 +613,38 @@ if (!document.getElementById('unstake-close-btn')) {
 
     if (!found) {
       list.innerHTML = '<li>No unstake records found.</li>';
+    }
+
+    // If all entries are paid, mark as permanently closed
+    if (allPaid && found) {
+      localStorage.setItem('unstake_fully_closed', 'true');
+      return; // Don't show module again
+    }
+
+    // Show module if needed
+    container.style.display = 'block';
+
+    // Add close button if not already there
+    if (!document.getElementById('unstake-close-btn')) {
+      const closeBtn = document.createElement('button');
+      closeBtn.id = 'unstake-close-btn';
+      closeBtn.textContent = '✖';
+      closeBtn.style = `
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: transparent;
+        border: none;
+        color: #fff;
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 10;
+      `;
+      closeBtn.onclick = () => {
+        container.style.display = 'none';
+      };
+      container.appendChild(closeBtn);
+      container.style.position = 'relative';
     }
 
   } catch (err) {

@@ -449,6 +449,8 @@ async function loadNFTPreviews() {
     nfts.forEach(nft => {
       const rawImg = nft.image || nft.metadata?.image || nft.icon || '';
       const imgSrc = resolveIPFS(rawImg);
+      const name = nft.metadata?.name || nft.collection?.name || 'Untitled NFT';
+      const desc = nft.description || nft.collection?.description || '';
 
 
       if (!imgSrc) {

@@ -322,18 +322,11 @@ async function fetchUnstakeEvents(walletAddress) {
 export async function archivePaidEventsLoop() {
   const db = await connectDB();
 
-  // Ensure collection exists
-  const collections = await db.listCollections({ name: 'paidCollection' }).toArray();
-  if (collections.length === 0) {
-    await db.createCollection('paidCollection');
-    console.log('✅ Created paidCollection manually');
-  }
-
   const unstakeEventsCollection = db.collection('unstakeEvents');
-  const paidCollection = db.collection('paidCollection');
+  const paidEventsCollection = db.collection('paidEvents'); // use consistent naming
 
   async function archiveOnce() {
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24h ago
 
     try {
       const expired = await unstakeEventsCollection.find({
@@ -343,23 +336,29 @@ export async function archivePaidEventsLoop() {
 
       console.log(`[archiveOnce] Found ${expired.length} expired events`);
 
-      if (!expired.length) {
-        return;
-      }
+      if (!expired.length) return;
 
-      await paidCollection.insertMany(expired);
+      await paidEventsCollection.insertMany(expired);
       const ids = expired.map(e => e._id);
       await unstakeEventsCollection.deleteMany({ _id: { $in: ids } });
 
       console.log(`[archiveOnce] Archived and deleted ${ids.length} events.`);
     } catch (err) {
-      console.error('[archiveOnce] Error archiving paid events:', err);
+      console.error('[archiveOnce] Error:', err);
     }
   }
 
+  // Run immediately
   await archiveOnce();
-  setInterval(archiveOnce, 2 * 60 * 1000); // every 2 minutes
+
+  // Schedule to run every hour
+  setInterval(archiveOnce, 60 * 60 * 1000);
 }
+
+// Start the loop
+(async () => {
+  await archivePaidEventsLoop();
+})();
 
 
 

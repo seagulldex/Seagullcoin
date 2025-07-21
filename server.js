@@ -7365,6 +7365,56 @@ app.get('/unstake-wallets', async (req, res) => {
 });
 
 // your other routes and app.listen here
+app.post('/unstake-events/dismiss', async (req, res) => {
+  const { wallet, unstakeId } = req.body;
+  if (!wallet || !unstakeId) return res.status(400).send('Missing parameters');
+
+  const unstakeEventsCollection = db.collection('unstakeEvents');
+  const unstakeDismissalsCollection = db.collection('unstakeDismissals');
+
+  try {
+    // Find the unstake event
+    const event = await unstakeEventsCollection.findOne({ unstakeId, walletAddress: wallet });
+
+    if (!event) {
+      return res.status(404).send({ error: 'Unstake event not found' });
+    }
+
+    if (event.status !== 'paid') {
+      return res.status(400).send({ error: 'Only paid events can be dismissed' });
+    }
+
+    const paidAt = event.paidAt ? new Date(event.paidAt) : null;
+    if (!paidAt) {
+      return res.status(400).send({ error: 'Invalid paidAt timestamp' });
+    }
+
+    const now = new Date();
+    const diffMs = now - paidAt;
+    if (diffMs < 24 * 60 * 60 * 1000) {
+      return res.status(400).send({ error: 'Paid event can only be dismissed after 24 hours' });
+    }
+
+    // Check if dismissal already exists
+    const existingDismissal = await unstakeDismissalsCollection.findOne({ wallet, unstakeId });
+    if (existingDismissal) {
+      return res.send({ success: true, message: 'Already dismissed' });
+    }
+
+    // Insert dismissal record
+    await unstakeDismissalsCollection.insertOne({
+      wallet,
+      unstakeId,
+      dismissedAt: now,
+    });
+
+    res.send({ success: true });
+
+  } catch (err) {
+    console.error('Error dismissing unstake event:', err);
+    res.status(500).send({ error: 'Internal server error' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

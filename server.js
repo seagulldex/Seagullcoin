@@ -88,7 +88,7 @@ import SGLCNXAUPrice from './models/SGLCNXAUPrice.js';
 import './Xauprice.js'; // or whatever your file with setInterval is
 import './priceTrackerSGLCNXRP.js';
 import SGLCNRLUSDPrice from './models/SGLCNRLUSDPrice.js';
-import cron from 'node-cron';
+
 
 dotenv.config();
 
@@ -357,40 +357,43 @@ async function archivePaidUnstakeEvents() {
 }
 
 
-
-async function archivePaidEvents() {
+async function archivePaidEventsLoop() {
   const db = await connectDB();
   const unstakeEventsCollection = db.collection('unstakeEvents');
-  const paidCollection = db.collection('paidCollection'); // target archive
+  const paidCollection = db.collection('paidCollection');
 
-  const now = new Date();
-  const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+  async function archiveOnce() {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
 
-  const expiredPaidEvents = await unstakeEventsCollection.find({
-    status: 'paid',
-    paidAt: { $lte: cutoff }
-  }).toArray();
+    try {
+      const expired = await unstakeEventsCollection.find({
+        status: 'paid',
+        paidAt: { $lte: cutoff }
+      }).toArray();
 
-  if (!expiredPaidEvents.length) {
-    console.log('[archivePaidEvents] No paid events older than 24h found');
-    return;
+      if (!expired.length) {
+        console.log('[archivePaidEvents] Nothing to archive.');
+        return;
+      }
+
+      await paidCollection.insertMany(expired);
+      const ids = expired.map(e => e._id);
+      await unstakeEventsCollection.deleteMany({ _id: { $in: ids } });
+
+      console.log(`[archivePaidEvents] Archived and removed ${ids.length} event(s).`);
+    } catch (err) {
+      console.error('[archivePaidEvents] Error:', err);
+    }
   }
 
-  try {
-    await paidCollection.insertMany(expiredPaidEvents);
-    const ids = expiredPaidEvents.map(e => e._id);
-    await unstakeEventsCollection.deleteMany({ _id: { $in: ids } });
-
-    console.log(`[archivePaidEvents] Archived ${ids.length} paid events.`);
-  } catch (err) {
-    console.error('[archivePaidEvents] Error archiving paid events:', err);
+  // Run immediately, then every hour
+  while (true) {
+    await archiveOnce();
+    await new Promise(resolve => setTimeout(resolve, 60 * 60 * 1000)); // wait 1 hour
   }
 }
 
-// Schedule to run every hour at minute 0
-cron.schedule('0 * * * *', () => {
-  archivePaidEvents().catch(console.error);
-});
 
 
 

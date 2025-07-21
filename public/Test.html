@@ -423,6 +423,48 @@ function updateWalletUI() {
         status.textContent = 'Invalid XRPL wallet address.';
       }
     }
+
+async function loadNFTPreviews() {
+  try {
+    const res = await fetch('/nft-previews');
+    const nfts = await res.json();
+
+    const container = document.getElementById('nft-carousel');
+    container.innerHTML = '';
+
+    nfts.forEach(nft => {
+      const card = document.createElement('div');
+      card.style = `
+        flex: 0 0 auto;
+        width: 180px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #1e1e1e;
+        padding: 10px;
+        color: white;
+        scroll-snap-align: start;
+      `;
+
+      card.innerHTML = `
+        <img src="${nft.image}" alt="${nft.name}" style="width:100%; height: auto; border-radius: 4px;" />
+        <h4 style="margin: 6px 0 2px;">${nft.name}</h4>
+        <p style="font-size: 12px; color: #ccc;">${nft.description || ''}</p>
+      `;
+
+      container.appendChild(card);
+    });
+
+  } catch (e) {
+    console.error('Failed to load NFTs:', e);
+  }
+}
+
+// Run on page load
+window.addEventListener('DOMContentLoaded', () => {
+  loadNFTPreviews();
+});
+
+    
   </script>
 </body>
 </html>

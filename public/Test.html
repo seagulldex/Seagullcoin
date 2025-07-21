@@ -426,6 +426,13 @@ function updateWalletUI() {
       }
     }
 
+    function resolveIPFS(uri) {
+  if (!uri) return '';
+  return uri.startsWith('ipfs://') 
+    ? uri.replace('ipfs://', 'https://ipfs.io/ipfs/')
+    : uri;
+}
+
 async function loadNFTPreviews() {
   console.log('Loading NFT previews...');
   try {

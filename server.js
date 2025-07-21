@@ -352,7 +352,7 @@ export async function archivePaidEventsLoop() {
   await archiveOnce();
 
   // Schedule to run every hour
-  setInterval(archiveOnce, 60 * 60 * 1000);
+  setInterval(archiveOnce, 2 * 60 * 1000); // every 2 minutes
 }
 
 // Start the loop

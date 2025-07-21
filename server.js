@@ -241,6 +241,40 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
+async function fetchAndLogDailyTotals() {
+  const dailyTotals = await stakesCollection.aggregate([
+    {
+      $group: {
+        _id: {
+          year: { $year: '$timestamp' },
+          month: { $month: '$timestamp' },
+          day: { $dayOfMonth: '$timestamp' }
+        },
+        totalStaked: { $sum: '$amount' },
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+  ]).toArray();
+
+  const dailyTotalsFormatted = dailyTotals.map(item => {
+    const { year, month, day } = item._id;
+    return {
+      date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+      totalStaked: item.totalStaked,
+      count: item.count,
+    };
+  });
+
+  console.log(dailyTotalsFormatted);
+}
+
+// Run immediately on script start
+(async () => {
+  await fetchAndLogDailyTotals();
+})();
+
+
 // Auto-unstake function
 // Assuming Stake is your mongoose model, imported already
 // import Stake from './models/stake.js';  // example import

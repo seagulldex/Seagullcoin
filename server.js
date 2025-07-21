@@ -270,9 +270,15 @@ async function fetchAndLogDailyTotals() {
 }
 
 // Run immediately on script start
+// Run immediately on script start
 (async () => {
   await fetchAndLogDailyTotals();
+
+  // Schedule to run every 24 hours
+  setInterval(fetchAndLogDailyTotals, 24 * 60 * 60 * 1000);
 })();
+
+
 
 
 // Auto-unstake function

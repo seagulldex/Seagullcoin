@@ -447,9 +447,9 @@ async function loadNFTPreviews() {
     container.innerHTML = '';
 
     nfts.forEach(nft => {
-      const imgSrc = nft.image || nft.metadata?.image || nft.icon || ''; // fallback handling
-      const name = nft.metadata?.name || nft.collection?.name || 'Untitled NFT';
-      const desc = nft.description || nft.collection?.description || '';
+      const rawImg = nft.image || nft.metadata?.image || nft.icon || '';
+      const imgSrc = resolveIPFS(rawImg);
+
 
       if (!imgSrc) {
         console.warn('NFT missing image:', nft);

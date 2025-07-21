@@ -358,7 +358,7 @@ export async function archivePaidEventsLoop() {
   }
 
   await archiveOnce();
-  setInterval(archiveOnce, 60 * 60 * 1000); // every hour
+  setInterval(archiveOnce, 2 * 60 * 1000); // every 2 minutes
 }
 
 

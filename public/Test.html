@@ -426,7 +426,7 @@ function updateWalletUI() {
 
 async function loadNFTPreviews() {
   try {
-    const res = await fetch('/nft-previews');
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/nft-total');
     const nfts = await res.json();
 
     const container = document.getElementById('nft-carousel');

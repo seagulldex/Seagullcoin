@@ -435,23 +435,30 @@ function updateWalletUI() {
 
 async function loadNFTPreviews() {
   console.log('Loading NFT previews...');
+  const loadingEl = document.getElementById('nft-loading');
+  loadingEl.style.display = 'block'; // Show loading
+
   try {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/nft-total');
     const data = await res.json();
 
-    // Access the actual NFTs array
     const nfts = data.nfts;
     console.log('NFT data:', nfts);
 
     const container = document.getElementById('nft-carousel');
     container.innerHTML = '';
+    loadingEl.style.display = 'none'; // Hide loading
+
+    if (!nfts || nfts.length === 0) {
+      container.innerHTML = `<div style="color: white;">No NFTs found.</div>`;
+      return;
+    }
 
     nfts.forEach(nft => {
       const rawImg = nft.image || nft.metadata?.image || nft.icon || '';
       const imgSrc = resolveIPFS(rawImg);
       const name = nft.metadata?.name || nft.collection?.name || 'Untitled NFT';
       const desc = nft.description || nft.collection?.description || '';
-
 
       if (!imgSrc) {
         console.warn('NFT missing image:', nft);
@@ -481,6 +488,7 @@ async function loadNFTPreviews() {
 
   } catch (e) {
     console.error('Failed to load NFTs:', e);
+    loadingEl.textContent = 'Failed to load NFTs. Please try again later.';
   }
 }
 

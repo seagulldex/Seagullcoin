@@ -322,40 +322,11 @@ async function fetchUnstakeEvents(walletAddress) {
 export async function archivePaidEventsLoop() {
   const db = await connectDB();
 
-  // Check if paidCollection exists
+  // Ensure collection exists
   const collections = await db.listCollections({ name: 'paidCollection' }).toArray();
   if (collections.length === 0) {
-    // Create paidCollection with schema validation
-    await db.createCollection('paidCollection', {
-      validator: {
-        $jsonSchema: {
-          bsonType: 'object',
-          required: [
-            'unstakeId',
-            'walletAddress',
-            'stakeId',
-            'amount',
-            'status',
-            'paidAt',
-            'createdAt'
-          ],
-          properties: {
-            unstakeId: { bsonType: 'string' },
-            walletAddress: { bsonType: 'string' },
-            stakeId: { bsonType: 'objectId' },
-            amount: { bsonType: 'int' },
-            estimatedReward: { bsonType: 'int' },
-            totalExpected: { bsonType: 'int' },
-            status: { enum: ['processing', 'paid', 'archived'] },
-            paidAt: { bsonType: 'date' },
-            createdAt: { bsonType: 'date' },
-            unlockDate: { bsonType: 'date' },
-            payoutScheduledAt: { bsonType: 'date' }
-          }
-        }
-      }
-    });
-    console.log('✅ Created paidCollection with schema validation');
+    await db.createCollection('paidCollection');
+    console.log('✅ Created paidCollection manually');
   }
 
   const unstakeEventsCollection = db.collection('unstakeEvents');
@@ -370,8 +341,9 @@ export async function archivePaidEventsLoop() {
         paidAt: { $lte: cutoff }
       }).toArray();
 
+      console.log(`[archiveOnce] Found ${expired.length} expired events`);
+
       if (!expired.length) {
-        console.log('[archiveOnce] No events to archive.');
         return;
       }
 
@@ -385,11 +357,8 @@ export async function archivePaidEventsLoop() {
     }
   }
 
-  // Run once immediately
   await archiveOnce();
-
-  // Then every hour
-  setInterval(archiveOnce, 60 * 60 * 1000);
+  setInterval(archiveOnce, 60 * 60 * 1000); // every hour
 }
 
 

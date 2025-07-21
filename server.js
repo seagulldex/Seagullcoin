@@ -356,6 +356,40 @@ async function archivePaidUnstakeEvents() {
   }
 }
 
+async function archivePaidEvents() {
+  const db = await connectDB();
+  const unstakeEventsCollection = db.collection('unstakeEvents');
+  const paidCollection = db.collection('paidCollection'); // target archive
+
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+
+  // Find all paid events with paidAt older than 24h
+  const expiredPaidEvents = await unstakeEventsCollection.find({
+    status: 'paid',
+    paidAt: { $lte: cutoff }
+  }).toArray();
+
+  if (!expiredPaidEvents.length) {
+    console.log('[archivePaidEvents] No paid events older than 24h found');
+    return;
+  }
+
+  try {
+    // Insert all into paidCollection as-is (keep _id and all fields)
+    await paidCollection.insertMany(expiredPaidEvents);
+
+    // Delete them from unstakeEventsCollection by _id
+    const ids = expiredPaidEvents.map(e => e._id);
+    await unstakeEventsCollection.deleteMany({ _id: { $in: ids } });
+
+    console.log(`[archivePaidEvents] Archived ${ids.length} paid events.`);
+  } catch (err) {
+    console.error('[archivePaidEvents] Error archiving paid events:', err);
+  }
+}
+
+
 
 async function cleanUpOldProcessedNotifications() {
   const db = await connectDB();

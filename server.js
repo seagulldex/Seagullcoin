@@ -7475,6 +7475,21 @@ app.post('/unstake-events/dismiss', async (req, res) => {
   }
 });
 
+app.get('/api/daily-stats', async (req, res) => {
+  try {
+    const db = await connectDB();
+    const stats = await db.collection('dailyStakeStats')
+      .find({})
+      .sort({ date: 1 })
+      .toArray();
+
+    res.json(stats);
+  } catch (err) {
+    console.error('Failed to fetch daily stats:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

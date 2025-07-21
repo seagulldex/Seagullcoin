@@ -241,7 +241,12 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
-async function fetchAndLogDailyTotals() {
+
+async function fetchAndStoreDailyTotals() {
+  const db = await connectDB();
+  const stakesCollection = db.collection('stakes');
+  const statsCollection = db.collection('dailyStakeStats'); // new collection
+
   const dailyTotals = await stakesCollection.aggregate([
     {
       $group: {
@@ -266,17 +271,25 @@ async function fetchAndLogDailyTotals() {
     };
   });
 
-  console.log(dailyTotalsFormatted);
+  console.log('[Daily Stats] Saving:', dailyTotalsFormatted);
+
+  // Optional: Clear previous data to avoid duplicates
+  await statsCollection.deleteMany({}); // or update per date
+
+  // Insert fresh data
+  if (dailyTotalsFormatted.length) {
+    await statsCollection.insertMany(dailyTotalsFormatted);
+  }
 }
 
-// Run immediately on script start
-// Run immediately on script start
+// Run immediately
 (async () => {
-  await fetchAndLogDailyTotals();
+  await fetchAndStoreDailyTotals();
 
-  // Schedule to run every 24 hours
-  setInterval(fetchAndLogDailyTotals, 24 * 60 * 60 * 1000);
+  // Run once every 24 hours
+  setInterval(fetchAndStoreDailyTotals, 24 * 60 * 60 * 1000);
 })();
+
 
 
 

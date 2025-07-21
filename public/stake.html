@@ -505,6 +505,40 @@ localStorage.setItem('seagull_wallet', wallet);
   });
 }
 
+  async function loadChart() {
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/daily-stats');
+      const data = await res.json();
+
+      const labels = data.map(entry => entry.date);
+      const totals = data.map(entry => entry.totalStaked);
+
+      const ctx = document.getElementById('stakeChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Total Staked (per day)',
+            data: totals,
+            borderColor: '#42b983',
+            backgroundColor: 'rgba(66, 185, 131, 0.2)',
+            fill: true,
+            tension: 0.3,
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    loadChart();
+
   function calculateEarnings(entry) {
   const { amount, timestamp, tier } = entry;
   const now = new Date();

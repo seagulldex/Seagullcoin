@@ -319,6 +319,42 @@ async function fetchUnstakeEvents(walletAddress) {
   }).sort({ createdAt: -1 }).toArray();
 }
 
+async function archivePaidUnstakeEvents() {
+  const db = await connectDB();
+  const unstakeEventsCollection = db.collection('unstakeEvents');
+  const paidUnstakeEventsCollection = db.collection('paidUnstakeEvents');
+
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+
+  const expiredPaidEvents = await unstakeEventsCollection.find({
+    status: 'paid',
+    paidAt: { $lte: cutoff }
+  }).toArray();
+
+  if (!expiredPaidEvents.length) {
+    console.log('[archivePaidUnstakeEvents] No expired paid events to archive.');
+    return;
+  }
+
+  try {
+    // Insert into archive
+    await paidUnstakeEventsCollection.insertMany(
+      expiredPaidEvents.map(event => ({
+        ...event,
+        migratedAt: new Date()
+      }))
+    );
+
+    // Remove from main collection
+    const ids = expiredPaidEvents.map(e => e._id);
+    await unstakeEventsCollection.deleteMany({ _id: { $in: ids } });
+
+    console.log(`[archivePaidUnstakeEvents] Archived ${ids.length} paid events.`);
+  } catch (err) {
+    console.error('[archivePaidUnstakeEvents] Error archiving paid events:', err);
+  }
+}
 
 
 async function cleanUpOldProcessedNotifications() {

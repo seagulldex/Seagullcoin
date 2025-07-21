@@ -7490,26 +7490,38 @@ app.get('/api/daily-stats', async (req, res) => {
   }
 });
 
-app.get('/nft-previews', async (req, res) => {
+// GET /nfts-all - Fetch ALL saved NFTs from MongoDB
+app.get('/nft-total', async (req, res) => {
   try {
-    const db = await connectDB();
-    const stakes = await db.collection('stakes')
-      .find({ metadata: { $exists: true } })
-      .sort({ timestamp: -1 })
-      .limit(8)
-      .toArray();
+    const allNFTs = await NFTModel.find({}).lean();
 
-    const nftData = stakes.map(nft => ({
-      image: nft.metadata?.image || '',
-      name: nft.metadata?.name || 'Unnamed NFT',
-      description: nft.metadata?.description || '',
+    const fixIPFS = (uri) =>
+      uri?.startsWith("ipfs://")
+        ? uri.replace("ipfs://", "https://ipfs.io/ipfs/")
+        : uri;
+
+    const normalized = allNFTs.map(nft => ({
+      ...nft,
+      icon: fixIPFS(nft.icon),
+      image: fixIPFS(nft.image),
+      URI: fixIPFS(nft.URI),
+      metadata: {
+        ...nft.metadata,
+        image: fixIPFS(nft.metadata?.image),
+        collection: {
+          ...nft.metadata?.collection,
+          image: fixIPFS(nft.metadata?.collection?.image)
+        }
+      }
     }));
 
-    res.json(nftData);
+    return res.json({ nfts: normalized });
   } catch (err) {
-    res.status(500).json({ error: 'Could not fetch NFTs' });
+    console.error('Error fetching all NFTs:', err);
+    return res.status(500).json({ error: 'Failed to fetch all NFTs' });
   }
 });
+
 
 
 

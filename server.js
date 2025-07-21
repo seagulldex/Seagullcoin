@@ -88,7 +88,7 @@ import SGLCNXAUPrice from './models/SGLCNXAUPrice.js';
 import './Xauprice.js'; // or whatever your file with setInterval is
 import './priceTrackerSGLCNXRP.js';
 import SGLCNRLUSDPrice from './models/SGLCNRLUSDPrice.js';
-
+import cron from 'node-cron';
 
 dotenv.config();
 
@@ -356,6 +356,8 @@ async function archivePaidUnstakeEvents() {
   }
 }
 
+
+
 async function archivePaidEvents() {
   const db = await connectDB();
   const unstakeEventsCollection = db.collection('unstakeEvents');
@@ -364,7 +366,6 @@ async function archivePaidEvents() {
   const now = new Date();
   const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
 
-  // Find all paid events with paidAt older than 24h
   const expiredPaidEvents = await unstakeEventsCollection.find({
     status: 'paid',
     paidAt: { $lte: cutoff }
@@ -376,10 +377,7 @@ async function archivePaidEvents() {
   }
 
   try {
-    // Insert all into paidCollection as-is (keep _id and all fields)
     await paidCollection.insertMany(expiredPaidEvents);
-
-    // Delete them from unstakeEventsCollection by _id
     const ids = expiredPaidEvents.map(e => e._id);
     await unstakeEventsCollection.deleteMany({ _id: { $in: ids } });
 
@@ -388,6 +386,11 @@ async function archivePaidEvents() {
     console.error('[archivePaidEvents] Error archiving paid events:', err);
   }
 }
+
+// Schedule to run every hour at minute 0
+cron.schedule('0 * * * *', () => {
+  archivePaidEvents().catch(console.error);
+});
 
 
 

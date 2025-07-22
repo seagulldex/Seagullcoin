@@ -7684,11 +7684,15 @@ if (bulkOps.length) {
 });
 
 setInterval(() => {
-  fetch('http://seagullcoin-dex-uaj3x.ondigitalocean.app/update-daily-stats', { method: 'POST' }) // adjust port if needed
+  console.log(`[SetInterval] Triggering update-daily-stats at ${new Date().toISOString()}`);
+  fetch('http://seagullcoin-dex-uaj3x.ondigitalocean.app/update-daily-stats', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  })
     .then(res => res.json())
     .then(json => console.log('[Auto Update] Daily stats updated:', json))
     .catch(err => console.error('[Auto Update Error]', err));
-},60 * 1000); // Every 1 minute
+}, 60 * 1000); // Every 1 minute
 
 
 

@@ -7566,6 +7566,56 @@ app.post('/update-daily-users', async (req, res) => {
   }
 });
 
+app.post('/update-staker-stats', async (req, res) => {
+  try {
+    const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
+    const statsCollection = db.collection('dailyStakeStats');
+
+    const dailyTotals = await stakesCollection.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: '$timestamp' },
+            month: { $month: '$timestamp' },
+            day: { $dayOfMonth: '$timestamp' }
+          },
+          totalStaked: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+    ]).toArray();
+
+    // Add cumulative total
+    const dailyTotalsFormatted = [];
+    let runningTotal = 0;
+
+    for (const item of dailyTotals) {
+      const { year, month, day } = item._id;
+      const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+      runningTotal += item.totalStaked;
+
+      dailyTotalsFormatted.push({
+        date,
+        dailyTotal: item.totalStaked,
+        cumulativeTotal: runningTotal,
+        count: item.count,
+      });
+    }
+
+    await statsCollection.deleteMany({});
+    if (dailyTotalsFormatted.length) {
+      await statsCollection.insertMany(dailyTotalsFormatted);
+    }
+
+    res.json({ message: 'Daily stats updated', statsCount: dailyTotalsFormatted.length });
+  } catch (err) {
+    console.error('Error updating daily stats:', err);
+    res.status(500).json({ error: 'Failed to update stats' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

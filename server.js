@@ -241,6 +241,23 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
+async function cleanOldPendingStakes(db) {
+  const collection = db.collection('stakesCollection');
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  try {
+    const result = await collection.deleteMany({
+      status: 'pending',
+      timestamp: { $lt: twentyFourHoursAgo }
+    });
+
+    console.log(`🧹 Deleted ${result.deletedCount} expired pending stakes.`);
+  } catch (err) {
+    console.error('❌ Error cleaning stakes:', err);
+  }
+}
+
+
 async function fetchAndStoreDailyTotals() {
   const db = await connectDB();
   const stakesCollection = db.collection('stakes');

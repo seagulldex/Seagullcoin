@@ -7545,12 +7545,11 @@ app.post('/update-daily-stats', async (req, res) => {
       { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
     ]).toArray();
 
-    // Apply cumulative addition
+    // Add cumulativeTotal
     let runningTotal = 0;
     const dailyTotalsFormatted = dailyTotals.map(item => {
       const { year, month, day } = item._id;
       const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-
       runningTotal += item.totalStaked;
 
       return {
@@ -7561,7 +7560,6 @@ app.post('/update-daily-stats', async (req, res) => {
       };
     });
 
-    // Save to DB
     await statsCollection.deleteMany({});
     if (dailyTotalsFormatted.length) {
       await statsCollection.insertMany(dailyTotalsFormatted);
@@ -7570,13 +7568,14 @@ app.post('/update-daily-stats', async (req, res) => {
     res.json({
       message: 'Daily stats updated with cumulative totals',
       statsCount: dailyTotalsFormatted.length,
-      stats: dailyTotalsFormatted // Send them back for confirmation
+      stats: dailyTotalsFormatted
     });
   } catch (err) {
     console.error('Error updating daily stats:', err);
     res.status(500).json({ error: 'Failed to update stats' });
   }
 });
+
 
 
 app.post('/update-staker-stats', async (req, res) => {

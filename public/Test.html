@@ -460,6 +460,24 @@ function updateWalletUI() {
   return '';
 }
 
+    async function fetchNFTTotal() {
+  try {
+    document.getElementById('loading-spinner').style.display = 'block';
+
+    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/nft-total`);
+    const data = await res.json();
+
+    const total = data.total || 0; // assuming response is like { "total": 123 }
+    document.getElementById('nft-count').textContent = total;
+  } catch (err) {
+    console.error("Error fetching NFT total:", err);
+    alert("Failed to load NFT total.");
+  } finally {
+    document.getElementById('loading-spinner').style.display = 'none';
+  }
+}
+
+
 async function loadNFTPreviews() {
   console.log('Loading NFT previews...');
   const loadingEl = document.getElementById('nft-loading');

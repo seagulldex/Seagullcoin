@@ -7664,10 +7664,17 @@ app.post('/update-daily-stats', async (req, res) => {
       };
     });
 
-    await statsCollection.deleteMany({});
-    if (formatted.length) {
-      await statsCollection.insertMany(formatted);
-    }
+    const bulkOps = formatted.map(stat => ({
+  updateOne: {
+    filter: { date: stat.date },
+    update: { $set: stat },
+    upsert: true
+  }
+}));
+
+if (bulkOps.length) {
+  await statsCollection.bulkWrite(bulkOps);
+}
 
     res.json({ message: 'Daily stats updated with cumulative totals', statsCount: formatted.length, stats: formatted });
   } catch (err) {

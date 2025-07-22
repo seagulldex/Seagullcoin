@@ -262,11 +262,18 @@ async function fetchAndStoreDailyTotals() {
     { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
   ]).toArray();
 
+  // Format and apply cumulative addition
+  let runningTotal = 0;
   const dailyTotalsFormatted = dailyTotals.map(item => {
     const { year, month, day } = item._id;
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    runningTotal += item.totalStaked;
+
     return {
-      date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-      totalStaked: item.totalStaked,
+      date,
+      dailyTotal: item.totalStaked,
+      cumulativeTotal: runningTotal,
       count: item.count,
     };
   });
@@ -274,7 +281,7 @@ async function fetchAndStoreDailyTotals() {
   console.log('[Daily Stats] Saving:', dailyTotalsFormatted);
 
   // Optional: Clear previous data to avoid duplicates
-  await statsCollection.deleteMany({}); // or update per date
+  await statsCollection.deleteMany({});
 
   // Insert fresh data
   if (dailyTotalsFormatted.length) {
@@ -282,13 +289,6 @@ async function fetchAndStoreDailyTotals() {
   }
 }
 
-// Run immediately
-(async () => {
-  await fetchAndStoreDailyTotals();
-
-  // Run once every 24 hours
-  setInterval(fetchAndStoreDailyTotals, 24 * 60 * 60 * 1000);
-})();
 
 
 

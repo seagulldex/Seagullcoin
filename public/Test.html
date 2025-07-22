@@ -443,7 +443,7 @@ function updateWalletUI() {
       }
     }
 
-    function resolveIPFS(uri) {
+  function resolveIPFS(uri) {
   if (!uri) return '';
   // Handle ipfs:// URIs
   if (uri.startsWith('ipfs://')) {
@@ -525,8 +525,7 @@ async function loadNFTPreviews() {
     container.innerHTML = `<div style="color: red;">Failed to load NFTs. Please try again later.</div>`;
   }
 }
-
-
+  
 
   </script>
 </body>

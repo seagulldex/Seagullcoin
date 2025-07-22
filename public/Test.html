@@ -444,25 +444,33 @@ function updateWalletUI() {
     }
 
     function resolveIPFS(uri) {
-  // Since all URLs are https://, just return the URI or empty string
-  return uri || '';
+  if (!uri) return '';
+  // Handle ipfs:// URIs
+  if (uri.startsWith('ipfs://')) {
+    return uri.replace('ipfs://', 'https://ipfs.io/ipfs/');
+  }
+  // Handle gateway URLs or regular https URLs directly
+  if (uri.startsWith('http://') || uri.startsWith('https://')) {
+    return uri;
+  }
+  // If relative or unknown format, return as-is or empty
+  return '';
 }
 
 async function loadNFTPreviews() {
   console.log('Loading NFT previews...');
   const loadingEl = document.getElementById('nft-loading');
-  loadingEl.style.display = 'block'; // Show loading
+  const container = document.getElementById('nft-carousel');
+  loadingEl.style.display = 'block'; // Show loading spinner
+  container.innerHTML = '';          // Clear existing cards
 
   try {
     const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/nft-total');
+    if (!res.ok) throw new Error('Network response not OK');
     const data = await res.json();
 
     const nfts = data.nfts;
-    console.log('NFT data:', nfts);
-
-    const container = document.getElementById('nft-carousel');
-    container.innerHTML = '';
-    loadingEl.style.display = 'none'; // Hide loading
+    loadingEl.style.display = 'none'; // Hide loading spinner
 
     if (!nfts || nfts.length === 0) {
       container.innerHTML = `<div style="color: white;">No NFTs found.</div>`;
@@ -470,32 +478,42 @@ async function loadNFTPreviews() {
     }
 
     nfts.forEach(nft => {
+      // Try to find an image URL in common places
       const rawImg = nft.image || nft.metadata?.image || nft.icon || '';
       const imgSrc = resolveIPFS(rawImg);
-      const name = nft.metadata?.name || nft.collection?.name || 'Untitled NFT';
-      const desc = nft.description || nft.collection?.description || '';
 
+      // If no image, skip this NFT (or you can use a placeholder)
       if (!imgSrc) {
-        console.warn('NFT missing image:', nft);
+        console.warn('NFT missing image, skipping:', nft);
         return;
       }
 
+      // Name and description fallbacks
+      const name = nft.metadata?.name || nft.collection?.name || 'Untitled NFT';
+      const desc = nft.description || nft.metadata?.description || nft.collection?.description || '';
+
+      // Create card element
       const card = document.createElement('div');
-      card.style = `
+      card.style.cssText = `
         flex: 0 0 auto;
         width: 180px;
-        border: 1px solid #ccc;
+        border: 1px solid #444;
         border-radius: 8px;
         background: #1e1e1e;
         padding: 10px;
         color: white;
         scroll-snap-align: start;
+        box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        transition: transform 0.2s ease;
+        cursor: pointer;
       `;
+      card.onmouseenter = () => card.style.transform = 'scale(1.05)';
+      card.onmouseleave = () => card.style.transform = 'scale(1)';
 
       card.innerHTML = `
-        <img src="${imgSrc}" alt="${name}" style="width:100%; height: auto; border-radius: 4px;" />
-        <h4 style="margin: 6px 0 2px;">${name}</h4>
-        <p style="font-size: 12px; color: #ccc;">${desc}</p>
+        <img src="${imgSrc}" alt="${name}" style="width:100%; height: auto; border-radius: 4px; object-fit: contain;" />
+        <h4 style="margin: 8px 0 4px; font-weight: 600;">${name}</h4>
+        <p style="font-size: 12px; color: #aaa; min-height: 36px;">${desc}</p>
       `;
 
       container.appendChild(card);
@@ -503,9 +521,11 @@ async function loadNFTPreviews() {
 
   } catch (e) {
     console.error('Failed to load NFTs:', e);
-    loadingEl.textContent = 'Failed to load NFTs. Please try again later.';
+    loadingEl.style.display = 'none';
+    container.innerHTML = `<div style="color: red;">Failed to load NFTs. Please try again later.</div>`;
   }
 }
+
 
 
   </script>

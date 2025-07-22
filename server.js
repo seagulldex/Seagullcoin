@@ -7522,6 +7522,48 @@ app.get('/nft-total', async (req, res) => {
   }
 });
 
+// routes/admin.js or similar
+app.post('/update-daily-stats', async (req, res) => {
+  try {
+    const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
+    const statsCollection = db.collection('dailyStakeStats');
+
+    const dailyTotals = await stakesCollection.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: '$timestamp' },
+            month: { $month: '$timestamp' },
+            day: { $dayOfMonth: '$timestamp' }
+          },
+          totalStaked: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+    ]).toArray();
+
+    const dailyTotalsFormatted = dailyTotals.map(item => {
+      const { year, month, day } = item._id;
+      return {
+        date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        totalStaked: item.totalStaked,
+        count: item.count,
+      };
+    });
+
+    await statsCollection.deleteMany({});
+    if (dailyTotalsFormatted.length) {
+      await statsCollection.insertMany(dailyTotalsFormatted);
+    }
+
+    res.json({ message: 'Daily stats updated', statsCount: dailyTotalsFormatted.length });
+  } catch (err) {
+    console.error('Error updating daily stats:', err);
+    res.status(500).json({ error: 'Failed to update stats' });
+  }
+});
 
 
 

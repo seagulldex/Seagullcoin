@@ -7524,7 +7524,7 @@ app.get('/nft-total', async (req, res) => {
 });
 
 // routes/admin.js or similar
-app.post('/update-daily-stats', async (req, res) => {
+app.post('/update-daily-users', async (req, res) => {
   try {
     const db = await connectDB();
     const stakesCollection = db.collection('stakes');

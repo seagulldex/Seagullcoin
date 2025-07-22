@@ -241,7 +241,6 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
-
 async function fetchAndStoreDailyTotals() {
   const db = await connectDB();
   const stakesCollection = db.collection('stakes');
@@ -262,18 +261,11 @@ async function fetchAndStoreDailyTotals() {
     { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
   ]).toArray();
 
-  // Format and apply cumulative addition
-  let runningTotal = 0;
   const dailyTotalsFormatted = dailyTotals.map(item => {
     const { year, month, day } = item._id;
-    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    
-    runningTotal += item.totalStaked;
-
     return {
-      date,
-      dailyTotal: item.totalStaked,
-      cumulativeTotal: runningTotal,
+      date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+      totalStaked: item.totalStaked,
       count: item.count,
     };
   });
@@ -281,7 +273,7 @@ async function fetchAndStoreDailyTotals() {
   console.log('[Daily Stats] Saving:', dailyTotalsFormatted);
 
   // Optional: Clear previous data to avoid duplicates
-  await statsCollection.deleteMany({});
+  await statsCollection.deleteMany({}); // or update per date
 
   // Insert fresh data
   if (dailyTotalsFormatted.length) {
@@ -289,13 +281,14 @@ async function fetchAndStoreDailyTotals() {
   }
 }
 
-// Run immediately and schedule daily
+// Run immediately
 (async () => {
   await fetchAndStoreDailyTotals();
 
-  // Schedule to run once every 24 hours
+  // Run once every 24 hours
   setInterval(fetchAndStoreDailyTotals, 24 * 60 * 60 * 1000);
 })();
+
 
 
 

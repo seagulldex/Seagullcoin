@@ -289,9 +289,14 @@ async function fetchAndStoreDailyTotals() {
   }
 }
 
+// Run immediately and schedule daily
 (async () => {
   await fetchAndStoreDailyTotals();
+
+  // Schedule to run once every 24 hours
+  setInterval(fetchAndStoreDailyTotals, 24 * 60 * 60 * 1000);
 })();
+
 
 
 

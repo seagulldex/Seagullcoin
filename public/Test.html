@@ -171,6 +171,9 @@
   </main>
   <script>
     // Initialize state
+   let nfts = [];
+let currentPage = 0;
+const pageSize = 20;
     let wallet = null;
     
     function setupTrustlineButton() {
@@ -469,8 +472,9 @@ async function loadNFTPreviews() {
     if (!res.ok) throw new Error('Network response not OK');
     const data = await res.json();
 
-    const nfts = data.nfts;
-    loadingEl.style.display = 'none'; // Hide loading spinner
+    nfts = data.nfts;
+   loadingEl.style.display = 'none';
+   renderPage(currentPage);  // ← this triggers the paginated display
 
     if (!nfts || nfts.length === 0) {
       container.innerHTML = `<div style="color: white;">No NFTs found.</div>`;
@@ -525,7 +529,85 @@ async function loadNFTPreviews() {
     container.innerHTML = `<div style="color: red;">Failed to load NFTs. Please try again later.</div>`;
   }
 }
-  
+
+    function renderPage(page) {
+  const container = document.getElementById('nft-carousel');
+  const start = page * pageSize;
+  const end = start + pageSize;
+  container.innerHTML = ''; // clear previous cards
+
+  const pageNFTs = nfts.slice(start, end);
+
+  pageNFTs.forEach(nft => {
+    const rawImg = nft.image || nft.metadata?.image || nft.icon || '';
+    const imgSrc = resolveIPFS(rawImg);
+    if (!imgSrc) return;
+
+    const name = nft.metadata?.name || nft.collection?.name || 'Untitled NFT';
+    const desc = nft.description || nft.metadata?.description || nft.collection?.description || '';
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+      flex: 0 0 auto;
+      width: 180px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      background: #1e1e1e;
+      padding: 10px;
+      color: white;
+      scroll-snap-align: start;
+      box-shadow: 0 0 5px rgba(0,0,0,0.5);
+      transition: transform 0.2s ease;
+      cursor: pointer;
+    `;
+    card.onmouseenter = () => card.style.transform = 'scale(1.05)';
+    card.onmouseleave = () => card.style.transform = 'scale(1)';
+
+    card.innerHTML = `
+      <img src="${imgSrc}" alt="${name}" style="width:100%; height: auto; border-radius: 4px; object-fit: contain;" />
+      <h4 style="margin: 8px 0 4px; font-weight: 600;">${name}</h4>
+      <p style="font-size: 12px; color: #aaa; min-height: 36px;">${desc}</p>
+    `;
+    container.appendChild(card);
+  });
+
+  renderPaginationControls();
+}
+
+    function renderPaginationControls() {
+  let controls = document.getElementById('pagination-controls');
+  if (!controls) {
+    controls = document.createElement('div');
+    controls.id = 'pagination-controls';
+    controls.style.cssText = 'text-align: center; margin-top: 10px;';
+    document.querySelector('main').appendChild(controls);
+  }
+
+  controls.innerHTML = '';
+
+  const totalPages = Math.ceil(nfts.length / pageSize);
+
+  const prevBtn = document.createElement('button');
+  prevBtn.textContent = '⬅ Prev';
+  prevBtn.disabled = currentPage === 0;
+  prevBtn.onclick = () => {
+    currentPage--;
+    renderPage(currentPage);
+  };
+
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = 'Next ➡';
+  nextBtn.disabled = currentPage >= totalPages - 1;
+  nextBtn.onclick = () => {
+    currentPage++;
+    renderPage(currentPage);
+  };
+
+  controls.appendChild(prevBtn);
+  controls.appendChild(document.createTextNode(` Page ${currentPage + 1} of ${totalPages} `));
+  controls.appendChild(nextBtn);
+}
+
 
   </script>
 </body>

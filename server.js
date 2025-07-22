@@ -7676,6 +7676,13 @@ app.post('/update-daily-stats', async (req, res) => {
   }
 });
 
+// ✅ Automatically call /update-daily-stats every 24 hours
+setInterval(() => {
+  fetch('http://seagullcoin-dex-uaj3x.ondigitalocean.app/update-daily-stats', { method: 'POST' }) // adjust port if needed
+    .then(res => res.json())
+    .then(json => console.log('[Auto Update] Daily stats updated:', json))
+    .catch(err => console.error('[Auto Update Error]', err));
+}, 24 * 60 * 60 * 1000); // Every 24 hours
 
 
 

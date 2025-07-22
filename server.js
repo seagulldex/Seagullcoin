@@ -242,7 +242,7 @@ async function createStakePayload(req, res, amount) {
 })();
 
 async function cleanOldPendingStakes(db) {
-  const collection = db.collection('stakesCollection');
+  const collection = db.collection('stakes');
   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000); // ⏰ 10 minutes ago
 
   try {

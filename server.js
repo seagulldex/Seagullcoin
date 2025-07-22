@@ -7629,21 +7629,54 @@ app.post('/update-staker-stats', async (req, res) => {
   }
 });
 
-app.get('/api/daily-stats', async (req, res) => {
+app.post('/update-daily-stats', async (req, res) => {
   try {
     const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
     const statsCollection = db.collection('dailyStakeStats');
-    const stats = await statsCollection
-      .find({})
-      .sort({ date: 1 })
-      .toArray();
 
-    res.json(stats);
+    const dailyTotals = await stakesCollection.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: '$timestamp' },
+            month: { $month: '$timestamp' },
+            day: { $dayOfMonth: '$timestamp' }
+          },
+          dailyTotal: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+    ]).toArray();
+
+    let cumulativeTotal = 0;
+    const formatted = dailyTotals.map(item => {
+      const { year, month, day } = item._id;
+      const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      cumulativeTotal += item.dailyTotal;
+
+      return {
+        date,
+        dailyTotal: item.dailyTotal,
+        cumulativeTotal,
+        count: item.count,
+      };
+    });
+
+    await statsCollection.deleteMany({});
+    if (formatted.length) {
+      await statsCollection.insertMany(formatted);
+    }
+
+    res.json({ message: 'Daily stats updated with cumulative totals', statsCount: formatted.length, stats: formatted });
   } catch (err) {
-    console.error('Error fetching daily stats:', err);
-    res.status(500).json({ error: 'Failed to fetch stats' });
+    console.error('Error updating daily stats:', err);
+    res.status(500).json({ error: 'Failed to update stats' });
   }
 });
+
+
 
 
 // Call the XRPL ping when the server starts

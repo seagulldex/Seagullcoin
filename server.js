@@ -7630,6 +7630,22 @@ app.post('/update-staker-stats', async (req, res) => {
   }
 });
 
+app.get('/api/daily-stats', async (req, res) => {
+  try {
+    const db = await connectDB();
+    const statsCollection = db.collection('dailyStakeStats');
+    const stats = await statsCollection
+      .find({})
+      .sort({ date: 1 })
+      .toArray();
+
+    res.json(stats);
+  } catch (err) {
+    console.error('Error fetching daily stats:', err);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

@@ -289,6 +289,9 @@ async function fetchAndStoreDailyTotals() {
   }
 }
 
+(async () => {
+  await fetchAndStoreDailyTotals();
+})();
 
 
 

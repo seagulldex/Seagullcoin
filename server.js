@@ -243,21 +243,26 @@ async function createStakePayload(req, res, amount) {
 
 
 // ⏰ Cleanup logic
-async function cleanOldPendingStakes(db) {
-  const collection = db.collection('stakes');
-  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000); // ⏰ 10 minutes ago
-
+async function cleanOldPendingStakes() {
   try {
+    const collection = db.collection('stakes');
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+    console.log("🕐 Deleting stakes older than:", tenMinutesAgo);
+
     const result = await collection.deleteMany({
       status: 'pending',
       timestamp: { $lt: tenMinutesAgo }
     });
 
     console.log(`🧹 Deleted ${result.deletedCount} expired pending stakes.`);
+    return result.deletedCount;
   } catch (err) {
-    console.error('❌ Error cleaning stakes:', err);
+    console.error('❌ Error in cleanOldPendingStakes:', err);
+    throw err;
   }
 }
+
 
 
     

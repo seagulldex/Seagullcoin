@@ -241,12 +241,17 @@
       tbody.innerHTML = '';
       stats.forEach(stat => {
         const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${stat.date}</td>
-          <td>${stat.dailyTotal.toLocaleString()}</td>
-          <td>${stat.cumulativeTotal.toLocaleString()}</td>
-          <td>${stat.count}</td>
-        `;
+        const isPast = new Date(event.payoutScheduledAt) <= new Date();
+const payoutClass = isPast ? 'payout-due' : '';
+row.innerHTML = `
+  <td>${event.unstakeId}</td>
+  <td class="wallet-arrow">${event.walletAddress}</td>
+  <td>${event.amount.toLocaleString()}</td>
+  <td>${event.estimatedReward.toLocaleString()}</td>
+  <td>${event.totalExpected.toLocaleString()}</td>
+  <td class="${payoutClass}">${new Date(event.payoutScheduledAt).toLocaleString()}</td>
+`;
+
         tbody.appendChild(row);
       });
     }

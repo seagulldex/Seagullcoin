@@ -7774,6 +7774,10 @@ setInterval(cleanupExpiredPayloads, 48 * 60 * 60 * 1000); // Every 24 hours
 
 setInterval(autoUnstakeExpiredUsers, 2 * 60 * 1000); // every 2 minutes
 
+// Run cleanup every 10 minutes
+setInterval(() => {
+  cleanOldPendingStakes().catch(console.error);
+}, 10 * 60 * 1000);
 
     
     console.log("XRPL client connected");

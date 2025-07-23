@@ -7731,7 +7731,23 @@ setInterval(() => {
       }
     });
 
-    
+    app.get('/test-matching-stakes', async (req, res) => {
+  try {
+    const collection = db.collection('stakes');
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+    const matches = await collection.find({
+      status: 'pending',
+      timestamp: { $lt: tenMinutesAgo }
+    }).toArray();
+
+    res.json({ found: matches.length, records: matches });
+  } catch (err) {
+    console.error('❌ Test route error:', err);
+    res.status(500).json({ error: 'Test failed' });
+  }
+});
+
 
 
 // Call the XRPL ping when the server starts

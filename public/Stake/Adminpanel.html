@@ -4,28 +4,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SGLCN Admin Dashboard</title>
-  <link rel="stylesheet" href="/style.css" />
   <style>
     body {
       background-color: #000;
       color: white;
       font-family: sans-serif;
       margin: 0;
-      padding: 0;
     }
     header {
       background-color: #111;
       padding: 20px;
-      border-bottom: 1px solid #444;
       text-align: center;
+      border-bottom: 1px solid #444;
     }
     main {
       padding: 20px;
     }
     table {
       width: 100%;
-      border-collapse: collapse;
       margin-top: 20px;
+      border-collapse: collapse;
     }
     th, td {
       padding: 10px;
@@ -40,39 +38,37 @@
       padding: 4px 8px;
       border-radius: 4px;
     }
-    .status.pending {
-      background-color: #444;
-      color: yellow;
-    }
-    .status.active {
-      background-color: green;
-      color: white;
-    }
-    .status.expired {
-      background-color: red;
-      color: white;
-    }
+    .status.pending { background: #444; color: yellow; }
+    .status.active { background: green; color: white; }
+    .status.expired { background: red; color: white; }
     button {
       padding: 6px 12px;
-      background-color: #444;
+      background: #333;
       color: white;
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      margin: 5px;
     }
     button:hover {
       background-color: #666;
     }
-    .filter {
+    .filter, .actions {
       margin-bottom: 20px;
+    }
+    #stats-section {
+      margin-top: 40px;
+      border-top: 1px solid #555;
+      padding-top: 20px;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>SGLCN Admin Staking Dashboard</h1>
-    <p>Monitor and manage user stakes</p>
+    <h1>🛠️ SGLCN Admin Staking Dashboard</h1>
+    <p>Monitor and manage user stakes and stats</p>
   </header>
+
   <main>
     <div class="filter">
       <label for="statusFilter">Filter by status:</label>
@@ -82,6 +78,12 @@
         <option value="active">Active</option>
         <option value="expired">Expired</option>
       </select>
+    </div>
+
+    <div class="actions">
+      <button onclick="triggerAutoUnstake()">Auto-Unstake Expired</button>
+      <button onclick="updateDailyStats()">Update Daily Stats</button>
+      <button onclick="updateStakerStats()">Update Staker Stats</button>
     </div>
 
     <table>
@@ -96,16 +98,35 @@
         </tr>
       </thead>
       <tbody id="stake-table-body">
-        <!-- Dynamic rows inserted here -->
+        <!-- Stakes will be inserted here -->
       </tbody>
     </table>
+
+    <section id="stats-section">
+      <h2>📊 Daily Stats</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Daily Total</th>
+            <th>Cumulative</th>
+            <th>Stakes Count</th>
+          </tr>
+        </thead>
+        <tbody id="daily-stats-body">
+          <!-- Stats will be inserted here -->
+        </tbody>
+      </table>
+    </section>
   </main>
 
   <script>
     async function fetchStakes() {
       const res = await fetch('/admin/stakes');
-      const data = await res.json();
-      renderTable(data);
+      const stakes = await res.json();
+      const status = document.getElementById('statusFilter').value;
+      const filtered = status === 'all' ? stakes : stakes.filter(s => s.status === status);
+      renderTable(filtered);
     }
 
     function renderTable(stakes) {
@@ -119,32 +140,63 @@
           <td><span class="status ${stake.status}">${stake.status}</span></td>
           <td>${new Date(stake.timestamp).toLocaleString()}</td>
           <td>${stake.endDate ? new Date(stake.endDate).toLocaleString() : '-'}</td>
-          <td>
-            <button onclick="deleteStake('${stake._id}')">Delete</button>
-          </td>
+          <td><button onclick="deleteStake('${stake._id}')">Delete</button></td>
         `;
         tbody.appendChild(row);
       });
     }
 
     async function deleteStake(id) {
-      if (confirm('Are you sure you want to delete this stake?')) {
+      if (confirm('Delete this stake?')) {
         await fetch(`/admin/stakes/${id}`, { method: 'DELETE' });
         fetchStakes();
       }
     }
 
-    document.getElementById('statusFilter').addEventListener('change', async function () {
-      const status = this.value;
-      const res = await fetch('/admin/stakes');
-      let data = await res.json();
-      if (status !== 'all') {
-        data = data.filter(stake => stake.status === status);
-      }
-      renderTable(data);
-    });
+    document.getElementById('statusFilter').addEventListener('change', fetchStakes);
 
+    // Trigger auto unstake processor
+    async function triggerAutoUnstake() {
+      const res = await fetch('/admin/auto-unstake', { method: 'POST' });
+      const result = await res.json();
+      alert(`✅ ${result.message || 'Auto unstake triggered.'}`);
+      fetchStakes();
+    }
+
+    // Update daily stats
+    async function updateDailyStats() {
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/update-daily-stats', { method: 'POST' });
+      const result = await res.json();
+      alert('📈 Daily stats updated.');
+      renderStats(result.stats);
+    }
+
+    // Update staker stats
+    async function updateStakerStats() {
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/update-staker-stats', { method: 'POST' });
+      const result = await res.json();
+      alert('✅ Staker stats updated.');
+    }
+
+    // Render the stats table
+    function renderStats(stats) {
+      const tbody = document.getElementById('daily-stats-body');
+      tbody.innerHTML = '';
+      stats.forEach(stat => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${stat.date}</td>
+          <td>${stat.dailyTotal.toLocaleString()}</td>
+          <td>${stat.cumulativeTotal.toLocaleString()}</td>
+          <td>${stat.count}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Initial load
     fetchStakes();
+    updateDailyStats();
   </script>
 </body>
 </html>

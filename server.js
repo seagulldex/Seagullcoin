@@ -7763,6 +7763,20 @@ setInterval(() => {
   }
 });
 
+app.get('/admin/processing-unstakes', async (req, res) => {
+  try {
+    const db = await connectDB();
+    const unstakes = await db.collection('unstakeEvents')
+      .find({ status: 'processing' })
+      .sort({ payoutScheduledAt: 1 })
+      .toArray();
+
+    res.json(unstakes);
+  } catch (err) {
+    console.error('Error fetching processing unstakes:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

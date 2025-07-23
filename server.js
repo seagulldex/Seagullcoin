@@ -296,14 +296,15 @@ async function fetchAndStoreDailyTotals() {
     };
   });
 
-  console.log('[Daily Stats] Saving:', dailyTotalsFormatted);
+  console.log('[Daily Stats] Saving/Updating:', dailyTotalsFormatted);
 
-  // Optional: Clear previous data to avoid duplicates
-  await statsCollection.deleteMany({}); // or update per date
-
-  // Insert fresh data
-  if (dailyTotalsFormatted.length) {
-    await statsCollection.insertMany(dailyTotalsFormatted);
+  // Insert or update each daily record without deleting the collection
+  for (const item of dailyTotalsFormatted) {
+    await statsCollection.updateOne(
+      { date: item.date },       // Match by date
+      { $set: item },            // Update the document
+      { upsert: true }           // Insert if it doesn’t exist
+    );
   }
 }
 

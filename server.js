@@ -7718,6 +7718,22 @@ setInterval(() => {
 
 
 
+    // 🧹 Manual cleanup trigger endpoint
+    app.delete('/clean-pending-stakes', async (req, res) => {
+      try {
+        const deletedCount = await cleanOldPendingStakes();
+        res.json({
+          message: `Deleted ${deletedCount} expired pending stakes.`,
+          deleted: deletedCount,
+        });
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to clean expired pending stakes.' });
+      }
+    });
+
+    
+
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

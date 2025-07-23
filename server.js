@@ -248,7 +248,7 @@ async function cleanOldPendingStakes(db) {
   try {
     const result = await collection.deleteMany({
       status: 'pending',
-      timestamp: { $lt: twentyFourHoursAgo }
+      timestamp: { $lt: tenMinutesAgo }
     });
 
     console.log(`🧹 Deleted ${result.deletedCount} expired pending stakes.`);

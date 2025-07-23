@@ -184,7 +184,7 @@
     }
 
     async function fetchProcessingUnstakes() {
-  const res = await fetch('/admin/processing-unstakes'); // Update as needed
+  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/admin/processing-unstakes'); // Update as needed
   const unstakes = await res.json();
   const tbody = document.getElementById('processing-unstakes-body');
   tbody.innerHTML = '';

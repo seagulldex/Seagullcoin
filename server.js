@@ -241,9 +241,11 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
-async function cleanOldPendingStakes(db) {
+
+// ⏰ Cleanup logic
+async function cleanOldPendingStakes() {
   const collection = db.collection('stakes');
-  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000); // ⏰ 10 minutes ago
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
 
   try {
     const result = await collection.deleteMany({
@@ -252,11 +254,34 @@ async function cleanOldPendingStakes(db) {
     });
 
     console.log(`🧹 Deleted ${result.deletedCount} expired pending stakes.`);
+    return result.deletedCount;
   } catch (err) {
     console.error('❌ Error cleaning stakes:', err);
+    throw err;
   }
 }
 
+// ✅ MongoDB connection and server start
+async function startServer() {
+  try {
+    await client.connect();
+    db = client.db(process.env.DB_NAME);
+    console.log('✅ Connected to MongoDB');
+
+    // 🧹 Manual cleanup trigger endpoint
+    app.delete('/clean-pending-stakes', async (req, res) => {
+      try {
+        const deletedCount = await cleanOldPendingStakes();
+        res.json({
+          message: `Deleted ${deletedCount} expired pending stakes.`,
+          deleted: deletedCount,
+        });
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to clean expired pending stakes.' });
+      }
+    });
+
+    
 
 async function fetchAndStoreDailyTotals() {
   const db = await connectDB();

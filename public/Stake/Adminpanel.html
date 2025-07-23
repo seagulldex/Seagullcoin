@@ -163,6 +163,27 @@
       fetchStakes();
     }
 
+    async function fetchProcessingUnstakes() {
+  const res = await fetch('/admin/processing-unstakes'); // Update as needed
+  const unstakes = await res.json();
+  const tbody = document.getElementById('processing-unstakes-body');
+  tbody.innerHTML = '';
+
+  unstakes.forEach(event => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${event.unstakeId}</td>
+      <td>${event.walletAddress}</td>
+      <td>${event.amount.toLocaleString()}</td>
+      <td>${event.estimatedReward.toLocaleString()}</td>
+      <td>${event.totalExpected.toLocaleString()}</td>
+      <td>${new Date(event.payoutScheduledAt).toLocaleString()}</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+
     // Update daily stats
     async function updateDailyStats() {
       const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/update-daily-stats', { method: 'POST' });

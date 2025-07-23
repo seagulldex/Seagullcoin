@@ -245,12 +245,12 @@ async function createStakePayload(req, res, amount) {
 // ⏰ Cleanup logic
 async function cleanOldPendingStakes() {
   try {
-    const collection = db.collection('stakes');
+    const Stake = mongoose.connection.collection('stakes');
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
 
     console.log("🕐 Deleting stakes older than:", tenMinutesAgo);
 
-    const result = await collection.deleteMany({
+    const result = await Stake.deleteMany({
       status: 'pending',
       timestamp: { $lt: tenMinutesAgo }
     });

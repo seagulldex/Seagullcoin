@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SGLCN Admin Dashboard</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    body {
+      background-color: #000;
+      color: white;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #111;
+      padding: 20px;
+      border-bottom: 1px solid #444;
+      text-align: center;
+    }
+    main {
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #444;
+    }
+    th {
+      background-color: #222;
+    }
+    .status {
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .status.pending {
+      background-color: #444;
+      color: yellow;
+    }
+    .status.active {
+      background-color: green;
+      color: white;
+    }
+    .status.expired {
+      background-color: red;
+      color: white;
+    }
+    button {
+      padding: 6px 12px;
+      background-color: #444;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #666;
+    }
+    .filter {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>SGLCN Admin Staking Dashboard</h1>
+    <p>Monitor and manage user stakes</p>
+  </header>
+  <main>
+    <div class="filter">
+      <label for="statusFilter">Filter by status:</label>
+      <select id="statusFilter">
+        <option value="all">All</option>
+        <option value="pending">Pending</option>
+        <option value="active">Active</option>
+        <option value="expired">Expired</option>
+      </select>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Wallet</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Started</th>
+          <th>Ends</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="stake-table-body">
+        <!-- Dynamic rows inserted here -->
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    async function fetchStakes() {
+      const res = await fetch('/admin/stakes');
+      const data = await res.json();
+      renderTable(data);
+    }
+
+    function renderTable(stakes) {
+      const tbody = document.getElementById('stake-table-body');
+      tbody.innerHTML = '';
+      stakes.forEach(stake => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${stake.wallet}</td>
+          <td>${stake.amount}</td>
+          <td><span class="status ${stake.status}">${stake.status}</span></td>
+          <td>${new Date(stake.timestamp).toLocaleString()}</td>
+          <td>${stake.endDate ? new Date(stake.endDate).toLocaleString() : '-'}</td>
+          <td>
+            <button onclick="deleteStake('${stake._id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    async function deleteStake(id) {
+      if (confirm('Are you sure you want to delete this stake?')) {
+        await fetch(`/admin/stakes/${id}`, { method: 'DELETE' });
+        fetchStakes();
+      }
+    }
+
+    document.getElementById('statusFilter').addEventListener('change', async function () {
+      const status = this.value;
+      const res = await fetch('/admin/stakes');
+      let data = await res.json();
+      if (status !== 'all') {
+        data = data.filter(stake => stake.status === status);
+      }
+      renderTable(data);
+    });
+
+    fetchStakes();
+  </script>
+</body>
+</html>

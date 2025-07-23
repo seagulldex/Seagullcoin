@@ -238,23 +238,18 @@
 
     // Render the stats table
     function renderStats(stats) {
-      const tbody = document.getElementById('daily-stats-body');
-      tbody.innerHTML = '';
-      stats.forEach(stat => {
-        const row = document.createElement('tr');
-        const isPast = new Date(event.payoutScheduledAt) <= new Date();
-const payoutClass = isPast ? 'payout-due' : '';
-row.innerHTML = `
-  <td>${event.unstakeId}</td>
-  <td class="wallet-arrow">${event.walletAddress}</td>
-  <td>${event.amount.toLocaleString()}</td>
-  <td>${event.estimatedReward.toLocaleString()}</td>
-  <td>${event.totalExpected.toLocaleString()}</td>
-  <td class="${payoutClass}">${new Date(event.payoutScheduledAt).toLocaleString()}</td>
-`;
-
-        tbody.appendChild(row);
-      });
+  const tbody = document.getElementById('daily-stats-body');
+  tbody.innerHTML = '';
+  stats.forEach(stat => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${new Date(stat.date).toLocaleDateString()}</td>
+      <td>${stat.dailyTotal.toLocaleString()}</td>
+      <td>${stat.cumulative.toLocaleString()}</td>
+      <td>${stat.stakeCount}</td>
+    `;
+    tbody.appendChild(row);
+  });
     }
 
     // Initial load

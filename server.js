@@ -490,8 +490,7 @@ try {
 
 async function createValidator() {
   // Connect to MongoDB (adjust connection string)
-  await mongoose.connect('mongodb://localhost:27017/your-db-name');
-
+  const db = await connectDB();
   // Load your public key PEM
   const PUBLIC_KEY_PEM = fs.readFileSync(path.resolve('./keys/public.pem'), 'utf-8');
 

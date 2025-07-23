@@ -400,6 +400,16 @@ async function fetchUnstakeEvents(walletAddress) {
   }).sort({ createdAt: -1 }).toArray();
 }
 
+// /admin/processing-unstakes.js (or route in Express)
+export async function getProcessingUnstakes() {
+  const db = await connectDB();
+  return await db.collection('unstakeEvents')
+    .find({ status: 'processing' })
+    .sort({ payoutScheduledAt: 1 }) // soonest payouts first
+    .toArray();
+}
+
+
 export async function archivePaidEventsLoop() {
   const db = await connectDB();
 

@@ -7827,7 +7827,6 @@ app.post("/pay-one", async (req, res) => {
     ]
   },
   options: {
-    submit: true,
     expire: 300,
     return_url: {
       app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html",
@@ -7882,7 +7881,6 @@ app.post("/pay-two", async (req, res) => {
     ]
   },
   options: {
-    submit: true,
     expire: 300,
     return_url: {
       app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html",
@@ -7938,7 +7936,6 @@ app.post("/pay-three", async (req, res) => {
     ]
   },
   options: {
-    submit: true,
     expire: 300,
     return_url: {
       app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html",

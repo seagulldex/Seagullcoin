@@ -11,7 +11,6 @@ ORG_OFFICIAL_EMAIL="boredseagulls@gmail.com"
 ORG_SUPPORT_EMAIL="boredseagulls@gmail.com"
 ORG_TWITTER="bored_club"
 ORG_DESCRIPTION="SeagullCash bridges liquidity on Stellar to liquidity on XRP and facilitates local payment flow."
-home_domain="bored-seagull-club.xyz"
 
 [[CURRENCIES]]
 code="SeagullCash"

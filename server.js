@@ -7830,8 +7830,8 @@ app.post("/pay-one", async (req, res) => {
     submit: true,
     expire: 300,
     return_url: {
-      app: "https://yourdomain.com/thank-you",
-      web: "https://yourdomain.com/thank-you"
+      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html",
+      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html"
     }
   }
 };
@@ -7885,8 +7885,8 @@ app.post("/pay-two", async (req, res) => {
     submit: true,
     expire: 300,
     return_url: {
-      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
-      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
+      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html",
+      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html"
     }
   }
 };
@@ -7941,8 +7941,8 @@ app.post("/pay-three", async (req, res) => {
     submit: true,
     expire: 300,
     return_url: {
-      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
-      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
+      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html",
+      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html"
     }
   }
 };

@@ -257,6 +257,66 @@
 }
    }
 
+  async function sendPayment2() {
+  const destination = document.getElementById('destinationInput').value.trim();
+  if (!destination) return alert('❌ Destination required');
+
+  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/pay-two', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ destination })
+  });
+
+  const result = await res.json();
+
+    if (result.uuid) {
+  const xummLink = `xumm://sign/${result.uuid}`;
+  const fallbackLink = `https://xumm.app/sign/${result.uuid}`;
+
+  // Try mobile deep link first
+  const opened = window.open(xummLink, '_blank');
+
+  // Fallback to browser if it doesn't open
+  setTimeout(() => {
+    if (!opened || opened.closed || typeof opened.closed === 'undefined') {
+      window.open(fallbackLink, '_blank');
+    }
+  }, 500);
+} else {
+  alert(result.error || '⚠️ Failed to generate payment payload.');
+}
+   }
+
+async function sendPayment3() {
+  const destination = document.getElementById('destinationInput').value.trim();
+  if (!destination) return alert('❌ Destination required');
+
+  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/pay-three', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ destination })
+  });
+
+  const result = await res.json();
+
+    if (result.uuid) {
+  const xummLink = `xumm://sign/${result.uuid}`;
+  const fallbackLink = `https://xumm.app/sign/${result.uuid}`;
+
+  // Try mobile deep link first
+  const opened = window.open(xummLink, '_blank');
+
+  // Fallback to browser if it doesn't open
+  setTimeout(() => {
+    if (!opened || opened.closed || typeof opened.closed === 'undefined') {
+      window.open(fallbackLink, '_blank');
+    }
+  }, 500);
+} else {
+  alert(result.error || '⚠️ Failed to generate payment payload.');
+}
+   }
+
 async function sendVerification() {
   const destination = document.getElementById('destinationInput').value.trim();
   if (!destination) return alert('❌ Destination required');

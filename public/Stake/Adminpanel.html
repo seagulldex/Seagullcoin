@@ -239,14 +239,13 @@
 
   const result = await res.json();
 
-  if (result.next && result.next.always) {
-    // Open the Xaman deep link in a new tab or window
-    window.open(result.next.always, '_blank');
-    alert('✅ Payment request sent to wallet.');
-  } else {
-    alert(result.message || '⚠️ Failed to generate payment payload.');
-  }
+  if (result.uuid) {
+  const deepLink = `xumm://sign/${result.uuid}`;
+  window.open(deepLink, '_blank'); // better for mobile
+} else {
+  alert(result.error || '⚠️ Failed to generate payment payload.');
 }
+
 
 
 async function sendVerification() {

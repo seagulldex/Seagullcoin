@@ -7820,8 +7820,8 @@ app.post("/pay-one", async (req, res) => {
     Memos: [
       {
         Memo: {
-              MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
-              MemoData: Buffer.from(event.type, "utf8").toString("hex")
+          MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
+          MemoData: Buffer.from("Monthly", "utf8").toString("hex")
         }
       }
     ]
@@ -7874,8 +7874,8 @@ app.post("/pay-two", async (req, res) => {
     Memos: [
       {
         Memo: {
-              MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
-              MemoData: Buffer.from(event.type, "utf8").toString("hex")
+          MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
+          MemoData: Buffer.from("1 year", "utf8").toString("hex")
         }
       }
     ]
@@ -7929,8 +7929,8 @@ app.post("/pay-three", async (req, res) => {
     Memos: [
       {
         Memo: {
-              MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
-              MemoData: Buffer.from(event.type, "utf8").toString("hex")
+          MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
+          MemoData: Buffer.from("5 year", "utf8").toString("hex")
         }
       }
     ]

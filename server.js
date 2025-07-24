@@ -2983,6 +2983,22 @@ app.get('/balance/:address', async (req, res) => {
   }
 });
 
+// Serve stellar.toml from the .well-known directory
+app.get('/.well-known/stellar.toml', (req, res) => {
+  const tomlPath = path.join(__dirname, '.well-known', 'stellar.toml');
+  
+  fs.readFile(tomlPath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('stellar.toml read error:', err);
+      return res.status(500).send('Could not read stellar.toml');
+    }
+
+    res.set('Content-Type', 'text/plain');
+    res.set('Access-Control-Allow-Origin', '*'); // ✅ Required by wallets and Stellar federation servers
+    res.send(data);
+  });
+});
+
 // POST route to start the login flow
 app.post('/api/start-login', async (req, res) => {
   const { payloadUUID } = req.body;

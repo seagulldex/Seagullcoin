@@ -7820,8 +7820,8 @@ app.post("/pay-one", async (req, res) => {
     Memos: [
       {
         Memo: {
-          MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
-          MemoData: Buffer.from("Monthly", "utf8").toString("hex")
+          MemoType: Buffer.from("staking_rewards", "utf8").toString("hex"),
+          MemoData: Buffer.from("monthly", "utf8").toString("hex")
         }
       }
     ]
@@ -7872,13 +7872,13 @@ app.post("/pay-two", async (req, res) => {
       value: "2562500"
     },
     Memos: [
-      {
-        Memo: {
-          MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
-          MemoData: Buffer.from("1 year", "utf8").toString("hex")
-        }
-      }
-    ]
+  {
+    Memo: {
+      MemoType: Buffer.from("staking_rewards", "utf8").toString("hex"), // no spaces
+      MemoData: Buffer.from("1year", "utf8").toString("hex") // lowercase safe
+    }
+  }
+]
   },
   options: {
     expire: 300,
@@ -7927,13 +7927,13 @@ app.post("/pay-three", async (req, res) => {
       value: "6000000"
     },
     Memos: [
-      {
-        Memo: {
-          MemoType: Buffer.from("Staking Rewards", "utf8").toString("hex"),
-          MemoData: Buffer.from("5 year", "utf8").toString("hex")
-        }
-      }
-    ]
+  {
+    Memo: {
+      MemoType: Buffer.from("staking_rewards", "utf8").toString("hex"), // no spaces
+      MemoData: Buffer.from("macro", "utf8").toString("hex") // lowercase safe
+    }
+  }
+]
   },
   options: {
     expire: 300,

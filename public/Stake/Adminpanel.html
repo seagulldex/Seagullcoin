@@ -224,6 +224,35 @@
     `;
     tbody.appendChild(row);
   });
+
+      async function sendPayment() {
+  const destination = document.getElementById('destinationInput').value.trim();
+  if (!destination) return alert('❌ Destination required');
+  
+  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/pay-one', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ destination })
+  });
+
+  const result = await res.json();
+  alert(result.message || '✅ Payment sent.');
+}
+
+async function sendVerification() {
+  const destination = document.getElementById('destinationInput').value.trim();
+  if (!destination) return alert('❌ Destination required');
+  
+  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/backup-pay', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ destination })
+  });
+
+  const result = await res.json();
+  alert(result.message || '✅ Verification sent.');
+}
+
 }
 
 

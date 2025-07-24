@@ -240,13 +240,22 @@
   const result = await res.json();
 
     if (result.uuid) {
-    const deepLink = `xumm://sign/${result.uuid}`;
-    window.open(deepLink, '_blank'); // better for mobile
-  } else {
-    alert(result.error || '⚠️ Failed to generate payment payload.');
-  }  // <-- this closes the if-else block
+  const xummLink = `xumm://sign/${result.uuid}`;
+  const fallbackLink = `https://xumm.app/sign/${result.uuid}`;
 
-} 
+  // Try mobile deep link first
+  const opened = window.open(xummLink, '_blank');
+
+  // Fallback to browser if it doesn't open
+  setTimeout(() => {
+    if (!opened || opened.closed || typeof opened.closed === 'undefined') {
+      window.open(fallbackLink, '_blank');
+    }
+  }, 500);
+} else {
+  alert(result.error || '⚠️ Failed to generate payment payload.');
+}
+   }
 
 async function sendVerification() {
   const destination = document.getElementById('destinationInput').value.trim();

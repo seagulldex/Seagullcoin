@@ -239,14 +239,14 @@
 
   const result = await res.json();
 
-  if (result.uuid) {
-  const deepLink = `xumm://sign/${result.uuid}`;
-  window.open(deepLink, '_blank'); // better for mobile
-} else {
-  alert(result.error || '⚠️ Failed to generate payment payload.');
-}
+    if (result.uuid) {
+    const deepLink = `xumm://sign/${result.uuid}`;
+    window.open(deepLink, '_blank'); // better for mobile
+  } else {
+    alert(result.error || '⚠️ Failed to generate payment payload.');
+  }  // <-- this closes the if-else block
 
-
+} 
 
 async function sendVerification() {
   const destination = document.getElementById('destinationInput').value.trim();

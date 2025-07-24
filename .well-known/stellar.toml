@@ -11,12 +11,12 @@ ORG_OFFICIAL_EMAIL="boredseagulls@gmail.com"
 ORG_SUPPORT_EMAIL="boredseagulls@gmail.com"
 ORG_TWITTER="bored_club"
 ORG_DESCRIPTION="SeagullCash bridges liquidity on Stellar to liquidity on XRP and facilitates local payment flow."
+home_domain="bored-seagull-club.xyz"
 
 [[CURRENCIES]]
 code="SeagullCash"
 name="SeagullCash"
 issuer="GBC2VA3YMAIVB3A77VNRPKMQI3RAPDUDDP7JI2PE426MGKDDJFPRVWP7"
-home_domain="bored-seagull-club.xyz"
 is_asset_anchored=false
 display_decimals=7
 desc="SeagullCash is a liquidity management layer between Stellar and XRP, providing a seamless bridge."

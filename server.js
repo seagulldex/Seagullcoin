@@ -7991,10 +7991,10 @@ app.get('/admin/current-wallets', async (req, res) => {
     const stakesCollection = db.collection('stakes');
 
     const currentWallets = await stakesCollection.aggregate([
-      { $match: { status: 'active' } },
+      { $match: { status: 'confirmed' } },
       {
         $group: {
-          _id: '$wallet',
+          _id: '$walletAddress',
           totalStaked: { $sum: '$amount' }
         }
       },
@@ -8004,9 +8004,10 @@ app.get('/admin/current-wallets', async (req, res) => {
     res.json(currentWallets);
   } catch (err) {
     console.error('[GET /admin/current-wallets] Error:', err);
-    res.status(500).json({ error: 'Failed to fetch active wallet totals.' });
+    res.status(500).json({ error: 'Failed to fetch wallet totals.' });
   }
 });
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

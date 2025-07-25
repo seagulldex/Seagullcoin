@@ -502,6 +502,15 @@ export async function archivePaidEventsLoop() {
   await archivePaidEventsLoop();
 })();
 
+// Call it every 10 minutes
+setInterval(() => {
+  fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/update-daily-stats', {
+    method: 'POST'
+  })
+    .then(res => res.json())
+    .then(data => console.log('[✅ Auto-repair Daily Stats]', data))
+    .catch(err => console.error('[❌ Error Updating Daily Stats]', err));
+}, 10 * 60 * 1000); // 10 minutes
 
 
 

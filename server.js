@@ -299,10 +299,19 @@ export async function fetchAndStoreDailyTotals() {
     for (const item of dailyTotalsFormatted) {
       const result = await statsCollection.updateOne(
         { date: item.date },
-        { $set: item },
+        {
+          $set: {
+            totalStaked: item.totalStaked,
+            count: item.count,
+          },
+          $setOnInsert: {
+            date: item.date
+          }
+        },
         { upsert: true }
       );
-      console.log(`[Daily Stats] Upserted ${item.date}:`, result.upsertedCount || result.modifiedCount);
+
+      console.log(`[Daily Stats] Updated ${item.date}:`, result.upsertedCount || result.modifiedCount);
     }
 
     console.log('[Daily Stats] Completed successfully.');
@@ -310,7 +319,7 @@ export async function fetchAndStoreDailyTotals() {
     console.error('[Daily Stats] Failed:', err);
   }
 }
-    
+
 
 
 

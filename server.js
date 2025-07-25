@@ -333,39 +333,8 @@ export async function fetchAndStoreDailyTotals() {  try {
 // Schedule job at 00:05
 // ----------------------
 
-function getMsUntilNextRun(hour = 0, minute = 5) {
-  const now = new Date();
-  const next = new Date();
-  next.setHours(hour, minute, 0, 0);
-  if (next <= now) next.setDate(next.getDate() + 1);
-  return next - now;
-}
 
-function scheduleStatsUpdate() {
-  const delay = getMsUntilNextRun(); // First run at 00:05
 
-  setTimeout(() => {
-    // First run
-    fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/update-daily-stats', {
-      method: 'POST'
-    })
-      .then(res => res.json())
-      .then(data => console.log('[✅ Daily Update]', data))
-      .catch(err => console.error('[❌ Daily Update Error]', err));
-
-    // Set daily interval
-    setInterval(() => {
-      fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/update-daily-stats', {
-        method: 'POST'
-      })
-        .then(res => res.json())
-        .then(data => console.log('[✅ Daily Update]', data))
-        .catch(err => console.error('[❌ Daily Update Error]', err));
-    }, 24 * 60 * 60 * 1000);
-  }, delay);
-}
-
-scheduleStatsUpdate();
 
 
 

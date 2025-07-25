@@ -8179,24 +8179,6 @@ app.post('/api/iso20022', async (req, res) => {
   }
 });
 
-// 👇 Wait for DB before listening
-mongoose.connect(process.env.MONGO_URI, {
-  dbName: 'nft_marketplace_nfts',
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-  .then(() => {
-    console.log('✅ MongoDB connected');
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('❌ MongoDB connection failed:', err.message);
-  });
-
-
-
 
 
 app.get('/iso20022/:userId', async (req, res) => {

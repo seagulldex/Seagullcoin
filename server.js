@@ -327,12 +327,6 @@ export async function fetchAndStoreDailyTotals() {  try {
 }
 
 
-// Immediately run once when the server starts
-fetchAndStoreDailyTotals().then(() => {
-  console.log('[Init] Daily stats updated immediately on start.');
-}).catch(console.error);
-
-
 // ----------------------
 // Schedule job at 00:05
 // ----------------------
@@ -502,15 +496,7 @@ export async function archivePaidEventsLoop() {
   await archivePaidEventsLoop();
 })();
 
-// Call it every 10 minutes
-setInterval(() => {
-  fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/update-daily-stats', {
-    method: 'POST'
-  })
-    .then(res => res.json())
-    .then(data => console.log('[✅ Auto-repair Daily Stats]', data))
-    .catch(err => console.error('[❌ Error Updating Daily Stats]', err));
-}, 10 * 60 * 100); // 10 minutes
+
 
 
 

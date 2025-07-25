@@ -285,12 +285,18 @@ export async function fetchAndStoreDailyTotals() {
       { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
     ]).toArray();
 
+    // Format dates and calculate cumulativeTotal
+    let cumulativeTotal = 0;
     const dailyTotalsFormatted = dailyTotals.map(item => {
       const { year, month, day } = item._id;
+      const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      cumulativeTotal += item.totalStaked;
+
       return {
-        date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        date,
         totalStaked: item.totalStaked,
         count: item.count,
+        cumulativeTotal
       };
     });
 
@@ -303,6 +309,7 @@ export async function fetchAndStoreDailyTotals() {
           $set: {
             totalStaked: item.totalStaked,
             count: item.count,
+            cumulativeTotal: item.cumulativeTotal
           },
           $setOnInsert: {
             date: item.date
@@ -320,6 +327,7 @@ export async function fetchAndStoreDailyTotals() {
   }
 }
 
+
 // ----------------------
 // Schedule job at 00:05
 // ----------------------
@@ -327,9 +335,9 @@ export async function fetchAndStoreDailyTotals() {
 function getMsUntilNextMidnight() {
   const now = new Date();
   const nextRun = new Date(now);
-  nextRun.setHours(0, 5, 0, 0); // Set to 00:05:00
+  nextRun.setHours(0, 5, 0, 0); // 00:05:00
   if (nextRun <= now) {
-    nextRun.setDate(nextRun.getDate() + 1); // Shift to next day if already past
+    nextRun.setDate(nextRun.getDate() + 1);
   }
   return nextRun.getTime() - now.getTime();
 }
@@ -337,9 +345,9 @@ function getMsUntilNextMidnight() {
 setTimeout(() => {
   fetchAndStoreDailyTotals(); // First run at 00:05
 
-  // Run every 24 hours after that
-  setInterval(fetchAndStoreDailyTotals, 24 * 60 * 60 * 1000);
+  setInterval(fetchAndStoreDailyTotals, 24 * 60 * 60 * 1000); // Every 24 hours
 }, getMsUntilNextMidnight());
+
 
 // Auto-unstake function
 // Assuming Stake is your mongoose model, imported already

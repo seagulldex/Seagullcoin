@@ -8035,12 +8035,15 @@ app.get('/test-daily', async (req, res) => {
   res.json(result);
 });
 
+// server.js or routes file
+
 app.post('/api/update-daily-stats', async (req, res) => {
   try {
     const db = await connectDB();
     const stakesCollection = db.collection('stakes');
     const statsCollection = db.collection('dailyStakeStats');
 
+    // Group by day
     const dailyTotals = await stakesCollection.aggregate([
       {
         $group: {
@@ -8056,6 +8059,7 @@ app.post('/api/update-daily-stats', async (req, res) => {
       { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
     ]).toArray();
 
+    // Format & build cumulativeTotal
     let cumulativeTotal = 0;
     const results = [];
 
@@ -8081,11 +8085,13 @@ app.post('/api/update-daily-stats', async (req, res) => {
     }
 
     res.json({ success: true, updated: results.length, data: results });
+
   } catch (err) {
     console.error('[Stats Error]', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 
 

@@ -311,7 +311,7 @@ export async function fetchAndStoreDailyTotals() {
         { upsert: true }
       );
 
-      console.log(`[Daily Stats] Updated ${item.date}:`, result.upsertedCount || result.modifiedCount);
+      console.log(`[Daily Stats] Upserted ${item.date}:`, result.upsertedCount || result.modifiedCount);
     }
 
     console.log('[Daily Stats] Completed successfully.');
@@ -320,14 +320,26 @@ export async function fetchAndStoreDailyTotals() {
   }
 }
 
+// ----------------------
+// Schedule job at 00:05
+// ----------------------
 
+function getMsUntilNextMidnight() {
+  const now = new Date();
+  const nextRun = new Date(now);
+  nextRun.setHours(0, 5, 0, 0); // Set to 00:05:00
+  if (nextRun <= now) {
+    nextRun.setDate(nextRun.getDate() + 1); // Shift to next day if already past
+  }
+  return nextRun.getTime() - now.getTime();
+}
 
+setTimeout(() => {
+  fetchAndStoreDailyTotals(); // First run at 00:05
 
-
-
-
-
-
+  // Run every 24 hours after that
+  setInterval(fetchAndStoreDailyTotals, 24 * 60 * 60 * 1000);
+}, getMsUntilNextMidnight());
 
 // Auto-unstake function
 // Assuming Stake is your mongoose model, imported already

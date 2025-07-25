@@ -264,57 +264,55 @@ async function cleanOldPendingStakes() {
 }
 
 
+export async function fetchAndStoreDailyTotals() {
+  try {
+    const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
+    const statsCollection = db.collection('dailyStakeStats');
 
-    
+    const dailyTotals = await stakesCollection.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: '$timestamp' },
+            month: { $month: '$timestamp' },
+            day: { $dayOfMonth: '$timestamp' }
+          },
+          totalStaked: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+    ]).toArray();
 
-async function fetchAndStoreDailyTotals() {
-  const db = await connectDB();
-  const stakesCollection = db.collection('stakes');
-  const statsCollection = db.collection('dailyStakeStats'); // new collection
+    const dailyTotalsFormatted = dailyTotals.map(item => {
+      const { year, month, day } = item._id;
+      return {
+        date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        totalStaked: item.totalStaked,
+        count: item.count,
+      };
+    });
 
-  const dailyTotals = await stakesCollection.aggregate([
-    {
-      $group: {
-        _id: {
-          year: { $year: '$timestamp' },
-          month: { $month: '$timestamp' },
-          day: { $dayOfMonth: '$timestamp' }
-        },
-        totalStaked: { $sum: '$amount' },
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
-  ]).toArray();
+    console.log('[Daily Stats] Saving/Updating:', dailyTotalsFormatted);
 
-  const dailyTotalsFormatted = dailyTotals.map(item => {
-    const { year, month, day } = item._id;
-    return {
-      date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-      totalStaked: item.totalStaked,
-      count: item.count,
-    };
-  });
+    for (const item of dailyTotalsFormatted) {
+      const result = await statsCollection.updateOne(
+        { date: item.date },
+        { $set: item },
+        { upsert: true }
+      );
+      console.log(`[Daily Stats] Upserted ${item.date}:`, result.upsertedCount || result.modifiedCount);
+    }
 
-  console.log('[Daily Stats] Saving/Updating:', dailyTotalsFormatted);
-
-  // Insert or update each daily record without deleting the collection
-  for (const item of dailyTotalsFormatted) {
-    await statsCollection.updateOne(
-      { date: item.date },       // Match by date
-      { $set: item },            // Update the document
-      { upsert: true }           // Insert if it doesn’t exist
-    );
+    console.log('[Daily Stats] Completed successfully.');
+  } catch (err) {
+    console.error('[Daily Stats] Failed:', err);
   }
 }
+    
 
-// Run immediately
-(async () => {
-  await fetchAndStoreDailyTotals();
 
-  // Run once every 24 hours
-  setInterval(fetchAndStoreDailyTotals, 24 * 60 * 60 * 1000);
-})();
 
 
 

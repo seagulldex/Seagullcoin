@@ -1,0 +1,15 @@
+import mongoose from 'mongoose';
+
+const Iso20022Schema = new mongoose.Schema({
+  xrpl_address: { type: String, required: true },
+  wallet: { type: String, required: true },
+  xlm_address: { type: String, required: true },
+  flr_address: { type: String, required: true },
+  hbar_address: { type: String, required: true },
+  algo_address: { type: String, required: true },
+  xdc_address: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now }
+});
+
+const Iso20022 = mongoose.models.Iso20022 || mongoose.model('Iso20022', Iso20022Schema);
+export default Iso20022;

@@ -8150,35 +8150,26 @@ app.get('/userwallet/:xrplAddress', async (req, res) => {
 });
 
 
-
-
-app.post('/iso20022', async (req, res) => {
-  const { userId, xlm_address, flr_address, hbar_address, algo_address, xdc_address } = req.body;
-
-  if (!userId) return res.status(400).json({ error: 'userId is required' });
-
+app.post('/api/iso20022', async (req, res) => {
   try {
-    const userWallet = await db.collection('UserWallet').findOne({ userId });
-    if (!userWallet) return res.status(404).json({ error: 'UserWallet not found' });
+    const data = req.body;
 
-    const newEntry = {
-      userId,
-      xlm_address,
-      flr_address,
-      hbar_address,
-      algo_address,
-      xdc_address,
-      xrpl_address: userWallet.xrpl_address,
-      wallet: userWallet.wallet,
-      createdAt: new Date()
-    };
+    // Basic validation (optional)
+    const requiredFields = ['xrpl_address', 'wallet', 'xlm_address', 'flr_address', 'hbar_address', 'algo_address', 'xdc_address'];
+    for (const field of requiredFields) {
+      if (!data[field]) return res.status(400).json({ error: `${field} is required` });
+    }
 
-    await db.collection('iso20022').insertOne(newEntry);
-    res.json({ success: true, message: 'User addresses saved successfully' });
+    const newEntry = new Iso20022(data);
+    await newEntry.save();
+
+    res.status(201).json({ message: 'Data saved successfully' });
   } catch (err) {
+    console.error('Error saving iso20022 data:', err);
     res.status(500).json({ error: 'Server error' });
   }
-  });
+});
+
 
 app.get('/iso20022/:userId', async (req, res) => {
   const { userId } = req.params;

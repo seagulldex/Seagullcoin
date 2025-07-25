@@ -8134,9 +8134,11 @@ app.get('/userwallet/:wallet', async (req, res) => {
     if (!userWallet) return res.status(404).json({ error: 'UserWallet not found' });
     res.json({ xrpl_address: userWallet.xrpl_address, wallet: userWallet.wallet });
   } catch (err) {
+    console.error('Error fetching user wallet:', err);  // ← this is the important line
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 app.post('/iso20022', async (req, res) => {

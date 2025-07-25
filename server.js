@@ -8127,7 +8127,55 @@ app.post('/api/update-daily-stats', async (req, res) => {
   }
 });
 
+app.get('/userwallet/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const userWallet = await db.collection('UserWallet').findOne({ userId });
+    if (!userWallet) return res.status(404).json({ error: 'UserWallet not found' });
+    res.json({ xrpl_address: userWallet.xrpl_address, wallet: userWallet.wallet });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
+app.post('/iso20022', async (req, res) => {
+  const { userId, xlm_address, flr_address, hbar_address, algo_address, xdc_address } = req.body;
+
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+  try {
+    const userWallet = await db.collection('UserWallet').findOne({ userId });
+    if (!userWallet) return res.status(404).json({ error: 'UserWallet not found' });
+
+    const newEntry = {
+      userId,
+      xlm_address,
+      flr_address,
+      hbar_address,
+      algo_address,
+      xdc_address,
+      xrpl_address: userWallet.xrpl_address,
+      wallet: userWallet.wallet,
+      createdAt: new Date()
+    };
+
+    await db.collection('iso20022').insertOne(newEntry);
+    res.json({ success: true, message: 'User addresses saved successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+  });
+
+app.get('/iso20022/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const record = await db.collection('iso20022').findOne({ userId });
+    if (!record) return res.status(404).json({ error: 'Record not found' });
+    res.json(record);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

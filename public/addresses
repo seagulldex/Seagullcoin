@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bridge Page - ISO20022</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="header.css" />
+  <style>
+    body {
+      background-color: #121212;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+    main {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #1e1e1e;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,191,165,0.5);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    form {
+      display: grid;
+      gap: 14px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input[type="text"] {
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1em;
+      background: #2c2c2c;
+      color: #eee;
+    }
+    input[type="text"]::placeholder {
+      color: #777;
+    }
+    button {
+      padding: 12px;
+      background: #00bfa5;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #009e87;
+    }
+    #status-message {
+      margin-top: 20px;
+      text-align: center;
+      font-weight: bold;
+    }
+    #status-message.error {
+      color: #ff4c4c;
+    }
+    #status-message.success {
+      color: #4caf50;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <ul style="display:flex; gap:10px; justify-content:center; padding: 10px 0; list-style:none;">
+      <li><a href="index.html" style="color:#00bfa5; text-decoration:none;">Home</a></li>
+      <li><a href="SeagullDex.html" style="color:#00bfa5; text-decoration:none;">Trade</a></li>
+      <li><a href="Stake.html" style="color:#00bfa5; text-decoration:none;">Stake</a></li>
+      <li><a href="Seagullwallet.html" style="color:#00bfa5; text-decoration:none;">Wallet</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <h1>Enter Your Blockchain Addresses</h1>
+  <form id="bridge-form">
+    <label for="xlm">XLM Address</label>
+    <input type="text" id="xlm" name="xlm" placeholder="e.g. G..." required />
+
+    <label for="flr">FLR Address</label>
+    <input type="text" id="flr" name="flr" placeholder="e.g. 0x..." required />
+
+    <label for="hbar">HBAR Address</label>
+    <input type="text" id="hbar" name="hbar" placeholder="e.g. 0x..." required />
+
+    <label for="algo">ALGO Address</label>
+    <input type="text" id="algo" name="algo" placeholder="e.g. ALGO address" required />
+
+    <label for="xdc">XDC Address</label>
+    <input type="text" id="xdc" name="xdc" placeholder="e.g. 0x..." required />
+
+    <button type="submit">Submit Addresses</button>
+  </form>
+
+  <div id="status-message"></div>
+</main>
+
+<script>
+  async function fetchUserWallet(loggedInWallet) {
+    // Replace this with your actual backend URL and logic to query MongoDB
+    const res = await fetch('/api/userwallet?wallet=' + encodeURIComponent(loggedInWallet));
+    if (!res.ok) throw new Error('Failed to fetch user wallet data');
+    return res.json();
+  }
+
+  async function saveToISO20022(data) {
+    // Replace this with your actual backend URL and logic to insert into 'iso20022' collection
+    const res = await fetch('/api/iso20022', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to save to iso20022 collection');
+    return res.json();
+  }
+
+  document.getElementById('bridge-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const statusEl = document.getElementById('status-message');
+    statusEl.textContent = '';
+    statusEl.className = '';
+
+    const loggedInWallet = localStorage.getItem('logged in');
+    if (!loggedInWallet) {
+      statusEl.textContent = 'Error: No logged-in wallet found. Please log in first.';
+      statusEl.className = 'error';
+      return;
+    }
+
+    const xlm = document.getElementById('xlm').value.trim();
+    const flr = document.getElementById('flr').value.trim();
+    const hbar = document.getElementById('hbar').value.trim();
+    const algo = document.getElementById('algo').value.trim();
+    const xdc = document.getElementById('xdc').value.trim();
+
+    try {
+      // Fetch user wallet data from UserWallet collection by logged-in wallet
+      const userWalletData = await fetchUserWallet(loggedInWallet);
+
+      if (!userWalletData || !userWalletData.xrpl_address || !userWalletData.wallet) {
+        statusEl.textContent = 'User wallet data not found or incomplete.';
+        statusEl.className = 'error';
+        return;
+      }
+
+      // Prepare data to insert into iso20022 collection
+      const iso20022Data = {
+        xrpl_address: userWalletData.xrpl_address,
+        wallet: userWalletData.wallet,
+        xlm_address: xlm,
+        flr_address: flr,
+        hbar_address: hbar,
+        algo_address: algo,
+        xdc_address: xdc,
+        timestamp: new Date().toISOString()
+      };
+
+      // Save data
+      await saveToISO20022(iso20022Data);
+
+      statusEl.textContent = 'Your blockchain addresses have been saved successfully!';
+      statusEl.className = 'success';
+
+      // Optional: clear the form
+      e.target.reset();
+
+    } catch (error) {
+      console.error(error);
+      statusEl.textContent = 'An error occurred while saving your data. Please try again.';
+      statusEl.className = 'error';
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -8008,6 +8008,29 @@ app.get('/admin/current-wallets', async (req, res) => {
   }
 });
 
+app.get('/test-daily', async (req, res) => {
+  const db = await connectDB();
+  const stakesCollection = db.collection('stakes');
+
+  const result = await stakesCollection.aggregate([
+    {
+      $group: {
+        _id: {
+          year: { $year: '$timestamp' },
+          month: { $month: '$timestamp' },
+          day: { $dayOfMonth: '$timestamp' }
+        },
+        totalStaked: { $sum: '$amount' },
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+  ]).toArray();
+
+  res.json(result);
+});
+
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

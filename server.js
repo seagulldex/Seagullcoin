@@ -337,21 +337,40 @@ fetchAndStoreDailyTotals().then(() => {
 // Schedule job at 00:05
 // ----------------------
 
-function getMsUntilNextMidnight() {
+function getMsUntilNextRun(hour = 0, minute = 5) {
   const now = new Date();
-  const nextRun = new Date(now);
-  nextRun.setHours(0, 5, 0, 0); // 00:05:00
-  if (nextRun <= now) {
-    nextRun.setDate(nextRun.getDate() + 1);
-  }
-  return nextRun.getTime() - now.getTime();
+  const next = new Date();
+  next.setHours(hour, minute, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return next - now;
 }
 
-setTimeout(() => {
-  fetchAndStoreDailyTotals(); // First run at 00:05
+function scheduleStatsUpdate() {
+  const delay = getMsUntilNextRun(); // First run at 00:05
 
-  setInterval(fetchAndStoreDailyTotals, 24 * 60 * 60 * 1000); // Every 24 hours
-}, getMsUntilNextMidnight());
+  setTimeout(() => {
+    // First run
+    fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/update-daily-stats', {
+      method: 'POST'
+    })
+      .then(res => res.json())
+      .then(data => console.log('[✅ Daily Update]', data))
+      .catch(err => console.error('[❌ Daily Update Error]', err));
+
+    // Set daily interval
+    setInterval(() => {
+      fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/update-daily-stats', {
+        method: 'POST'
+      })
+        .then(res => res.json())
+        .then(data => console.log('[✅ Daily Update]', data))
+        .catch(err => console.error('[❌ Daily Update Error]', err));
+    }, 24 * 60 * 60 * 1000);
+  }, delay);
+}
+
+scheduleStatsUpdate();
+
 
 
 // Auto-unstake function

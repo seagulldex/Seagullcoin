@@ -8065,39 +8065,53 @@ app.post('/api/update-daily-stats', async (req, res) => {
 
     for (const item of dailyTotals) {
       const { year, month, day } = item._id;
-const today = new Date();
-const todayDate = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      cumulativeTotal += item.dailyTotal;
 
-const alreadyIncluded = results.find(r => r.date === todayDate);
+      const doc = {
+        date,
+        dailyTotal: item.dailyTotal,
+        count: item.count,
+        cumulativeTotal
+      };
 
-if (!alreadyIncluded) {
-  cumulativeTotal += 0; // still increment if needed
+      await statsCollection.updateOne(
+        { date },
+        { $set: doc },
+        { upsert: true }
+      );
 
-  const todayDoc = {
-    date: todayDate,
-    dailyTotal: 0,
-    count: 0,
-    cumulativeTotal
-  };
+      results.push(doc);
+    }
 
-  await statsCollection.updateOne(
-    { date: todayDate },
-    { $set: todayDoc },
-    { upsert: true }
-  );
+    // 🔥 Add today's entry if missing
+    const today = new Date();
+    const todayDate = today.toISOString().split('T')[0];
 
-  results.push(todayDoc);
-}
+    const alreadyIncluded = results.find(r => r.date === todayDate);
+    if (!alreadyIncluded) {
+      const todayDoc = {
+        date: todayDate,
+        dailyTotal: 0,
+        count: 0,
+        cumulativeTotal // use the latest cumulative value
+      };
 
+      await statsCollection.updateOne(
+        { date: todayDate },
+        { $set: todayDoc },
+        { upsert: true }
+      );
+
+      results.push(todayDoc);
+    }
 
     res.json({ success: true, updated: results.length, data: results });
-
   } catch (err) {
     console.error('[Stats Error]', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 
 

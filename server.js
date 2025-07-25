@@ -8065,24 +8065,30 @@ app.post('/api/update-daily-stats', async (req, res) => {
 
     for (const item of dailyTotals) {
       const { year, month, day } = item._id;
-      const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      cumulativeTotal += item.dailyTotal;
+const today = new Date();
+const todayDate = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
-      const doc = {
-        date,
-        dailyTotal: item.dailyTotal,
-        count: item.count,
-        cumulativeTotal
-      };
+const alreadyIncluded = results.find(r => r.date === todayDate);
 
-      await statsCollection.updateOne(
-        { date },
-        { $set: doc },
-        { upsert: true }
-      );
+if (!alreadyIncluded) {
+  cumulativeTotal += 0; // still increment if needed
 
-      results.push(doc);
-    }
+  const todayDoc = {
+    date: todayDate,
+    dailyTotal: 0,
+    count: 0,
+    cumulativeTotal
+  };
+
+  await statsCollection.updateOne(
+    { date: todayDate },
+    { $set: todayDoc },
+    { upsert: true }
+  );
+
+  results.push(todayDoc);
+}
+
 
     res.json({ success: true, updated: results.length, data: results });
 

@@ -8127,10 +8127,10 @@ app.post('/api/update-daily-stats', async (req, res) => {
   }
 });
 
-app.get('/userwallet/:wallet', async (req, res) => {
-  const { wallet } = req.params;
+app.get('/userwallet/:xrplAddress', async (req, res) => {
+  const { xrplAddress } = req.params;
   try {
-    const userWallet = await db.collection('userwallets').findOne({ wallet });  // ← correct collection name
+    const userWallet = await db.collection('userwallets').findOne({ xrpl_address: xrplAddress }); // <-- match field
     if (!userWallet) return res.status(404).json({ error: 'UserWallet not found' });
     res.json({ xrpl_address: userWallet.xrpl_address, wallet: userWallet.wallet });
   } catch (err) {
@@ -8138,6 +8138,7 @@ app.get('/userwallet/:wallet', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 

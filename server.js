@@ -8152,23 +8152,25 @@ app.get('/userwallet/:xrplAddress', async (req, res) => {
 
 app.post('/api/iso20022', async (req, res) => {
   try {
-    const newEntry = new Iso20022({
+    const test = {
       xrpl_address: "rExampleAddress",
       wallet: "SEAGULL123",
-      xlm_address: "GExample",
-      flr_address: "0x123",
+      xlm_address: "GABCD...",
+      flr_address: "0xabc123",
       hbar_address: "0xabc",
       algo_address: "ALGO123",
       xdc_address: "0x456"
-    });
-
+    };
+    const newEntry = new Iso20022(test);
     await newEntry.save();
-    res.status(201).json({ message: 'Data saved successfully' });
+
+    res.status(201).json({ message: 'Hardcoded test saved successfully' });
   } catch (err) {
-    console.error('Error saving iso20022 data:', err.stack);
-    res.status(500).json({ error: 'Server error' });
+    console.error('💥 Save error:', err.stack);
+    res.status(500).json({ error: err.message });
   }
 });
+
 
 
 

@@ -8035,6 +8035,58 @@ app.get('/test-daily', async (req, res) => {
   res.json(result);
 });
 
+app.post('/api/update-daily-stats', async (req, res) => {
+  try {
+    const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
+    const statsCollection = db.collection('dailyStakeStats');
+
+    const dailyTotals = await stakesCollection.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: '$timestamp' },
+            month: { $month: '$timestamp' },
+            day: { $dayOfMonth: '$timestamp' }
+          },
+          dailyTotal: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+    ]).toArray();
+
+    let cumulativeTotal = 0;
+    const results = [];
+
+    for (const item of dailyTotals) {
+      const { year, month, day } = item._id;
+      const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      cumulativeTotal += item.dailyTotal;
+
+      const doc = {
+        date,
+        dailyTotal: item.dailyTotal,
+        count: item.count,
+        cumulativeTotal
+      };
+
+      await statsCollection.updateOne(
+        { date },
+        { $set: doc },
+        { upsert: true }
+      );
+
+      results.push(doc);
+    }
+
+    res.json({ success: true, updated: results.length, data: results });
+  } catch (err) {
+    console.error('[Stats Error]', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 
 // Call the XRPL ping when the server starts

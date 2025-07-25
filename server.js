@@ -8127,16 +8127,17 @@ app.post('/api/update-daily-stats', async (req, res) => {
   }
 });
 
-app.get('/userwallet/:userId', async (req, res) => {
-  const { userId } = req.params;
+app.get('/userwallet/:wallet', async (req, res) => {
+  const { wallet } = req.params;
   try {
-    const userWallet = await db.collection('UserWallet').findOne({ userId });
+    const userWallet = await db.collection('UserWallet').findOne({ wallet });
     if (!userWallet) return res.status(404).json({ error: 'UserWallet not found' });
     res.json({ xrpl_address: userWallet.xrpl_address, wallet: userWallet.wallet });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 app.post('/iso20022', async (req, res) => {
   const { userId, xlm_address, flr_address, hbar_address, algo_address, xdc_address } = req.body;

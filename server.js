@@ -8182,6 +8182,26 @@ app.get('/iso20022/:userId', async (req, res) => {
   }
 });
 
+app.get('/testsave', async (req, res) => {
+  try {
+    const testEntry = new Iso20022({
+      xrpl_address: 'testXrpl',
+      wallet: 'testWallet',
+      xlm_address: 'testXlm',
+      flr_address: 'testFlr',
+      hbar_address: 'testHbar',
+      algo_address: 'testAlgo',
+      xdc_address: 'testXdc'
+    });
+    await testEntry.save();
+    res.json({ message: 'Test entry saved' });
+  } catch (err) {
+    console.error('❌ Test save failed:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

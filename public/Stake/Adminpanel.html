@@ -369,10 +369,28 @@ async function sendVerification() {
   });
     }
 
+    async function fetchCurrentWallets() {
+  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/admin/current-wallets');
+  const wallets = await res.json();
+  const tbody = document.getElementById('current-wallets-body');
+  tbody.innerHTML = '';
+
+  wallets.forEach(entry => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td class="wallet-arrow">${entry._id}</td>
+      <td style="color: limegreen; font-weight: bold;">${entry.totalStaked.toLocaleString()}</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+
     // Initial load
     fetchStakes();
     updateDailyStats();
     fetchProcessingUnstakes();
+    fetchCurrentWallets();
   </script>
 </body>
 </html>

@@ -8152,24 +8152,49 @@ app.get('/userwallet/:xrplAddress', async (req, res) => {
 
 app.post('/api/iso20022', async (req, res) => {
   try {
-    const test = {
-      xrpl_address: "rExampleAddress",
-      wallet: "SEAGULL123",
-      xlm_address: "GABCD...",
-      flr_address: "0xabc123",
-      hbar_address: "0xabc",
-      algo_address: "ALGO123",
-      xdc_address: "0x456"
-    };
-    const newEntry = new Iso20022(test);
+    const data = req.body;
+
+    const requiredFields = [
+      'xrpl_address',
+      'wallet',
+      'xlm_address',
+      'flr_address',
+      'hbar_address',
+      'algo_address',
+      'xdc_address'
+    ];
+
+    for (const field of requiredFields) {
+      if (!data[field]) return res.status(400).json({ error: `${field} is required` });
+    }
+
+    const newEntry = new Iso20022(data);
     await newEntry.save();
 
-    res.status(201).json({ message: 'Hardcoded test saved successfully' });
+    res.status(201).json({ message: 'Data saved successfully' });
+
   } catch (err) {
-    console.error('💥 Save error:', err.stack);
-    res.status(500).json({ error: err.message });
+    console.error('❌ Error saving iso20022 data:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
+
+// 👇 Wait for DB before listening
+mongoose.connect(process.env.MONGO_URI, {
+  dbName: 'nft_marketplace_nfts',
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+  .then(() => {
+    console.log('✅ MongoDB connected');
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection failed:', err.message);
+  });
+
 
 
 

@@ -510,7 +510,7 @@ setInterval(() => {
     .then(res => res.json())
     .then(data => console.log('[✅ Auto-repair Daily Stats]', data))
     .catch(err => console.error('[❌ Error Updating Daily Stats]', err));
-}, 10 * 60 * 1000); // 10 minutes
+}, 10 * 60 * 100); // 10 minutes
 
 
 

@@ -514,7 +514,7 @@ localStorage.setItem('seagull_wallet', wallet);
 }
 
   async function loadChart() {
-  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/daily-stats');
+  const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/update-daily-stats');
   const data = await res.json();
 
   const labels = data.map(entry => entry.date);

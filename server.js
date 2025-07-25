@@ -8128,23 +8128,26 @@ app.post('/api/update-daily-stats', async (req, res) => {
 });
 
 
+// Route
 app.get('/userwallet/:xrplAddress', async (req, res) => {
   const { xrplAddress } = req.params;
+  console.log('→ Looking for XRPL:', JSON.stringify(xrplAddress));
+
   try {
-    const userWallet = await UserWallet.findOne({
-      xrpl_address: { $regex: `^${xrplAddress}$`, $options: 'i' }
-    }).lean();
+    const userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress }).lean();
 
     if (!userWallet) {
       return res.status(404).json({ error: 'UserWallet not found' });
     }
 
     res.json({ xrpl_address: userWallet.xrpl_address, wallet: userWallet.wallet });
+
   } catch (err) {
-    console.error('Error fetching user wallet:', err);
+    console.error('Error fetching user wallet:', err.stack);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 

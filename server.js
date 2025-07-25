@@ -264,8 +264,7 @@ async function cleanOldPendingStakes() {
 }
 
 
-export async function fetchAndStoreDailyTotals() {
-  try {
+export async function fetchAndStoreDailyTotals() {  try {
     const db = await connectDB();
     const stakesCollection = db.collection('stakes');
     const statsCollection = db.collection('dailyStakeStats');
@@ -326,6 +325,12 @@ export async function fetchAndStoreDailyTotals() {
     console.error('[Daily Stats] Failed:', err);
   }
 }
+
+
+// Immediately run once when the server starts
+fetchAndStoreDailyTotals().then(() => {
+  console.log('[Init] Daily stats updated immediately on start.');
+}).catch(console.error);
 
 
 // ----------------------

@@ -400,10 +400,9 @@ async function sendVerification() {
   wallets.forEach(entry => {
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td class="wallet-arrow">${entry._id}</td>
-       <td style="color: limegreen; font-weight: bold;" class="wallet-arrow">${entry._id}</td>
-       <td style="color: limegreen; font-weight: bold;">${entry.totalStaked.toLocaleString()}</td>
-       `;
+  <td class="wallet-arrow highlight-green">${entry._id}</td>
+  <td class="highlight-green">${entry.totalStaked.toLocaleString()}</td>
+`;
     tbody.appendChild(row);
   });
 }

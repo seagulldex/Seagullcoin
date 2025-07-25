@@ -8152,23 +8152,24 @@ app.get('/userwallet/:xrplAddress', async (req, res) => {
 
 app.post('/api/iso20022', async (req, res) => {
   try {
-    const data = req.body;
+    const newEntry = new Iso20022({
+      xrpl_address: "rExampleAddress",
+      wallet: "SEAGULL123",
+      xlm_address: "GExample",
+      flr_address: "0x123",
+      hbar_address: "0xabc",
+      algo_address: "ALGO123",
+      xdc_address: "0x456"
+    });
 
-    // Basic validation (optional)
-    const requiredFields = ['xrpl_address', 'wallet', 'xlm_address', 'flr_address', 'hbar_address', 'algo_address', 'xdc_address'];
-    for (const field of requiredFields) {
-      if (!data[field]) return res.status(400).json({ error: `${field} is required` });
-    }
-
-    const newEntry = new Iso20022(data);
     await newEntry.save();
-
     res.status(201).json({ message: 'Data saved successfully' });
   } catch (err) {
-    console.error('Error saving iso20022 data:', err);
+    console.error('Error saving iso20022 data:', err.stack);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 app.get('/iso20022/:userId', async (req, res) => {

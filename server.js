@@ -227,7 +227,12 @@ async function createStakePayload(req, res, amount) {
   }
 }
 
-(async () => {
+// Connect once at app startup
+async function connectDB() {
+  if (mongoose.connection.readyState === 1) {
+    // Already connected
+    return;
+  }
   try {
     await mongoose.connect(process.env.MONGO_URI, {
       dbName: 'nft_marketplace_nfts',
@@ -235,12 +240,11 @@ async function createStakePayload(req, res, amount) {
       useUnifiedTopology: true
     });
     console.log('✅ MongoDB connected');
-    //
-    // await mongoose.connection.close(); 
   } catch (err) {
-    console.error('❌ MongoDB connection error:', err.message);
+    console.error('❌ MongoDB connection error:', err);
+    throw err;
   }
-})();
+}
 
 
 // ⏰ Cleanup logic

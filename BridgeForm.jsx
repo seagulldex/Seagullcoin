@@ -17,7 +17,7 @@ export default function BridgeForm() {
     const res = await fetch("/api/bridge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ assetType, fromChain, toChain, amount })
+      body: JSON.stringify({ category: assetType, fromChain, toChain, amount })
     });
 
     const data = await res.json();

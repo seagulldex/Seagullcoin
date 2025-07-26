@@ -8137,9 +8137,6 @@ app.post('/api/update-daily-stats', async (req, res) => {
 });
 
 
-
-
-
 app.post('/api/iso20022', async (req, res) => {
   try {
     const db = await connectDB(); // your existing native driver connectDB
@@ -8168,6 +8165,35 @@ app.post('/api/iso20022', async (req, res) => {
     res.status(500).json({ error: 'Server error', detail: err.message });
   }
 });
+
+
+
+app.post('/api/iso20022/update-address', async (req, res) => {
+  try {
+    const { payloadUUID, xumm_wallet_address } = req.body;
+    if (!payloadUUID || !xumm_wallet_address) {
+      return res.status(400).json({ error: 'payloadUUID and xumm_wallet_address required' });
+    }
+
+    const db = await connectDB();
+    const iso20022Collection = db.collection('iso20022');
+
+    const result = await iso20022Collection.updateOne(
+      { xumm_uuid: payloadUUID },
+      { $set: { xrpl_address: xumm_wallet_address } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Update address error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 
 

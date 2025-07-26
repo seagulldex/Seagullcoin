@@ -130,6 +130,12 @@
   </nav>
 </header>
 
+  <div id="wallet-info" style="margin-top: 20px; text-align: center;">
+  <p>XUMM Wallet: <span id="xumm-wallet-address">Not connected</span></p>
+  <p>Seagull Wallet: <span id="seagull-wallet-address">Not connected</span></p>
+</div>
+
+
 <main>
   <h1>Enter Your Blockchain Addresses</h1>
   <form id="bridge-form">
@@ -160,6 +166,7 @@
 
   window.addEventListener('DOMContentLoaded', () => {
     updateWalletStatus();
+    displayWalletInfo();
   });
 
   walletContainer.addEventListener('click', () => {
@@ -184,6 +191,15 @@
       walletIndicator.classList.add('red');
     }
   }
+
+  function displayWalletInfo() {
+  const xummWallet = localStorage.getItem('xumm_wallet_address');
+  const seagullWallet = localStorage.getItem('seagull_wallet');
+
+  document.getElementById('xumm-wallet-address').textContent = xummWallet || 'Not connected';
+  document.getElementById('seagull-wallet-address').textContent = seagullWallet || 'Not connected';
+}
+
 
   async function startLoginFlow() {
     try {

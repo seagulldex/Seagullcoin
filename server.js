@@ -8164,6 +8164,14 @@ app.post('/api/iso20022', async (req, res) => {
       return res.status(400).json({ error: 'xrpl_address is required' });
     }
 
+    // Check if xrpl_address exists in UserWallet collection
+    const userWallet = await UserWallet.findOne({ xrpl_address: data.xrpl_address });
+
+    if (!userWallet) {
+      return res.status(404).json({ error: 'xrpl_address not found in user wallets' });
+    }
+
+    // If it exists, create a new Iso20022 entry
     const newEntry = new Iso20022(data);
     await newEntry.save();
 

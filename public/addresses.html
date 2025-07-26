@@ -132,7 +132,7 @@
 
   <div id="wallet-info" style="margin-top: 20px; text-align: center;">
   <p>XUMM Wallet: <span id="xumm-wallet-address">Not connected</span></p>
-  <p>Seagull Wallet: <span id="seagull-wallet-address">Not connected</span></p>
+  <p>Seagull Wallet: <span id="seagull-wallet-address">Loading...</span></p>
 </div>
 
 
@@ -162,22 +162,34 @@
 
 <script>
   const walletContainer = document.getElementById('wallet-container');
-  const walletIndicator = document.getElementById('wallet-indicator');
+  const walletContainer = document.getElementById('wallet-container');
+const walletIndicator = document.getElementById('wallet-indicator');
 
-  window.addEventListener('DOMContentLoaded', () => {
-    updateWalletStatus();
-    displayWalletInfo();
-  });
+window.addEventListener('DOMContentLoaded', () => {
+  updateWalletStatus();
+  displayWalletInfo();
 
-  walletContainer.addEventListener('click', () => {
-    const wallet = localStorage.getItem('xumm_wallet_address');
-    if (!wallet) {
-      console.log('Login clicked — starting login flow');
-      startLoginFlow().catch(console.error);
-    } else {
-      console.log('Already connected:', wallet);
-    }
-  });
+  // Add this to show Seagull wallet
+  const seagullWallet = localStorage.getItem('seagull_wallet');
+  const el = document.getElementById('seagull-wallet-address');
+  if (el && seagullWallet) {
+    el.textContent = seagullWallet;
+  } else if (el) {
+    el.textContent = 'Not connected';
+  }
+});
+
+// Optional: If this container is clickable to trigger login
+walletContainer.addEventListener('click', () => {
+  const wallet = localStorage.getItem('xumm_wallet_address');
+  if (!wallet) {
+    console.log('Login clicked — starting login flow');
+    startLoginFlow().catch(console.error);
+  } else {
+    console.log('Already connected:', wallet);
+  }
+});
+
 
   async function updateWalletStatus() {
     const wallet = localStorage.getItem('xumm_wallet_address');
@@ -234,6 +246,14 @@
       alert('Login failed. See console for error.');
     }
   }
+
+  function showSeagullWallet() {
+  const seagullWallet = localStorage.getItem('seagull_wallet');
+  const el = document.getElementById('seagull-wallet-address');
+  if (el) el.textContent = seagullWallet || 'Not connected';
+}
+window.addEventListener('DOMContentLoaded', showSeagullWallet);
+
 
   async function createPayload(data) {
     const res = await fetch('/api/iso20022', {

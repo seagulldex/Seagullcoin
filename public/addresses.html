@@ -6,31 +6,71 @@
   <title>Bridge Page - ISO20022</title>
   <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="header.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xumm-sdk/dist/xumm-sdk.bundle.js"></script>
   <style>
     body {
       background-color: #121212;
       color: #fff;
       font-family: Arial, sans-serif;
     }
+
+    #top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background-color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 20px;
+      z-index: 1000;
+    }
+
+    #wallet-container {
+      border: 2px solid #333;
+      border-radius: 10px;
+      padding: 6px 12px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 150px;
+      cursor: pointer;
+    }
+
+    #wallet-status {
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    #wallet-indicator.red { color: #ff4444; }
+    #wallet-indicator.green { color: #44ff44; }
+
     main {
       max-width: 600px;
-      margin: 40px auto;
+      margin: 80px auto 40px;
       padding: 20px;
       background: #1e1e1e;
       border-radius: 12px;
       box-shadow: 0 0 10px rgba(0,191,165,0.5);
     }
+
     h1 {
       text-align: center;
       margin-bottom: 24px;
     }
+
     form {
       display: grid;
       gap: 14px;
     }
+
     label {
       font-weight: bold;
     }
+
     input[type="text"] {
       padding: 10px;
       border-radius: 6px;
@@ -39,9 +79,11 @@
       background: #2c2c2c;
       color: #eee;
     }
+
     input[type="text"]::placeholder {
       color: #777;
     }
+
     button {
       padding: 12px;
       background: #00bfa5;
@@ -52,23 +94,30 @@
       cursor: pointer;
       transition: background 0.3s ease;
     }
+
     button:hover {
       background: #009e87;
     }
+
     #status-message {
       margin-top: 20px;
       text-align: center;
       font-weight: bold;
     }
-    #status-message.error {
-      color: #ff4c4c;
-    }
-    #status-message.success {
-      color: #4caf50;
-    }
+
+    #status-message.error { color: #ff4c4c; }
+    #status-message.success { color: #4caf50; }
   </style>
 </head>
 <body>
+
+<div id="top-bar">
+  <div id="wallet-container">
+    <div id="wallet-status">
+      <span id="wallet-indicator" class="red">🔴 Login</span>
+    </div>
+  </div>
+</div>
 
 <header>
   <nav>
@@ -106,15 +155,60 @@
 </main>
 
 <script>
+  const walletStatus = document.getElementById('wallet-container');
+  const walletIndicator = document.getElementById('wallet-indicator');
+
+  window.addEventListener('DOMContentLoaded', () => {
+    updateWalletStatus();
+  });
+
+  walletStatus.addEventListener('click', () => {
+    const wallet = localStorage.getItem('xumm_wallet_address');
+    if (!wallet) {
+      startLoginFlow();
+    }
+  });
+
+  async function updateWalletStatus() {
+    const wallet = localStorage.getItem('xumm_wallet_address');
+    if (wallet) {
+      walletIndicator.textContent = '🟢 Connected';
+      walletIndicator.classList.remove('red');
+      walletIndicator.classList.add('green');
+    } else {
+      walletIndicator.textContent = '🔴 Login';
+      walletIndicator.classList.remove('green');
+      walletIndicator.classList.add('red');
+    }
+  }
+
+  async function startLoginFlow() {
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
+    const data = await res.json();
+    const payloadUUID = data.payloadUUID;
+
+    window.open(data.payloadURL, "_blank");
+
+    const interval = setInterval(async () => {
+      const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${payloadUUID}`);
+      const loginStatus = await check.json();
+
+      if (loginStatus.loggedIn) {
+        clearInterval(interval);
+        localStorage.setItem('xumm_wallet_address', loginStatus.account);
+        localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+        updateWalletStatus();
+      }
+    }, 3000);
+  }
+
   async function fetchUserWallet(loggedInWallet) {
-    // Replace this with your actual backend URL and logic to query MongoDB
     const res = await fetch('/api/userwallet?wallet=' + encodeURIComponent(loggedInWallet));
     if (!res.ok) throw new Error('Failed to fetch user wallet data');
     return res.json();
   }
 
   async function saveToISO20022(data) {
-    // Replace this with your actual backend URL and logic to insert into 'iso20022' collection
     const res = await fetch('/api/iso20022', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -131,9 +225,9 @@
     statusEl.textContent = '';
     statusEl.className = '';
 
-    const loggedInWallet = localStorage.getItem('logged in');
+    const loggedInWallet = localStorage.getItem('xumm_wallet_address');
     if (!loggedInWallet) {
-      statusEl.textContent = 'Error: No logged-in wallet found. Please log in first.';
+      statusEl.textContent = 'Error: No wallet logged in. Please log in first.';
       statusEl.className = 'error';
       return;
     }
@@ -145,7 +239,6 @@
     const xdc = document.getElementById('xdc').value.trim();
 
     try {
-      // Fetch user wallet data from UserWallet collection by logged-in wallet
       const userWalletData = await fetchUserWallet(loggedInWallet);
 
       if (!userWalletData || !userWalletData.xrpl_address || !userWalletData.wallet) {
@@ -154,7 +247,6 @@
         return;
       }
 
-      // Prepare data to insert into iso20022 collection
       const iso20022Data = {
         xrpl_address: userWalletData.xrpl_address,
         wallet: userWalletData.wallet,
@@ -166,15 +258,11 @@
         timestamp: new Date().toISOString()
       };
 
-      // Save data
       await saveToISO20022(iso20022Data);
 
       statusEl.textContent = 'Your blockchain addresses have been saved successfully!';
       statusEl.className = 'success';
-
-      // Optional: clear the form
       e.target.reset();
-
     } catch (error) {
       console.error(error);
       statusEl.textContent = 'An error occurred while saving your data. Please try again.';

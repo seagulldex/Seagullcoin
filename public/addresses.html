@@ -262,28 +262,31 @@ if (!loggedInWallet) {
   try {
     // 🔹 Step 1: Create payload and open XUMM signing page
     const { payloadUUID, payloadURL } = await createPayload(formData);
-    localStorage.setItem('pendingPayloadUUID', payloadUUID);
-    window.open(payloadURL, '_blank');
+localStorage.setItem('pendingPayloadUUID', payloadUUID);
+window.open(payloadURL, '_blank');
 
-    statusEl.textContent = 'Please sign the transaction in XUMM...';
+statusEl.innerHTML = `Please <a href="${payloadURL}" target="_blank" style="color:#00bfa5;">sign the transaction in XUMM</a>...`;
+statusEl.className = 'success';
+
+// Start polling and timeout
+const checkInterval = setInterval(async () => {
+  const result = await confirmPayload(payloadUUID);
+
+  if (result && result.success) {
+    clearInterval(checkInterval);
+    clearTimeout(timeout);
+    statusEl.textContent = '✅ Wallet confirmed and data saved!';
     statusEl.className = 'success';
-
-    // 🔹 Step 2: Poll until user signs
-    const checkInterval = setInterval(async () => {
-      const result = await confirmPayload(payloadUUID);
-
-      if (result && result.success) {
-        clearInterval(checkInterval);
-        statusEl.textContent = '✅ Wallet confirmed and data saved!';
-        statusEl.className = 'success';
-        e.target.reset();
-      }
-    }, 3000);
-  } catch (err) {
-    console.error(err);
-    statusEl.textContent = '❌ Error occurred. Please try again.';
-    statusEl.className = 'error';
+    e.target.reset();
   }
+}, 3000);
+
+const timeout = setTimeout(() => {
+  clearInterval(checkInterval);
+  statusEl.textContent = '⏳ Signing session expired. Please try again.';
+  statusEl.className = 'error';
+}, 180000);
+
 });
 </script>
 

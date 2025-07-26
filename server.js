@@ -265,6 +265,13 @@ async function cleanOldPendingStakes() {
   }
 }
 
+// Schedule the cleanup every 10 minutes outside the function
+setInterval(() => {
+  cleanOldPendingStakes()
+    .catch(console.error);
+}, 10 * 60 * 1000);
+
+
 
 export async function fetchAndStoreDailyTotals() {  try {
     const db = await connectDB();
@@ -333,9 +340,39 @@ export async function fetchAndStoreDailyTotals() {  try {
 // Schedule job at 00:05
 // ----------------------
 
+function scheduleStatsUpdate() {
+  const delay = getMsUntilNextRun(); // First run at 00:05
 
+  setTimeout(() => {
+    // First run
+    fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/update-daily-stats', {
+      method: 'POST'
+    })
+      .then(res => res.json())
+      .then(data => console.log('[✅ Daily Update]', data))
+      .catch(err => console.error('[❌ Daily Update Error]', err));
 
+    // Set daily interval
+    setInterval(() => {
+      fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/update-daily-stats', {
+        method: 'POST'
+      })
+        .then(res => res.json())
+        .then(data => console.log('[✅ Daily Update]', data))
+        .catch(err => console.error('[❌ Daily Update Error]', err));
+    }, 24 * 60 * 60 * 1000);
+  }, delay);
+}
 
+scheduleStatsUpdate();
+
+function getMsUntilNextRun(hour = 0, minute = 5) {
+  const now = new Date();
+  const next = new Date();
+  next.setHours(hour, minute, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return next - now;
+}
 
 
 // Auto-unstake function
@@ -8189,11 +8226,6 @@ console.log(requireLogin.session); // Log session data to verify its content
 setInterval(cleanupExpiredPayloads, 48 * 60 * 60 * 1000); // Every 24 hours
 
 setInterval(autoUnstakeExpiredUsers, 2 * 60 * 1000); // every 2 minutes
-
-// Run cleanup every 10 minutes
-setInterval(() => {
-  cleanOldPendingStakes().catch(console.error);
-}, 10 * 60 * 1000);
 
     
     console.log("XRPL client connected");

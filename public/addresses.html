@@ -198,6 +198,7 @@
         localStorage.setItem('xumm_wallet_address', loginStatus.account);
         localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
         updateWalletStatus();
+        window.location.reload();
       }
     }, 3000);
   }

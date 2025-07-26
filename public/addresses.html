@@ -208,6 +208,28 @@
     return res.json();
   }
 
+  async function createPayload(data) {
+  const res = await fetch('/api/iso20022', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to create payload');
+  return res.json(); // returns { payloadUUID, payloadURL }
+}
+
+
+  async function confirmPayload(payloadUUID) {
+  const res = await fetch('/api/iso20022/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ payloadUUID })
+  });
+  if (!res.ok) throw new Error('Failed to confirm payload');
+  return res.json();
+}
+
+
   async function saveToISO20022(data) {
     const res = await fetch('/api/iso20022', {
       method: 'POST',
@@ -219,56 +241,51 @@
   }
 
   document.getElementById('bridge-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  const statusEl = document.getElementById('status-message');
+  statusEl.textContent = '';
+  statusEl.className = '';
 
-    const statusEl = document.getElementById('status-message');
-    statusEl.textContent = '';
-    statusEl.className = '';
+  const xlm = document.getElementById('xlm').value.trim();
+  const flr = document.getElementById('flr').value.trim();
+  const hbar = document.getElementById('hbar').value.trim();
+  const algo = document.getElementById('algo').value.trim();
+  const xdc = document.getElementById('xdc').value.trim();
 
-    const loggedInWallet = localStorage.getItem('xumm_wallet_address');
-    if (!loggedInWallet) {
-      statusEl.textContent = 'Error: No wallet logged in. Please log in first.';
-      statusEl.className = 'error';
-      return;
-    }
+  const formData = {
+    xlm_address: xlm,
+    flr_address: flr,
+    hbar_address: hbar,
+    algo_address: algo,
+    xdc_address: xdc
+  };
 
-    const xlm = document.getElementById('xlm').value.trim();
-    const flr = document.getElementById('flr').value.trim();
-    const hbar = document.getElementById('hbar').value.trim();
-    const algo = document.getElementById('algo').value.trim();
-    const xdc = document.getElementById('xdc').value.trim();
+  try {
+    // 🔹 Step 1: Create payload and open XUMM signing page
+    const { payloadUUID, payloadURL } = await createPayload(formData);
+    localStorage.setItem('pendingPayloadUUID', payloadUUID);
+    window.open(payloadURL, '_blank');
 
-    try {
-      const userWalletData = await fetchUserWallet(loggedInWallet);
+    statusEl.textContent = 'Please sign the transaction in XUMM...';
+    statusEl.className = 'success';
 
-      if (!userWalletData || !userWalletData.xrpl_address || !userWalletData.wallet) {
-        statusEl.textContent = 'User wallet data not found or incomplete.';
-        statusEl.className = 'error';
-        return;
+    // 🔹 Step 2: Poll until user signs
+    const checkInterval = setInterval(async () => {
+      const result = await confirmPayload(payloadUUID);
+
+      if (result && result.success) {
+        clearInterval(checkInterval);
+        statusEl.textContent = '✅ Wallet confirmed and data saved!';
+        statusEl.className = 'success';
+        e.target.reset();
       }
-
-      const iso20022Data = {
-        xrpl_address: userWalletData.xrpl_address,
-        wallet: userWalletData.wallet,
-        xlm_address: xlm,
-        flr_address: flr,
-        hbar_address: hbar,
-        algo_address: algo,
-        xdc_address: xdc,
-        timestamp: new Date().toISOString()
-      };
-
-      await saveToISO20022(iso20022Data);
-
-      statusEl.textContent = 'Your blockchain addresses have been saved successfully!';
-      statusEl.className = 'success';
-      e.target.reset();
-    } catch (error) {
-      console.error(error);
-      statusEl.textContent = 'An error occurred while saving your data. Please try again.';
-      statusEl.className = 'error';
-    }
-  });
+    }, 3000);
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = '❌ Error occurred. Please try again.';
+    statusEl.className = 'error';
+  }
+});
 </script>
 
 </body>

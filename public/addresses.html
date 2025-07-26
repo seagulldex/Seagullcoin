@@ -263,8 +263,6 @@ if (!loggedInWallet) {
 localStorage.setItem('pendingPayloadUUID', payloadUUID);
 window.open(payloadURL, '_blank');
 
-statusEl.innerHTML = `Please <a href="${payloadURL}" target="_blank" style="color:#00bfa5;">sign the transaction in XUMM</a>...`;
-statusEl.className = 'success';
 
 // Start polling and timeout
 const checkInterval = setInterval(async () => {

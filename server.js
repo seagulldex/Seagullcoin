@@ -509,6 +509,35 @@ const totalExpected = stake.amount + estimatedReward;
   }
 }
 
+// api/bridge.js or whatever your API endpoint file is
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    await dbConnect();
+
+    const { category, fromChain, toChain, amount } = req.body;
+
+    const newRequest = new BridgeRequest({
+      category,
+      fromChain,
+      toChain,
+      amount,
+      status: "pending",
+      createdAt: new Date(),
+    });
+
+    await newRequest.save();
+
+    res.status(200).json({ message: "Bridge request saved!" });
+  } catch (err) {
+    console.error("Bridge error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
 
 // ✅ This is what the frontend should call via API
 async function fetchUnstakeEvents(walletAddress) {

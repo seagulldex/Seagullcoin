@@ -214,38 +214,33 @@ walletContainer.addEventListener('click', () => {
 
 
   async function startLoginFlow() {
-    try {
-      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
-      if (!res.ok) throw new Error('Login request failed');
+  try {
+    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
+    const data = await res.json();
+    window.location.href = data.payloadURL;
 
-      const data = await res.json();
-      const payloadUUID = data.payloadUUID;
+    const interval = setInterval(async () => {
+      const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
+      const loginStatus = await check.json();
 
-      if (!payloadUUID || !data.payloadURL) throw new Error('Invalid login response');
+      if (loginStatus.loggedIn) {
+        clearInterval(interval);
+        const wallet = loginStatus.account;
 
-      window.open(data.payloadURL, "_blank");
+        localStorage.setItem('xumm_wallet_address', loginStatus.account);
+        localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
+        localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
+        localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
 
-      const interval = setInterval(async () => {
-        try {
-          const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${payloadUUID}`);
-          const loginStatus = await check.json();
-
-          if (loginStatus.loggedIn) {
-            clearInterval(interval);
-            localStorage.setItem('xumm_wallet_address', loginStatus.account);
-            localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
-            updateWalletStatus();
-            window.location.reload();
-          }
-        } catch (err) {
-          console.error('Polling error:', err);
-        }
-      }, 3000);
-    } catch (err) {
-      console.error('Login failed:', err);
-      alert('Login failed. See console for error.');
-    }
+        document.getElementById('wallet-address').textContent = wallet;
+        updateWalletUI();
+      }
+    }, 3000);
+  } catch (e) {
+    alert('Login failed: ' + e.message);
   }
+}
+
 
   function showSeagullWallet() {
   const seagullWallet = localStorage.getItem('seagull_wallet');

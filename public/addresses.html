@@ -218,6 +218,8 @@
   return res.json(); // returns { payloadUUID, payloadURL }
 }
 
+  statusEl.innerHTML = `Please <a href="${payloadURL}" target="_blank" style="color:#00bfa5;">sign the transaction in XUMM</a>...`;
+
 
   async function confirmPayload(payloadUUID) {
   const res = await fetch('/api/iso20022/confirm', {
@@ -228,17 +230,6 @@
   if (!res.ok) throw new Error('Failed to confirm payload');
   return res.json();
 }
-
-
-  async function saveToISO20022(data) {
-    const res = await fetch('/api/iso20022', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error('Failed to save to iso20022 collection');
-    return res.json();
-  }
 
   document.getElementById('bridge-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -252,7 +243,15 @@
   const algo = document.getElementById('algo').value.trim();
   const xdc = document.getElementById('xdc').value.trim();
 
+  const loggedInWallet = localStorage.getItem('xumm_wallet_address');
+if (!loggedInWallet) {
+  statusEl.textContent = 'Error: No wallet logged in. Please log in first.';
+  statusEl.className = 'error';
+  return;
+}
+    
   const formData = {
+    xrpl_address: loggedInWallet,
     xlm_address: xlm,
     flr_address: flr,
     hbar_address: hbar,

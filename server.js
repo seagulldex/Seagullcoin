@@ -8157,8 +8157,6 @@ app.get('/userwallet/:xrplAddress', async (req, res) => {
 
 
 app.post('/api/iso20022', async (req, res) => {
-  const data = req.body;
-app.post('/api/iso20022', async (req, res) => {
   try {
     const data = req.body;
 

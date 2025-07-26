@@ -155,17 +155,20 @@
 </main>
 
 <script>
-  const walletStatus = document.getElementById('wallet-container');
+  const walletContainer = document.getElementById('wallet-container');
   const walletIndicator = document.getElementById('wallet-indicator');
 
   window.addEventListener('DOMContentLoaded', () => {
     updateWalletStatus();
   });
 
-  walletStatus.addEventListener('click', () => {
+  walletContainer.addEventListener('click', () => {
     const wallet = localStorage.getItem('xumm_wallet_address');
     if (!wallet) {
-      startLoginFlow();
+      console.log('Login clicked — starting login flow');
+      startLoginFlow().catch(console.error);
+    } else {
+      console.log('Already connected:', wallet);
     }
   });
 
@@ -183,107 +186,118 @@
   }
 
   async function startLoginFlow() {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
-    const data = await res.json();
-    const payloadUUID = data.payloadUUID;
+    try {
+      const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
+      if (!res.ok) throw new Error('Login request failed');
 
-    window.open(data.payloadURL, "_blank");
+      const data = await res.json();
+      const payloadUUID = data.payloadUUID;
 
-    const interval = setInterval(async () => {
-      const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${payloadUUID}`);
-      const loginStatus = await check.json();
+      if (!payloadUUID || !data.payloadURL) throw new Error('Invalid login response');
 
-      if (loginStatus.loggedIn) {
-        clearInterval(interval);
-        localStorage.setItem('xumm_wallet_address', loginStatus.account);
-        localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
-        updateWalletStatus();
-        window.location.reload();
-      }
-    }, 3000);
-  }
+      window.open(data.payloadURL, "_blank");
 
-  async function fetchUserWallet(loggedInWallet) {
-    const res = await fetch('/api/userwallet?wallet=' + encodeURIComponent(loggedInWallet));
-    if (!res.ok) throw new Error('Failed to fetch user wallet data');
-    return res.json();
+      const interval = setInterval(async () => {
+        try {
+          const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${payloadUUID}`);
+          const loginStatus = await check.json();
+
+          if (loginStatus.loggedIn) {
+            clearInterval(interval);
+            localStorage.setItem('xumm_wallet_address', loginStatus.account);
+            localStorage.setItem('xumm_user', JSON.stringify(loginStatus));
+            updateWalletStatus();
+            window.location.reload();
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
+      }, 3000);
+    } catch (err) {
+      console.error('Login failed:', err);
+      alert('Login failed. See console for error.');
+    }
   }
 
   async function createPayload(data) {
-  const res = await fetch('/api/iso20022', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  if (!res.ok) throw new Error('Failed to create payload');
-  return res.json(); // returns { payloadUUID, payloadURL }
-}
+    const res = await fetch('/api/iso20022', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to create payload');
+    return res.json(); // { payloadUUID, payloadURL }
+  }
 
   async function confirmPayload(payloadUUID) {
-  const res = await fetch('/api/iso20022/confirm', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ payloadUUID })
-  });
-  if (!res.ok) throw new Error('Failed to confirm payload');
-  return res.json();
-}
+    const res = await fetch('/api/iso20022/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payloadUUID })
+    });
+    if (!res.ok) throw new Error('Failed to confirm payload');
+    return res.json();
+  }
 
   document.getElementById('bridge-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const statusEl = document.getElementById('status-message');
-  statusEl.textContent = '';
-  statusEl.className = '';
+    e.preventDefault();
+    const statusEl = document.getElementById('status-message');
+    statusEl.textContent = '';
+    statusEl.className = '';
 
-  const xlm = document.getElementById('xlm').value.trim();
-  const flr = document.getElementById('flr').value.trim();
-  const hbar = document.getElementById('hbar').value.trim();
-  const algo = document.getElementById('algo').value.trim();
-  const xdc = document.getElementById('xdc').value.trim();
+    const xlm = document.getElementById('xlm').value.trim();
+    const flr = document.getElementById('flr').value.trim();
+    const hbar = document.getElementById('hbar').value.trim();
+    const algo = document.getElementById('algo').value.trim();
+    const xdc = document.getElementById('xdc').value.trim();
 
-  const loggedInWallet = localStorage.getItem('xumm_wallet_address');
-if (!loggedInWallet) {
-  statusEl.textContent = 'Error: No wallet logged in. Please log in first.';
-  statusEl.className = 'error';
-  return;
-}
-    
-  const formData = {
-    xrpl_address: loggedInWallet,
-    xlm_address: xlm,
-    flr_address: flr,
-    hbar_address: hbar,
-    algo_address: algo,
-    xdc_address: xdc
-  };
+    const loggedInWallet = localStorage.getItem('xumm_wallet_address');
+    if (!loggedInWallet) {
+      statusEl.textContent = 'Error: No wallet logged in. Please log in first.';
+      statusEl.className = 'error';
+      return;
+    }
 
-  try {
-    // 🔹 Step 1: Create payload and open XUMM signing page
-    const { payloadUUID, payloadURL } = await createPayload(formData);
-localStorage.setItem('pendingPayloadUUID', payloadUUID);
-window.open(payloadURL, '_blank');
+    const formData = {
+      xrpl_address: loggedInWallet,
+      xlm_address: xlm,
+      flr_address: flr,
+      hbar_address: hbar,
+      algo_address: algo,
+      xdc_address: xdc
+    };
 
+    try {
+      const { payloadUUID, payloadURL } = await createPayload(formData);
+      localStorage.setItem('pendingPayloadUUID', payloadUUID);
+      window.open(payloadURL, '_blank');
 
-// Start polling and timeout
-const checkInterval = setInterval(async () => {
-  const result = await confirmPayload(payloadUUID);
+      const checkInterval = setInterval(async () => {
+        try {
+          const result = await confirmPayload(payloadUUID);
+          if (result && result.success) {
+            clearInterval(checkInterval);
+            clearTimeout(timeout);
+            statusEl.textContent = '✅ Wallet confirmed and data saved!';
+            statusEl.className = 'success';
+            e.target.reset();
+          }
+        } catch (err) {
+          console.error('Confirmation error:', err);
+        }
+      }, 3000);
 
-  if (result && result.success) {
-    clearInterval(checkInterval);
-    clearTimeout(timeout);
-    statusEl.textContent = '✅ Wallet confirmed and data saved!';
-    statusEl.className = 'success';
-    e.target.reset();
-  }
-}, 3000);
-
-const timeout = setTimeout(() => {
-  clearInterval(checkInterval);
-  statusEl.textContent = '⏳ Signing session expired. Please try again.';
-  statusEl.className = 'error';
-}, 180000);
-
-});
+      const timeout = setTimeout(() => {
+        clearInterval(checkInterval);
+        statusEl.textContent = '⏳ Signing session expired. Please try again.';
+        statusEl.className = 'error';
+      }, 180000);
+    } catch (err) {
+      console.error('Bridge form error:', err);
+      statusEl.textContent = '❌ Submission failed. Try again.';
+      statusEl.className = 'error';
+    }
+  });
 </script>
 
 </body>

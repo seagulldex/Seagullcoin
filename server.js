@@ -8160,11 +8160,6 @@ app.post('/api/iso20022', async (req, res) => {
   try {
     const data = req.body;
 
-    // Instead of relying on client to send this, you could fetch from session / token
-    if (!data.xrpl_address) {
-      return res.status(400).json({ error: 'xrpl_address is required' });
-    }
-
     // Optionally, validate XRPL address format here (using your isValidXrplAddress function)
     if (!isValidXrplAddress(data.xrpl_address)) {
       return res.status(400).json({ error: 'Invalid xrpl_address format' });

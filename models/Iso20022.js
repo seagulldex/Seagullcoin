@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const Iso20022Schema = new mongoose.Schema({
   xrpl_address: { type: String, required: true },
-  wallet: { type: String, required: true },
+  wallet: { type: String, required: false, default: false },
   xlm_address: { type: String, required: false, default: false },
   flr_address: { type: String, required: false, default: false },
   hbar_address: { type: String, required: false, default: false },

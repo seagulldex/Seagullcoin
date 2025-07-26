@@ -8142,7 +8142,8 @@ app.post('/api/update-daily-stats', async (req, res) => {
 
 app.post('/api/iso20022', async (req, res) => {
   try {
-    await connectDB(); // 💥 ensure DB is connected
+    const db = await connectDB(); // your existing native driver connectDB
+    const iso20022Collection = db.collection('iso20022'); // specify collection name explicitly
 
     const data = req.body;
 
@@ -8150,13 +8151,13 @@ app.post('/api/iso20022', async (req, res) => {
       txjson: { TransactionType: 'SignIn' }
     });
 
-    const newEntry = new Iso20022({
+    await iso20022Collection.insertOne({
       ...data,
-      xumm_uuid: payload.uuid
+      xumm_uuid: payload.uuid,
+      timestamp: new Date()
     });
 
-    await newEntry.save();
-    console.log('✅ Saved to DB:', newEntry);
+    console.log('✅ Saved to DB:', data);
 
     res.status(200).json({
       payloadUUID: payload.uuid,
@@ -8167,6 +8168,7 @@ app.post('/api/iso20022', async (req, res) => {
     res.status(500).json({ error: 'Server error', detail: err.message });
   }
 });
+
 
 
 

@@ -8168,11 +8168,13 @@ app.post('/api/iso20022', async (req, res) => {
     await newEntry.save();
 
     res.status(201).json({ message: 'Data saved successfully' });
+
   } catch (err) {
-    console.error('❌ Error saving iso20022 data:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('❌ Server error:', err.stack || err);
+    res.status(500).json({ error: 'Server error', detail: err.message });
   }
 });
+
 
 
 

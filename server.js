@@ -8135,25 +8135,7 @@ app.post('/api/update-daily-stats', async (req, res) => {
 });
 
 
-// Route
-app.get('/userwallet/:xrplAddress', async (req, res) => {
-  const { xrplAddress } = req.params;
-  console.log('→ Looking for XRPL:', JSON.stringify(xrplAddress));
 
-  try {
-    const userWallet = await UserWallet.findOne({ xrpl_address: xrplAddress }).lean();
-
-    if (!userWallet) {
-      return res.status(404).json({ error: 'UserWallet not found' });
-    }
-
-    res.json({ xrpl_address: userWallet.xrpl_address, wallet: userWallet.wallet });
-
-  } catch (err) {
-    console.error('Error fetching user wallet:', err.stack);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
 
 
 app.post('/api/iso20022', async (req, res) => {
@@ -8184,42 +8166,6 @@ app.post('/api/iso20022', async (req, res) => {
   }
 });
 
-
-
-
-
-
-
-
-app.get('/iso20022/:userId', async (req, res) => {
-  const { userId } = req.params;
-  try {
-    const record = await db.collection('iso20022').findOne({ userId });
-    if (!record) return res.status(404).json({ error: 'Record not found' });
-    res.json(record);
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.get('/testsave', async (req, res) => {
-  try {
-    const testEntry = new Iso20022({
-      xrpl_address: 'testXrpl',
-      wallet: 'testWallet',
-      xlm_address: 'testXlm',
-      flr_address: 'testFlr',
-      hbar_address: 'testHbar',
-      algo_address: 'testAlgo',
-      xdc_address: 'testXdc'
-    });
-    await testEntry.save();
-    res.json({ message: 'Test entry saved' });
-  } catch (err) {
-    console.error('❌ Test save failed:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
 
 
 // Call the XRPL ping when the server starts

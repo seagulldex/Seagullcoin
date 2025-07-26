@@ -232,8 +232,9 @@ walletContainer.addEventListener('click', () => {
         localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
         localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
 
-        document.getElementById('wallet-address').textContent = wallet;
-        updateWalletUI();
+        document.getElementById('xumm-wallet-address').textContent = wallet;
+        updateWalletStatus();
+        displayWalletInfo();
       }
     }, 3000);
   } catch (e) {

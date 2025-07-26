@@ -8155,28 +8155,32 @@ app.get('/userwallet/:xrplAddress', async (req, res) => {
   }
 });
 
-const isValidXrplAddress = (addr) => /^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(addr);
+// 1. Create payload and open wallet
+app.post('/api/iso20022/payload', async (req, res) => {
+  // create payload, send URL, no DB save here
+});
 
+// 2. After user signs, Xumm calls your webhook or frontend polls for sign result
+app.post('/api/iso20022/confirm', async (req, res) => {
+  const { payloadUUID } = req.body;
 
-app.post('/api/iso20022', async (req, res) => {
-  try {
-    const data = req.body;
+  // Get result from Xumm SDK
+  const result = await xumm.payload.get(payloadUUID);
 
-    // Optionally, validate XRPL address format here (using your isValidXrplAddress function)
-    if (!isValidXrplAddress(data.xrpl_address)) {
-      return res.status(400).json({ error: 'Invalid xrpl_address format' });
-    }
-
-    // Now save directly to iso20022 collection
-    const newEntry = new Iso20022(data);
+  if (result && result.signed) {
+    // Save data to iso20022 collection here
+    const newEntry = new Iso20022({
+      xrpl_address: result.response.account, // example
+      // other fields you want to save
+    });
     await newEntry.save();
 
-    res.status(201).json({ message: 'Data saved successfully' });
-  } catch (err) {
-    console.error('❌ Server error:', err.stack || err);
-    res.status(500).json({ error: 'Server error', detail: err.message });
+    return res.status(201).json({ message: 'Data saved after signing' });
   }
+
+  res.status(400).json({ error: 'Payload not signed' });
 });
+
 
 
 

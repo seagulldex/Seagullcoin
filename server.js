@@ -8155,16 +8155,29 @@ app.get('/userwallet/:xrplAddress', async (req, res) => {
   }
 });
 
-// 1. Create payload and open wallet
 app.post('/api/iso20022', async (req, res) => {
   try {
     const data = req.body;
 
-    // No validation, no checks, just save whatever is sent
-    const newEntry = new Iso20022(data);
+    // Create a Xumm payload for SignIn or any transaction you want
+    const payload = await xumm.payload.create({
+      txjson: {
+        TransactionType: 'SignIn'
+      }
+    });
+
+    // Save ISO20022 data + link the Xumm payload UUID
+    const newEntry = new Iso20022({
+      ...data,
+      xumm_uuid: payload.uuid
+    });
     await newEntry.save();
 
-    res.status(201).json({ message: 'Data saved successfully' });
+    // Return payload info so frontend can open Xumm wallet
+    res.status(200).json({
+      payloadUUID: payload.uuid,
+      payloadURL: payload.next.always
+    });
   } catch (err) {
     console.error('❌ Server error:', err.stack || err);
     res.status(500).json({ error: 'Server error', detail: err.message });

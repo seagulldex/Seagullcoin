@@ -8155,25 +8155,25 @@ app.get('/userwallet/:xrplAddress', async (req, res) => {
   }
 });
 
+
 app.post('/api/iso20022', async (req, res) => {
   try {
+    await connectDB(); // 💥 ensure DB is connected
+
     const data = req.body;
 
-    // Create a Xumm payload for SignIn or any transaction you want
     const payload = await xumm.payload.create({
-      txjson: {
-        TransactionType: 'SignIn'
-      }
+      txjson: { TransactionType: 'SignIn' }
     });
 
-    // Save ISO20022 data + link the Xumm payload UUID
     const newEntry = new Iso20022({
       ...data,
       xumm_uuid: payload.uuid
     });
-    await newEntry.save();
 
-    // Return payload info so frontend can open Xumm wallet
+    await newEntry.save();
+    console.log('✅ Saved to DB:', newEntry);
+
     res.status(200).json({
       payloadUUID: payload.uuid,
       payloadURL: payload.next.always
@@ -8183,6 +8183,7 @@ app.post('/api/iso20022', async (req, res) => {
     res.status(500).json({ error: 'Server error', detail: err.message });
   }
 });
+
 
 
 

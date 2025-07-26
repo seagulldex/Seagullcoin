@@ -243,7 +243,30 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
+async function attachWalletToIso(xrpl_address, xumm_uuid) {
+  if (!xrpl_address && !xumm_uuid) return;
 
+  // Find matching user
+  const user = await UserWallet.findOne({
+    $or: [
+      { xrpl_address },
+      { xumm_uuid }
+    ]
+  });
+
+  if (!user) {
+    console.warn('No UserWallet found for', xrpl_address, xumm_uuid);
+    return;
+  }
+
+  // Update iso20022 with wallet info
+  const updated = await Iso20022.updateMany(
+    { $or: [{ xrpl_address }, { xumm_uuid }] },
+    { $set: { wallet: user.wallet } }
+  );
+
+  console.log(`Updated ${updated.modifiedCount} iso20022 record(s) with wallet`);
+}
 
 
 // ⏰ Cleanup logic

@@ -7,12 +7,12 @@ const bridgeAssets = {
 
 // Example escrow addresses you control (replace with real ones)
 const escrowAddresses = {
-  XRP: "rYourEscrowXRPaddress...",
-  XLM: "GBYourEscrowXLMaddress...",
-  HBAR: "YourEscrowHBARaddress...",
-  ALGO: "YourEscrowALGOaddress...",
-  FLR: "YourEscrowFLRaddress...",
-  XDC: "YourEscrowXDCaddress..."
+  XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
+  XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
+  HBAR: "0.0.2928384",
+  ALGO: "YFZD6UWU5KXQINAN4CV6UCMIMRFSTKXNFQWV7WUSYQIWASCH2AX4LT4RMM",
+  FLR: "0x3B51F488f729e5Cfa566990Fd7f069F364b6984D",
+  XDC: "xdc870f64E73e7D2dc5022b4b74e58C323b3148A984"
 };
 
 export default function BridgeForm() {

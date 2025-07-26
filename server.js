@@ -8168,32 +8168,52 @@ app.post('/api/iso20022', async (req, res) => {
 
 
 
-app.post('/api/iso20022/update-address', async (req, res) => {
+app.post('/api/iso20022/create', async (req, res) => {
   try {
-    const { payloadUUID, xumm_wallet_address } = req.body;
-    if (!payloadUUID || !xumm_wallet_address) {
-      return res.status(400).json({ error: 'payloadUUID and xumm_wallet_address required' });
+    const payload = await xumm.payload.create({
+      txjson: { TransactionType: 'SignIn' }
+    });
+
+    // Return just UUID and URL for signing
+    res.status(200).json({
+      payloadUUID: payload.uuid,
+      payloadURL: payload.next.always
+    });
+  } catch (err) {
+    console.error('❌ Payload creation error:', err);
+    res.status(500).json({ error: 'Failed to create payload' });
+  }
+});
+
+
+app.post('/api/iso20022/confirm', async (req, res) => {
+  try {
+    const { payloadUUID, data, xumm_wallet_address } = req.body;
+
+    if (!payloadUUID || !data || !xumm_wallet_address) {
+      return res.status(400).json({ error: 'payloadUUID, data, and xumm_wallet_address are required' });
     }
 
     const db = await connectDB();
     const iso20022Collection = db.collection('iso20022');
 
-    const result = await iso20022Collection.updateOne(
-      { xumm_uuid: payloadUUID },
-      { $set: { xrpl_address: xumm_wallet_address } }
-    );
+    // Optional: Verify that the payloadUUID was signed (via XUMM API or webhook)
 
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ error: 'Record not found' });
-    }
+    await iso20022Collection.insertOne({
+      ...data,
+      xrpl_address: xumm_wallet_address,
+      xumm_uuid: payloadUUID,
+      timestamp: new Date()
+    });
 
-    res.json({ success: true });
+    console.log('✅ Data saved after signing:', data);
+
+    res.status(200).json({ success: true });
   } catch (err) {
-    console.error('❌ Update address error:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('❌ Confirm save error:', err);
+    res.status(500).json({ error: 'Failed to save data after signing' });
   }
 });
-
 
 
 

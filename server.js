@@ -89,7 +89,7 @@ import './Xauprice.js'; // or whatever your file with setInterval is
 import './priceTrackerSGLCNXRP.js';
 import SGLCNRLUSDPrice from './models/SGLCNRLUSDPrice.js';
 import Iso20022 from './models/Iso20022.js';  // adjust the path
-
+import BridgeRequest from "./models/BridgeRequest.js";
 
 dotenv.config();
 

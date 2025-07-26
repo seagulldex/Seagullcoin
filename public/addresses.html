@@ -218,9 +218,6 @@
   return res.json(); // returns { payloadUUID, payloadURL }
 }
 
-  statusEl.innerHTML = `Please <a href="${payloadURL}" target="_blank" style="color:#00bfa5;">sign the transaction in XUMM</a>...`;
-
-
   async function confirmPayload(payloadUUID) {
   const res = await fetch('/api/iso20022/confirm', {
     method: 'POST',

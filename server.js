@@ -243,6 +243,33 @@ async function createStakePayload(req, res, amount) {
   }
 })();
 
+// Your wallet sync function
+async function syncWalletsToIsoEntries() {
+  try {
+    const isoEntries = await Iso20022.find({ wallet: { $exists: false } });
+
+    for (const entry of isoEntries) {
+      const user = await UserWallet.findOne({ xrpl_address: entry.xrpl_address });
+      if (user) {
+        await Iso20022.updateOne(
+          { _id: entry._id },
+          { $set: { wallet: user.wallet } }
+        );
+        console.log(`✔️ Synced wallet ${user.wallet} to iso entry ${entry._id}`);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Wallet sync failed:', err);
+  }
+}
+
+// Run it every 30 seconds
+setInterval(syncWalletsToIsoEntries, 30 * 1000); // 30,000 ms = 30 sec
+
+// Optional: run once immediately on server start
+syncWalletsToIsoEntries();
+
+
 async function attachWalletToIso(xrpl_address, xumm_uuid) {
   if (!xrpl_address && !xumm_uuid) return;
 

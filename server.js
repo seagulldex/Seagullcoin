@@ -8168,52 +8168,42 @@ app.post('/api/iso20022', async (req, res) => {
 
 
 
-app.post('/api/iso20022/create', async (req, res) => {
-  try {
-    const payload = await xumm.payload.create({
-      txjson: { TransactionType: 'SignIn' }
-    });
-
-    // Return just UUID and URL for signing
-    res.status(200).json({
-      payloadUUID: payload.uuid,
-      payloadURL: payload.next.always
-    });
-  } catch (err) {
-    console.error('❌ Payload creation error:', err);
-    res.status(500).json({ error: 'Failed to create payload' });
-  }
-});
-
-
 app.post('/api/iso20022/confirm', async (req, res) => {
+  const { payloadUUID } = req.body;
+
+  if (!payloadUUID) {
+    return res.status(400).json({ error: 'payloadUUID is required' });
+  }
+
   try {
-    const { payloadUUID, data, xumm_wallet_address } = req.body;
-
-    if (!payloadUUID || !data || !xumm_wallet_address) {
-      return res.status(400).json({ error: 'payloadUUID, data, and xumm_wallet_address are required' });
-    }
-
     const db = await connectDB();
     const iso20022Collection = db.collection('iso20022');
 
-    // Optional: Verify that the payloadUUID was signed (via XUMM API or webhook)
+    // 🔥 Fetch the payload from XUMM to get signer address
+    const payloadResult = await xumm.payload.get(payloadUUID);
 
-    await iso20022Collection.insertOne({
-      ...data,
-      xrpl_address: xumm_wallet_address,
-      xumm_uuid: payloadUUID,
-      timestamp: new Date()
-    });
+    const xumm_wallet_address = payloadResult?.response?.account;
 
-    console.log('✅ Data saved after signing:', data);
+    if (!xumm_wallet_address) {
+      return res.status(400).json({ error: 'Wallet not found, maybe not signed yet' });
+    }
 
-    res.status(200).json({ success: true });
+    const result = await iso20022Collection.updateOne(
+      { xumm_uuid: payloadUUID },
+      { $set: { xrpl_address: xumm_wallet_address } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Matching record not found' });
+    }
+
+    res.json({ success: true });
   } catch (err) {
-    console.error('❌ Confirm save error:', err);
-    res.status(500).json({ error: 'Failed to save data after signing' });
+    console.error('❌ Error confirming payload:', err.message || err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 

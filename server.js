@@ -8155,6 +8155,8 @@ app.get('/userwallet/:xrplAddress', async (req, res) => {
   }
 });
 
+const isValidXrplAddress = (addr) => /^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(addr);
+
 
 app.post('/api/iso20022', async (req, res) => {
   try {

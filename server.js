@@ -8160,27 +8160,27 @@ app.post('/api/iso20022', async (req, res) => {
   try {
     const data = req.body;
 
+    // Instead of relying on client to send this, you could fetch from session / token
     if (!data.xrpl_address) {
       return res.status(400).json({ error: 'xrpl_address is required' });
     }
 
-    // Check if xrpl_address exists in UserWallet collection
-    const userWallet = await UserWallet.findOne({ xrpl_address: data.xrpl_address });
-
-    if (!userWallet) {
-      return res.status(404).json({ error: 'xrpl_address not found in user wallets' });
+    // Optionally, validate XRPL address format here (using your isValidXrplAddress function)
+    if (!isValidXrplAddress(data.xrpl_address)) {
+      return res.status(400).json({ error: 'Invalid xrpl_address format' });
     }
 
+    // Now save directly to iso20022 collection
     const newEntry = new Iso20022(data);
     await newEntry.save();
 
     res.status(201).json({ message: 'Data saved successfully' });
-
   } catch (err) {
     console.error('❌ Server error:', err.stack || err);
     res.status(500).json({ error: 'Server error', detail: err.message });
   }
 });
+
 
 
 

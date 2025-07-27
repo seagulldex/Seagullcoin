@@ -510,7 +510,9 @@ const totalExpected = stake.amount + estimatedReward;
 }
 
 // api/bridge.js or whatever your API endpoint file is
-
+async function getBridgeTransactionByMemoId(memoId) {
+  return await BridgeRequest.findOne({ memoId });
+}
 
 
 

@@ -8277,7 +8277,8 @@ app.post('/api/iso20022/confirm', async (req, res) => {
 // Bridge route
 app.post("/api/bridge", async (req, res) => {
   try {
-    await connectDB(); // 👈 CRITICAL — connect before using model
+    const db = await connectDB(); // Native MongoDB driver connect
+    const bridgeCollection = db.collection("bridge_requests");
 
     const { category, fromChain, toChain, amount, receiveAddress } = req.body;
 
@@ -8288,7 +8289,7 @@ app.post("/api/bridge", async (req, res) => {
 
     const memoId = crypto.randomBytes(6).toString("hex");
 
-    const newRequest = new BridgeRequest({
+    await bridgeCollection.insertOne({
       category,
       fromChain,
       toChain,
@@ -8299,17 +8300,16 @@ app.post("/api/bridge", async (req, res) => {
       createdAt: new Date(),
     });
 
-    await newRequest.save();
-
     res.status(200).json({
       message: "Bridge request saved!",
       memoId,
     });
   } catch (err) {
-    console.error("Bridge error:", err);
-    res.status(500).json({ error: err.message, stack: err.stack });
+    console.error("❌ Bridge error:", err.stack || err);
+    res.status(500).json({ error: "Server error", detail: err.message });
   }
 });
+
 
 
 // Call the XRPL ping when the server starts

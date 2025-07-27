@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bridge Confirmation</title>
+  <style>
+    body { background: #000; color: #fff; font-family: sans-serif; padding: 2rem; }
+    .form-box { background: #111; padding: 2rem; max-width: 600px; margin: auto; border-radius: 8px; box-shadow: 0 0 15px rgba(30,144,255, 0.3); }
+  </style>
+</head>
+<body>
+  <div class="form-box">
+    <h2>Bridge Confirmation</h2>
+    <p><strong>From Chain:</strong> <span id="confFromChain"></span></p>
+    <p><strong>To Chain:</strong> <span id="confToChain"></span></p>
+    <p><strong>Send:</strong> <span id="confAmount"></span></p>
+    <p><strong>To Address:</strong> <span id="confEscrow" style="word-break: break-word;"></span></p>
+    <p><strong>Memo ID / Tag:</strong> <span id="confMemo" style="color: #1e90ff;"></span></p>
+    <p><strong>Status:</strong> <span id="bridgeStatus">Fetching...</span></p>
+    <p><strong>Expires in:</strong> <span id="countdownTimer">—</span></p>
+  </div>
+
+  <script>
+    const escrowAddresses = {
+      XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
+      XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
+      HBAR: "0.0.2928384",
+      ALGO: "YFZD6UWU5KXQINAN4CV6UCMIMRFSTKXNFQWV7WUSYQIWASCH2AX4LT4RMM",
+      FLR: "0x3B51F488f729e5Cfa566990Fd7f069F364b6984D",
+      XDC: "xdc870f64E73e7D2dc5022b4b74e58C323b3148A984"
+    };
+
+    function getMemoId() {
+      const url = new URL(window.location.href);
+      return url.searchParams.get("memoId");
+    }
+
+    async function fetchBridgeData() {
+      const memoId = getMemoId();
+      if (!memoId) {
+        alert("Missing memoId");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/bridge-status?memoId=${memoId}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to fetch");
+        }
+
+        document.getElementById("confFromChain").textContent = data.fromChain;
+        document.getElementById("confToChain").textContent = data.toChain;
+        document.getElementById("confAmount").textContent = data.amount;
+        document.getElementById("confMemo").textContent = memoId;
+        document.getElementById("confEscrow").textContent = escrowAddresses[data.fromChain] || "N/A";
+        document.getElementById("bridgeStatus").textContent = data.status;
+
+        startCountdown(data.expiresIn);
+      } catch (err) {
+        document.getElementById("bridgeStatus").textContent = "Error loading transaction.";
+        console.error(err);
+      }
+    }
+
+    function startCountdown(seconds) {
+      const timerEl = document.getElementById("countdownTimer");
+      let remaining = seconds;
+
+      const interval = setInterval(() => {
+        if (remaining <= 0) {
+          clearInterval(interval);
+          timerEl.textContent = "Expired";
+          document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
+          return;
+        }
+
+        const hrs = Math.floor(remaining / 3600).toString().padStart(2, '0');
+        const mins = Math.floor((remaining % 3600) / 60).toString().padStart(2, '0');
+        const secs = (remaining % 60).toString().padStart(2, '0');
+        timerEl.textContent = `${hrs}:${mins}:${secs}`;
+        remaining--;
+      }, 1000);
+    }
+
+    fetchBridgeData();
+  </script>
+</body>
+</html>
+

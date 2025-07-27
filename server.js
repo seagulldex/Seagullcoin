@@ -8287,7 +8287,7 @@ app.post("/api/bridge", async (req, res) => {
       return res.status(400).json({ error: "Invalid amount" });
     }
 
-    const memoId = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit number
+const memoId = Math.floor(100000000000 + Math.random() * 900000000000).toString(); // 12-digit
 
     await bridgeCollection.insertOne({
       category,

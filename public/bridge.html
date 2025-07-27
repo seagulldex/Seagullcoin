@@ -66,16 +66,26 @@
     }
 
     .info {
-      background-color: #1a1a1a;
-      padding: 1rem;
-      border-radius: 6px;
-      margin-top: 1rem;
-      border: 1px solid #333;
-      font-size: 0.9rem;
+  background-color: #1a1a1a;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  border: 1px solid #333;
+  font-size: 0.9rem;
+  overflow-x: auto;       /* ✅ horizontal scroll if needed */
+  white-space: nowrap;    /* keeps address on one line */
+  word-break: break-all;  /* wraps if needed */
     }
 
     .info strong {
       color: #1e90ff;
+    }
+    #escrowAddress {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+  word-break: break-all;
     }
   </style>
 

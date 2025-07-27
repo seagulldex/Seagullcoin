@@ -153,18 +153,18 @@
         const data = await res.json();
 
         if (res.ok) {
-  const memoId = data.memoId;
-  const link = document.getElementById("confirmationLink");
-  link.href = `/confirm.html?memoId=${memoId}`;
-  link.style.display = "inline-block";
-} else {
-  alert(data.error || "Something went wrong.");
-}
-      } catch (err) {
-        alert("Server error.");
-        console.error(err);
-      } finally {
-        document.getElementById("loading").style.display = "none";
+    const memoId = data.memoId;
+    const link = document.getElementById("confirmationLink");
+    link.href = `/confirm.html?memoId=${memoId}`;
+    link.style.display = "inline-block";
+  } else {
+    alert(data.error || "Something went wrong.");
+  }
+} catch (err) {
+  alert("Server error.");
+  console.error(err);
+} finally {
+  document.getElementById("loading").style.display = "none";
       }
     });
 

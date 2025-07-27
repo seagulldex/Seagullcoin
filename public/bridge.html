@@ -1,45 +1,113 @@
-<!-- bridge.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bridge</title>
-  <style>
-    body { font-family: sans-serif; max-width: 500px; margin: 30px auto; }
-    input, select, button { width: 100%; padding: 10px; margin-top: 10px; }
-    .info { background: #f3f3f3; padding: 10px; border-radius: 5px; font-size: 0.9rem; }
-  </style>
+  <title>Seagull Bridge</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #000;
+      color: #fff;
+      padding: 2rem;
+    }
 
-  <h2>Bridge Form</h2>
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
 
-  <form id="bridge-form">
-    <label>Asset Type</label>
-    <select id="assetType">
-      <option value="SeagullCash">SeagullCash</option>
-      <option value="SeagullCoin">SeagullCoin</option>
-    </select>
+    .form-box {
+      background-color: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 0 15px rgba(30,144,255, 0.3);
+    }
 
-    <label>From Chain</label>
-    <select id="fromChain"></select>
+    label {
+      display: block;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
 
-    <label>To Chain</label>
-    <select id="toChain"></select>
+    input, select, button {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background-color: #222;
+      color: #fff;
+    }
 
-    <div class="info">
-      <strong>Deposit To:</strong> <span id="escrowAddress">N/A</span>
-    </div>
+    input:focus, select:focus {
+      border-color: #1e90ff;
+      outline: none;
+    }
 
-    <label>Your Wallet Address (to receive)</label>
-    <input type="text" id="receiveAddress" required />
+    button {
+      background-color: #1e90ff;
+      border: none;
+      margin-top: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
 
-    <label>Amount</label>
-    <input type="number" id="amount" required />
+    button:hover {
+      background-color: #0077cc;
+    }
 
-    <button type="submit">Bridge Now</button>
-  </form>
+    .info {
+      background-color: #1a1a1a;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-top: 1rem;
+      border: 1px solid #333;
+      font-size: 0.9rem;
+    }
+
+    .info strong {
+      color: #1e90ff;
+    }
+  </style>
+
+  <h2>Bridge Your Seagull Assets</h2>
+
+  <div class="form-box">
+    <form id="bridge-form">
+      <label>Asset Type</label>
+      <select id="assetType">
+        <option value="SeagullCash">SeagullCash</option>
+        <option value="SeagullCoin">SeagullCoin</option>
+      </select>
+
+      <label>From Chain</label>
+      <select id="fromChain"></select>
+
+      <label>To Chain</label>
+      <select id="toChain"></select>
+
+      <div class="info">
+        <strong>Deposit To:</strong> <span id="escrowAddress">N/A</span>
+      </div>
+
+      <label>Your Wallet Address (to receive)</label>
+      <input type="text" id="receiveAddress" required />
+
+      <label>Amount</label>
+      <input type="number" id="amount" required />
+
+      <button type="submit">Bridge Now</button>
+    </form>
+  </div>
 
   <script>
     const bridgeAssets = {
@@ -104,7 +172,7 @@
       alert(data.message || "Bridge request submitted.");
     });
 
-    updateChains(); // initialize dropdowns on load
+    updateChains(); // Initialize dropdowns on load
   </script>
 </body>
 </html>

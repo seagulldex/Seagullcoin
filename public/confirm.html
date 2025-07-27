@@ -64,6 +64,14 @@
       }
     }
 
+    async function pollStatus() {
+  await fetchBridgeData();
+  setTimeout(pollStatus, 30000); // Poll every 30 seconds
+}
+
+pollStatus();
+
+
     function startCountdown(seconds) {
       const timerEl = document.getElementById("countdownTimer");
       let remaining = seconds;

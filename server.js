@@ -510,47 +510,6 @@ const totalExpected = stake.amount + estimatedReward;
 }
 
 // api/bridge.js or whatever your API endpoint file is
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  try {
-    await ConnectDB();
-
-    const { category, fromChain, toChain, amount, receiveAddress } = req.body;
-
-// Convert amount to number, validate it
-const amountNum = Number(amount);
-if (isNaN(amountNum) || amountNum <= 0) {
-  return res.status(400).json({ error: "Invalid amount" });
-}
-
-const memoId = crypto.randomBytes(6).toString("hex"); // 12 hex characters
-
-const newRequest = new BridgeRequest({
-  category,
-  fromChain,
-  toChain,
-  amount: amountNum,  // <-- use the number version here
-  receiveAddress,
-  memoId,
-  status: "pending",
-  createdAt: new Date(),
-});
-
-await newRequest.save();
-
-
-    res.status(200).json({
-      message: "Bridge request saved!",
-      memoId,
-    });
-  } catch (err) {
-    console.error("Bridge error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-}
 
 
 

@@ -526,7 +526,7 @@ if (isNaN(amountNum) || amountNum <= 0) {
   return res.status(400).json({ error: "Invalid amount" });
 }
 
-const memoId = uuidv4();
+const memoId = crypto.randomBytes(6).toString("hex"); // 12 hex characters
 
 const newRequest = new BridgeRequest({
   category,

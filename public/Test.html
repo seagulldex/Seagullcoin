@@ -154,10 +154,12 @@
 
         if (res.ok) {
   const memoId = data.memoId;
-  window.open(`/confirm.html?memoId=${memoId}`, '_blank');
-}else {
-          alert(data.error || "Something went wrong.");
-        }
+  const link = document.getElementById("confirmationLink");
+  link.href = `/confirm.html?memoId=${memoId}`;
+  link.style.display = "inline-block";
+} else {
+  alert(data.error || "Something went wrong.");
+}
       } catch (err) {
         alert("Server error.");
         console.error(err);

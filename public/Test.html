@@ -175,6 +175,30 @@
           document.getElementById("confEscrow").textContent = escrowAddresses[payload.fromChain] || "N/A";
           document.getElementById("confMemo").textContent = data.memoId || "—";
 
+          function startCountdown(seconds) {
+  const timerEl = document.getElementById("countdownTimer");
+  let remaining = seconds;
+
+  const interval = setInterval(() => {
+    const hrs = Math.floor(remaining / 3600).toString().padStart(2, '0');
+    const mins = Math.floor((remaining % 3600) / 60).toString().padStart(2, '0');
+    const secs = (remaining % 60).toString().padStart(2, '0');
+
+    timerEl.textContent = `${hrs}:${mins}:${secs}`;
+    remaining--;
+
+    if (remaining < 0) {
+      clearInterval(interval);
+      timerEl.textContent = "Expired";
+      document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
+    }
+  }, 1000);
+}
+
+// Start 24-hour countdown (86400 seconds)
+startCountdown(86400);
+
+
         } else {
           alert(data.error || "Something went wrong.");
         }

@@ -175,26 +175,46 @@
     assetTypeEl.addEventListener("change", updateChains);
     fromChainEl.addEventListener("change", updateEscrow);
 
-    document.getElementById("bridge-form").addEventListener("submit", async function(e) {
-      e.preventDefault();
+  document.getElementById("bridge-form").addEventListener("submit", async function(e) {
+  e.preventDefault();
 
-      const payload = {
-        category: assetTypeEl.value,
-        fromChain: fromChainEl.value,
-        toChain: toChainEl.value,
-        amount: document.getElementById("amount").value,
-        receiveAddress: document.getElementById("receiveAddress").value
-      };
+  // Show loading
+  document.getElementById("loading").style.display = "block";
 
-      const res = await fetch("/api/bridge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+  const payload = {
+    category: assetTypeEl.value,
+    fromChain: fromChainEl.value,
+    toChain: toChainEl.value,
+    amount: document.getElementById("amount").value,
+    receiveAddress: document.getElementById("receiveAddress").value
+  };
 
-      const data = await res.json();
-      alert(data.message || "Bridge request submitted.");
+  try {
+    const res = await fetch("/api/bridge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
     });
+
+    const data = await res.json();
+    if (res.ok) {
+      // Show destination info box
+      document.getElementById("destinationBox").style.display = "block";
+      document.getElementById("escrowAddress").textContent = escrowAddresses[payload.fromChain] || "N/A";
+      document.getElementById("memoId").textContent = data.memoId || "—";
+
+      alert("Bridge request submitted! Follow deposit instructions.");
+    } else {
+      alert(data.error || "Something went wrong.");
+    }
+  } catch (err) {
+    alert("Server error.");
+    console.error(err);
+  } finally {
+    document.getElementById("loading").style.display = "none";
+  }
+});
+
 
     updateChains(); // Initialize dropdowns on load
   </script>

@@ -1,0 +1,110 @@
+<!-- bridge.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bridge</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 30px auto; }
+    input, select, button { width: 100%; padding: 10px; margin-top: 10px; }
+    .info { background: #f3f3f3; padding: 10px; border-radius: 5px; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+  <h2>Bridge Form</h2>
+
+  <form id="bridge-form">
+    <label>Asset Type</label>
+    <select id="assetType">
+      <option value="SeagullCash">SeagullCash</option>
+      <option value="SeagullCoin">SeagullCoin</option>
+    </select>
+
+    <label>From Chain</label>
+    <select id="fromChain"></select>
+
+    <label>To Chain</label>
+    <select id="toChain"></select>
+
+    <div class="info">
+      <strong>Deposit To:</strong> <span id="escrowAddress">N/A</span>
+    </div>
+
+    <label>Your Wallet Address (to receive)</label>
+    <input type="text" id="receiveAddress" required />
+
+    <label>Amount</label>
+    <input type="number" id="amount" required />
+
+    <button type="submit">Bridge Now</button>
+  </form>
+
+  <script>
+    const bridgeAssets = {
+      SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"],
+      SeagullCoin: ["XRP", "FLR", "XDC"]
+    };
+
+    const escrowAddresses = {
+      XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
+      XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
+      HBAR: "0.0.2928384",
+      ALGO: "YFZD6UWU5KXQINAN4CV6UCMIMRFSTKXNFQWV7WUSYQIWASCH2AX4LT4RMM",
+      FLR: "0x3B51F488f729e5Cfa566990Fd7f069F364b6984D",
+      XDC: "xdc870f64E73e7D2dc5022b4b74e58C323b3148A984"
+    };
+
+    const assetTypeEl = document.getElementById("assetType");
+    const fromChainEl = document.getElementById("fromChain");
+    const toChainEl = document.getElementById("toChain");
+    const escrowAddressEl = document.getElementById("escrowAddress");
+
+    function updateChains() {
+      const type = assetTypeEl.value;
+      const chains = bridgeAssets[type];
+
+      fromChainEl.innerHTML = "";
+      toChainEl.innerHTML = "";
+      chains.forEach(c => {
+        fromChainEl.innerHTML += `<option value="${c}">${c}</option>`;
+        toChainEl.innerHTML += `<option value="${c}">${c}</option>`;
+      });
+
+      updateEscrow();
+    }
+
+    function updateEscrow() {
+      const chain = fromChainEl.value;
+      escrowAddressEl.textContent = escrowAddresses[chain] || "N/A";
+    }
+
+    assetTypeEl.addEventListener("change", updateChains);
+    fromChainEl.addEventListener("change", updateEscrow);
+
+    document.getElementById("bridge-form").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const payload = {
+        category: assetTypeEl.value,
+        fromChain: fromChainEl.value,
+        toChain: toChainEl.value,
+        amount: document.getElementById("amount").value,
+        receiveAddress: document.getElementById("receiveAddress").value
+      };
+
+      const res = await fetch("/api/bridge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      alert(data.message || "Bridge request submitted.");
+    });
+
+    updateChains(); // initialize dropdowns on load
+  </script>
+</body>
+</html>

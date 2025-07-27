@@ -7,6 +7,19 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div id="loading" style="
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    font-size: 1.5rem;
+    text-align: center;
+    padding-top: 40vh;
+    z-index: 9999;
+  ">Processing bridge...</div>
+<body>
   <style>
     body {
       font-family: sans-serif;
@@ -104,9 +117,11 @@
       <label>To Chain</label>
       <select id="toChain"></select>
 
-      <div class="info">
-        <strong>Deposit To:</strong> <span id="escrowAddress">N/A</span>
+      <div class="info" id="destinationBox" style="display: none;">
+      <strong>Deposit To:</strong> <span id="escrowAddress">N/A</span><br>
+      <strong>Memo / Tag:</strong> <span id="memoId">Generating...</span>
       </div>
+
 
       <label>Your Wallet Address (to receive)</label>
       <input type="text" id="receiveAddress" required />

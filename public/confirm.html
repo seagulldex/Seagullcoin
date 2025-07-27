@@ -30,6 +30,78 @@
       XDC: "xdc870f64E73e7D2dc5022b4b74e58C323b3148A984"
     };
 
+  // Helper: get query param from URL
+  function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+  }
+
+  // Format seconds as mm:ss
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  async function fetchBridgeDetails(memoId) {
+    try {
+      const res = await fetch(`/api/transaction/${memoId}`);
+      if (!res.ok) throw new Error('Transaction not found or expired');
+
+      const data = await res.json();
+
+      // Update the confirmation fields
+      document.getElementById('confFromChain').textContent = data.fromChain;
+      document.getElementById('confToChain').textContent = data.toChain;
+      document.getElementById('confAmount').textContent = `${data.amount} ${data.fromChain}`;
+      document.getElementById('confEscrow').textContent = data.receiveAddress;
+      document.getElementById('confMemo').textContent = memoId;
+
+      // Show status
+      if (data.status === 'expired') {
+        document.getElementById('bridgeStatus').textContent = 'Expired. Please start a new transaction.';
+        document.getElementById('countdownTimer').textContent = 'Expired';
+        return;
+      } else {
+        document.getElementById('bridgeStatus').textContent = data.status || 'Pending';
+      }
+
+      // Handle expiration countdown if expiration time provided
+      if (data.expiresAt) {
+        const expiresAt = new Date(data.expiresAt).getTime();
+
+        const timerInterval = setInterval(() => {
+          const now = Date.now();
+          const diff = Math.floor((expiresAt - now) / 1000);
+
+          if (diff <= 0) {
+            clearInterval(timerInterval);
+            document.getElementById('bridgeStatus').textContent = 'Expired. Please start a new transaction.';
+            document.getElementById('countdownTimer').textContent = 'Expired';
+          } else {
+            document.getElementById('countdownTimer').textContent = formatTime(diff);
+          }
+        }, 1000);
+      } else {
+        document.getElementById('countdownTimer').textContent = '—';
+      }
+
+    } catch (err) {
+      console.error(err);
+      document.getElementById('bridgeStatus').textContent = 'Error fetching transaction.';
+      document.getElementById('countdownTimer').textContent = '—';
+    }
+  }
+
+  // On page load
+  const memoId = getQueryParam('memoId');
+  if (memoId) {
+    fetchBridgeDetails(memoId);
+  } else {
+    document.getElementById('bridgeStatus').textContent = 'No transaction specified.';
+    document.getElementById('countdownTimer').textContent = '—';
+  }
+
     function getMemoId() {
       const url = new URL(window.location.href);
       return url.searchParams.get("memoId");

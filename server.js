@@ -520,24 +520,27 @@ export default async function handler(req, res) {
 
     const { category, fromChain, toChain, amount, receiveAddress } = req.body;
 
-    if (!category || !fromChain || !toChain || !amount || !receiveAddress) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
+// Convert amount to number, validate it
+const amountNum = Number(amount);
+if (isNaN(amountNum) || amountNum <= 0) {
+  return res.status(400).json({ error: "Invalid amount" });
+}
 
-    const memoId = uuidv4();
+const memoId = uuidv4();
 
-    const newRequest = new BridgeRequest({
-      category,
-      fromChain,
-      toChain,
-      amount,
-      receiveAddress,
-      memoId,
-      status: "pending",
-      createdAt: new Date(),
-    });
+const newRequest = new BridgeRequest({
+  category,
+  fromChain,
+  toChain,
+  amount: amountNum,  // <-- use the number version here
+  receiveAddress,
+  memoId,
+  status: "pending",
+  createdAt: new Date(),
+});
 
-    await newRequest.save();
+await newRequest.save();
+
 
     res.status(200).json({
       message: "Bridge request saved!",

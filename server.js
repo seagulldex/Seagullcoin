@@ -8316,10 +8316,15 @@ app.get('/api/bridge-status', async (req, res) => {
     return res.status(400).json({ error: 'Missing memoId' });
   }
 
-  try {
-    // Fetch from your database or in-memory store
-    const bridge = await getBridgeTransactionByMemoId(memoId);
+  console.log("[bridge-status] memoId:", memoId);
 
+  try {
+  const bridge = await getBridgeTransactionByMemoId(memoId);
+  console.log("[bridge-status] found:", bridge);
+} catch (innerErr) {
+  console.error("Failed to fetch bridge transaction:", innerErr);
+  return res.status(500).json({ error: 'Database query failed' });
+}
     if (!bridge) {
       return res.status(404).json({ error: 'Transaction not found' });
     }
@@ -8334,10 +8339,11 @@ app.get('/api/bridge-status', async (req, res) => {
       expiresIn: expiresIn
     });
   } catch (err) {
-    console.error(err);
+    console.error("[bridge-status] error:", err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 // Call the XRPL ping when the server starts

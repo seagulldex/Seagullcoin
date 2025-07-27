@@ -131,42 +131,43 @@
 
     assetTypeEl.addEventListener("change", updateChains);
 
-    document.getElementById("bridge-form").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      document.getElementById("loading").style.display = "block";
+    document.getElementById("bridge-form").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  document.getElementById("loading").style.display = "block";
 
-      const payload = {
-        category: assetTypeEl.value,
-        fromChain: fromChainEl.value,
-        toChain: toChainEl.value,
-        amount: document.getElementById("amount").value,
-        receiveAddress: document.getElementById("receiveAddress").value
-      };
+  const payload = {
+    category: assetTypeEl.value,
+    fromChain: fromChainEl.value,
+    toChain: toChainEl.value,
+    amount: document.getElementById("amount").value,
+    receiveAddress: document.getElementById("receiveAddress").value,
+  };
 
-      try {
-        const res = await fetch("/api/bridge", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-    const memoId = data.memoId;
-    const link = document.getElementById("confirmationLink");
-    link.href = `/confirm.html?memoId=${memoId}`;
-    link.style.display = "inline-block";
-  } else {
-    alert(data.error || "Something went wrong.");
-  }
-} catch (err) {
-  alert("Server error.");
-  console.error(err);
-} finally {
-  document.getElementById("loading").style.display = "none";
-      }
+  try {
+    const res = await fetch("/api/bridge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      const memoId = data.memoId;
+      const link = document.getElementById("confirmationLink");
+      link.href = `/confirm.html?memoId=${memoId}`;
+      link.style.display = "inline-block";
+    } else {
+      alert(data.error || "Something went wrong.");
+    }
+  } catch (err) {
+    alert("Server error.");
+    console.error(err);
+  } finally {
+    document.getElementById("loading").style.display = "none";
+  }
+});
+
 
     updateChains(); // initialize chains
   </script>

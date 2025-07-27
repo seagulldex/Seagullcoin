@@ -197,8 +197,12 @@
 
     const data = await res.json();
     if (res.ok) {
-  const memoId = data.memoId;
-  window.location.href = `/confirm.html?memoId=${memoId}`;
+      // Show destination info box
+      document.getElementById("destinationBox").style.display = "block";
+      document.getElementById("escrowAddress").textContent = escrowAddresses[payload.fromChain] || "N/A";
+      document.getElementById("memoId").textContent = data.memoId || "—";
+
+      alert("Bridge request submitted! Follow deposit instructions.");
     } else {
       alert(data.error || "Something went wrong.");
     }

@@ -8315,7 +8315,40 @@ app.post('/api/iso20022/confirm', async (req, res) => {
 });
 
 
+// Bridge route
+app.post("/api/bridge", async (req, res) => {
+  try {
+    const { category, fromChain, toChain, amount, receiveAddress } = req.body;
 
+    const amountNum = Number(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    const memoId = crypto.randomBytes(6).toString("hex");
+
+    const newRequest = new BridgeRequest({
+      category,
+      fromChain,
+      toChain,
+      amount: amountNum,
+      receiveAddress,
+      memoId,
+      status: "pending",
+      createdAt: new Date(),
+    });
+
+    await newRequest.save();
+
+    res.status(200).json({
+      message: "Bridge request saved!",
+      memoId,
+    });
+  } catch (err) {
+    console.error("Bridge error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

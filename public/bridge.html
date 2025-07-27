@@ -5,20 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Seagull Bridge</title>
   <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div id="loading" style="
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.8);
-    color: white;
-    font-size: 1.5rem;
-    text-align: center;
-    padding-top: 40vh;
-    z-index: 9999;
-  ">Processing bridge...</div>
   <style>
     body {
       font-family: sans-serif;
@@ -76,33 +62,14 @@
     button:hover {
       background-color: #0077cc;
     }
-
-    .info {
-  background-color: #1a1a1a;
-  padding: 1rem;
-  border-radius: 6px;
-  margin-top: 1rem;
-  border: 1px solid #333;
-  font-size: 0.9rem;
-  overflow-x: auto;       /* ✅ horizontal scroll if needed */
-  white-space: nowrap;    /* keeps address on one line */
-  word-break: break-all;  /* wraps if needed */
-    }
-
-    .info strong {
-      color: #1e90ff;
-    }
-    #escrowAddress {
-  display: inline-block;
-  max-width: 100%;
-  white-space: nowrap;
-  word-break: break-all;
-    }
   </style>
+</head>
+<body>
 
   <h2>Bridge Your Seagull Assets</h2>
 
-  <div class="form-box">
+  <!-- Form Box -->
+  <div id="bridge-form-box" class="form-box">
     <form id="bridge-form">
       <label>Asset Type</label>
       <select id="assetType">
@@ -116,12 +83,6 @@
       <label>To Chain</label>
       <select id="toChain"></select>
 
-      <div class="info" id="destinationBox" style="display: none;">
-      <strong>Deposit To:</strong> <span id="escrowAddress">N/A</span><br>
-      <strong>Memo / Tag:</strong> <span id="memoId">Generating...</span>
-      </div>
-
-
       <label>Your Wallet Address (to receive)</label>
       <input type="text" id="receiveAddress" required />
 
@@ -130,6 +91,23 @@
 
       <button type="submit">Bridge Now</button>
     </form>
+  </div>
+
+  <!-- Confirmation View -->
+  <div id="bridge-confirmation" class="form-box" style="display: none;">
+    <h3>Deposit Instructions</h3>
+    <p><strong>From Chain:</strong> <span id="confFromChain"></span></p>
+    <p><strong>To Chain:</strong> <span id="confToChain"></span></p>
+    <p><strong>Send:</strong> <span id="confAmount"></span></p>
+    <p><strong>To Address:</strong> <span id="confEscrow" style="word-break: break-word;"></span></p>
+    <p><strong>Memo ID / Tag:</strong> <span id="confMemo" style="color: #1e90ff;"></span></p>
+    <p><strong>Expires In:</strong> <span id="countdownTimer">24:00:00</span></p>
+    <p style="color: #f39c12;"><em>You must use the memo/tag or funds may be lost!</em></p>
+    <p><strong>Status:</strong> <span id="bridgeStatus">Waiting for deposit...</span></p>
+  </div>
+
+  <div id="loading" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); color: white; font-size: 1.5rem; text-align: center; padding-top: 40vh; z-index: 9999;">
+    Processing bridge...
   </div>
 
   <script>
@@ -150,7 +128,6 @@
     const assetTypeEl = document.getElementById("assetType");
     const fromChainEl = document.getElementById("fromChain");
     const toChainEl = document.getElementById("toChain");
-    const escrowAddressEl = document.getElementById("escrowAddress");
 
     function updateChains() {
       const type = assetTypeEl.value;
@@ -162,60 +139,54 @@
         fromChainEl.innerHTML += `<option value="${c}">${c}</option>`;
         toChainEl.innerHTML += `<option value="${c}">${c}</option>`;
       });
-
-      updateEscrow();
-    }
-
-    function updateEscrow() {
-      const chain = fromChainEl.value;
-      escrowAddressEl.textContent = escrowAddresses[chain] || "N/A";
     }
 
     assetTypeEl.addEventListener("change", updateChains);
-    fromChainEl.addEventListener("change", updateEscrow);
 
-  document.getElementById("bridge-form").addEventListener("submit", async function(e) {
-  e.preventDefault();
+    document.getElementById("bridge-form").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      document.getElementById("loading").style.display = "block";
 
-  // Show loading
-  document.getElementById("loading").style.display = "block";
+      const payload = {
+        category: assetTypeEl.value,
+        fromChain: fromChainEl.value,
+        toChain: toChainEl.value,
+        amount: document.getElementById("amount").value,
+        receiveAddress: document.getElementById("receiveAddress").value
+      };
 
-  const payload = {
-    category: assetTypeEl.value,
-    fromChain: fromChainEl.value,
-    toChain: toChainEl.value,
-    amount: document.getElementById("amount").value,
-    receiveAddress: document.getElementById("receiveAddress").value
-  };
+      try {
+        const res = await fetch("/api/bridge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
 
-  try {
-    const res = await fetch("/api/bridge", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+        const data = await res.json();
+
+        if (res.ok) {
+          // Hide form, show confirmation
+          document.getElementById("bridge-form-box").style.display = "none";
+          document.getElementById("bridge-confirmation").style.display = "block";
+
+          document.getElementById("confFromChain").textContent = payload.fromChain;
+          document.getElementById("confToChain").textContent = payload.toChain;
+          document.getElementById("confAmount").textContent = payload.amount;
+          document.getElementById("confEscrow").textContent = escrowAddresses[payload.fromChain] || "N/A";
+          document.getElementById("confMemo").textContent = data.memoId || "—";
+
+        } else {
+          alert(data.error || "Something went wrong.");
+        }
+      } catch (err) {
+        alert("Server error.");
+        console.error(err);
+      } finally {
+        document.getElementById("loading").style.display = "none";
+      }
     });
 
-    const data = await res.json();
-    if (res.ok) {
-      // Show destination info box
-      document.getElementById("destinationBox").style.display = "block";
-      document.getElementById("escrowAddress").textContent = escrowAddresses[payload.fromChain] || "N/A";
-      document.getElementById("memoId").textContent = data.memoId || "—";
-
-      alert("Bridge request submitted! Follow deposit instructions.");
-    } else {
-      alert(data.error || "Something went wrong.");
-    }
-  } catch (err) {
-    alert("Server error.");
-    console.error(err);
-  } finally {
-    document.getElementById("loading").style.display = "none";
-  }
-});
-
-
-    updateChains(); // Initialize dropdowns on load
+    updateChains(); // initialize chains
   </script>
 </body>
 </html>

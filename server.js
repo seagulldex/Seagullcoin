@@ -518,26 +518,36 @@ export default async function handler(req, res) {
   try {
     await dbConnect();
 
-    const { category, fromChain, toChain, amount } = req.body;
+    const { category, fromChain, toChain, amount, receiveAddress } = req.body;
+
+    if (!category || !fromChain || !toChain || !amount || !receiveAddress) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const memoId = uuidv4();
 
     const newRequest = new BridgeRequest({
       category,
       fromChain,
       toChain,
       amount,
+      receiveAddress,
+      memoId,
       status: "pending",
       createdAt: new Date(),
     });
 
     await newRequest.save();
 
-    res.status(200).json({ message: "Bridge request saved!" });
+    res.status(200).json({
+      message: "Bridge request saved!",
+      memoId,
+    });
   } catch (err) {
     console.error("Bridge error:", err);
     res.status(500).json({ error: "Server error" });
   }
 }
-
 
 // ✅ This is what the frontend should call via API
 async function fetchUnstakeEvents(walletAddress) {

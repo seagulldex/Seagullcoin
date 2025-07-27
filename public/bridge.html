@@ -103,34 +103,42 @@
   <h2>Bridge Your Seagull Assets</h2>
 
   <div id="bridge-form-box"> <!-- Original Form --> </div>
-<div id="bridge-confirmation" style="display: none;"> <!-- After Submit --> </div>
-      <label>Asset Type</label>
-      <select id="assetType">
-        <option value="SeagullCash">SeagullCash</option>
-        <option value="SeagullCoin">SeagullCoin</option>
-      </select>
+<d<!-- Bridge Form -->
+<div id="bridge-form-box" class="form-box">
+  <form id="bridge-form">
+    <label>Asset Type</label>
+    <select id="assetType">
+      <option value="SeagullCash">SeagullCash</option>
+      <option value="SeagullCoin">SeagullCoin</option>
+    </select>
 
-      <label>From Chain</label>
-      <select id="fromChain"></select>
+    <label>From Chain</label>
+    <select id="fromChain"></select>
 
-      <label>To Chain</label>
-      <select id="toChain"></select>
+    <label>To Chain</label>
+    <select id="toChain"></select>
 
-      <div class="info" id="destinationBox" style="display: none;">
-      <strong>Deposit To:</strong> <span id="escrowAddress">N/A</span><br>
-      <strong>Memo / Tag:</strong> <span id="memoId">Generating...</span>
-      </div>
+    <label>Your Wallet Address (to receive)</label>
+    <input type="text" id="receiveAddress" required />
 
+    <label>Amount</label>
+    <input type="number" id="amount" required />
 
-      <label>Your Wallet Address (to receive)</label>
-      <input type="text" id="receiveAddress" required />
+    <button type="submit">Bridge Now</button>
+  </form>
+</div>
 
-      <label>Amount</label>
-      <input type="number" id="amount" required />
-
-      <button type="submit">Bridge Now</button>
-    </form>
-  </div>
+<!-- Confirmation Panel (Hidden Initially) -->
+<div id="bridge-confirmation" class="form-box" style="display: none;">
+  <h3>Deposit Instructions</h3>
+  <p><strong>From Chain:</strong> <span id="confFromChain"></span></p>
+  <p><strong>To Chain:</strong> <span id="confToChain"></span></p>
+  <p><strong>Amount to Send:</strong> <span id="confAmount"></span></p>
+  <p><strong>Send To:</strong> <span id="confEscrow" style="word-break: break-all;"></span></p>
+  <p><strong>Memo / Tag:</strong> <span id="confMemo" style="word-break: break-all; color: #1e90ff;"></span></p>
+  <p style="color: #f39c12;"><em>You must include the Memo ID or your funds will be lost!</em></p>
+  <p><strong>Status:</strong> <span id="bridgeStatus">Waiting for deposit...</span></p>
+</div>
 
   <script>
     const bridgeAssets = {

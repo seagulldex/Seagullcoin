@@ -8314,6 +8314,7 @@ const memoId = Math.floor(100000000000 + Math.random() * 900000000000).toString(
 
 
 
+// Make sure connectDB is imported or defined above
 app.get('/api/bridge-status', async (req, res) => {
   const memoId = req.query.memoId;
   if (!memoId) {
@@ -8323,7 +8324,9 @@ app.get('/api/bridge-status', async (req, res) => {
   console.log("[bridge-status] memoId:", memoId);
 
   try {
-    const bridge = await getBridgeTransactionByMemoId(memoId);
+    const db = await connectDB();
+    const bridge = await db.collection('bridge_requests').findOne({ memoId });
+
     console.log("[bridge-status] found:", bridge);
 
     if (!bridge) {
@@ -8337,9 +8340,8 @@ app.get('/api/bridge-status', async (req, res) => {
       toChain: bridge.toChain,
       amount: bridge.amount,
       status: bridge.status,
-      expiresIn: expiresIn
+      expiresIn
     });
-
   } catch (err) {
     console.error("[bridge-status] error:", err);
     res.status(500).json({ error: 'Internal server error' });

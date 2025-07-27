@@ -150,18 +150,94 @@
       const interval = setInterval(() => {
         if (remaining <= 0) {
           clearInterval(interval);
-          timerEl.textContent = "Expired";
-          document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
-          return;
-        }
+<script>
+  const escrowAddresses = {
+    XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
+    XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
+    HBAR: "0.0.2928384",
+    ALGO: "YFZD6UWU5KXQINAN4CV6UCMIMRFSTKXNFQWV7WUSYQIWASCH2AX4LT4RMM",
+    FLR: "0x3B51F488f729e5Cfa566990Fd7f069F364b6984D",
+    XDC: "xdc870f64E73e7D2dc5022b4b74e58C323b3148A984"
+  };
 
-        const hrs = Math.floor(remaining / 3600).toString().padStart(2, '0');
-        const mins = Math.floor((remaining % 3600) / 60).toString().padStart(2, '0');
-        const secs = (remaining % 60).toString().padStart(2, '0');
-        timerEl.textContent = `${hrs}:${mins}:${secs}`;
-        remaining--;
-      }, 1000);
+  function getMemoId() {
+    return new URL(window.location.href).searchParams.get("memoId");
+  }
+
+  function formatCountdown(seconds) {
+    const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');
+    const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${hrs}:${mins}:${secs}`;
+  }
+
+  let countdownInterval;
+
+  async function fetchBridgeData() {
+    const memoId = getMemoId();
+    if (!memoId) {
+      document.getElementById("bridgeStatus").textContent = "No transaction specified.";
+      document.getElementById("countdownTimer").textContent = "—";
+      return;
     }
-  </script>
+
+    try {
+      const res = await fetch(`/api/bridge-status?memoId=${memoId}`);
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Failed to fetch");
+
+      // Update UI
+      document.getElementById("confFromChain").textContent = data.fromChain || "N/A";
+      document.getElementById("confToChain").textContent = data.toChain || "N/A";
+      document.getElementById("confAmount").textContent = `${data.amount || "0"} ${data.fromChain || ""}`;
+      document.getElementById("confMemo").textContent = memoId;
+      document.getElementById("confEscrow").textContent = data.receiveAddress || escrowAddresses[data.fromChain] || "N/A";
+
+      // Status
+      if (data.status === "expired") {
+        document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
+        document.getElementById("countdownTimer").textContent = "Expired";
+        clearInterval(countdownInterval);
+        return;
+      } else {
+        document.getElementById("bridgeStatus").textContent = data.status || "Pending";
+      }
+
+      // Countdown
+      if (countdownInterval) clearInterval(countdownInterval);
+      if (data.expiresIn && data.expiresIn > 0) {
+        let remaining = data.expiresIn;
+        document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
+
+        countdownInterval = setInterval(() => {
+          remaining--;
+          if (remaining <= 0) {
+            clearInterval(countdownInterval);
+            document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
+            document.getElementById("countdownTimer").textContent = "Expired";
+          } else {
+            document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
+          }
+        }, 1000);
+      } else {
+        document.getElementById("countdownTimer").textContent = "—";
+      }
+
+    } catch (err) {
+      document.getElementById("bridgeStatus").textContent = "Error loading transaction.";
+      document.getElementById("countdownTimer").textContent = "—";
+      console.error(err);
+    }
+  }
+
+  async function pollStatus() {
+    await fetchBridgeData();
+    setTimeout(pollStatus, 30000); // Poll every 30 seconds
+  }
+
+  // Start polling on page load
+  pollStatus();
+</script>
 </body>
 </html>

@@ -8314,6 +8314,37 @@ const memoId = Math.floor(100000000000 + Math.random() * 900000000000).toString(
 
 
 
+app.get('/api/bridge-status', async (req, res) => {
+  const memoId = req.query.memoId;
+  if (!memoId) {
+    return res.status(400).json({ error: 'Missing memoId' });
+  }
+
+  console.log("[bridge-status] memoId:", memoId);
+
+  try {
+    const bridge = await getBridgeTransactionByMemoId(memoId);
+    console.log("[bridge-status] found:", bridge);
+
+    if (!bridge) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    const expiresIn = Math.max(0, Math.floor((bridge.expiresAt - Date.now()) / 1000));
+
+    res.json({
+      fromChain: bridge.fromChain,
+      toChain: bridge.toChain,
+      amount: bridge.amount,
+      status: bridge.status,
+      expiresIn: expiresIn
+    });
+
+  } catch (err) {
+    console.error("[bridge-status] error:", err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

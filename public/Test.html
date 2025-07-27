@@ -165,41 +165,9 @@
         const data = await res.json();
 
         if (res.ok) {
-          // Hide form, show confirmation
-          document.getElementById("bridge-form-box").style.display = "none";
-          document.getElementById("bridge-confirmation").style.display = "block";
-
-          document.getElementById("confFromChain").textContent = payload.fromChain;
-          document.getElementById("confToChain").textContent = payload.toChain;
-          document.getElementById("confAmount").textContent = payload.amount;
-          document.getElementById("confEscrow").textContent = escrowAddresses[payload.fromChain] || "N/A";
-          document.getElementById("confMemo").textContent = data.memoId || "—";
-
-          function startCountdown(seconds) {
-  const timerEl = document.getElementById("countdownTimer");
-  let remaining = seconds;
-
-  const interval = setInterval(() => {
-    const hrs = Math.floor(remaining / 3600).toString().padStart(2, '0');
-    const mins = Math.floor((remaining % 3600) / 60).toString().padStart(2, '0');
-    const secs = (remaining % 60).toString().padStart(2, '0');
-
-    timerEl.textContent = `${hrs}:${mins}:${secs}`;
-    remaining--;
-
-    if (remaining < 0) {
-      clearInterval(interval);
-      timerEl.textContent = "Expired";
-      document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
-    }
-  }, 1000);
-}
-
-// Start 24-hour countdown (86400 seconds)
-startCountdown(86400);
-
-
-        } else {
+  const memoId = data.memoId;
+  window.location.href = `/confirm.html?memoId=${memoId}`;
+}else {
           alert(data.error || "Something went wrong.");
         }
       } catch (err) {

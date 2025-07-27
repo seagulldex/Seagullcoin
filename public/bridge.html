@@ -96,6 +96,9 @@
   <div id="loading" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); color: white; font-size: 1.5rem; text-align: center; padding-top: 40vh; z-index: 9999;">
   Processing bridge...
 </div>
+<a id="confirmationLink" href="#" target="_blank" style="display:none; color: #1e90ff; text-align: center; display: block; margin-top: 1rem;">
+  View Bridge Confirmation
+</a>
 
 
   <script>
@@ -131,42 +134,43 @@
 
     assetTypeEl.addEventListener("change", updateChains);
 
-    document.getElementById("bridge-form").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      document.getElementById("loading").style.display = "block";
+    document.getElementById("bridge-form").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  document.getElementById("loading").style.display = "block";
 
-      const payload = {
-        category: assetTypeEl.value,
-        fromChain: fromChainEl.value,
-        toChain: toChainEl.value,
-        amount: document.getElementById("amount").value,
-        receiveAddress: document.getElementById("receiveAddress").value
-      };
+  const payload = {
+    category: assetTypeEl.value,
+    fromChain: fromChainEl.value,
+    toChain: toChainEl.value,
+    amount: document.getElementById("amount").value,
+    receiveAddress: document.getElementById("receiveAddress").value,
+  };
 
-      try {
-        const res = await fetch("/api/bridge", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-    const memoId = data.memoId;
-    const link = document.getElementById("confirmationLink");
-    link.href = `/confirm.html?memoId=${memoId}`;
-    link.style.display = "inline-block";
-  } else {
-    alert(data.error || "Something went wrong.");
-  }
-} catch (err) {
-  alert("Server error.");
-  console.error(err);
-} finally {
-  document.getElementById("loading").style.display = "none";
-      }
+  try {
+    const res = await fetch("/api/bridge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      const memoId = data.memoId;
+      const link = document.getElementById("confirmationLink");
+      link.href = `/confirm.html?memoId=${memoId}`;
+      link.style.display = "inline-block";
+    } else {
+      alert(data.error || "Something went wrong.");
+    }
+  } catch (err) {
+    alert("Server error.");
+    console.error(err);
+  } finally {
+    document.getElementById("loading").style.display = "none";
+  }
+});
+
 
     updateChains(); // initialize chains
   </script>

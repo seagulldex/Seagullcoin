@@ -154,7 +154,7 @@
 
         if (res.ok) {
   const memoId = data.memoId;
-  window.location.href = `/confirm.html?memoId=${memoId}`;
+  window.open(`/confirm.html?memoId=${memoId}`, '_blank');
 }else {
           alert(data.error || "Something went wrong.");
         }

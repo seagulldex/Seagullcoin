@@ -93,23 +93,6 @@
     </form>
   </div>
 
-  <!-- Confirmation View -->
-  <div id="bridge-confirmation" class="form-box" style="display: none;">
-    <h3>Deposit Instructions</h3>
-    <p><strong>From Chain:</strong> <span id="confFromChain"></span></p>
-    <p><strong>To Chain:</strong> <span id="confToChain"></span></p>
-    <p><strong>Send:</strong> <span id="confAmount"></span></p>
-    <p><strong>To Address:</strong> <span id="confEscrow" style="word-break: break-word;"></span></p>
-    <p><strong>Memo ID / Tag:</strong> <span id="confMemo" style="color: #1e90ff;"></span></p>
-    <p><strong>Expires In:</strong> <span id="countdownTimer">24:00:00</span></p>
-    <p style="color: #f39c12;"><em>You must use the memo/tag or funds may be lost!</em></p>
-    <p><strong>Status:</strong> <span id="bridgeStatus">Waiting for deposit...</span></p>
-  </div>
-
-  <div id="loading" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); color: white; font-size: 1.5rem; text-align: center; padding-top: 40vh; z-index: 9999;">
-    Processing bridge...
-  </div>
-
   <script>
     const bridgeAssets = {
       SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"],

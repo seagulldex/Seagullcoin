@@ -511,18 +511,14 @@ const totalExpected = stake.amount + estimatedReward;
 
 // api/bridge.js or whatever your API endpoint file is
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    await dbConnect();
+    await connectDB(); // Your version of DB connection
 
     const { category, fromChain, toChain, amount, receiveAddress } = req.body;
-
-    if (!category || !fromChain || !toChain || !amount || !receiveAddress) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
 
     const memoId = uuidv4();
 
@@ -533,21 +529,19 @@ export default async function handler(req, res) {
       amount,
       receiveAddress,
       memoId,
-      status: "pending",
+      status: 'pending',
       createdAt: new Date(),
     });
 
     await newRequest.save();
 
-    res.status(200).json({
-      message: "Bridge request saved!",
-      memoId,
-    });
-  } catch (err) {
-    console.error("Bridge error:", err);
-    res.status(500).json({ error: "Server error" });
+    res.status(200).json({ message: 'Bridge request saved!', memoId });
+  } catch (error) {
+    console.error('Bridge error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 }
+
 
 // ✅ This is what the frontend should call via API
 async function fetchUnstakeEvents(walletAddress) {

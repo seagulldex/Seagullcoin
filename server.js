@@ -8290,7 +8290,7 @@ app.post("/api/bridge", async (req, res) => {
     }
 
 const memoId = Math.floor(100000000000 + Math.random() * 900000000000).toString(); // 12-digit
-const bridgeId = `BRDG-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+const bridgeId = `BRDG-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
 await bridgeCollection.insertOne({
   category,

@@ -8372,11 +8372,19 @@ app.post('/api/mark-bridged', async (req, res) => {
 
 app.get('/api/bridge-requests', async (req, res) => {
   try {
-    const txs = await db.collection('bridge_requests').find().sort({ createdAt: -1 }).limit(100).toArray();
+    const db = await connectDB(); // ✅ Correct MongoDB connection
+    const bridgeCollection = db.collection('bridge_requests'); // ✅ match collection name
+
+    const txs = await bridgeCollection
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .toArray();
+
     res.json(txs);
   } catch (err) {
-    console.error('Error fetching bridge requests:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Error fetching bridge requests:', err);
+    res.status(500).json({ error: 'Internal server error', detail: err.message });
   }
 });
 

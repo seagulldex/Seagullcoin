@@ -8324,7 +8324,10 @@ app.post('/api/mark-confirmed', async (req, res) => {
   }
 
   try {
-    const result = await db.collection('bridge_requests').updateOne(
+    const db = await connectDB();  // <=== You NEED this here
+    const bridgeCollection = db.collection('bridge_requests');
+
+    const result = await bridgeCollection.updateOne(
       { memoId },
       { $set: { status: 'confirmed', confirmedAt: new Date() } }
     );
@@ -8340,7 +8343,6 @@ app.post('/api/mark-confirmed', async (req, res) => {
   }
 });
 
-// 🔥 MARK TRANSACTION BRIDGED
 app.post('/api/mark-bridged', async (req, res) => {
   const { memoId } = req.body;
 
@@ -8349,7 +8351,10 @@ app.post('/api/mark-bridged', async (req, res) => {
   }
 
   try {
-    const result = await db.collection('bridge_requests').updateOne(
+    const db = await connectDB();  // <=== Also here
+    const bridgeCollection = db.collection('bridge_requests');
+
+    const result = await bridgeCollection.updateOne(
       { memoId },
       { $set: { status: 'bridged', bridgedAt: new Date() } }
     );
@@ -8364,6 +8369,7 @@ app.post('/api/mark-bridged', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

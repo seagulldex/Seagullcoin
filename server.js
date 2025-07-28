@@ -8308,9 +8308,10 @@ await bridgeCollection.insertOne({
 
 
     res.status(200).json({
-      message: "Bridge request saved!",
-      memoId,
-    });
+  message: "Bridge request saved!",
+  memoId,
+  bridgeId // ✅ send it back
+});
   } catch (err) {
     console.error("❌ Bridge error:", err.stack || err);
     res.status(500).json({ error: "Server error", detail: err.message });

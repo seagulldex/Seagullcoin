@@ -238,6 +238,21 @@ if (escrow && memoId) {
       console.error(err);
     }
   }
+  
+function openSupportChat(unstakeId) {
+  window.$crisp.push(["do", "chat:open"]);
+  window.$crisp.push(["do", "message:send", ["text", `Hi, I need help with my unstake: ${unstakeId}`]]);
+}
+
+function setCrispUser(wallet, unstakeId, stakeType) {
+  window.$crisp.push(["set", "user:nickname", [wallet]]);
+  window.$crisp.push(["set", "session:data", [
+    ["wallet", wallet],
+    ["unstakeId", unstakeId],
+    ["stakeType", stakeType]
+  ]]);
+}
+  
 
   async function pollStatus() {
     await fetchBridgeData();

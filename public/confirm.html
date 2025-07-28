@@ -214,14 +214,18 @@ if (escrow && memoId) {
       }
 
       // Status handling
-      if (data.status === "expired") {
-        document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
-        document.getElementById("countdownTimer").textContent = "Expired";
-        clearInterval(countdownInterval);
-        return;
-      } else {
-        document.getElementById("bridgeStatus").textContent = statusTextMap[data.status] || "Pending";
-      }
+      const statusText = statusTextMap[data.status] || "Pending";
+document.getElementById("bridgeStatus").textContent = statusText;
+
+// Disable countdown for final statuses
+const isFinalStatus = ["expired", "confirmed", "bridged"].includes(data.status);
+if (isFinalStatus) {
+  clearInterval(countdownInterval);
+  document.getElementById("countdownTimer").textContent = 
+    data.status === "expired" ? "Expired" : "—";
+  return;
+}
+
 
       // Countdown timer
       if (countdownInterval) clearInterval(countdownInterval);

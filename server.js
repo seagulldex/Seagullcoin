@@ -8290,18 +8290,21 @@ app.post("/api/bridge", async (req, res) => {
     }
 
 const memoId = Math.floor(100000000000 + Math.random() * 900000000000).toString(); // 12-digit
+const bridgeId = `BRDG-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    await bridgeCollection.insertOne({
+await bridgeCollection.insertOne({
   category,
   fromChain,
   toChain,
   amount: amountNum,
   receiveAddress,
   memoId,
+  bridgeId, // ✅ include this
   status: "pending",
   createdAt: new Date(),
-  expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // ✅ expires 24h from now
+  expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
 });
+
 
 
     res.status(200).json({

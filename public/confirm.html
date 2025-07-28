@@ -190,6 +190,15 @@ if (escrow && memoId) {
   container.innerHTML = "";
 }
 
+     
+      
+      const statusTextMap = {
+  pending: "Pending confirmation...",
+  confirmed: "Confirmed ✅️",
+  bridged: "Bridged 🌉",
+  expired: "Expired ❌"
+};
+
 
 
       document.getElementById("confMemo").textContent = memoId;
@@ -211,7 +220,7 @@ if (escrow && memoId) {
         clearInterval(countdownInterval);
         return;
       } else {
-        document.getElementById("bridgeStatus").textContent = data.status || "Pending";
+        document.getElementById("bridgeStatus").textContent = statusTextMap[data.status] || "Pending";
       }
 
       // Countdown timer
@@ -241,16 +250,16 @@ if (escrow && memoId) {
     }
   }
   
-function openSupportChat(unstakeId) {
+function openSupportChat(memoId) {
   window.$crisp.push(["do", "chat:open"]);
-  window.$crisp.push(["do", "message:send", ["text", `Hi, I need help with my unstake: ${unstakeId}`]]);
+  window.$crisp.push(["do", "message:send", ["text", `Hi, I need help with my bridge: ${memoId}`]]);
 }
 
-function setCrispUser(wallet, unstakeId, stakeType) {
+function setCrispUser(wallet, memoId, category) {
   window.$crisp.push(["set", "user:nickname", [wallet]]);
   window.$crisp.push(["set", "session:data", [
     ["wallet", wallet],
-    ["unstakeId", unstakeId],
+    ["memoId", memoId],
     ["stakeType", stakeType]
   ]]);
 }

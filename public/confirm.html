@@ -64,11 +64,14 @@
     <p><strong>Expires in:</strong> <span id="countdownTimer">—</span></p>
   </div>
 
+
   <div class="info-box" id="userInfoBox" style="display:none;">
     <h3>Your Information</h3>
     <p><strong>Receive Address:</strong> <span id="userReceiveAddress" style="word-break: break-word;"></span></p>
     <p><strong>Memo ID / Tag:</strong> <span id="userMemoId" style="color: #1e90ff;"></span></p>
   </div>
+
+  <div id="qrCodeContainer" style="margin-top: 10px;"></div>
 
 <script>
   const escrowAddresses = {
@@ -90,6 +93,16 @@
   function getMemoId() {
     return new URL(window.location.href).searchParams.get("memoId");
   }
+
+  function generateQRCode(text, elementId) {
+  const container = document.getElementById(elementId);
+  container.innerHTML = ""; // Clear old code
+  new QRCode(container, {
+    text,
+    width: 128,
+    height: 128,
+  });
+}
 
   function formatCountdown(seconds) {
     const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -123,7 +136,7 @@
         : `${data.fromChain}`;
 
       document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
-
+      generateQRCode(escrowAddresses[data.fromChain] || "N/A", "qrCodeContainer");
       document.getElementById("confMemo").textContent = memoId;
       document.getElementById("confEscrow").textContent = escrowAddresses[data.fromChain] || "N/A";
 

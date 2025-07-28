@@ -8333,9 +8333,11 @@ app.get('/api/bridge-status', async (req, res) => {
       return res.status(404).json({ error: 'Transaction not found' });
     }
 
-const expiresAt = new Date(bridge.expiresAt);
-const expiresIn = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+    const expiresAt = new Date(bridge.expiresAt);
+    const expiresIn = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
 
+    console.log("[bridge-status] expiresAt:", bridge.expiresAt);
+    console.log("[bridge-status] expiresIn:", expiresIn);
 
     res.json({
       fromChain: bridge.fromChain,

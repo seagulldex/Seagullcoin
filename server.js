@@ -8372,7 +8372,7 @@ app.post('/api/mark-bridged', async (req, res) => {
 
 app.get('/api/bridge-requests', async (req, res) => {
   try {
-    const txs = await db.collection('bridgeRequests').find().sort({ createdAt: -1 }).limit(100).toArray();
+    const txs = await db.collection('bridge_requests').find().sort({ createdAt: -1 }).limit(100).toArray();
     res.json(txs);
   } catch (err) {
     console.error('Error fetching bridge requests:', err);

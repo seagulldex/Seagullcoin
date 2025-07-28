@@ -8357,6 +8357,7 @@ app.get('/api/bridge-status', async (req, res) => {
   status: bridge.status,
   expiresIn,
   receiveAddress: bridge.receiveAddress,
+  category: bridge.category
 });
   } catch (err) {
     console.error("[bridge-status] error:", err);

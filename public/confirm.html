@@ -95,15 +95,42 @@
     return new URL(window.location.href).searchParams.get("memoId");
   }
 
-  function generateQRCode(text, elementId) {
+  function generateQRCode(address, elementId, fromChain, memoId) {
   const container = document.getElementById(elementId);
-  container.innerHTML = ""; // Clear old code
+  container.innerHTML = ""; // Clear previous QR
+
+  let uri;
+
+  switch (fromChain) {
+    case "XRP":
+      uri = `xrp:${address}?dt=${memoId}`;
+      break;
+    case "XLM":
+      uri = `stellar:${address}?memo=${memoId}`;
+      break;
+    case "HBAR":
+      uri = `hedera:${address}?memo=${memoId}`;
+      break;
+    case "ALGO":
+      uri = `algo:${address}`;
+      break;
+    case "FLR":
+      uri = `flare:${address}`;
+      break;
+    case "XDC":
+      uri = `xdc:${address}`;
+      break;
+    default:
+      uri = address; // fallback
+  }
+
   new QRCode(container, {
-    text,
+    text: uri,
     width: 128,
     height: 128,
   });
 }
+
 
   function formatCountdown(seconds) {
     const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');

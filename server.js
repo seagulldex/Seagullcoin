@@ -8299,7 +8299,6 @@ await bridgeCollection.insertOne({
   amount: amountNum,
   receiveAddress,
   memoId,
-  bridgeId, // ✅ include this
   status: "pending",
   createdAt: new Date(),
   expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
@@ -8357,8 +8356,7 @@ app.get('/api/bridge-status', async (req, res) => {
   amount: bridge.amount,
   status: bridge.status,
   expiresIn,
-  receiveAddress: bridge.receiveAddress, // optional but useful
-  bridgeId: bridge.bridgeId   // <== Add this line
+  receiveAddress: bridge.receiveAddress,
 });
   } catch (err) {
     console.error("[bridge-status] error:", err);

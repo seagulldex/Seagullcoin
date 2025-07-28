@@ -8292,15 +8292,17 @@ app.post("/api/bridge", async (req, res) => {
 const memoId = Math.floor(100000000000 + Math.random() * 900000000000).toString(); // 12-digit
 
     await bridgeCollection.insertOne({
-      category,
-      fromChain,
-      toChain,
-      amount: amountNum,
-      receiveAddress,
-      memoId,
-      status: "pending",
-      createdAt: new Date(),
-    });
+  category,
+  fromChain,
+  toChain,
+  amount: amountNum,
+  receiveAddress,
+  memoId,
+  status: "pending",
+  createdAt: new Date(),
+  expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // ✅ expires 24h from now
+});
+
 
     res.status(200).json({
       message: "Bridge request saved!",

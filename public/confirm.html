@@ -164,7 +164,7 @@
         : `${data.fromChain}`;
 
       document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
-      generateQRCode(escrowAddresses[data.fromChain] || "N/A", "qrCodeContainer");
+      generateQRCode(escrowAddresses[data.fromChain] || "N/A", "qrCodeContainer", data.fromChain, memoId);
       document.getElementById("confMemo").textContent = memoId;
       document.getElementById("confEscrow").textContent = escrowAddresses[data.fromChain] || "N/A";
 

@@ -4,8 +4,46 @@
   <meta charset="UTF-8" />
   <title>Bridge Confirmation</title>
   <style>
-    body { background: #000; color: #fff; font-family: sans-serif; padding: 2rem; }
-    .form-box { background: #111; padding: 2rem; max-width: 600px; margin: auto; border-radius: 8px; box-shadow: 0 0 15px rgba(30,144,255, 0.3); }
+    body { 
+      background: #000 url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1350&q=80') no-repeat center center fixed; 
+      background-size: cover;
+      color: #fff; 
+      font-family: sans-serif; 
+      padding: 2rem; 
+    }
+    .form-box { 
+      background: rgba(17,17,17,0.9); 
+      padding: 2rem; 
+      max-width: 600px; 
+      margin: auto; 
+      border-radius: 8px; 
+      box-shadow: 0 0 15px rgba(30,144,255, 0.7); 
+    }
+    .info-box {
+      background: rgba(0, 0, 0, 0.6);
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 0 10px rgba(30,144,255,0.5);
+    }
+    button.copy-btn {
+      background: #1e90ff;
+      border: none;
+      padding: 0.2rem 0.5rem;
+      margin-left: 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #fff;
+      font-size: 1rem;
+      vertical-align: middle;
+    }
+    button.copy-btn:hover {
+      background: #1c7ddb;
+    }
   </style>
 </head>
 <body>
@@ -14,18 +52,22 @@
     <p><strong>From Chain:</strong> <span id="confFromChain"></span></p>
     <p><strong>To Chain:</strong> <span id="confToChain"></span></p>
     <p><strong>Send:</strong> <span id="confAmount"></span></p>
-    <p><strong>Deposit Address:</strong>
-  <span id="confEscrow" style="word-break: break-word;"></span>
-  <button onclick="copyToClipboard('confEscrow')">📋</button>
-</p>
-    <p><strong>To Address:</strong> 
-  <span id="confEscrow" style="word-break: break-word;"></span></p>
-<p><strong>Memo ID / Tag:</strong> 
-  <span id="confMemo" style="color: #1e90ff;"></span>
-  <button onclick="copyToClipboard('confMemo')">📋</button>
-</p>
+    <p><strong>Deposit Address:</strong> 
+      <span id="confEscrow" style="word-break: break-word;"></span>
+      <button class="copy-btn" onclick="copyToClipboard('confEscrow')">📋 Copy</button>
+    </p>
+    <p><strong>Memo ID / Tag:</strong> 
+      <span id="confMemo" style="color: #1e90ff;"></span>
+      <button class="copy-btn" onclick="copyToClipboard('confMemo')">📋 Copy</button>
+    </p>
     <p><strong>Status:</strong> <span id="bridgeStatus">Fetching...</span></p>
     <p><strong>Expires in:</strong> <span id="countdownTimer">—</span></p>
+  </div>
+
+  <div class="info-box" id="userInfoBox" style="display:none;">
+    <h3>Your Information</h3>
+    <p><strong>Receive Address:</strong> <span id="userReceiveAddress" style="word-break: break-word;"></span></p>
+    <p><strong>Memo ID / Tag:</strong> <span id="userMemoId" style="color: #1e90ff;"></span></p>
   </div>
 
 <script>
@@ -37,6 +79,13 @@
     FLR: "0x3B51F488f729e5Cfa566990Fd7f069F364b6984D",
     XDC: "xdc870f64E73e7D2dc5022b4b74e58C323b3148A984"
   };
+
+  function copyToClipboard(id) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Copied to clipboard!');
+    });
+  }
 
   function getMemoId() {
     return new URL(window.location.href).searchParams.get("memoId");
@@ -65,20 +114,29 @@
 
       if (!res.ok) throw new Error(data.error || "Failed to fetch");
 
-// Update UI
-document.getElementById("confFromChain").textContent = data.fromChain || "N/A";
-document.getElementById("confToChain").textContent = data.toChain || "N/A";
+      // Update main UI
+      document.getElementById("confFromChain").textContent = data.fromChain || "N/A";
+      document.getElementById("confToChain").textContent = data.toChain || "N/A";
 
-const currencyLabel = data.category 
-  ? `${data.category} (${data.fromChain})` 
-  : `${data.fromChain}`;
+      const currencyLabel = data.category 
+        ? `${data.category} (${data.fromChain})` 
+        : `${data.fromChain}`;
 
-document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
+      document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
 
-document.getElementById("confMemo").textContent = memoId;
-document.getElementById("confEscrow").textContent = escrowAddresses[data.fromChain] || "N/A";
+      document.getElementById("confMemo").textContent = memoId;
+      document.getElementById("confEscrow").textContent = escrowAddresses[data.fromChain] || "N/A";
 
-      // Status
+      // Show user info box with receive address and memoId
+      if (data.receiveAddress) {
+        document.getElementById("userReceiveAddress").textContent = data.receiveAddress;
+        document.getElementById("userMemoId").textContent = memoId;
+        document.getElementById("userInfoBox").style.display = "block";
+      } else {
+        document.getElementById("userInfoBox").style.display = "none";
+      }
+
+      // Status handling
       if (data.status === "expired") {
         document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
         document.getElementById("countdownTimer").textContent = "Expired";
@@ -88,7 +146,7 @@ document.getElementById("confEscrow").textContent = escrowAddresses[data.fromCha
         document.getElementById("bridgeStatus").textContent = data.status || "Pending";
       }
 
-      // Countdown
+      // Countdown timer
       if (countdownInterval) clearInterval(countdownInterval);
       if (data.expiresIn && data.expiresIn > 0) {
         let remaining = data.expiresIn;
@@ -117,10 +175,9 @@ document.getElementById("confEscrow").textContent = escrowAddresses[data.fromCha
 
   async function pollStatus() {
     await fetchBridgeData();
-    setTimeout(pollStatus, 30000); // Poll every 30 seconds
+    setTimeout(pollStatus, 30000);
   }
 
-  // Start polling on page load
   pollStatus();
 </script>
 </body>

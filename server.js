@@ -8229,43 +8229,83 @@ app.post('/api/iso20022/confirm', async (req, res) => {
 // Bridge route
 app.post("/api/bridge", async (req, res) => {
   try {
-    const db = await connectDB(); // Native MongoDB driver connect
+    const db = await connectDB();
     const bridgeCollection = db.collection("bridge_requests");
 
     const { category, fromChain, toChain, amount, receiveAddress } = req.body;
-
     const amountNum = Number(amount);
+
     if (isNaN(amountNum) || amountNum <= 0) {
       return res.status(400).json({ error: "Invalid amount" });
     }
 
-const memoId = Math.floor(100000000000 + Math.random() * 900000000000).toString(); // 12-digit
-const bridgeId = `BRDG-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    // Define limits per category (token)
+    const limits = {
+      SeagullCoin: 50000,
+      SeagullCash: 10000000000
+    };
 
-await bridgeCollection.insertOne({
-  category,
-  fromChain,
-  toChain,
-  amount: amountNum,
-  receiveAddress,
-  memoId,
-  status: "pending",
-  createdAt: new Date(),
-  expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
-});
+    // Check if category is supported
+    if (!limits.hasOwnProperty(category)) {
+      return res.status(400).json({ error: "Unsupported token category" });
+    }
 
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
+    // Sum amount bridged today for this category
+    const aggregateResult = await bridgeCollection.aggregate([
+      {
+        $match: {
+          category,
+          createdAt: { $gte: todayStart }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmountToday: { $sum: "$amount" }
+        }
+      }
+    ]).toArray();
+
+    const totalAmountToday = aggregateResult.length > 0 ? aggregateResult[0].totalAmountToday : 0;
+
+    // Check if new amount would exceed limit
+    if (totalAmountToday + amountNum > limits[category]) {
+      return res.status(429).json({
+        error: `Daily bridge limit exceeded for ${category}. Limit: ${limits[category]}, Already bridged: ${totalAmountToday}`
+      });
+    }
+
+    // Proceed to insert bridge request
+    const memoId = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+    const bridgeId = `BRDG-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    await bridgeCollection.insertOne({
+      category,
+      fromChain,
+      toChain,
+      amount: amountNum,
+      receiveAddress,
+      memoId,
+      status: "pending",
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    });
 
     res.status(200).json({
-  message: "Bridge request saved!",
-  memoId,
-  bridgeId // ✅ send it back
-});
+      message: "Bridge request saved!",
+      memoId,
+      bridgeId
+    });
+
   } catch (err) {
     console.error("❌ Bridge error:", err.stack || err);
     res.status(500).json({ error: "Server error", detail: err.message });
   }
 });
+
 
 
 

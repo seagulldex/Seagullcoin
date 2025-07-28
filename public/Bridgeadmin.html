@@ -135,10 +135,13 @@
     }
 
     function filterTable() {
-      const query = document.getElementById('memoSearch').value.toLowerCase();
-      const filtered = allTransactions.filter(tx => tx.memoId.toLowerCase().includes(query));
-      renderTable(filtered);
-    }
+  const query = document.getElementById('memoSearch').value.toLowerCase();
+  const filtered = allTransactions.filter(tx =>
+    String(tx.memoId).toLowerCase().includes(query)
+  );
+  renderTable(filtered);
+}
+
 
     fetchTransactions();
     setInterval(fetchTransactions, 30000); // refresh every 30 seconds

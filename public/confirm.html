@@ -57,12 +57,18 @@
 
       if (!res.ok) throw new Error(data.error || "Failed to fetch");
 
-      // Update UI
-      document.getElementById("confFromChain").textContent = data.fromChain || "N/A";
-      document.getElementById("confToChain").textContent = data.toChain || "N/A";
-      document.getElementById("confAmount").textContent = `${data.amount || "0"} ${data.fromChain || ""}`;
-      document.getElementById("confMemo").textContent = memoId;
-      document.getElementById("confEscrow").textContent = data.receiveAddress || escrowAddresses[data.fromChain] || "N/A";
+// Update UI
+document.getElementById("confFromChain").textContent = data.fromChain || "N/A";
+document.getElementById("confToChain").textContent = data.toChain || "N/A";
+
+const currencyLabel = data.category 
+  ? `${data.category} (${data.fromChain})` 
+  : `${data.fromChain}`;
+
+document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
+
+document.getElementById("confMemo").textContent = memoId;
+document.getElementById("confEscrow").textContent = data.receiveAddress || escrowAddresses[data.fromChain] || "N/A";
 
       // Status
       if (data.status === "expired") {

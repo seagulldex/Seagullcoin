@@ -164,18 +164,21 @@
       document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
 
       // Safely generate QR code only if address and memoId are valid
-      const escrow = escrowAddresses[data.fromChain];
-      if (escrow && memoId) {
-        try {
-          generateQRCode(escrow, "qrCodeContainer", data.fromChain, memoId);
-        } catch (qrErr) {
-          console.error("QR code generation failed:", qrErr);
-          document.getElementById("qrCodeContainer").innerHTML = "<p style='color: #f55;'>QR code error</p>";
-        }
-      } else {
-        console.warn("Missing or invalid escrow address or memoId for QR code generation.");
-        document.getElementById("qrCodeContainer").innerHTML = "<p style='color: #f55;'>QR code unavailable</p>";
-      }
+      const container = document.getElementById("qrCodeContainer");
+container.innerHTML = "";
+if (escrow && memoId) {
+  try {
+    generateQRCode(escrow, "qrCodeContainer", data.fromChain, memoId);
+  } catch (qrErr) {
+    console.error("QR code generation failed:", qrErr);
+    // quietly clear QR code container without showing error
+    container.innerHTML = "";
+  }
+} else {
+  // no QR code if missing data, keep container empty
+  container.innerHTML = "";
+}
+
 
       document.getElementById("confMemo").textContent = memoId;
       document.getElementById("confEscrow").textContent = escrow || "N/A";

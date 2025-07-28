@@ -8370,6 +8370,16 @@ app.post('/api/mark-bridged', async (req, res) => {
   }
 });
 
+app.get('/api/bridge-requests', async (req, res) => {
+  try {
+    const txs = await db.collection('bridgeRequests').find().sort({ createdAt: -1 }).limit(100).toArray();
+    res.json(txs);
+  } catch (err) {
+    console.error('Error fetching bridge requests:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

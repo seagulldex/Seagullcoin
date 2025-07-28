@@ -14,8 +14,14 @@
     <p><strong>From Chain:</strong> <span id="confFromChain"></span></p>
     <p><strong>To Chain:</strong> <span id="confToChain"></span></p>
     <p><strong>Send:</strong> <span id="confAmount"></span></p>
-    <p><strong>To Address:</strong> <span id="confEscrow" style="word-break: break-word;"></span></p>
-    <p><strong>Memo ID / Tag:</strong> <span id="confMemo" style="color: #1e90ff;"></span></p>
+    <p><strong>To Address:</strong> 
+  <span id="confEscrow" style="word-break: break-word;"></span>
+  <button onclick="copyToClipboard('confEscrow')">📋</button>
+</p>
+<p><strong>Memo ID / Tag:</strong> 
+  <span id="confMemo" style="color: #1e90ff;"></span>
+  <button onclick="copyToClipboard('confMemo')">📋</button>
+</p>
     <p><strong>Status:</strong> <span id="bridgeStatus">Fetching...</span></p>
     <p><strong>Expires in:</strong> <span id="countdownTimer">—</span></p>
   </div>

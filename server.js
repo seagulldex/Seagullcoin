@@ -8352,12 +8352,14 @@ app.get('/api/bridge-status', async (req, res) => {
     }
 
     res.json({
-      fromChain: bridge.fromChain,
-      toChain: bridge.toChain,
-      amount: bridge.amount,
-      status: bridge.status,
-      expiresIn
-    });
+  fromChain: bridge.fromChain,
+  toChain: bridge.toChain,
+  amount: bridge.amount,
+  status: bridge.status,
+  expiresIn,
+  receiveAddress: bridge.receiveAddress, // optional but useful
+  bridgeId: bridge.bridgeId   // <== Add this line
+});
   } catch (err) {
     console.error("[bridge-status] error:", err);
     res.status(500).json({ error: 'Internal server error' });

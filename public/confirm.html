@@ -76,7 +76,7 @@ const currencyLabel = data.category
 document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
 
 document.getElementById("confMemo").textContent = memoId;
-document.getElementById("confEscrow").textContent = data.receiveAddress || escrowAddresses[data.fromChain] || "N/A";
+document.getElementById("confEscrow").textContent = escrowAddresses[data.fromChain] || "N/A";
 
       // Status
       if (data.status === "expired") {

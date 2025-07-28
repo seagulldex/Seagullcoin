@@ -8336,10 +8336,16 @@ app.get('/api/bridge-status', async (req, res) => {
     }
 
     const expiresAt = new Date(bridge.expiresAt);
-    const expiresIn = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+    const now = Date.now();
+    const expiresIn = Math.max(0, Math.floor((expiresAt - now) / 1000));
 
     console.log("[bridge-status] expiresAt:", bridge.expiresAt);
     console.log("[bridge-status] expiresIn:", expiresIn);
+
+    // 👉 Handle expired bridge request
+    if (now > expiresAt.getTime()) {
+      return res.status(410).json({ error: "Bridge request has expired" });
+    }
 
     res.json({
       fromChain: bridge.fromChain,
@@ -8353,6 +8359,7 @@ app.get('/api/bridge-status', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 // Call the XRPL ping when the server starts

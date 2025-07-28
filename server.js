@@ -8324,7 +8324,7 @@ app.post('/api/mark-confirmed', async (req, res) => {
   }
 
   try {
-    const result = await db.collection('transactions').updateOne(
+    const result = await db.collection('bridge_requests').updateOne(
       { memoId },
       { $set: { status: 'confirmed', confirmedAt: new Date() } }
     );
@@ -8349,7 +8349,7 @@ app.post('/api/mark-bridged', async (req, res) => {
   }
 
   try {
-    const result = await db.collection('transactions').updateOne(
+    const result = await db.collection('bridge_requests').updateOne(
       { memoId },
       { $set: { status: 'bridged', bridgedAt: new Date() } }
     );

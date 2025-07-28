@@ -11,6 +11,11 @@
       color: #eee;
       padding: 1rem;
     }
+    input {
+      width: 200px;
+      padding: 0.4rem;
+      margin-bottom: 1rem;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -40,6 +45,10 @@
 </head>
 <body>
   <h1>Bridge Admin Panel</h1>
+
+  <!-- 🔍 Search Input -->
+  <input type="text" id="memoSearch" placeholder="Search Memo ID..." oninput="filterTable()" />
+
   <table id="transactionsTable">
     <thead>
       <tr>
@@ -58,38 +67,43 @@
   </table>
 
   <script>
+    let allTransactions = []; // 🔁 Keep in memory for filtering
+
     async function fetchTransactions() {
       try {
-        // You need an endpoint that returns all bridge requests (create this on your backend)
-        const res = await fetch('/api/bridge-requests'); 
+        const res = await fetch('/api/bridge-requests');
         if (!res.ok) throw new Error('Failed to fetch transactions');
 
-        const transactions = await res.json();
-        const tbody = document.querySelector('#transactionsTable tbody');
-        tbody.innerHTML = '';
-
-        transactions.forEach(tx => {
-          const expiresAt = new Date(tx.expiresAt);
-          const now = new Date();
-          const expiresInSec = Math.max(0, Math.floor((expiresAt - now) / 1000));
-
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${tx.memoId}</td>
-            <td>${tx.fromChain}</td>
-            <td>${tx.toChain}</td>
-            <td>${tx.amount}</td>
-            <td>${tx.status}</td>
-            <td>${formatCountdown(expiresInSec)}</td>
-            <td>
-              <button ${tx.status === 'confirmed' ? 'disabled' : ''} onclick="confirmTransaction('${tx.memoId}', this)">Confirm</button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
+        allTransactions = await res.json();
+        renderTable(allTransactions);
       } catch (err) {
         alert('Error loading transactions: ' + err.message);
       }
+    }
+
+    function renderTable(transactions) {
+      const tbody = document.querySelector('#transactionsTable tbody');
+      tbody.innerHTML = '';
+
+      transactions.forEach(tx => {
+        const expiresAt = new Date(tx.expiresAt);
+        const now = new Date();
+        const expiresInSec = Math.max(0, Math.floor((expiresAt - now) / 1000));
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${tx.memoId}</td>
+          <td>${tx.fromChain}</td>
+          <td>${tx.toChain}</td>
+          <td>${tx.amount}</td>
+          <td>${tx.status}</td>
+          <td>${formatCountdown(expiresInSec)}</td>
+          <td>
+            <button ${tx.status === 'confirmed' ? 'disabled' : ''} onclick="confirmTransaction('${tx.memoId}', this)">Confirm</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
     function formatCountdown(seconds) {
@@ -118,6 +132,12 @@
         btn.disabled = false;
         btn.textContent = 'Confirm';
       }
+    }
+
+    function filterTable() {
+      const query = document.getElementById('memoSearch').value.toLowerCase();
+      const filtered = allTransactions.filter(tx => tx.memoId.toLowerCase().includes(query));
+      renderTable(filtered);
     }
 
     fetchTransactions();

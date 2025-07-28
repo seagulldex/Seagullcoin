@@ -8365,7 +8365,55 @@ app.get('/api/bridge-status', async (req, res) => {
   }
 });
 
+// 🔥 MARK TRANSACTION CONFIRMED
+app.post('/api/mark-confirmed', async (req, res) => {
+  const { memoId } = req.body;
 
+  if (!memoId) {
+    return res.status(400).json({ error: 'memoId is required' });
+  }
+
+  try {
+    const result = await db.collection('transactions').updateOne(
+      { memoId },
+      { $set: { status: 'confirmed', confirmedAt: new Date() } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    res.json({ success: true, memoId, newStatus: 'confirmed' });
+  } catch (err) {
+    console.error('Error marking confirmed:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 🔥 MARK TRANSACTION BRIDGED
+app.post('/api/mark-bridged', async (req, res) => {
+  const { memoId } = req.body;
+
+  if (!memoId) {
+    return res.status(400).json({ error: 'memoId is required' });
+  }
+
+  try {
+    const result = await db.collection('transactions').updateOne(
+      { memoId },
+      { $set: { status: 'bridged', bridgedAt: new Date() } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    res.json({ success: true, memoId, newStatus: 'bridged' });
+  } catch (err) {
+    console.error('Error marking bridged:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

@@ -252,6 +252,22 @@
       }
     }
 
+    function getStatusColor(status) {
+  switch (status) {
+    case "active":
+      return "#1e90ff";
+    case "pending":
+      return "#ffa500";
+    case "confirmed":
+      return "#00fa9a";
+    case "bridged":
+      return "#cccccc";
+    default:
+      return "#ffffff";
+  }
+}
+
+
     function filterTable() {
       const query = document.getElementById('memoSearch').value.toLowerCase();
       const filtered = allTransactions.filter(tx =>

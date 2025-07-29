@@ -193,11 +193,32 @@
           <td>${formatCountdown(expiresInSec)}</td>
           <td>
             <button ${tx.status === 'confirmed' ? 'disabled' : ''} onclick="confirmTransaction('${tx.memoId}', this)">Confirm</button>
+         <button onclick="markBridged('${tx.memoId}', this)">Mark Bridged</button>
           </td>
         `;
         tbody.appendChild(tr);
       });
     }
+
+    async function markBridged(memoId, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Marking...';
+  try {
+    const res = await fetch('/api/mark-bridged', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memoId })
+    });
+    if (!res.ok) throw new Error('Failed to mark bridged');
+    alert(`Transaction ${memoId} marked as bridged ✅`);
+    fetchTransactions();
+  } catch (err) {
+    alert('Error: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Mark Bridged';
+  }
+}
+
 
     function formatCountdown(seconds) {
       if (seconds <= 0) return 'Expired';

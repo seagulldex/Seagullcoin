@@ -100,7 +100,17 @@
   View Bridge Confirmation
 </a>
 
-
+<script type="text/javascript">
+  window.$crisp = [];
+  window.CRISP_WEBSITE_ID = "c4c177f3-5bf9-4f53-8a57-5ed64696616e"; // 🔁 Replace with your actual Crisp ID
+  (function () {
+    const d = document;
+    const s = d.createElement("script");
+    s.src = "https://client.crisp.chat/l.js";
+    s.async = 1;
+    d.getElementsByTagName("head")[0].appendChild(s);
+  })();
+  </script>
   <script>
     const bridgeAssets = {
       SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"],
@@ -119,6 +129,22 @@
     const assetTypeEl = document.getElementById("assetType");
     const fromChainEl = document.getElementById("fromChain");
     const toChainEl = document.getElementById("toChain");
+
+    function getLogo(chainName) {
+  const logos = {
+    SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
+    SeagullCash: 'https://d1fdloi71mui9q.cloudfront.net/Z2URVu3eSjyXF3fPVdyq_png_20221121_111630_0000.png',
+    XRP: 'https://altcoinsbox.com/wp-content/uploads/2023/01/xrp-logo-1140x1140.webp',
+    HBAR: 'https://cryptologos.cc/logos/hedera-hbar-logo.png',
+    Flare: 'https://s2.coinmarketcap.com/static/img/coins/64x64/7950.png',
+    XDC: 'https://cdn.coincircle.com/icons/fallback/xdc-network.png',
+    XLM: 'https://cryptologos.cc/logos/stellar-xlm-logo.png',
+    ALGO: 'https://cdn.freelogovectors.net/wp-content/uploads/2021/10/algorand-logo-freelogovectors.net_.png',
+  };
+
+  return logos[chainName] || '/logos/default.png';
+}
+
 
     function updateChains() {
       const type = assetTypeEl.value;
@@ -171,6 +197,19 @@
   }
 });
 
+  function openSupportChat(unstakeId) {
+  window.$crisp.push(["do", "chat:open"]);
+  window.$crisp.push(["do", "message:send", ["text", `Hi, I need help with my unstake: ${unstakeId}`]]);
+}
+
+function setCrispUser(wallet, unstakeId, stakeType) {
+  window.$crisp.push(["set", "user:nickname", [wallet]]);
+  window.$crisp.push(["set", "session:data", [
+    ["wallet", wallet],
+    ["unstakeId", unstakeId],
+    ["stakeType", stakeType]
+  ]]);
+}
 
     updateChains(); // initialize chains
   </script>

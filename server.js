@@ -8410,45 +8410,28 @@ app.get('/api/bridge-requests', async (req, res) => {
   }
 });
 
-app.get('/checking-login', async (req, res) => {
-  const { uuid } = req.query;
-  if (!uuid) return res.status(400).json({ error: 'Missing UUID parameter' });
+app.get('/checkin-login', async (req, res) => {
+  const uuid = req.query.uuid;
+  if (!uuid) {
+    return res.status(400).json({ error: 'Missing UUID' });
+  }
 
   try {
-    const response = await fetch(`https://xumm.app/api/v1/platform/payload/${uuid}`, {
-      headers: {
-        'Authorization': `Basic ${Buffer.from(`${XUMM_API_KEY}:${XUMM_API_SECRET}`).toString('base64')}`
-      }
-    });
+    const payload = await xumm.payload.get(uuid);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('XUMM API error:', errorText);
-      return res.status(500).json({ error: 'Failed to fetch payload status from XUMM' });
-    }
-
-    const payloadStatus = await response.json();
-    console.log('Full payload from XUMM:', payloadStatus);
-
-    // Check if signed:
-    if (payloadStatus?.meta?.signed === true) {
-      const account = payloadStatus?.response?.account;
-      if (!account) {
-        console.error('Signed but account missing in response');
-        return res.status(500).json({ error: 'Account info missing from payload' });
-      }
-
+    // Validate if signed and account exists
+    if (payload?.meta?.signed && payload?.response?.account) {
       return res.json({
         loggedIn: true,
-        account
+        account: payload.response.account,
+        uuid
       });
+    } else {
+      return res.json({ loggedIn: false });
     }
-
-    // Not signed yet
-    return res.json({ loggedIn: false });
   } catch (err) {
     console.error('Error checking login:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Error checking login' });
   }
 });
 

@@ -109,9 +109,9 @@
       <ul>
         <li><a href="SeagullDex.html">Trading</a></li>
         <li><a href="stake.html">Stake</a></li>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/Shop.html" target="_blank" rel="noopener noreferrer">Store</a></li>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/Seagullwallet.html" target="_blank" rel="noopener noreferrer">SeagullWallet</a></li>
+        <li><a href="https://bored-seagull-club.xyz/SeagullmansionsV2.html" target="_blank" rel="noopener noreferrer">SGLMN V2 (mint)</a></li>
+        <li><a href="https://bored-seagull-club.xyz/Shop.html" target="_blank" rel="noopener noreferrer">Store</a></li>
+        <li><a href="https://bored-seagull-club.xyz/Seagullwallet.html" target="_blank" rel="noopener noreferrer">SeagullWallet</a></li>
       </ul>
     </nav>
   </header>
@@ -168,7 +168,7 @@
       // Since you currently call your backend, update backend to accept raw txjson OR do it here:
 
       // For example, call your backend that creates the payload:
-      const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/create-trustline`, {
+      const res = await fetch(`https://bored-seagull-club.xyz/create-trustline`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ txjson: trustlinePayload })
@@ -291,12 +291,12 @@ function updateWalletUI() {
     
     async function startLoginFlow() {
   try {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
+    const res = await fetch('https://bored-seagull-club.xyz/login');
     const data = await res.json();
     window.location.href = data.payloadURL;
 
     const interval = setInterval(async () => {
-      const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
+      const check = await fetch(`https://bored-seagull-club.xyz/check-login?uuid=${data.payloadUUID}`);
       const loginStatus = await check.json();
 
       if (loginStatus.loggedIn) {
@@ -344,7 +344,7 @@ function updateWalletUI() {
 
         try {
           // Call backend API to create trustline payload for this account
-          const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/add-trustline?account=${wallet}`);
+          const res = await fetch(`https://bored-seagull-club.xyz/add-trustline?account=${wallet}`);
           const trustlineData = await res.json();
 
           if(trustlineData.payloadURL){

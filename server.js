@@ -8428,24 +8428,24 @@ app.get('/checking-login', async (req, res) => {
     }
 
     const payloadStatus = await response.json();
+    console.log('Full payload from XUMM:', payloadStatus);
 
-    // If signed === true, get the account address and respond accordingly
+    // Check if signed:
     if (payloadStatus?.meta?.signed === true) {
-      // Sometimes the account is in payloadStatus.response.account
-      const account = payloadStatus.response?.account;
-
+      const account = payloadStatus?.response?.account;
       if (!account) {
-        // Defensive fallback, account missing?
-        return res.status(500).json({ error: 'Account info missing in XUMM response' });
+        console.error('Signed but account missing in response');
+        return res.status(500).json({ error: 'Account info missing from payload' });
       }
 
       return res.json({
         loggedIn: true,
-        account: account
+        account
       });
-    } else {
-      return res.json({ loggedIn: false });
     }
+
+    // Not signed yet
+    return res.json({ loggedIn: false });
   } catch (err) {
     console.error('Error checking login:', err);
     return res.status(500).json({ error: 'Internal server error' });

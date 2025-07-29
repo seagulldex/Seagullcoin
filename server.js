@@ -8410,6 +8410,50 @@ app.get('/api/bridge-requests', async (req, res) => {
   }
 });
 
+app.get('/check-login', async (req, res) => {
+  const { uuid } = req.query;
+  if (!uuid) {
+    return res.status(400).json({ error: 'Missing UUID parameter' });
+  }
+
+  try {
+    const response = await fetch(`https://xumm.app/api/v1/platform/payload/${uuid}`, {
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${XUMM_API_KEY}:${XUMM_API_SECRET}`).toString('base64')}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('XUMM API error:', errorText);
+      return res.status(500).json({ error: 'Failed to fetch payload status from XUMM' });
+    }
+
+    const payloadStatus = await response.json();
+
+    // Check if payload is signed (user approved login)
+    if (payloadStatus?.meta?.signed === true) {
+      // Extract account from payload response
+      const account = payloadStatus.response.account; // XUMM wallet address
+
+      // TODO: Lookup or generate your user info / seagullWallet here, if you store those
+
+      return res.json({
+        loggedIn: true,
+        account,
+        // seagullWallet: 'userSeagullWalletFromDB', // Replace with your data
+        // user: { /* your user object if any */ },
+      });
+    } else {
+      // Not signed yet, user not logged in
+      return res.json({ loggedIn: false });
+    }
+  } catch (err) {
+    console.error('Error checking login:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

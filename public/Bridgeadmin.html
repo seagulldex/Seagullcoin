@@ -66,6 +66,11 @@
     </tbody>
   </table>
 
+  <div class="info-box" id="scannerStatusContainer">
+  <h3>Blockchain Bridge Status</h3>
+  <p>Loading scanner activity...</p>
+  </div>
+
     <!-- HTML continues from the given template -->
 <script>
   // Add scanner UI dynamically
@@ -133,11 +138,6 @@
   // Poll bridge scanner status
   setInterval(fetchScannerStatus, 30000);
   fetchScannerStatus();
-
-<div class="info-box" id="scannerStatusContainer">
-  <h3>Blockchain Bridge Status</h3>
-  <p>Loading scanner activity...</p>
-</div>
 
     let allTransactions = []; // 🔁 Keep in memory for filtering
 

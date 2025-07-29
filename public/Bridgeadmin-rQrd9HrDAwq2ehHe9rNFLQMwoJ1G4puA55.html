@@ -106,7 +106,9 @@
 
   <script>
     const scanners = ["XRP", "XLM", "XDC", "FLR", "HBAR", "ALGO"];
-    const scannerStatus = { active: [], pending: [], confirmed: [] };
+    const scannerStatus = { active: [], pending: [], confirmed: [], bridged: []
+};
+
 
     async function fetchScannerStatus() {
       try {
@@ -117,7 +119,8 @@
         scannerStatus.active = [];
         scannerStatus.pending = [];
         scannerStatus.confirmed = [];
-
+        scannerStatus.bridged = [];
+        
         data.forEach(tx => {
           const chain = tx.fromChain;
           const group = scannerStatus[tx.status];
@@ -136,28 +139,29 @@
       const container = document.getElementById("scannerStatusContainer");
       container.innerHTML = "";
 
-      ["active", "pending", "confirmed"].forEach(status => {
-        const group = scannerStatus[status];
-        if (group.length === 0) return;
+      ["active", "pending", "confirmed", "bridged"].forEach(status => {
+  const group = scannerStatus[status];
+  if (group.length === 0) return;
 
-        const section = document.createElement("div");
-        section.style.marginTop = "1rem";
-        section.innerHTML = `<h4 style="color: #1e90ff">${status.toUpperCase()}</h4>`;
+  const section = document.createElement("div");
+  section.style.marginTop = "1rem";
+  section.innerHTML = `<h4 style="color: #1e90ff">${status.toUpperCase()}</h4>`;
 
-        group.forEach(tx => {
-          const item = document.createElement("div");
-          item.style.borderBottom = "1px solid #333";
-          item.style.padding = "6px 0";
-          item.innerHTML = `
-            <strong>${tx.fromChain}</strong> → <strong>${tx.toChain}</strong><br/>
-            Amount: ${tx.amount}<br/>
-            Memo: ${tx.memoId}<br/>
-            Status: <span style="color: #00fa9a">${tx.status}</span>
-          `;
-          section.appendChild(item);
-        });
-        container.appendChild(section);
-      });
+  group.forEach(tx => {
+    const item = document.createElement("div");
+    item.style.borderBottom = "1px solid #333";
+    item.style.padding = "6px 0";
+    item.innerHTML = `
+      <strong>${tx.fromChain}</strong> → <strong>${tx.toChain}</strong><br/>
+      Amount: ${tx.amount}<br/>
+      Memo: ${tx.memoId}<br/>
+      Status: <span style="color: ${getStatusColor(tx.status)}">${tx.status}</span>
+    `;
+    section.appendChild(item);
+  });
+
+  container.appendChild(section);
+});
     }
 
     setInterval(fetchScannerStatus, 30000);

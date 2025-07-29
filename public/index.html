@@ -300,7 +300,7 @@ async function startLoginFlow() {
     // Step 3: Start polling for login status
     const interval = setInterval(async () => {
       try {
-        const check = await fetch(`https://bored-seagull-club.xyz/check-login?uuid=${data.payloadUUID}`);
+        const check = await fetch(`https://bored-seagull-club.xyz/checking-login?uuid=${data.payloadUUID}`);
         const loginStatus = await check.json();
 
         if (loginStatus.loggedIn) {

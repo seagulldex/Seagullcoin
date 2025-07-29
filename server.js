@@ -8412,9 +8412,7 @@ app.get('/api/bridge-requests', async (req, res) => {
 
 app.get('/checking-login', async (req, res) => {
   const { uuid } = req.query;
-  if (!uuid) {
-    return res.status(400).json({ error: 'Missing UUID parameter' });
-  }
+  if (!uuid) return res.status(400).json({ error: 'Missing UUID parameter' });
 
   try {
     const response = await fetch(`https://xumm.app/api/v1/platform/payload/${uuid}`, {
@@ -8431,26 +8429,20 @@ app.get('/checking-login', async (req, res) => {
 
     const payloadStatus = await response.json();
 
-    if (payloadStatus?.meta?.signed === true && payloadStatus.response?.account) {
-      const account = payloadStatus.response.account;
-
-      // TODO: Add your seagullWallet and user info here if needed
-
+    if (payloadStatus?.meta?.signed === true) {
       return res.json({
         loggedIn: true,
-        account,
-        // seagullWallet: 'yourSeagullWallet',
-        // user: { /* your user object */ },
+        account: payloadStatus.response.account
       });
+    } else {
+      return res.json({ loggedIn: false });
     }
-
-    // Not signed yet
-    return res.json({ loggedIn: false });
   } catch (err) {
     console.error('Error checking login:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 

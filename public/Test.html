@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Seagull Bridge</title>
-  <link rel="stylesheet" href="styles.css" />
   <style>
     body {
       font-family: sans-serif;
@@ -36,7 +35,7 @@
       font-weight: bold;
     }
 
-    input, select, button {
+    input, button {
       width: 100%;
       padding: 0.75rem;
       border-radius: 6px;
@@ -45,7 +44,7 @@
       color: #fff;
     }
 
-    input:focus, select:focus {
+    input:focus {
       border-color: #1e90ff;
       outline: none;
     }
@@ -63,181 +62,210 @@
       background-color: #0077cc;
     }
 
-    select {
-      overflow-y: auto;
-      max-height: 200px;
+    .dropdown {
+      position: relative;
+      margin-bottom: 1rem;
     }
 
-    .asset-logo {
+    .dropdown-selected {
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: space-between;
+      padding: 0.75rem;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 6px;
+      cursor: pointer;
     }
 
-    .asset-logo img {
-      height: 30px;
+    .dropdown-selected img {
+      height: 24px;
+      margin-right: 10px;
+    }
+
+    .dropdown-list {
+      position: absolute;
+      width: 100%;
+      background: #222;
+      border: 1px solid #444;
+      border-top: none;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem;
+      cursor: pointer;
+      border-top: 1px solid #333;
+    }
+
+    .dropdown-item img {
+      height: 24px;
+      margin-right: 10px;
+    }
+
+    .dropdown-item:hover {
+      background-color: #333;
+    }
+
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
 
-  <h2>Bridge Your Seagull Assets</h2>
+<h2>Bridge Your Seagull Assets</h2>
 
-  <div id="bridge-form-box" class="form-box">
-    <form id="bridge-form">
-      <label>Asset Type</label>
-      <div class="asset-logo">
-        <select id="assetType"></select>
-        <img id="assetLogo" src="" alt="Asset Logo" />
-      </div>
+<div class="form-box">
+  <form id="bridge-form">
 
-      <label>From Chain</label>
-      <select id="fromChain" onchange="updateLogo('fromChain')"></select>
-      <img id="fromChainLogo" src="" alt="From Chain Logo" style="height: 30px; margin-top: 0.5rem;" />
+    <!-- Asset Type Dropdown -->
+    <label>Asset Type</label>
+    <div id="assetDropdown" class="dropdown"></div>
 
-      <label>To Chain</label>
-      <select id="toChain" onchange="updateLogo('toChain')"></select>
-      <img id="toChainLogo" src="" alt="To Chain Logo" style="height: 30px; margin-top: 0.5rem;" />
+    <label>From Chain</label>
+    <div id="fromDropdown" class="dropdown"></div>
 
-      <label>Your Wallet Address (to receive)</label>
-      <input type="text" id="receiveAddress" required />
+    <label>To Chain</label>
+    <div id="toDropdown" class="dropdown"></div>
 
-      <label>Amount</label>
-      <input type="number" id="amount" required />
+    <label>Your Wallet Address (to receive)</label>
+    <input type="text" id="receiveAddress" required />
 
-      <button type="submit">Bridge Now</button>
-    </form>
-  </div>
+    <label>Amount</label>
+    <input type="number" id="amount" required />
 
-  <div id="loading" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); color: white; font-size: 1.5rem; text-align: center; padding-top: 40vh; z-index: 9999;">
-    Processing bridge...
-  </div>
+    <button type="submit">Bridge Now</button>
+  </form>
+</div>
 
-  <a id="confirmationLink" href="#" target="_blank" style="display:none; color: #1e90ff; text-align: center; display: block; margin-top: 1rem;">
-    View Bridge Confirmation
-  </a>
+<div id="loading" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); color: white; font-size: 1.5rem; text-align: center; padding-top: 40vh; z-index: 9999;">
+  Processing bridge...
+</div>
 
-  <script>
-    const logos = {
-      SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
-      SeagullCash: 'https://d1fdloi71mui9q.cloudfront.net/Z2URVu3eSjyXF3fPVdyq_png_20221121_111630_0000.png',
-      XRP: 'https://altcoinsbox.com/wp-content/uploads/2023/01/xrp-logo-1140x1140.webp',
-      HBAR: 'https://altcoinsbox.com/wp-content/uploads/2023/03/hedera-logo-1140x1140.webp',
-      FLR: 'https://s2.coinmarketcap.com/static/img/coins/64x64/7950.png',
-      XDC: 'https://cdn.coincircle.com/icons/fallback/xdc-network.png',
-      XLM: 'https://images.seeklogo.com/logo-png/47/1/stellar-xlm-logo-png_seeklogo-479962.png',
-      ALGO: 'https://cdn.freelogovectors.net/wp-content/uploads/2021/10/algorand-logo-freelogovectors.net_.png',
+<a id="confirmationLink" href="#" target="_blank" style="display:none; color: #1e90ff; text-align: center; display: block; margin-top: 1rem;">
+  View Bridge Confirmation
+</a>
+
+<script>
+  const logos = {
+    SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
+    SeagullCash: 'https://d1fdloi71mui9q.cloudfront.net/Z2URVu3eSjyXF3fPVdyq_png_20221121_111630_0000.png',
+    XRP: 'https://altcoinsbox.com/wp-content/uploads/2023/01/xrp-logo-1140x1140.webp',
+    HBAR: 'https://altcoinsbox.com/wp-content/uploads/2023/03/hedera-logo-1140x1140.webp',
+    FLR: 'https://s2.coinmarketcap.com/static/img/coins/64x64/7950.png',
+    XDC: 'https://cdn.coincircle.com/icons/fallback/xdc-network.png',
+    XLM: 'https://images.seeklogo.com/logo-png/47/1/stellar-xlm-logo-png_seeklogo-479962.png',
+    ALGO: 'https://cdn.freelogovectors.net/wp-content/uploads/2021/10/algorand-logo-freelogovectors.net_.png',
+  };
+
+  const bridgeAssets = {
+    SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"],
+    SeagullCoin: ["XRP", "FLR", "XDC"]
+  };
+
+  function createDropdown(id, options, onSelect) {
+    const container = document.getElementById(id);
+    const selected = document.createElement("div");
+    selected.className = "dropdown-selected";
+    container.appendChild(selected);
+
+    const list = document.createElement("div");
+    list.className = "dropdown-list";
+    container.appendChild(list);
+
+    function updateSelection(value) {
+      selected.innerHTML = `<div style="display:flex;align-items:center;"><img src="${logos[value]}" /> ${value}</div>`;
+      list.style.display = "none";
+      onSelect(value);
+    }
+
+    selected.addEventListener("click", () => {
+      list.style.display = list.style.display === "block" ? "none" : "block";
+    });
+
+    options.forEach(value => {
+      const item = document.createElement("div");
+      item.className = "dropdown-item";
+      item.innerHTML = `<img src="${logos[value]}" /> ${value}`;
+      item.addEventListener("click", () => updateSelection(value));
+      list.appendChild(item);
+    });
+
+    updateSelection(options[0]); // default select
+  }
+
+  let selectedAsset = "SeagullCash";
+  let fromChain = "";
+  let toChain = "";
+
+  function refreshChainDropdowns() {
+    const chains = bridgeAssets[selectedAsset];
+    document.getElementById("fromDropdown").innerHTML = "";
+    document.getElementById("toDropdown").innerHTML = "";
+    createDropdown("fromDropdown", chains, val => fromChain = val);
+    createDropdown("toDropdown", chains, val => toChain = val);
+  }
+
+  createDropdown("assetDropdown", Object.keys(bridgeAssets), val => {
+    selectedAsset = val;
+    refreshChainDropdowns();
+  });
+
+  refreshChainDropdowns();
+
+  document.getElementById("bridge-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    document.getElementById("loading").classList.remove("hidden");
+
+    const payload = {
+      category: selectedAsset,
+      fromChain,
+      toChain,
+      amount: document.getElementById("amount").value,
+      receiveAddress: document.getElementById("receiveAddress").value,
     };
 
-    const bridgeAssets = {
-      SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"],
-      SeagullCoin: ["XRP", "FLR", "XDC"]
-    };
-
-    const assetTypeEl = document.getElementById("assetType");
-    const fromChainEl = document.getElementById("fromChain");
-    const toChainEl = document.getElementById("toChain");
-    const assetLogoEl = document.getElementById("assetLogo");
-
-    function getLogo(name) {
-      return logos[name] || '/logos/default.png';
-    }
-
-    function updateLogo(selectId) {
-      const chain = document.getElementById(selectId).value;
-      document.getElementById(selectId + "Logo").src = getLogo(chain);
-    }
-
-    function updateAssetLogo() {
-      const type = assetTypeEl.value;
-      assetLogoEl.src = getLogo(type);
-    }
-
-    function updateChains() {
-      const type = assetTypeEl.value;
-      const chains = bridgeAssets[type];
-
-      fromChainEl.innerHTML = "";
-      toChainEl.innerHTML = "";
-      chains.forEach(c => {
-        fromChainEl.innerHTML += `<option value="${c}">${c}</option>`;
-        toChainEl.innerHTML += `<option value="${c}">${c}</option>`;
+    try {
+      const res = await fetch("/api/bridge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
-      updateLogo("fromChain");
-      updateLogo("toChain");
-    }
-
-    // Initialize Asset Types
-    Object.keys(bridgeAssets).forEach(asset => {
-      const opt = document.createElement("option");
-      opt.value = asset;
-      opt.innerText = asset;
-      assetTypeEl.appendChild(opt);
-    });
-
-    assetTypeEl.addEventListener("change", () => {
-      updateAssetLogo();
-      updateChains();
-    });
-
-    fromChainEl.addEventListener("change", () => updateLogo("fromChain"));
-    toChainEl.addEventListener("change", () => updateLogo("toChain"));
-
-    document.getElementById("bridge-form").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      document.getElementById("loading").style.display = "block";
-
-      const payload = {
-        category: assetTypeEl.value,
-        fromChain: fromChainEl.value,
-        toChain: toChainEl.value,
-        amount: document.getElementById("amount").value,
-        receiveAddress: document.getElementById("receiveAddress").value,
-      };
-
-      try {
-        const res = await fetch("/api/bridge", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          const memoId = data.memoId;
-          const link = document.getElementById("confirmationLink");
-          link.href = `/confirm.html?memoId=${memoId}`;
-          link.style.display = "inline-block";
-        } else {
-          alert(data.error || "Something went wrong.");
-        }
-      } catch (err) {
-        alert("Server error.");
-        console.error(err);
-      } finally {
-        document.getElementById("loading").style.display = "none";
+      const data = await res.json();
+      if (res.ok) {
+        const link = document.getElementById("confirmationLink");
+        link.href = `/confirm.html?memoId=${data.memoId}`;
+        link.style.display = "block";
+      } else {
+        alert(data.error || "Something went wrong.");
       }
-    });
+    } catch (err) {
+      alert("Server error.");
+      console.error(err);
+    } finally {
+      document.getElementById("loading").classList.add("hidden");
+    }
+  });
+</script>
 
-    // Initialize page
-    assetTypeEl.value = "SeagullCash";
-    updateAssetLogo();
-    updateChains();
-  </script>
-
-  <script type="text/javascript">
-    window.$crisp = [];
-    window.CRISP_WEBSITE_ID = "c4c177f3-5bf9-4f53-8a57-5ed64696616e";
-    (function () {
-      const d = document;
-      const s = d.createElement("script");
-      s.src = "https://client.crisp.chat/l.js";
-      s.async = 1;
-      d.getElementsByTagName("head")[0].appendChild(s);
-    })();
-  </script>
+<script type="text/javascript">
+  window.$crisp = [];
+  window.CRISP_WEBSITE_ID = "c4c177f3-5bf9-4f53-8a57-5ed64696616e";
+  (function () {
+    const d = document;
+    const s = d.createElement("script");
+    s.src = "https://client.crisp.chat/l.js";
+    s.async = 1;
+    d.getElementsByTagName("head")[0].appendChild(s);
+  })();
+</script>
 
 </body>
 </html>

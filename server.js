@@ -412,7 +412,7 @@ function scheduleStatsUpdate() {
 
   setTimeout(() => {
     // First run
-    fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/update-daily-stats', {
+    fetch('https://bored-seagull-club.xyz/api/update-daily-stats', {
       method: 'POST'
     })
       .then(res => res.json())
@@ -421,7 +421,7 @@ function scheduleStatsUpdate() {
 
     // Set daily interval
     setInterval(() => {
-      fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/update-daily-stats', {
+      fetch('https://bored-seagull-club.xyz/api/update-daily-stats', {
         method: 'POST'
       })
         .then(res => res.json())
@@ -576,10 +576,6 @@ export async function archivePaidEventsLoop() {
 (async () => {
   await archivePaidEventsLoop();
 })();
-
-
-
-
 
 async function cleanUpOldProcessedNotifications() {
   const db = await connectDB();
@@ -1097,7 +1093,7 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app', // Change this URL when deploying
+      url: 'https://bored-seagull-club.xyz', // Change this URL when deploying
     },
   ],
 };
@@ -2892,7 +2888,7 @@ app.get('/authenticate', async (req, res) => {
   try {
     const payload = {
       "TransactionType": "SignIn",
-      "Destination": "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
+      "Destination": "https://bored-seagull-club.xyz",
       "Account": req.session.walletAddress // Optional: can pass existing wallet if user is logged in
     };
 
@@ -3840,7 +3836,7 @@ async function loadActiveOffers(wallet) {
   container.innerHTML = '<h3>Active Offers</h3>';
 
   try {
-    const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/active-offers/${wallet}`);
+    const res = await fetch(`https://bored-seagull-club.xyz/active-offers/${wallet}`);
     const { sellOffers, buyOffers } = await res.json();
 
     sellOffers.forEach(offer => {
@@ -3872,7 +3868,7 @@ async function cancelOffer(offerId) {
   const confirmCancel = confirm("Cancel this offer?");
   if (!confirmCancel) return;
 
-  const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app", {
+  const res = await fetch("https://bored-seagull-club.xyz", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -4886,8 +4882,8 @@ app.post("/backup-pay-two", async (req, res) => {
         submit: true,
         expire: 300,
         return_url: {
-          app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
-          web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
+          app: "https://bored-seagull-club.xyz",
+          web: "https://bored-seagull-club.xyz"
         }
       }
     };
@@ -4952,8 +4948,8 @@ app.post("/backup-pay-three", async (req, res) => {
     submit: true,
     expire: 300,
     return_url: {
-      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app",
-      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app"
+      app: "https://bored-seagull-club.xyz",
+      web: "https://bored-seagull-club.xyz"
     }
   }
 };
@@ -5064,11 +5060,6 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
     });
   }
 });
-
-
-
-
-
 
 // Define schema for storing AMM data in MongoDB
 const ammSchema = new mongoose.Schema({
@@ -5238,8 +5229,8 @@ app.post('/orderbook/scl-xau', async (req, res) => {
     options: {
       submit: true,
       return_url: {
-        app: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
-        web: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
+        app: 'https://bored-seagull-club.xyz/SeagullDex.html',
+        web: 'https://bored-seagull-club.xyz/SeagullDex.html'
       }
     }
   };
@@ -5624,9 +5615,6 @@ app.get('/api/sglcn-xau', async (req, res) => {
   }
 });
 
-
-
-
 // --- Currency issuers ---
 const issuers = {
   SGLCN_ISSUER: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
@@ -5790,8 +5778,8 @@ app.post('/swap', async (req, res) => {
       options: {
         submit: true,
         return_url: {
-          app: process.env.RETURN_URL || 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
-          web: process.env.RETURN_URL || 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
+          app: process.env.RETURN_URL || 'https://bored-seagull-club.xyz/SeagullDex.html',
+          web: process.env.RETURN_URL || 'https://bored-seagull-club.xyz/SeagullDex.html'
         }
       }
     };
@@ -5949,8 +5937,8 @@ app.post('/swap/amm/sglcn-xau', async (req, res) => {
       options: {
         submit: true,
         return_url: {
-          app: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html',
-          web: 'https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullDex.html'
+          app: 'https://bored-seagull-club.xyz/SeagullDex.html',
+          web: 'https://bored-seagull-club.xyz/SeagullDex.html'
         }
       }
     };
@@ -6111,8 +6099,8 @@ app.post("/create-giftcard-order", async (req, res) => {
         submit: true,
         expire: 300,
         return_url: {
-          app: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?tokens=${tokens}`,
-          web: `https://seagullcoin-dex-uaj3x.ondigitalocean.app/redeem?tokens=${tokens}`,
+          app: `https://bored-seagull-club.xyz/redeem?tokens=${tokens}`,
+          web: `https://bored-seagull-club.xyz/redeem?tokens=${tokens}`,
         }
       },
       custom_meta: {
@@ -6584,7 +6572,7 @@ if (userWallet && userWallet.hasMinted) {
 let allBlocks = [];  
 
 function fetchBlocks() {
-  return fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/blocks').then(res => res.json());
+  return fetch('https://bored-seagull-club.xyz/api/blocks').then(res => res.json());
 }
 
 // Then call it like this:
@@ -6592,7 +6580,6 @@ fetchBlocks().then(data => {
   allBlocks = data;
   renderBlocks();
 });
-
 
 app.post('/mine', async (req, res) => {
   try {
@@ -7702,11 +7689,6 @@ app.get('/nft-total', async (req, res) => {
   }
 });
 
-// routes/admin.js or similar
-
-
-
-
 app.post('/update-staker-stats', async (req, res) => {
   try {
     const db = await connectDB();
@@ -7814,7 +7796,7 @@ if (bulkOps.length) {
 
 setInterval(() => {
   console.log(`[SetInterval] Triggering update-daily-stats at ${new Date().toISOString()}`);
-  fetch('http://seagullcoin-dex-uaj3x.ondigitalocean.app/update-daily-stats', {
+  fetch('https://bored-seagull-club.xyz/update-daily-stats', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   })
@@ -7906,8 +7888,8 @@ app.post("/pay-one", async (req, res) => {
   options: {
     expire: 300,
     return_url: {
-      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html",
-      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html"
+      app: "https://bored-seagull-club.xyz/Staking.html",
+      web: "https://bored-seagull-club.xyz/Staking.html"
     }
   }
 };
@@ -7960,8 +7942,8 @@ app.post("/pay-two", async (req, res) => {
   options: {
     expire: 300,
     return_url: {
-      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html",
-      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html"
+      app: "https://bored-seagull-club.xyz/Staking.html",
+      web: "https://bored-seagull-club.xyz/Staking.html"
     }
   }
 };
@@ -8015,8 +7997,8 @@ app.post("/pay-three", async (req, res) => {
   options: {
     expire: 300,
     return_url: {
-      app: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html",
-      web: "https://seagullcoin-dex-uaj3x.ondigitalocean.app/Staking.html"
+      app: "https://bored-seagull-club.xyz/Staking.html",
+      web: "https://bored-seagull-club.xyz/Staking.html"
     }
   }
 };

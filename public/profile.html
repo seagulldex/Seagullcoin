@@ -302,23 +302,46 @@ document.getElementById('swap-btn').addEventListener('click', async () => {
   }
 
   async function startLoginFlow() {
-    try {
-      const res = await fetch('http://bored-seagull-club.xyz/login');
-      const data = await res.json();
-      window.open(data.payloadURL, "_blank");
-      const interval = setInterval(async () => {
-        const check = await fetch(`http://bored-seagull-club.xyz/checkin-login?uuid=${data.payloadUUID}`);
+  try {
+    // Step 1: Request login payload from backend
+    const res = await fetch('https://bored-seagull-club.xyz/login');
+    if (!res.ok) throw new Error('Failed to create login payload');
+
+    const data = await res.json();
+
+    // Step 2: Open XUMM in a popup window
+    const xummWindow = window.open(data.payloadURL, '_blank');
+
+    // Step 3: Start polling for login status
+    const interval = setInterval(async () => {
+      try {
+        const check = await fetch(`https://bored-seagull-club.xyz/checkin-login?uuid=${data.payloadUUID}`);
         const loginStatus = await check.json();
+
         if (loginStatus.loggedIn) {
           clearInterval(interval);
-          localStorage.setItem('xumm_wallet_address', loginStatus.account);
+          if (xummWindow) xummWindow.close();
+
+          const wallet = loginStatus.account;
+
+          // Save all wallet-related info to localStorage
+          localStorage.setItem('xumm_wallet_address', wallet);
           localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
-          updateWalletStatus();
+          localStorage.setItem('seagull_wallet', loginStatus.seagullWallet || '');
+          localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user || {}));
+
+          // Update UI
+          document.getElementById('wallet-address').textContent = wallet;
+          updateWalletUI();
         }
-      }, 2000);
-    } catch (err) {
-      alert("Login flow failed. Try again.");
-    }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    }, 3000);
+  } catch (e) {
+    alert('Login failed: ' + e.message);
+    console.error(e);
+  }
   }
 
   async function fetchNFTs(wallet) {

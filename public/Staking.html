@@ -382,28 +382,53 @@ async function updateWalletStatus() {
 
 
   async function startLoginFlow() {
-    const res = await fetch('http://bored-seagull-club.xyz/login');
-    const data = await res.json();
-    window.open(data.payloadURL, "_blank");
+  try {
+    // Step 1: Request login payload from backend
+    const res = await fetch('https://bored-seagull-club.xyz/login');
+    if (!res.ok) throw new Error('Failed to create login payload');
 
+    const data = await res.json();
+
+    // Step 2: Open XUMM in a popup window
+    const xummWindow = window.open(data.payloadURL, '_blank');
+
+    // Step 3: Start polling for login status
     const interval = setInterval(async () => {
-      const check = await fetch(`http://bored-seagull-club.xyz/checkin-login?uuid=${data.payloadUUID}`);
-      const loginStatus = await check.json();
-      if (loginStatus.loggedIn) {
-  clearInterval(interval);
-  wallet = loginStatus.account;
-localStorage.setItem('xumm_wallet_address', wallet);
-localStorage.setItem('seagull_wallet', wallet);
-      updateWalletStatus();
-      updateWalletUI();
+      try {
+        const check = await fetch(`https://bored-seagull-club.xyz/checkin-login?uuid=${data.payloadUUID}`);
+        const loginStatus = await check.json();
+
+        if (loginStatus.loggedIn) {
+          clearInterval(interval);
+          if (xummWindow) xummWindow.close();
+
+          const wallet = loginStatus.account;
+
+          // Save all wallet-related info to localStorage
+          localStorage.setItem('xumm_wallet_address', wallet);
+          localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
+          localStorage.setItem('seagull_wallet', loginStatus.seagullWallet || '');
+          localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user || {}));
+         
+          // Update UI
+          document.getElementById('wallet-address').textContent = wallet;
+          updateWalletUI();
+          updateWalletStatus();
       loadStakingData();
       showUnstakeConfirmedModal();
       showUnstakeModule();
       showRewardsProcessingModal();
-      getTimeLeft();// <- This is fine
-    }
-  }, 3000); // Only ONE closing brace before this
-}
+      getTimeLeft();// <- This
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    }, 3000);
+  } catch (e) {
+    alert('Login failed: ' + e.message);
+    console.error(e);
+  }
+  }
 
 
   function updateWalletUI() {

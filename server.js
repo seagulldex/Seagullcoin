@@ -8410,7 +8410,7 @@ app.get('/api/bridge-requests', async (req, res) => {
   }
 });
 
-app.get('/check-login', async (req, res) => {
+app.get('/checking-login', async (req, res) => {
   const { uuid } = req.query;
   if (!uuid) {
     return res.status(400).json({ error: 'Missing UUID parameter' });

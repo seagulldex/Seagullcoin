@@ -211,7 +211,7 @@
       btn.disabled = true;
       btn.textContent = 'Confirming...';
       try {
-        const res = await fetch('/api/bridge/confirm', {
+        const res = await fetch('/api/mark-confirmed', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ memoId })

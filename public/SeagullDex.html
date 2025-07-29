@@ -86,10 +86,10 @@ nav ul li a {
   <header>
     <nav>
       <ul>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/index.html">Home</a></li>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/stake.html">Stake</a></li>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/SeagullmansionsV2.html" target="_blank">SGLMN V2 (mint)</a></li>
-        <li><a href="https://seagullcoin-dex-uaj3x.ondigitalocean.app/profile.html">Profile</a></li>
+        <li><a href="http://bored-seagull-club.xyz/index.html">Home</a></li>
+        <li><a href="http://bored-seagull-club.xyz/stake.html">Stake</a></li>
+        <li><a href="http://bored-seagull-club.xyz/SeagullmansionsV2.html" target="_blank">SGLMN V2 (mint)</a></li>
+        <li><a href="http://bored-seagull-club.xyz/profile.html">Profile</a></li>
       </ul>
     </nav>
   </header>
@@ -286,12 +286,12 @@ function updateWalletUI() {
 
 
       async function startLoginFlow() {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/login');
+    const res = await fetch('http://bored-seagull-club.xyz/login');
     const data = await res.json();
     window.open(data.payloadURL, "_blank");
 
     const interval = setInterval(async () => {
-      const check = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/check-login?uuid=${data.payloadUUID}`);
+      const check = await fetch(`http://bored-seagull-club.xyz/checkin-login?uuid=${data.payloadUUID}`);
       const loginStatus = await check.json();
       if (loginStatus.loggedIn) {
   clearInterval(interval);
@@ -330,8 +330,8 @@ localStorage.setItem('seagull_wallet', wallet);
     
   async function loadChartData() {
     const timeframe = document.getElementById('timeframe').value;
-    const resXRP = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcns-xrp?history=true`);
-    const resXAU = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau?history=true`);
+    const resXRP = await fetch(`http://bored-seagull-club.xyz/api/sglcns-xrp?history=true`);
+    const resXAU = await fetch(`http://bored-seagull-club.xyz/api/sglcn-xau?history=true`);
     const dataXRP = await resXRP.json();
     const dataXAU = await resXAU.json();
     console.log('dataXRP', dataXRP);
@@ -441,7 +441,7 @@ document.getElementById('toggle-direction').addEventListener('click', () => {
 
     async function updateCurrentPrice() {
       try {
-        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/orderbook');
+        const res = await fetch('http://bored-seagull-club.xyz/api/orderbook');
         const data = await res.json();
         const bids = Array.isArray(data.bids) ? data.bids.slice(0, 100) : [];
         const asks = Array.isArray(data.asks) ? data.asks.slice(0, 100) : [];
@@ -477,7 +477,7 @@ document.getElementById('toggle-direction').addEventListener('click', () => {
 
     async function fetchLiveSGLCNPrice() {
       try {
-        const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcns-xrp');
+        const res = await fetch('http://bored-seagull-club.xyz/api/sglcns-xrp');
         const data = await res.json();
         if (data && data.sglcn_to_xrp) {
           const latestPrice = parseFloat(data.sglcn_to_xrp).toFixed(6);
@@ -493,7 +493,7 @@ document.getElementById('toggle-direction').addEventListener('click', () => {
     
     async function fetchLiveSGLCNXAUPrice() {
   try {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau');
+    const res = await fetch('http://bored-seagull-club.xyz/api/sglcn-xau');
     const data = await res.json();
     if (data && data.sglcn_to_xau) {
       const latestPriceXAU = parseFloat(data.sglcn_to_xau).toFixed(6);
@@ -517,7 +517,7 @@ document.getElementById('toggle-direction').addEventListener('click', () => {
       }
 
       try {
-        const res = await fetch("https://seagullcoin-dex-uaj3x.ondigitalocean.app/place-buy-offer", {
+        const res = await fetch("http://bored-seagull-club.xyz/place-buy-offer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ wallet, price, amount })
@@ -551,7 +551,7 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
 
     
     async function getRatePreview(from, to) {
-  const res = await fetch(`https://seagullcoin-dex-uaj3x.ondigitalocean.app/rate-preview?to=${to}&from=${from}`);
+  const res = await fetch(`http://bored-seagull-club.xyz/rate-preview?to=${to}&from=${from}`);
   if (!res.ok) throw new Error('Rate preview failed');
   const data = await res.json();
   console.log('Rate:', data.rate);
@@ -561,7 +561,7 @@ window.addEventListener('DOMContentLoaded', updateSwapPrice);
     
 
   async function createSwap(fromCurrency, toCurrency, amount, walletAddress) {
-    const res = await fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/swap', {
+    const res = await fetch('http://bored-seagull-club.xyz/swap', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -652,8 +652,8 @@ async function loadChartData() {
   try {
     // Fetch both APIs in parallel
     const [responseXrp, responseXau] = await Promise.all([
-      fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcns-xrp?history=true'),
-      fetch('https://seagullcoin-dex-uaj3x.ondigitalocean.app/api/sglcn-xau?history=true')
+      fetch('http://bored-seagull-club.xyz/api/sglcns-xrp?history=true'),
+      fetch('http://bored-seagull-club.xyz/api/sglcn-xau?history=true')
     ]);
 
     if (!responseXrp.ok || !responseXau.ok) {

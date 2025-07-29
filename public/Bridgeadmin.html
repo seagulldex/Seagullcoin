@@ -66,7 +66,79 @@
     </tbody>
   </table>
 
-  <script>
+    <!-- HTML continues from the given template -->
+<script>
+  // Add scanner UI dynamically
+  const scanners = ["XRP", "XLM", "XDC", "FLR", "HBAR", "ALGO"];
+
+  const scannerStatus = {
+    active: [],
+    pending: [],
+    confirmed: []
+  };
+
+  async function fetchScannerStatus() {
+    try {
+      const res = await fetch(`/api/bridge-requests`);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error("Unexpected data format");
+
+      // Clear status groups
+      scannerStatus.active = [];
+      scannerStatus.pending = [];
+      scannerStatus.confirmed = [];
+
+      data.forEach(tx => {
+        const chain = tx.fromChain;
+        const group = scannerStatus[tx.status];
+        if (group && scanners.includes(chain)) {
+          group.push(tx);
+        }
+      });
+
+      renderScanners();
+    } catch (err) {
+      console.error("Error fetching scanner data:", err);
+    }
+  }
+
+  function renderScanners() {
+    const container = document.getElementById("scannerStatusContainer");
+    container.innerHTML = "";
+
+    ["active", "pending", "confirmed"].forEach(status => {
+      const group = scannerStatus[status];
+      if (group.length === 0) return;
+
+      const section = document.createElement("div");
+      section.style.marginTop = "1rem";
+      section.innerHTML = `<h4 style="color: #1e90ff">${status.toUpperCase()}</h4>`;
+
+      group.forEach(tx => {
+        const item = document.createElement("div");
+        item.style.borderBottom = "1px solid #333";
+        item.style.padding = "6px 0";
+        item.innerHTML = `
+          <strong>${tx.fromChain}</strong> → <strong>${tx.toChain}</strong><br/>
+          Amount: ${tx.amount}<br/>
+          Memo: ${tx.memoId}<br/>
+          Status: <span style="color: #00fa9a">${tx.status}</span>
+        `;
+        section.appendChild(item);
+      });
+      container.appendChild(section);
+    });
+  }
+
+  // Poll bridge scanner status
+  setInterval(fetchScannerStatus, 30000);
+  fetchScannerStatus();
+
+<div class="info-box" id="scannerStatusContainer">
+  <h3>Blockchain Bridge Status</h3>
+  <p>Loading scanner activity...</p>
+</div>
+
     let allTransactions = []; // 🔁 Keep in memory for filtering
 
     async function fetchTransactions() {

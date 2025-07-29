@@ -41,12 +41,35 @@
       background: #666;
       cursor: not-allowed;
     }
+    .explorer-links {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #222;
+      border-radius: 6px;
+    }
+    .explorer-links h3 {
+      margin-bottom: 0.5rem;
+      color: #1e90ff;
+    }
+    .explorer-links ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    .explorer-links li {
+      margin-bottom: 0.4rem;
+    }
+    .explorer-links a {
+      color: #00fa9a;
+      text-decoration: none;
+    }
+    .explorer-links a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <h1>Bridge Admin Panel</h1>
 
-  <!-- 🔍 Search Input -->
   <input type="text" id="memoSearch" placeholder="Search Memo ID..." oninput="filterTable()" />
 
   <table id="transactionsTable">
@@ -61,91 +84,90 @@
         <th>Action</th>
       </tr>
     </thead>
-    <tbody>
-      <!-- Transactions will appear here -->
-    </tbody>
+    <tbody></tbody>
   </table>
 
   <div class="info-box" id="scannerStatusContainer">
-  <h3>Blockchain Bridge Status</h3>
-  <p>Loading scanner activity...</p>
+    <h3>Blockchain Bridge Status</h3>
+    <p>Loading scanner activity...</p>
   </div>
 
-    <!-- HTML continues from the given template -->
-<script>
-  // Add scanner UI dynamically
-  const scanners = ["XRP", "XLM", "XDC", "FLR", "HBAR", "ALGO"];
+  <div class="explorer-links">
+    <h3>Blockchain Explorers</h3>
+    <ul>
+      <li><strong>FLR:</strong> <a href="https://flarescan.com/address/0x870f64e73e7d2dc5022b4b74e58c323b3148a984" target="_blank">Flarescan</a></li>
+      <li><strong>XDC:</strong> <a href="https://xdcscan.com/address/0x870f64e73e7d2dc5022b4b74e58c323b3148a984" target="_blank">XDCScan</a></li>
+      <li><strong>HBAR:</strong> <a href="https://hashscan.io/mainnet/account/0.0.2928384/operations" target="_blank">HashScan</a></li>
+      <li><strong>XRP:</strong> <a href="https://xrpscan.com/account/rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV" target="_blank">XRPScan</a></li>
+      <li><strong>XLM:</strong> <a href="https://stellar.expert/explorer/public/account/GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I" target="_blank">Stellar Expert</a></li>
+      <li><strong>ALGO:</strong> <a href="https://explorer.perawallet.app/address/YFZD6UWU5KXQINAN4CV6UCMIMRFSTKXNFQWV7WUSYQIWASCH2AX4LT4RMM/" target="_blank">Pera Explorer</a></li>
+    </ul>
+  </div>
 
-  const scannerStatus = {
-    active: [],
-    pending: [],
-    confirmed: []
-  };
+  <script>
+    const scanners = ["XRP", "XLM", "XDC", "FLR", "HBAR", "ALGO"];
+    const scannerStatus = { active: [], pending: [], confirmed: [] };
 
-  async function fetchScannerStatus() {
-    try {
-      const res = await fetch(`/api/bridge-requests`);
-      const data = await res.json();
-      if (!Array.isArray(data)) throw new Error("Unexpected data format");
+    async function fetchScannerStatus() {
+      try {
+        const res = await fetch(`/api/bridge-requests`);
+        const data = await res.json();
+        if (!Array.isArray(data)) throw new Error("Unexpected data format");
 
-      // Clear status groups
-      scannerStatus.active = [];
-      scannerStatus.pending = [];
-      scannerStatus.confirmed = [];
+        scannerStatus.active = [];
+        scannerStatus.pending = [];
+        scannerStatus.confirmed = [];
 
-      data.forEach(tx => {
-        const chain = tx.fromChain;
-        const group = scannerStatus[tx.status];
-        if (group && scanners.includes(chain)) {
-          group.push(tx);
-        }
-      });
+        data.forEach(tx => {
+          const chain = tx.fromChain;
+          const group = scannerStatus[tx.status];
+          if (group && scanners.includes(chain)) {
+            group.push(tx);
+          }
+        });
 
-      renderScanners();
-    } catch (err) {
-      console.error("Error fetching scanner data:", err);
+        renderScanners();
+      } catch (err) {
+        console.error("Error fetching scanner data:", err);
+      }
     }
-  }
 
-  function renderScanners() {
-    const container = document.getElementById("scannerStatusContainer");
-    container.innerHTML = "";
+    function renderScanners() {
+      const container = document.getElementById("scannerStatusContainer");
+      container.innerHTML = "";
 
-    ["active", "pending", "confirmed"].forEach(status => {
-      const group = scannerStatus[status];
-      if (group.length === 0) return;
+      ["active", "pending", "confirmed"].forEach(status => {
+        const group = scannerStatus[status];
+        if (group.length === 0) return;
 
-      const section = document.createElement("div");
-      section.style.marginTop = "1rem";
-      section.innerHTML = `<h4 style="color: #1e90ff">${status.toUpperCase()}</h4>`;
+        const section = document.createElement("div");
+        section.style.marginTop = "1rem";
+        section.innerHTML = `<h4 style="color: #1e90ff">${status.toUpperCase()}</h4>`;
 
-      group.forEach(tx => {
-        const item = document.createElement("div");
-        item.style.borderBottom = "1px solid #333";
-        item.style.padding = "6px 0";
-        item.innerHTML = `
-          <strong>${tx.fromChain}</strong> → <strong>${tx.toChain}</strong><br/>
-          Amount: ${tx.amount}<br/>
-          Memo: ${tx.memoId}<br/>
-          Status: <span style="color: #00fa9a">${tx.status}</span>
-        `;
-        section.appendChild(item);
+        group.forEach(tx => {
+          const item = document.createElement("div");
+          item.style.borderBottom = "1px solid #333";
+          item.style.padding = "6px 0";
+          item.innerHTML = `
+            <strong>${tx.fromChain}</strong> → <strong>${tx.toChain}</strong><br/>
+            Amount: ${tx.amount}<br/>
+            Memo: ${tx.memoId}<br/>
+            Status: <span style="color: #00fa9a">${tx.status}</span>
+          `;
+          section.appendChild(item);
+        });
+        container.appendChild(section);
       });
-      container.appendChild(section);
-    });
-  }
+    }
 
-  // Poll bridge scanner status
-  setInterval(fetchScannerStatus, 30000);
-  fetchScannerStatus();
+    setInterval(fetchScannerStatus, 30000);
+    fetchScannerStatus();
 
-    let allTransactions = []; // 🔁 Keep in memory for filtering
-
+    let allTransactions = [];
     async function fetchTransactions() {
       try {
         const res = await fetch('/api/bridge-requests');
         if (!res.ok) throw new Error('Failed to fetch transactions');
-
         allTransactions = await res.json();
         renderTable(allTransactions);
       } catch (err) {
@@ -156,7 +178,6 @@
     function renderTable(transactions) {
       const tbody = document.querySelector('#transactionsTable tbody');
       tbody.innerHTML = '';
-
       transactions.forEach(tx => {
         const expiresAt = new Date(tx.expiresAt);
         const now = new Date();
@@ -207,16 +228,15 @@
     }
 
     function filterTable() {
-  const query = document.getElementById('memoSearch').value.toLowerCase();
-  const filtered = allTransactions.filter(tx =>
-    String(tx.memoId).toLowerCase().includes(query)
-  );
-  renderTable(filtered);
-}
-
+      const query = document.getElementById('memoSearch').value.toLowerCase();
+      const filtered = allTransactions.filter(tx =>
+        String(tx.memoId).toLowerCase().includes(query)
+      );
+      renderTable(filtered);
+    }
 
     fetchTransactions();
-    setInterval(fetchTransactions, 30000); // refresh every 30 seconds
+    setInterval(fetchTransactions, 30000);
   </script>
 </body>
 </html>

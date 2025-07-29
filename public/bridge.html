@@ -78,10 +78,12 @@
       </select>
 
       <label>From Chain</label>
-      <select id="fromChain"></select>
+<select id="fromChain" onchange="updateLogo('fromChain')"></select>
+<img id="fromChainLogo" src="" alt="From Chain Logo" style="height: 30px; margin-top: 0.5rem;" />
 
-      <label>To Chain</label>
-      <select id="toChain"></select>
+<label>To Chain</label>
+<select id="toChain" onchange="updateLogo('toChain')"></select>
+<img id="toChainLogo" src="" alt="To Chain Logo" style="height: 30px; margin-top: 0.5rem;" />
 
       <label>Your Wallet Address (to receive)</label>
       <input type="text" id="receiveAddress" required />
@@ -130,21 +132,50 @@
     const fromChainEl = document.getElementById("fromChain");
     const toChainEl = document.getElementById("toChain");
 
-    function updateChains() {
-      const type = assetTypeEl.value;
-      const chains = bridgeAssets[type];
+    function getLogo(chainName) {
+  const logos = {
+  SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
+  SeagullCash: 'https://d1fdloi71mui9q.cloudfront.net/Z2URVu3eSjyXF3fPVdyq_png_20221121_111630_0000.png',
+  XRP: 'https://altcoinsbox.com/wp-content/uploads/2023/01/xrp-logo-1140x1140.webp',
+  HBAR: 'https://altcoinsbox.com/wp-content/uploads/2023/03/hedera-logo-1140x1140.webp',
+  FLR: 'https://s2.coinmarketcap.com/static/img/coins/64x64/7950.png', // Changed key from Flare to FLR
+  XDC: 'https://cdn.coincircle.com/icons/fallback/xdc-network.png',
+  XLM: 'https://images.seeklogo.com/logo-png/47/1/stellar-xlm-logo-png_seeklogo-479962.png',
+  ALGO: 'https://cdn.freelogovectors.net/wp-content/uploads/2021/10/algorand-logo-freelogovectors.net_.png',
+};
 
-      fromChainEl.innerHTML = "";
-      toChainEl.innerHTML = "";
-      chains.forEach(c => {
-        fromChainEl.innerHTML += `<option value="${c}">${c}</option>`;
-        toChainEl.innerHTML += `<option value="${c}">${c}</option>`;
-      });
-    }
+  return logos[chainName] || '/logos/default.png';
+}
 
-    assetTypeEl.addEventListener("change", updateChains);
+function updateLogo(selectId) {
+  const chain = document.getElementById(selectId).value;
+  document.getElementById(selectId + "Logo").src = getLogo(chain);
+}
 
-    document.getElementById("bridge-form").addEventListener("submit", async function (e) {
+function updateChains() {
+  const type = assetTypeEl.value;
+  const chains = bridgeAssets[type];
+
+  fromChainEl.innerHTML = "";
+  toChainEl.innerHTML = "";
+  chains.forEach(c => {
+    fromChainEl.innerHTML += `<option value="${c}">${c}</option>`;
+    toChainEl.innerHTML += `<option value="${c}">${c}</option>`;
+  });
+
+  // Update logos initially after populating options
+  updateLogo("fromChain");
+  updateLogo("toChain");
+}
+
+// Listen for changes on asset type to update chains & logos
+assetTypeEl.addEventListener("change", updateChains);
+
+// Also update logos when user changes fromChain or toChain selects
+fromChainEl.addEventListener("change", () => updateLogo("fromChain"));
+toChainEl.addEventListener("change", () => updateLogo("toChain"));
+
+document.getElementById("bridge-form").addEventListener("submit", async function (e) {
   e.preventDefault();
   document.getElementById("loading").style.display = "block";
 
@@ -180,6 +211,10 @@
     document.getElementById("loading").style.display = "none";
   }
 });
+
+// Initialize chains and logos on page load
+updateChains();
+
 
   function openSupportChat(unstakeId) {
   window.$crisp.push(["do", "chat:open"]);

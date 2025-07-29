@@ -147,27 +147,35 @@
   return logos[chainName] || '/logos/default.png';
 }
 
-    function updateLogo(selectId) {
+function updateLogo(selectId) {
   const chain = document.getElementById(selectId).value;
   document.getElementById(selectId + "Logo").src = getLogo(chain);
 }
 
+function updateChains() {
+  const type = assetTypeEl.value;
+  const chains = bridgeAssets[type];
 
-    function updateChains() {
-      const type = assetTypeEl.value;
-      const chains = bridgeAssets[type];
+  fromChainEl.innerHTML = "";
+  toChainEl.innerHTML = "";
+  chains.forEach(c => {
+    fromChainEl.innerHTML += `<option value="${c}">${c}</option>`;
+    toChainEl.innerHTML += `<option value="${c}">${c}</option>`;
+  });
 
-      fromChainEl.innerHTML = "";
-      toChainEl.innerHTML = "";
-      chains.forEach(c => {
-        fromChainEl.innerHTML += `<option value="${c}">${c}</option>`;
-        toChainEl.innerHTML += `<option value="${c}">${c}</option>`;
-      });
-    }
+  // Update logos initially after populating options
+  updateLogo("fromChain");
+  updateLogo("toChain");
+}
 
-    assetTypeEl.addEventListener("change", updateChains);
+// Listen for changes on asset type to update chains & logos
+assetTypeEl.addEventListener("change", updateChains);
 
-    document.getElementById("bridge-form").addEventListener("submit", async function (e) {
+// Also update logos when user changes fromChain or toChain selects
+fromChainEl.addEventListener("change", () => updateLogo("fromChain"));
+toChainEl.addEventListener("change", () => updateLogo("toChain"));
+
+document.getElementById("bridge-form").addEventListener("submit", async function (e) {
   e.preventDefault();
   document.getElementById("loading").style.display = "block";
 
@@ -203,6 +211,10 @@
     document.getElementById("loading").style.display = "none";
   }
 });
+
+// Initialize chains and logos on page load
+updateChains();
+
 
   function openSupportChat(unstakeId) {
   window.$crisp.push(["do", "chat:open"]);

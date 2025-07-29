@@ -8431,28 +8431,27 @@ app.get('/checking-login', async (req, res) => {
 
     const payloadStatus = await response.json();
 
-    // Check if payload is signed (user approved login)
-    if (payloadStatus?.meta?.signed === true) {
-      // Extract account from payload response
-      const account = payloadStatus.response.account; // XUMM wallet address
+    if (payloadStatus?.meta?.signed === true && payloadStatus.response?.account) {
+      const account = payloadStatus.response.account;
 
-      // TODO: Lookup or generate your user info / seagullWallet here, if you store those
+      // TODO: Add your seagullWallet and user info here if needed
 
       return res.json({
         loggedIn: true,
         account,
-        // seagullWallet: 'userSeagullWalletFromDB', // Replace with your data
-        // user: { /* your user object if any */ },
+        // seagullWallet: 'yourSeagullWallet',
+        // user: { /* your user object */ },
       });
-    } else {
-      // Not signed yet, user not logged in
-      return res.json({ loggedIn: false });
     }
+
+    // Not signed yet
+    return res.json({ loggedIn: false });
   } catch (err) {
     console.error('Error checking login:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 // Call the XRPL ping when the server starts

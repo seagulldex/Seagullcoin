@@ -78,10 +78,12 @@
       </select>
 
       <label>From Chain</label>
-      <select id="fromChain"></select>
+<select id="fromChain" onchange="updateLogo('fromChain')"></select>
+<img id="fromChainLogo" src="" alt="From Chain Logo" style="height: 30px; margin-top: 0.5rem;" />
 
-      <label>To Chain</label>
-      <select id="toChain"></select>
+<label>To Chain</label>
+<select id="toChain" onchange="updateLogo('toChain')"></select>
+<img id="toChainLogo" src="" alt="To Chain Logo" style="height: 30px; margin-top: 0.5rem;" />
 
       <label>Your Wallet Address (to receive)</label>
       <input type="text" id="receiveAddress" required />

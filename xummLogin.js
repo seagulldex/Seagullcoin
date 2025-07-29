@@ -8,7 +8,7 @@ dotenv.config();
 const SERVICE_WALLET = process.env.SERVICE_WALLET;
 
 export function checkOrigin(req, res, next) {
-  const trustedOrigins = ['https://seagullcoin-dex-uaj3x.ondigitalocean.app'];
+  const trustedOrigins = ['https://bored-seagull-club.xyz'];
 
   if (!trustedOrigins.includes(req.get('Origin'))) {
     return res.status(403).json({ error: 'Invalid origin' });

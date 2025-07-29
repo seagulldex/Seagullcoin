@@ -8429,10 +8429,19 @@ app.get('/checking-login', async (req, res) => {
 
     const payloadStatus = await response.json();
 
+    // If signed === true, get the account address and respond accordingly
     if (payloadStatus?.meta?.signed === true) {
+      // Sometimes the account is in payloadStatus.response.account
+      const account = payloadStatus.response?.account;
+
+      if (!account) {
+        // Defensive fallback, account missing?
+        return res.status(500).json({ error: 'Account info missing in XUMM response' });
+      }
+
       return res.json({
         loggedIn: true,
-        account: payloadStatus.response.account
+        account: account
       });
     } else {
       return res.json({ loggedIn: false });
@@ -8442,6 +8451,7 @@ app.get('/checking-login', async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 

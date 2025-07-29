@@ -286,37 +286,46 @@ function updateWalletUI() {
   }
 }
 
-
-    
-    
-    async function startLoginFlow() {
+async function startLoginFlow() {
   try {
+    // Step 1: Request login payload from backend
     const res = await fetch('https://bored-seagull-club.xyz/login');
+    if (!res.ok) throw new Error('Failed to create login payload');
+
     const data = await res.json();
-    window.location.href = data.payloadURL;
 
+    // Step 2: Open XUMM in a popup window
+    const xummWindow = window.open(data.payloadURL, '_blank');
+
+    // Step 3: Start polling for login status
     const interval = setInterval(async () => {
-      const check = await fetch(`https://bored-seagull-club.xyz/check-login?uuid=${data.payloadUUID}`);
-      const loginStatus = await check.json();
+      try {
+        const check = await fetch(`https://bored-seagull-club.xyz/check-login?uuid=${data.payloadUUID}`);
+        const loginStatus = await check.json();
 
-      if (loginStatus.loggedIn) {
-        clearInterval(interval);
-        wallet = loginStatus.account;
+        if (loginStatus.loggedIn) {
+          clearInterval(interval);
+          if (xummWindow) xummWindow.close();
 
-        // 🔐 Save both XRPL and SEAGULL wallet info
-      localStorage.setItem('xumm_wallet_address', loginStatus.account);
-      localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
-      localStorage.setItem('seagull_wallet', loginStatus.seagullWallet);
-      localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user));
+          const wallet = loginStatus.account;
 
+          // Save all wallet-related info to localStorage
+          localStorage.setItem('xumm_wallet_address', wallet);
+          localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
+          localStorage.setItem('seagull_wallet', loginStatus.seagullWallet || '');
+          localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user || {}));
 
-        document.getElementById('wallet-address').textContent = wallet;
-        updateWalletUI();
+          // Update UI
+          document.getElementById('wallet-address').textContent = wallet;
+          updateWalletUI();
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
       }
-
-    }, 3000); // <- this closing brace lines up properly now
+    }, 3000);
   } catch (e) {
     alert('Login failed: ' + e.message);
+    console.error(e);
   }
 }
 

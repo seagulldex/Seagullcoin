@@ -383,34 +383,20 @@ async function updateWalletStatus() {
 
   async function startLoginFlow() {
   try {
+    // Step 1: Request login payload from backend
     const res = await fetch('https://bored-seagull-club.xyz/login');
     if (!res.ok) throw new Error('Failed to create login payload');
+
     const data = await res.json();
-    console.log('Payload data:', data);
 
+    // Step 2: Open XUMM in a popup window
     const xummWindow = window.open(data.payloadURL, '_blank');
-    if (!xummWindow) {
-      alert('Popup blocked. Please allow popups for this site.');
-      return;
-    }
 
-    const maxPollingTime = 5 * 60 * 1000;
-    const startTime = Date.now();
-
+    // Step 3: Start polling for login status
     const interval = setInterval(async () => {
-      if (Date.now() - startTime > maxPollingTime) {
-        clearInterval(interval);
-        if (xummWindow) xummWindow.close();
-        alert('Login timed out.');
-        return;
-      }
-
       try {
         const check = await fetch(`https://bored-seagull-club.xyz/checkin-login?uuid=${data.payloadUUID}`);
-        if (!check.ok) throw new Error('Failed to check login status');
-
         const loginStatus = await check.json();
-        console.log('Login status:', loginStatus);
 
         if (loginStatus.loggedIn) {
           clearInterval(interval);
@@ -418,21 +404,15 @@ async function updateWalletStatus() {
 
           const wallet = loginStatus.account;
 
+          // Save all wallet-related info to localStorage
           localStorage.setItem('xumm_wallet_address', wallet);
           localStorage.setItem('xumm_payload_uuid', data.payloadUUID);
           localStorage.setItem('seagull_wallet', loginStatus.seagullWallet || '');
           localStorage.setItem('xumm_user', JSON.stringify(loginStatus.user || {}));
 
-          const walletAddressElem = document.getElementById('wallet-address');
-          if (walletAddressElem) walletAddressElem.textContent = wallet;
-
+          // Update UI
+          document.getElementById('wallet-address').textContent = wallet;
           updateWalletUI();
-          updateWalletStatus();
-          loadStakingData();
-          showUnstakeConfirmedModal();
-          showUnstakeModule();
-          showRewardsProcessingModal();
-          getTimeLeft();
         }
       } catch (err) {
         console.error('Polling error:', err);
@@ -442,7 +422,7 @@ async function updateWalletStatus() {
     alert('Login failed: ' + e.message);
     console.error(e);
   }
-}
+  }
 
 
 

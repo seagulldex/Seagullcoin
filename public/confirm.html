@@ -52,15 +52,15 @@
   <div class="form-box">
     <h2>Bridge Confirmation</h2>
     <p>
-  <strong>From Chain:</strong> 
-  <img id="confFromChainLogo" alt="From Chain Logo" style="height:24px; vertical-align:middle; margin-right:6px;"/>
-  <span id="confFromChain"></span>
-</p>
-<p>
-  <strong>To Chain:</strong> 
-  <img id="confToChainLogo" alt="To Chain Logo" style="height:24px; vertical-align:middle; margin-right:6px;"/>
-  <span id="confToChain"></span>
-</p>
+      <strong>From Chain:</strong> 
+      <img id="confFromChainLogo" alt="From Chain Logo" style="height:24px; vertical-align:middle; margin-right:6px;"/>
+      <span id="confFromChain"></span>
+    </p>
+    <p>
+      <strong>To Chain:</strong> 
+      <img id="confToChainLogo" alt="To Chain Logo" style="height:24px; vertical-align:middle; margin-right:6px;"/>
+      <span id="confToChain"></span>
+    </p>
     <p><strong>Send:</strong> <span id="confAmount"></span></p>
     <p><strong>Deposit Address:</strong> 
       <span id="confEscrow" style="word-break: break-word;"></span>
@@ -93,7 +93,8 @@
     d.getElementsByTagName("head")[0].appendChild(s);
   })();
 </script>
-  <script>
+
+<script>
   const escrowAddresses = {
     XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
     XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
@@ -150,20 +151,19 @@
     });
   }
 
-    function getLogo(chainName) {
-  const logos = {
-    SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
-    SeagullCash: 'https://d1fdloi71mui9q.cloudfront.net/Z2URVu3eSjyXF3fPVdyq_png_20221121_111630_0000.png',
-    XRP: 'https://altcoinsbox.com/wp-content/uploads/2023/01/xrp-logo-1140x1140.webp',
-    HBAR: 'https://cryptologos.cc/logos/hedera-hbar-logo.png',
-    FLR: 'https://s2.coinmarketcap.com/static/img/coins/64x64/7950.png',
-    XDC: 'https://cdn.coincircle.com/icons/fallback/xdc-network.png',
-    XLM: 'https://cryptologos.cc/logos/stellar-xlm-logo.png',
-    ALGO: 'https://cdn.freelogovectors.net/wp-content/uploads/2021/10/algorand-logo-freelogovectors.net_.png',
-  };
-  return logos[chainName] || '';
-}
-
+  function getLogo(chainName) {
+    const logos = {
+      SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
+      SeagullCash: 'https://d1fdloi71mui9q.cloudfront.net/Z2URVu3eSjyXF3fPVdyq_png_20221121_111630_0000.png',
+      XRP: 'https://altcoinsbox.com/wp-content/uploads/2023/01/xrp-logo-1140x1140.webp',
+      HBAR: 'https://cryptologos.cc/logos/hedera-hbar-logo.png',
+      FLR: 'https://s2.coinmarketcap.com/static/img/coins/64x64/7950.png',
+      XDC: 'https://cdn.coincircle.com/icons/fallback/xdc-network.png',
+      XLM: 'https://cryptologos.cc/logos/stellar-xlm-logo.png',
+      ALGO: 'https://cdn.freelogovectors.net/wp-content/uploads/2021/10/algorand-logo-freelogovectors.net_.png',
+    };
+    return logos[chainName] || '';
+  }
 
   function formatCountdown(seconds) {
     const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -188,9 +188,13 @@
 
       if (!res.ok) throw new Error(data.error || "Failed to fetch");
 
-      // Update main UI
+      // Update chain names
       document.getElementById("confFromChain").textContent = data.fromChain || "N/A";
       document.getElementById("confToChain").textContent = data.toChain || "N/A";
+
+      // Update chain logos
+      document.getElementById("confFromChainLogo").src = getLogo(data.fromChain);
+      document.getElementById("confToChainLogo").src = getLogo(data.toChain);
 
       const currencyLabel = data.category 
         ? `${data.category} (${data.fromChain})` 
@@ -199,30 +203,26 @@
       document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
 
       // Safely generate QR code only if address and memoId are valid
-const escrow = escrowAddresses[data.fromChain];
-const container = document.getElementById("qrCodeContainer");
-container.innerHTML = "";
-if (escrow && memoId) {
-  try {
-    generateQRCode(escrow, "qrCodeContainer", data.fromChain, memoId);
-  } catch (qrErr) {
-    console.error("QR code generation failed:", qrErr);
-    container.innerHTML = "";
-  }
-} else {
-  container.innerHTML = "";
-}
+      const escrow = escrowAddresses[data.fromChain];
+      const container = document.getElementById("qrCodeContainer");
+      container.innerHTML = "";
+      if (escrow && memoId) {
+        try {
+          generateQRCode(escrow, "qrCodeContainer", data.fromChain, memoId);
+        } catch (qrErr) {
+          console.error("QR code generation failed:", qrErr);
+          container.innerHTML = "";
+        }
+      } else {
+        container.innerHTML = "";
+      }
 
-     
-      
       const statusTextMap = {
-  pending: "Pending confirmation...",
-  confirmed: "Confirmed ✅️",
-  bridged: "Bridged 🌉",
-  expired: "Expired ❌"
-};
-
-
+        pending: "Pending confirmation...",
+        confirmed: "Confirmed ✅️",
+        bridged: "Bridged 🌉",
+        expired: "Expired ❌"
+      };
 
       document.getElementById("confMemo").textContent = memoId;
       document.getElementById("confEscrow").textContent = escrow || "N/A";
@@ -238,17 +238,16 @@ if (escrow && memoId) {
 
       // Status handling
       const statusText = statusTextMap[data.status] || "Pending";
-document.getElementById("bridgeStatus").textContent = statusText;
+      document.getElementById("bridgeStatus").textContent = statusText;
 
-// Disable countdown for final statuses
-const isFinalStatus = ["expired", "confirmed", "bridged"].includes(data.status);
-if (isFinalStatus) {
-  clearInterval(countdownInterval);
-  document.getElementById("countdownTimer").textContent = 
-    data.status === "expired" ? "Expired" : "—";
-  return;
-}
-
+      // Disable countdown for final statuses
+      const isFinalStatus = ["expired", "confirmed", "bridged"].includes(data.status);
+      if (isFinalStatus) {
+        clearInterval(countdownInterval);
+        document.getElementById("countdownTimer").textContent = 
+          data.status === "expired" ? "Expired" : "—";
+        return;
+      }
 
       // Countdown timer
       if (countdownInterval) clearInterval(countdownInterval);
@@ -277,21 +276,20 @@ if (isFinalStatus) {
     }
   }
   
-function openSupportChat(memoId) {
-  window.$crisp.push(["do", "chat:open"]);
-  window.$crisp.push(["do", "message:send", ["text", `Hi, I need help with my bridge: ${memoId}`]]);
-}
+  function openSupportChat(memoId) {
+    window.$crisp.push(["do", "chat:open"]);
+    window.$crisp.push(["do", "message:send", ["text", `Hi, I need help with my bridge: ${memoId}`]]);
+  }
 
-function setCrispUser(wallet, memoId, category) {
-  window.$crisp.push(["set", "user:nickname", [wallet]]);
-  window.$crisp.push(["set", "session:data", [
-    ["wallet", wallet],
-    ["memoId", memoId],
-    ["stakeType", stakeType]
-  ]]);
-}
+  function setCrispUser(wallet, memoId, category) {
+    window.$crisp.push(["set", "user:nickname", [wallet]]);
+    window.$crisp.push(["set", "session:data", [
+      ["wallet", wallet],
+      ["memoId", memoId],
+      ["stakeType", stakeType]
+    ]]);
+  }
   
-
   async function pollStatus() {
     await fetchBridgeData();
     setTimeout(pollStatus, 30000);

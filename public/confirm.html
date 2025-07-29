@@ -104,6 +104,9 @@
     XDC: "xdc870f64E73e7D2dc5022b4b74e58C323b3148A984"
   };
 
+  const chainsUsingMemo = ["XRP", "XLM", "HBAR"];
+
+
   function copyToClipboard(id) {
     const text = document.getElementById(id).textContent;
     navigator.clipboard.writeText(text).then(() => {
@@ -224,14 +227,18 @@
         expired: "Expired ❌"
       };
 
-      document.getElementById("confMemo").textContent = memoId;
+      const shouldShowMemo = chainsUsingMemo.includes(data.fromChain);
+      document.getElementById("confMemo").textContent = shouldShowMemo ? memoId : "—";
+      document.querySelector('p:has(#confMemo)').style.display = shouldShowMemo ? 'block' : 'none';
+
       document.getElementById("confEscrow").textContent = escrow || "N/A";
 
       // Show user info box with receive address and memoId
       if (data.receiveAddress) {
         document.getElementById("userReceiveAddress").textContent = data.receiveAddress;
-        document.getElementById("userMemoId").textContent = memoId;
-        document.getElementById("userInfoBox").style.display = "block";
+        document.getElementById("userMemoId").textContent = shouldShowMemo ? memoId : "";
+        document.querySelector('#userInfoBox p:has(#userMemoId)').style.display = shouldShowMemo ? 'block' : 'none';
+
       } else {
         document.getElementById("userInfoBox").style.display = "none";
       }

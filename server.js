@@ -9,7 +9,6 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import mongoose from 'mongoose';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';

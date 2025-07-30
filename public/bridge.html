@@ -252,6 +252,7 @@
   </div>
 </div>
 
+<!-- 🧠 Only showing the fixed JavaScript portion for brevity -->
 <script>
   const logos = {
     SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
@@ -269,17 +270,18 @@
     SeagullCoin: ["XRP", "FLR", "XDC"]
   };
 
+  let selectedAsset = "SeagullCash";
+  let fromChain = "";
+  let toChain = "";
+
   function calculateBridgeFee(asset, amount) {
     const amountNum = parseFloat(amount);
-
-    let fee = 0;
-    if (asset === "SeagullCoin") fee = 0.2;
-    else if (asset === "SeagullCash") fee = 5;
-
+    const fee = asset === "SeagullCoin" ? 0.2 : 5;
     const received = amountNum - fee;
+
     return {
       feeText: `${fee} ${asset}`,
-      receivedAmount: received > 0 ? received.toFixed(4) : "0",
+      receivedAmount: received > 0 ? received.toFixed(4) : "0"
     };
   }
 
@@ -292,10 +294,11 @@
     document.getElementById("limitModal").classList.add("hidden");
   };
 
-  // Create dropdown with options and a callback on selection
-  function createDropdown(id, options, onSelect, initialValue) {
+  function createDropdown(id, options, onSelect, selectedValue, exclude) {
     const container = document.getElementById(id);
-    container.innerHTML = ""; // Clear previous content
+    container.innerHTML = "";
+
+    const filtered = exclude ? options.filter(opt => opt !== exclude) : options;
 
     const selected = document.createElement("div");
     selected.className = "dropdown-selected";
@@ -305,7 +308,7 @@
     list.className = "dropdown-list";
     container.appendChild(list);
 
-    function updateSelection(value) {
+    function update(value) {
       selected.innerHTML = `<div style="display:flex;align-items:center;"><img src="${logos[value]}" /> ${value}</div>`;
       list.style.display = "none";
       onSelect(value);
@@ -315,87 +318,64 @@
       list.style.display = list.style.display === "block" ? "none" : "block";
     });
 
-    options.forEach(value => {
+    filtered.forEach(value => {
       const item = document.createElement("div");
       item.className = "dropdown-item";
       item.innerHTML = `<img src="${logos[value]}" /> ${value}`;
-      item.addEventListener("click", () => updateSelection(value));
+      item.addEventListener("click", () => update(value));
       list.appendChild(item);
     });
 
-    if (initialValue && options.includes(initialValue)) {
-      updateSelection(initialValue);
-    } else {
-      updateSelection(options[0]); // default select
-    }
+    update(filtered.includes(selectedValue) ? selectedValue : filtered[0]);
   }
 
-  let selectedAsset = "SeagullCash";
-  let fromChain = "";
-  let toChain = "";
-
-  // Refresh the From and To dropdowns ensuring they can't be equal
   function refreshChainDropdowns() {
     const chains = bridgeAssets[selectedAsset];
 
-    // If fromChain or toChain is not in chains, reset them
+    // Set defaults if current values aren't valid
     if (!chains.includes(fromChain)) fromChain = chains[0];
-    if (!chains.includes(toChain)) toChain = chains.length > 1 ? chains[1] : chains[0];
-
-    // To enforce they are never the same, adjust if needed
-    if (fromChain === toChain) {
-      // Try to pick a different toChain
-      toChain = chains.find(c => c !== fromChain) || fromChain;
+    if (!chains.includes(toChain) || fromChain === toChain) {
+      toChain = chains.find(c => c !== fromChain) || chains[0];
     }
 
-    // Create From dropdown (all chains)
     createDropdown("fromDropdown", chains, val => {
       fromChain = val;
-      // When fromChain changes, update toChain dropdown to exclude fromChain
-      const toOptions = chains.filter(c => c !== fromChain);
-      // If current toChain equals fromChain or no longer in toOptions, pick first toOptions
-      if (toChain === fromChain || !toOptions.includes(toChain)) {
-        toChain = toOptions[0] || fromChain;
+      // Update toDropdown excluding fromChain
+      const validToChains = chains.filter(c => c !== fromChain);
+      if (!validToChains.includes(toChain)) {
+        toChain = validToChains[0];
       }
-      createDropdown("toDropdown", toOptions, val => {
-        toChain = val;
-      }, toChain);
+      createDropdown("toDropdown", chains, val2 => toChain = val2, toChain, fromChain);
     }, fromChain);
 
-    // Create To dropdown excluding fromChain
-    const toOptions = chains.filter(c => c !== fromChain);
-    createDropdown("toDropdown", toOptions, val => {
-      toChain = val;
-    }, toChain);
+    createDropdown("toDropdown", chains, val => toChain = val, toChain, fromChain);
   }
 
   createDropdown("assetDropdown", Object.keys(bridgeAssets), val => {
     selectedAsset = val;
     refreshChainDropdowns();
-  });
+  }, selectedAsset);
 
   refreshChainDropdowns();
 
   document.getElementById("bridge-form").addEventListener("submit", async function (e) {
     e.preventDefault();
 
-    const amount = document.getElementById("amount").value;
+    const amount = parseFloat(document.getElementById("amount").value);
     const minFee = selectedAsset === "SeagullCoin" ? 0.2 : 5;
 
-    // Check if fromChain and toChain are different (extra safety)
     if (fromChain === toChain) {
-      alert("From Chain and To Chain cannot be the same. Please select different chains.");
+      alert("From Chain and To Chain cannot be the same.");
       return;
     }
 
-    if (parseFloat(amount) <= minFee) {
+    if (isNaN(amount) || amount <= minFee) {
       alert(`Amount must be greater than the bridge fee of ${minFee} ${selectedAsset}.`);
       return;
     }
 
     const { feeText, receivedAmount } = calculateBridgeFee(selectedAsset, amount);
 
-    // Populate and show modal
     document.getElementById("modalDetails").innerText =
       `Asset: ${selectedAsset}\n` +
       `From Chain: ${fromChain}\n` +
@@ -406,11 +386,7 @@
 
     document.getElementById("confirmationModal").classList.remove("hidden");
 
-    const confirmBtn = document.getElementById("confirmModal");
-    const cancelBtn = document.getElementById("cancelModal");
-
-    // Wait for user choice
-    confirmBtn.onclick = async function () {
+    document.getElementById("confirmModal").onclick = async function () {
       document.getElementById("confirmationModal").classList.add("hidden");
       document.getElementById("loading").classList.remove("hidden");
 
@@ -430,6 +406,7 @@
         });
 
         const data = await res.json();
+
         if (res.ok) {
           const link = document.getElementById("confirmationLink");
           link.href = `/confirm.html?memoId=${data.memoId}`;
@@ -449,23 +426,10 @@
       }
     };
 
-    cancelBtn.onclick = () => {
+    document.getElementById("cancelModal").onclick = function () {
       document.getElementById("confirmationModal").classList.add("hidden");
     };
   });
 </script>
-
-<script type="text/javascript">
-  window.$crisp = [];
-  window.CRISP_WEBSITE_ID = "c4c177f3-5bf9-4f53-8a57-5ed64696616e";
-  (function () {
-    const d = document;
-    const s = d.createElement("script");
-    s.src = "https://client.crisp.chat/l.js";
-    s.async = 1;
-    d.getElementsByTagName("head")[0].appendChild(s);
-  })();
-</script>
-
 </body>
 </html>

@@ -1190,8 +1190,8 @@ app.get('/Bridgeadmin.html', basicAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'Bridgeadmin.html'));
 });
 
-app.get('/Stake/Adminpanel.html', basicAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'Stake/Adminpanel.html'));
+app.get('/Stakeadmin.html', basicAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'Stakeadmin.html'));
 });
 
 // Then static files

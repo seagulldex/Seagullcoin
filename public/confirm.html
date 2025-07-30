@@ -486,7 +486,17 @@ function closeModal() {
   if (modal) modal.style.display = "none";
 }
 
+  // Add click listener to X button
+  setTimeout(() => {
+    const closeBtn = document.getElementById("closeBridgeModal");
+    if (closeBtn) closeBtn.onclick = closeModal;
+  }, 50);
 
+  // Auto-close after 3 minutes
+  setTimeout(() => {
+    closeModal();
+  }, 180000);
+  }
 
   async function pollStatus() {
     await fetchBridgeData();

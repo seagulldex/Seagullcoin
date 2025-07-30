@@ -76,6 +76,8 @@
 
   <div class="info-box" id="userInfoBox" style="display:none;">
     <h3>Your Information</h3>
+    <p><strong>Bridge Fee:</strong> <span id="confFee" style="color: #ff4d4d;"></span></p>
+<p><strong>Net Received:</strong> <span id="confNetReceived" style="color: #00ffcc;"></span></p>
     <p><strong>Receive Address:</strong> <span id="userReceiveAddress" style="word-break: break-word;"></span></p>
     <p><strong>Memo ID / Tag:</strong> <span id="userMemoId" style="color: #1e90ff;"></span></p>
   </div>
@@ -204,7 +206,19 @@
         : `${data.fromChain}`;
 
       document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
+       // Calculate fee and net
+let fee = 5;
+if (data.category === "SeagullCoin") {
+  fee = 0.2;
+}
 
+const rawAmount = parseFloat(data.amount || "0");
+const netReceived = Math.max(0, rawAmount - fee);
+
+document.getElementById("confFee").textContent = `- ${fee} ${data.category}`;
+document.getElementById("confNetReceived").textContent = `${netReceived} ${data.category}`;
+
+      
       // Safely generate QR code only if address and memoId are valid
       const escrow = escrowAddresses[data.fromChain];
       const container = document.getElementById("qrCodeContainer");

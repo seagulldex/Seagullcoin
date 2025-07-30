@@ -416,8 +416,27 @@ document.getElementById("saveLinkBtn").addEventListener("click", () => {
       transform: translateX(-16px);
     `;
     const includeSpinner = message.toLowerCase().includes("processing");
-content.innerHTML = `<div>${message}</div>` + 
-                    (includeSpinner ? `<div class="loader" style="margin-top: 1rem;"></div>` : '');
+
+content.innerHTML = `
+  <div style="position: relative;">
+    ${!includeSpinner ? `<button id="closeBridgeModal" style="
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 0 6px rgba(0,255,255,0.4);
+    ">&times;</button>` : ''}
+    <div>${message}</div>
+    ${includeSpinner ? `<div class="loader" style="margin-top: 1rem;"></div>` : ''}
+  </div>
+`;
 
     modal.appendChild(content);
     document.body.appendChild(modal);

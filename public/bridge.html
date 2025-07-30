@@ -410,6 +410,7 @@ if (res.ok) {
 
   const link = document.getElementById("confirmationLink");
   link.href = confirmationUrl; 
+  link.style.display = "none"; // Still show the link in case they closed the new tab
 } else {
           if (res.status === 429 && data.error.includes("Daily bridge limit exceeded")) {
             showLimitModal(selectedAsset);

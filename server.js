@@ -1190,6 +1190,10 @@ app.get('/Bridgeadmin.html', basicAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'Bridgeadmin.html'));
 });
 
+app.get('/Stake/Adminpanel.html', basicAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'Stake/Adminpanel.html'));
+});
+
 // Then static files
 app.use(express.static('public'));
 

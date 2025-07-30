@@ -392,12 +392,16 @@ document.getElementById("limitDismiss").onclick = function () {
 
       const data = await res.json();
       if (res.ok) {
-        const link = document.getElementById("confirmationLink");
-        link.href = `/confirm.html?memoId=${data.memoId}`;
-        link.style.display = "block";
-      } else {
-        alert(data.error || "Something went wrong.");
-      }
+  const link = document.getElementById("confirmationLink");
+  link.href = `/confirm.html?memoId=${data.memoId}`;
+  link.style.display = "block";
+} else {
+  if (res.status === 429 && data.error.includes("Daily bridge limit exceeded")) {
+    showLimitModal(selectedAsset);
+  } else {
+    alert(data.error || "Something went wrong.");
+  }
+}
     } catch (err) {
       alert("Server error.");
       console.error(err);

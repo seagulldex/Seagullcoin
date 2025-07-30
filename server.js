@@ -340,11 +340,20 @@ setInterval(() => {
 
 
 export async function archiveBridgedRequest(memoId) {
+export async function archiveBridgedRequestsBatch() {
   const db = await connectDB();
 
-  const doc = await db.collection('bridge_requests').findOne({ memoId });
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
 
-  if (doc?.bridgedAt) {
+  const cursor = db.collection('bridge_requests').find({
+    bridgedAt: { $exists: true, $lte: tenMinutesAgo }
+  });
+
+  let count = 0;
+
+  while (await cursor.hasNext()) {
+    const doc = await cursor.next();
+
     await db.collection('history').insertOne({
       ...doc,
       archivedAt: new Date(),
@@ -352,11 +361,12 @@ export async function archiveBridgedRequest(memoId) {
 
     await db.collection('bridge_requests').deleteOne({ _id: doc._id });
 
-    console.log(`Archived and removed bridged request: ${memoId}`);
-  } else {
-    console.log(`No bridged document found for memoId: ${memoId}`);
+    count++;
   }
+
+  console.log(`[Archiver] Archived ${count} bridged requests.`);
 }
+
 
 
 
@@ -8466,6 +8476,17 @@ app.get('/checkin-login', async (req, res) => {
     return res.status(500).json({ error: 'Error checking login' });
   }
 });
+
+  app.post('/admin/archive-bridged', async (req, res) => {
+  try {
+    await archiveBridgedRequestsBatch();
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Archive error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

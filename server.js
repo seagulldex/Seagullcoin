@@ -3,7 +3,7 @@ import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
 import fetch from 'node-fetch';
-import path from 'path';
+import path, { dirname } from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import fs from 'fs';

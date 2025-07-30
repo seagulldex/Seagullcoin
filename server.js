@@ -341,67 +341,6 @@ setInterval(() => {
 
 
 
-export async function fetchAndStoreDailyTotals() {  try {
-    const db = await connectDB();
-    const stakesCollection = db.collection('stakes');
-    const statsCollection = db.collection('dailyStakeStats');
-
-    const dailyTotals = await stakesCollection.aggregate([
-      {
-        $group: {
-          _id: {
-            year: { $year: '$timestamp' },
-            month: { $month: '$timestamp' },
-            day: { $dayOfMonth: '$timestamp' }
-          },
-          totalStaked: { $sum: '$amount' },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
-    ]).toArray();
-
-    // Format dates and calculate cumulativeTotal
-    let cumulativeTotal = 0;
-    const dailyTotalsFormatted = dailyTotals.map(item => {
-      const { year, month, day } = item._id;
-      const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      cumulativeTotal += item.totalStaked;
-
-      return {
-        date,
-        totalStaked: item.totalStaked,
-        count: item.count,
-        cumulativeTotal
-      };
-    });
-
-    console.log('[Daily Stats] Saving/Updating:', dailyTotalsFormatted);
-
-    for (const item of dailyTotalsFormatted) {
-      const result = await statsCollection.updateOne(
-        { date: item.date },
-        {
-          $set: {
-            totalStaked: item.totalStaked,
-            count: item.count,
-            cumulativeTotal: item.cumulativeTotal
-          },
-          $setOnInsert: {
-            date: item.date
-          }
-        },
-        { upsert: true }
-      );
-
-      console.log(`[Daily Stats] Upserted ${item.date}:`, result.upsertedCount || result.modifiedCount);
-    }
-
-    console.log('[Daily Stats] Completed successfully.');
-  } catch (err) {
-    console.error('[Daily Stats] Failed:', err);
-  }
-}
 
 
 // ----------------------

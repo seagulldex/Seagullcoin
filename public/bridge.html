@@ -334,17 +334,32 @@ document.getElementById("limitDismiss").onclick = function () {
   let toChain = "";
 
   function refreshChainDropdowns() {
-    const chains = bridgeAssets[selectedAsset];
-    document.getElementById("fromDropdown").innerHTML = "";
-    document.getElementById("toDropdown").innerHTML = "";
-    createDropdown("fromDropdown", chains, val => fromChain = val);
-    createDropdown("toDropdown", chains, val => toChain = val);
-  }
+  const chains = bridgeAssets[selectedAsset];
 
-  createDropdown("assetDropdown", Object.keys(bridgeAssets), val => {
-    selectedAsset = val;
-    refreshChainDropdowns();
+  // Clear both dropdowns
+  document.getElementById("fromDropdown").innerHTML = "";
+  document.getElementById("toDropdown").innerHTML = "";
+
+  // Set initial fromChain and toChain
+  fromChain = chains[0];
+  toChain = chains.find(c => c !== fromChain) || chains[0];
+
+  // Build FROM chain dropdown
+  createDropdown("fromDropdown", chains, val => {
+    fromChain = val;
+
+    // Rebuild TO dropdown to exclude new fromChain
+    document.getElementById("toDropdown").innerHTML = "";
+    const toOptions = chains.filter(c => c !== fromChain);
+    toChain = toOptions[0] || fromChain;
+    createDropdown("toDropdown", toOptions, val2 => toChain = val2);
   });
+
+  // Initial build of TO dropdown
+  const toOptions = chains.filter(c => c !== fromChain);
+  createDropdown("toDropdown", toOptions, val => toChain = val);
+}
+
 
   refreshChainDropdowns();
 
@@ -418,7 +433,7 @@ document.getElementById("limitDismiss").onclick = function () {
   };
 });
 
-
+ 
 </script>
 
 

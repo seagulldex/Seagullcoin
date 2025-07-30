@@ -351,24 +351,6 @@ if (data.status === "confirmed") {
   document.getElementById("finalizeTimer").textContent = "—";
 }
 
-
-      if (data.status === "confirmed") {
-  let remaining = 2 * 60 * 60; // 2 hours in seconds
-
-  if (countdownInterval) clearInterval(countdownInterval);
-  document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
-
-  countdownInterval = setInterval(() => {
-    remaining--;
-    if (remaining <= 0) {
-      clearInterval(countdownInterval);
-      document.getElementById("countdownTimer").textContent = "Completed ✅";
-    } else {
-      document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
-    }
-  }, 1000);
-}
-
       // Handle countdown
       const isFinalStatus = ["expired", "confirmed", "bridged"].includes(data.status);
       if (isFinalStatus) {

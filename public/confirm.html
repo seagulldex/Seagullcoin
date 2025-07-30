@@ -387,24 +387,38 @@ document.getElementById("saveLinkBtn").addEventListener("click", () => {
   if (!existingModal) {
     const modal = document.createElement("div");
     modal.id = "bridgeModal";
-    modal.style.position = "fixed";
-    modal.style.top = "0";
-    modal.style.left = "0";
-    modal.style.width = "100vw";
-    modal.style.height = "100vh";
-    modal.style.backgroundColor = "rgba(0, 0, 0, 0.85)";
-    modal.style.color = "#fff";
-    modal.style.display = "flex";
-    modal.style.justifyContent = "center";
-    modal.style.alignItems = "center";
-    modal.style.zIndex = "9999";
-    modal.style.fontSize = "1.5rem";
-    modal.style.padding = "2rem";
-    modal.style.textAlign = "center";
-    modal.style.backdropFilter = "blur(4px)";
-    modal.innerHTML = `<div><span>${message}</span><br/><br/><div class="loader"></div></div>`;
-    
-    // Optional spinner
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      padding: 1rem;
+      text-align: center;
+      backdrop-filter: blur(6px);
+    `;
+
+    const content = document.createElement("div");
+    content.style.cssText = `
+      max-width: 90%;
+      font-size: 1.2rem;
+      line-height: 1.5;
+      padding: 1.5rem;
+      background: rgba(20, 20, 20, 0.9);
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
+    `;
+    content.innerHTML = `<div>${message}</div><div class="loader" style="margin-top: 1rem;"></div>`;
+
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
     const style = document.createElement("style");
     style.innerHTML = `
       .loader {
@@ -413,19 +427,27 @@ document.getElementById("saveLinkBtn").addEventListener("click", () => {
         border-radius: 50%;
         width: 40px;
         height: 40px;
-        margin: 1rem auto 0;
         animation: spin 1s linear infinite;
+        margin: 0 auto;
       }
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        to { transform: rotate(360deg); }
+      }
+      @media (max-width: 480px) {
+        #bridgeModal div {
+          font-size: 1rem !important;
+          padding: 1rem !important;
+        }
+        .loader {
+          width: 30px;
+          height: 30px;
+          border-width: 4px;
+        }
       }
     `;
     document.head.appendChild(style);
-
-    document.body.appendChild(modal);
   } else {
-    existingModal.querySelector("span").textContent = message;
+    existingModal.querySelector("div").innerHTML = `<div>${message}</div><div class="loader" style="margin-top: 1rem;"></div>`;
     existingModal.style.display = "flex";
   }
 }
@@ -434,6 +456,7 @@ function closeModal() {
   const modal = document.getElementById("bridgeModal");
   if (modal) modal.style.display = "none";
 }
+
 
 
   async function pollStatus() {

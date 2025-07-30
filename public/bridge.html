@@ -230,7 +230,7 @@
   <div id="confirmationModal" class="modal hidden">
   <div class="modal-content">
     <h3>Confirm Bridge</h3>
-    <p id="modalDetails"></p>
+    <p id="modalDetails" style="white-space: pre-line;"></p>
     <div class="modal-actions">
       <button id="cancelModal">Cancel</button>
       <button id="confirmModal">Confirm</button>
@@ -270,33 +270,33 @@
   };
 
   function calculateBridgeFee(asset, amount) {
-  const amountNum = parseFloat(amount);
+    const amountNum = parseFloat(amount);
 
-  let fee = 0;
-  if (asset === "SeagullCoin") fee = 0.2;
-  else if (asset === "SeagullCash") fee = 5;
+    let fee = 0;
+    if (asset === "SeagullCoin") fee = 0.2;
+    else if (asset === "SeagullCash") fee = 5;
 
-    
-  const received = amountNum - fee;
-  return {
-    feeText: `${fee} ${asset}`,
-    receivedAmount: received > 0 ? received.toFixed(4) : "0",
+    const received = amountNum - fee;
+    return {
+      feeText: `${fee} ${asset}`,
+      receivedAmount: received > 0 ? received.toFixed(4) : "0",
+    };
+  }
+
+  function showLimitModal(assetName) {
+    document.getElementById("limitAssetName").innerText = assetName;
+    document.getElementById("limitModal").classList.remove("hidden");
+  }
+
+  document.getElementById("limitDismiss").onclick = function () {
+    document.getElementById("limitModal").classList.add("hidden");
   };
-}
-  
-function showLimitModal(assetName) {
-  document.getElementById("limitAssetName").innerText = assetName;
-  document.getElementById("limitModal").classList.remove("hidden");
-}
 
-document.getElementById("limitDismiss").onclick = function () {
-  document.getElementById("limitModal").classList.add("hidden");
-};
-
-
-
-  function createDropdown(id, options, onSelect) {
+  // Create dropdown with options and a callback on selection
+  function createDropdown(id, options, onSelect, initialValue) {
     const container = document.getElementById(id);
+    container.innerHTML = ""; // Clear previous content
+
     const selected = document.createElement("div");
     selected.className = "dropdown-selected";
     container.appendChild(selected);
@@ -323,19 +323,50 @@ document.getElementById("limitDismiss").onclick = function () {
       list.appendChild(item);
     });
 
-    updateSelection(options[0]); // default select
+    if (initialValue && options.includes(initialValue)) {
+      updateSelection(initialValue);
+    } else {
+      updateSelection(options[0]); // default select
+    }
   }
 
   let selectedAsset = "SeagullCash";
   let fromChain = "";
   let toChain = "";
 
+  // Refresh the From and To dropdowns ensuring they can't be equal
   function refreshChainDropdowns() {
     const chains = bridgeAssets[selectedAsset];
-    document.getElementById("fromDropdown").innerHTML = "";
-    document.getElementById("toDropdown").innerHTML = "";
-    createDropdown("fromDropdown", chains, val => fromChain = val);
-    createDropdown("toDropdown", chains, val => toChain = val);
+
+    // If fromChain or toChain is not in chains, reset them
+    if (!chains.includes(fromChain)) fromChain = chains[0];
+    if (!chains.includes(toChain)) toChain = chains.length > 1 ? chains[1] : chains[0];
+
+    // To enforce they are never the same, adjust if needed
+    if (fromChain === toChain) {
+      // Try to pick a different toChain
+      toChain = chains.find(c => c !== fromChain) || fromChain;
+    }
+
+    // Create From dropdown (all chains)
+    createDropdown("fromDropdown", chains, val => {
+      fromChain = val;
+      // When fromChain changes, update toChain dropdown to exclude fromChain
+      const toOptions = chains.filter(c => c !== fromChain);
+      // If current toChain equals fromChain or no longer in toOptions, pick first toOptions
+      if (toChain === fromChain || !toOptions.includes(toChain)) {
+        toChain = toOptions[0] || fromChain;
+      }
+      createDropdown("toDropdown", toOptions, val => {
+        toChain = val;
+      }, toChain);
+    }, fromChain);
+
+    // Create To dropdown excluding fromChain
+    const toOptions = chains.filter(c => c !== fromChain);
+    createDropdown("toDropdown", toOptions, val => {
+      toChain = val;
+    }, toChain);
   }
 
   createDropdown("assetDropdown", Object.keys(bridgeAssets), val => {
@@ -346,79 +377,83 @@ document.getElementById("limitDismiss").onclick = function () {
   refreshChainDropdowns();
 
   document.getElementById("bridge-form").addEventListener("submit", async function (e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  const amount = document.getElementById("amount").value;
-  const minFee = selectedAsset === "SeagullCoin" ? 0.2 : 5;
+    const amount = document.getElementById("amount").value;
+    const minFee = selectedAsset === "SeagullCoin" ? 0.2 : 5;
 
-  if (parseFloat(amount) <= minFee) {
-    alert(`Amount must be greater than the bridge fee of ${minFee} ${selectedAsset}.`);
-    return;
-  }
+    // Check if fromChain and toChain are different (extra safety)
+    if (fromChain === toChain) {
+      alert("From Chain and To Chain cannot be the same. Please select different chains.");
+      return;
+    }
 
-  const { feeText, receivedAmount } = calculateBridgeFee(selectedAsset, amount);
+    if (parseFloat(amount) <= minFee) {
+      alert(`Amount must be greater than the bridge fee of ${minFee} ${selectedAsset}.`);
+      return;
+    }
 
-  // Populate and show modal
-  document.getElementById("modalDetails").innerText =
-    `Asset: ${selectedAsset}\n` +
-    `Amount: ${amount} ${selectedAsset}\n` +
-    `Bridge Fee: ${feeText}\n` +
-    `You Will Receive: ${receivedAmount} ${selectedAsset}`;
+    const { feeText, receivedAmount } = calculateBridgeFee(selectedAsset, amount);
 
-  document.getElementById("confirmationModal").classList.remove("hidden");
+    // Populate and show modal
+    document.getElementById("modalDetails").innerText =
+      `Asset: ${selectedAsset}\n` +
+      `From Chain: ${fromChain}\n` +
+      `To Chain: ${toChain}\n` +
+      `Amount: ${amount} ${selectedAsset}\n` +
+      `Bridge Fee: ${feeText}\n` +
+      `You Will Receive: ${receivedAmount} ${selectedAsset}`;
 
-  const confirmBtn = document.getElementById("confirmModal");
-  const cancelBtn = document.getElementById("cancelModal");
+    document.getElementById("confirmationModal").classList.remove("hidden");
 
-  // Wait for user choice
-  confirmBtn.onclick = async function () {
-    document.getElementById("confirmationModal").classList.add("hidden");
-    document.getElementById("loading").classList.remove("hidden");
+    const confirmBtn = document.getElementById("confirmModal");
+    const cancelBtn = document.getElementById("cancelModal");
 
-    const payload = {
-      category: selectedAsset,
-      fromChain,
-      toChain,
-      amount,
-      receiveAddress: document.getElementById("receiveAddress").value,
+    // Wait for user choice
+    confirmBtn.onclick = async function () {
+      document.getElementById("confirmationModal").classList.add("hidden");
+      document.getElementById("loading").classList.remove("hidden");
+
+      const payload = {
+        category: selectedAsset,
+        fromChain,
+        toChain,
+        amount,
+        receiveAddress: document.getElementById("receiveAddress").value,
+      };
+
+      try {
+        const res = await fetch("/api/bridge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          const link = document.getElementById("confirmationLink");
+          link.href = `/confirm.html?memoId=${data.memoId}`;
+          link.style.display = "block";
+        } else {
+          if (res.status === 429 && data.error.includes("Daily bridge limit exceeded")) {
+            showLimitModal(selectedAsset);
+          } else {
+            alert(data.error || "Something went wrong.");
+          }
+        }
+      } catch (err) {
+        alert("Server error.");
+        console.error(err);
+      } finally {
+        document.getElementById("loading").classList.add("hidden");
+      }
     };
 
-    try {
-      const res = await fetch("/api/bridge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-  const link = document.getElementById("confirmationLink");
-  link.href = `/confirm.html?memoId=${data.memoId}`;
-  link.style.display = "block";
-} else {
-  if (res.status === 429 && data.error.includes("Daily bridge limit exceeded")) {
-    showLimitModal(selectedAsset);
-  } else {
-    alert(data.error || "Something went wrong.");
-  }
-}
-    } catch (err) {
-      alert("Server error.");
-      console.error(err);
-    } finally {
-      document.getElementById("loading").classList.add("hidden");
-    }
-  };
-
-  cancelBtn.onclick = () => {
-    document.getElementById("confirmationModal").classList.add("hidden");
-  };
-});
-
-
+    cancelBtn.onclick = () => {
+      document.getElementById("confirmationModal").classList.add("hidden");
+    };
+  });
 </script>
-
-
 
 <script type="text/javascript">
   window.$crisp = [];

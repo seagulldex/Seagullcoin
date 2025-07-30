@@ -8489,10 +8489,10 @@ app.get('/checkin-login', async (req, res) => {
   }
 });
 
-app.get('/Bridgeadmin.html', basicAuth, (req, res) => {
-  res.send('Welcome to the admin dashboard');
-});
 
+app.get('/Bridgeadmin.html', basicAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'Bridgeadmin.html'));
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

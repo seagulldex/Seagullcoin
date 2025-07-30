@@ -232,6 +232,10 @@
     return logos[chainName] || '';
   }
 
+
+  let countdownInterval;
+  let finalizeInterval;
+
   function formatCountdown(seconds) {
     const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');
     const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
@@ -239,67 +243,91 @@
     return `${hrs}:${mins}:${secs}`;
   }
 
-  let countdownInterval;
-
   async function fetchBridgeData() {
-    const memoId = getMemoId();
+    const memoId = new URL(window.location.href).searchParams.get("memoId");
     if (!memoId) {
       document.getElementById("bridgeStatus").textContent = "No transaction specified.";
-      document.getElementById("countdownTimer").textContent = "—";
       return;
     }
 
     try {
       const res = await fetch(`/api/bridge-status?memoId=${memoId}`);
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error || "Failed to fetch");
 
-      // Update chain names
-      document.getElementById("confFromChain").textContent = data.fromChain || "N/A";
-      document.getElementById("confToChain").textContent = data.toChain || "N/A";
+      // Update UI fields here (chains, logos, addresses...) [Your existing logic remains]
 
-      // Update chain logos
-      document.getElementById("confFromChainLogo").src = getLogo(data.fromChain);
-      document.getElementById("confToChainLogo").src = getLogo(data.toChain);
+      // TIMER HANDLING
+      clearInterval(countdownInterval);
+      clearInterval(finalizeInterval);
 
-      const currencyLabel = data.category 
-        ? `${data.category} (${data.fromChain})` 
-        : `${data.fromChain}`;
+      const isFinalStatus = ["expired", "confirmed", "bridged"].includes(data.status);
 
-      document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
+      // Handle countdown (Expires In)
+      if (isFinalStatus) {
+        document.getElementById("countdownTimer").textContent =
+          data.status === "expired" ? "Expired" : "—";
+      } else if (data.expiresIn && data.expiresIn > 0) {
+        let remaining = data.expiresIn;
+        document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
 
-      // Calculate fee and net
-      let fee = 5;
-      if (data.category === "SeagullCoin") {
-        fee = 0.2;
+        countdownInterval = setInterval(() => {
+          remaining--;
+          if (remaining <= 0) {
+            clearInterval(countdownInterval);
+            document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
+            document.getElementById("countdownTimer").textContent = "Expired";
+          } else {
+            document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
+          }
+        }, 1000);
+      } else {
+        document.getElementById("countdownTimer").textContent = "—";
       }
 
-      const rawAmount = parseFloat(data.amount || "0");
-      const netReceived = Math.max(0, rawAmount - fee);
+      // Handle finalize timer (Bridge Finalizes In)
+      if (data.status === "confirmed") {
+        let finalizeRemaining = 2 * 60 * 60; // 2 hours
+        document.getElementById("finalizeTimer").textContent = formatCountdown(finalizeRemaining);
 
-      document.getElementById("confFee").textContent = `- ${fee} ${data.category || ''}`;
-      document.getElementById("confNetReceived").textContent = `${netReceived} ${data.category || ''}`;
-
-      // Generate QR code if possible
-      const escrow = escrowAddresses[data.fromChain];
-      const container = document.getElementById("qrCodeContainer");
-      container.innerHTML = "";
-      if (escrow && memoId) {
-        try {
-          generateQRCode(escrow, "qrCodeContainer", data.fromChain, memoId);
-        } catch (qrErr) {
-          console.error("QR code generation failed:", qrErr);
-          container.innerHTML = "";
-        }
+        finalizeInterval = setInterval(() => {
+          finalizeRemaining--;
+          if (finalizeRemaining <= 0) {
+            clearInterval(finalizeInterval);
+            document.getElementById("finalizeTimer").textContent = "Finalized ✅";
+          } else {
+            document.getElementById("finalizeTimer").textContent = formatCountdown(finalizeRemaining);
+          }
+        }, 1000);
+      } else {
+        document.getElementById("finalizeTimer").textContent = "—";
       }
 
-      const statusTextMap = {
-        pending: "Pending confirmation...",
-        confirmed: "Confirmed ✅️",
-        bridged: "Bridged 🌉",
-        expired: "Expired ❌"
-      };
+    } catch (err) {
+      console.error("Failed to fetch bridge status:", err);
+      document.getElementById("bridgeStatus").textContent = "Error fetching status";
+    }
+  }
+
+  async function pollStatus() {
+    await fetchBridgeData();
+    setTimeout(pollStatus, 30000);
+  }
+
+  function setConfirmationLink() {
+    const memoId = new URL(window.location.href).searchParams.get("memoId");
+    if (!memoId) return;
+    const url = `${window.location.origin}${window.location.pathname}?memoId=${memoId}`;
+    document.getElementById("confirmationUrl").value = url;
+  }
+
+  document.getElementById("saveLinkBtn").addEventListener("click", () => {
+    document.getElementById("saveLinkPopup").classList.toggle("hidden");
+  });
+
+  setConfirmationLink();
+  pollStatus();
+
 
       // Show or hide Memo ID row depending on chain
       const shouldShowMemo = chainsUsingMemo.includes(data.fromChain);

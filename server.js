@@ -360,6 +360,18 @@ export async function archiveBridgedRequest(memoId) {
   }
 }
 
+const threshold = new Date(Date.now() - 10 * 60 * 1000); // 10 minutes ago
+
+const bridgedDocs = await db.collection('bridge_requests').find({
+  status: 'bridged',
+  updatedAt: { $lte: threshold }
+}).toArray();
+
+for (const doc of bridgedDocs) {
+  await db.collection('history').insertOne({ ...doc, archivedAt: new Date() });
+  await db.collection('bridge_requests').deleteOne({ _id: doc._id });
+  console.log(`[Archived] ${doc.memoId}`);
+}
 
 
 

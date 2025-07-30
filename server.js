@@ -1187,7 +1187,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Protected route first
 app.get('/Bridgeadmin.html', basicAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'Bridgeadmin.html'));
+  res.sendFile(path.join(__dirname, 'public', 'Bridgeadmin.html'));
 });
 
 // Then static files

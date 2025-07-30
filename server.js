@@ -8420,6 +8420,30 @@ app.get('/api/bridge-requests', async (req, res) => {
   }
 });
 
+app.get('/checkin-login', async (req, res) => {
+  const uuid = req.query.uuid;
+  if (!uuid) {
+    return res.status(400).json({ error: 'Missing UUID' });
+  }
+
+  try {
+    const payload = await xumm.payload.get(uuid);
+
+    // Validate if signed and account exists
+    if (payload?.meta?.signed && payload?.response?.account) {
+      return res.json({
+        loggedIn: true,
+        account: payload.response.account,
+        uuid
+      });
+    } else {
+      return res.json({ loggedIn: false });
+    }
+  } catch (err) {
+    console.error('Error checking login:', err);
+    return res.status(500).json({ error: 'Error checking login' });
+  }
+});
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

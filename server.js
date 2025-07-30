@@ -167,8 +167,15 @@ async function fetchIPFSMetadata(uri) {
 async function checkAndFixIndexes() {
   const indexes = await NFTModel.collection.indexes();
   console.log(indexes);
-}
 
+const ADMIN_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U';
+
+function requireAdminWallet(req, res, next) {
+  if (req.session?.user?.account === ADMIN_WALLET) {
+    return next();
+  }
+  res.status(403).json({ error: 'Unauthorized wallet' });
+}
 
 
 async function createStakePayload(req, res, amount) {

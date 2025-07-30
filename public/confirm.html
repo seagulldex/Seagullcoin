@@ -365,9 +365,16 @@
 
   function setConfirmationLink() {
   const memoId = getMemoId();
+  if (!memoId) return;
   const url = `${window.location.origin}${window.location.pathname}?memoId=${memoId}`;
   document.getElementById("confirmationUrl").value = url;
 }
+
+document.getElementById("saveLinkBtn").addEventListener("click", () => {
+  const popup = document.getElementById("saveLinkPopup");
+  popup.classList.toggle("hidden");
+});
+
 
 
   function openSupportChat(memoId) {

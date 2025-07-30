@@ -66,7 +66,7 @@
       <span id="confEscrow" style="word-break: break-word;"></span>
       <button class="copy-btn" onclick="copyToClipboard('confEscrow')">📋 Copy</button>
     </p>
-    <p><strong>Memo ID / Tag:</strong> 
+    <p id="memoRow"><strong>Memo ID / Tag:</strong> 
       <span id="confMemo" style="color: #1e90ff;"></span>
       <button class="copy-btn" onclick="copyToClipboard('confMemo')">📋 Copy</button>
     </p>
@@ -77,16 +77,16 @@
   <div class="info-box" id="userInfoBox" style="display:none;">
     <h3>Your Information</h3>
     <p><strong>Bridge Fee:</strong> <span id="confFee" style="color: #ff4d4d;"></span></p>
-<p><strong>Net Received:</strong> <span id="confNetReceived" style="color: #00ffcc;"></span></p>
+    <p><strong>Net Received:</strong> <span id="confNetReceived" style="color: #00ffcc;"></span></p>
     <p><strong>Receive Address:</strong> <span id="userReceiveAddress" style="word-break: break-word;"></span></p>
-    <p><strong>Memo ID / Tag:</strong> <span id="userMemoId" style="color: #1e90ff;"></span></p>
+    <p id="userMemoRow"><strong>Memo ID / Tag:</strong> <span id="userMemoId" style="color: #1e90ff;"></span></p>
   </div>
 
   <div id="qrCodeContainer" style="margin-top: 10px;"></div>
   
 <script type="text/javascript">
   window.$crisp = [];
-  window.CRISP_WEBSITE_ID = "c4c177f3-5bf9-4f53-8a57-5ed64696616e"; // 🔁 Replace with your actual Crisp ID
+  window.CRISP_WEBSITE_ID = "c4c177f3-5bf9-4f53-8a57-5ed64696616e"; // Replace with your actual Crisp ID
   (function () {
     const d = document;
     const s = d.createElement("script");
@@ -108,11 +108,12 @@
 
   const chainsUsingMemo = ["XRP", "XLM", "HBAR"];
 
-
   function copyToClipboard(id) {
     const text = document.getElementById(id).textContent;
     navigator.clipboard.writeText(text).then(() => {
       alert('Copied to clipboard!');
+    }).catch(() => {
+      alert('Failed to copy!');
     });
   }
 
@@ -206,20 +207,20 @@
         : `${data.fromChain}`;
 
       document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
-       // Calculate fee and net
-let fee = 5;
-if (data.category === "SeagullCoin") {
-  fee = 0.2;
-}
 
-const rawAmount = parseFloat(data.amount || "0");
-const netReceived = Math.max(0, rawAmount - fee);
+      // Calculate fee and net
+      let fee = 5;
+      if (data.category === "SeagullCoin") {
+        fee = 0.2;
+      }
 
-document.getElementById("confFee").textContent = `- ${fee} ${data.category}`;
-document.getElementById("confNetReceived").textContent = `${netReceived} ${data.category}`;
+      const rawAmount = parseFloat(data.amount || "0");
+      const netReceived = Math.max(0, rawAmount - fee);
 
-      
-      // Safely generate QR code only if address and memoId are valid
+      document.getElementById("confFee").textContent = `- ${fee} ${data.category || ''}`;
+      document.getElementById("confNetReceived").textContent = `${netReceived} ${data.category || ''}`;
+
+      // Generate QR code if possible
       const escrow = escrowAddresses[data.fromChain];
       const container = document.getElementById("qrCodeContainer");
       container.innerHTML = "";
@@ -230,8 +231,6 @@ document.getElementById("confNetReceived").textContent = `${netReceived} ${data.
           console.error("QR code generation failed:", qrErr);
           container.innerHTML = "";
         }
-      } else {
-        container.innerHTML = "";
       }
 
       const statusTextMap = {
@@ -241,27 +240,38 @@ document.getElementById("confNetReceived").textContent = `${netReceived} ${data.
         expired: "Expired ❌"
       };
 
+      // Show or hide Memo ID row depending on chain
       const shouldShowMemo = chainsUsingMemo.includes(data.fromChain);
+      const memoRow = document.getElementById("memoRow");
+      memoRow.style.display = shouldShowMemo ? "block" : "none";
       document.getElementById("confMemo").textContent = shouldShowMemo ? memoId : "—";
-      document.querySelector('p:has(#confMemo)').style.display = shouldShowMemo ? 'block' : 'none';
 
+      // Show escrow address
       document.getElementById("confEscrow").textContent = escrow || "N/A";
 
-      // Show user info box with receive address and memoId
+      // Show user info box with receive address and memo ID
+      const userInfoBox = document.getElementById("userInfoBox");
       if (data.receiveAddress) {
+        userInfoBox.style.display = "block";
         document.getElementById("userReceiveAddress").textContent = data.receiveAddress;
-        document.getElementById("userMemoId").textContent = shouldShowMemo ? memoId : "";
-        document.querySelector('#userInfoBox p:has(#userMemoId)').style.display = shouldShowMemo ? 'block' : 'none';
 
+        const userMemoRow = document.getElementById("userMemoRow");
+        if (shouldShowMemo) {
+          userMemoRow.style.display = "block";
+          document.getElementById("userMemoId").textContent = memoId;
+        } else {
+          userMemoRow.style.display = "none";
+          document.getElementById("userMemoId").textContent = "";
+        }
       } else {
-        document.getElementById("userInfoBox").style.display = "none";
+        userInfoBox.style.display = "none";
       }
 
-      // Status handling
+      // Update status text
       const statusText = statusTextMap[data.status] || "Pending";
       document.getElementById("bridgeStatus").textContent = statusText;
 
-      // Disable countdown for final statuses
+      // Handle countdown
       const isFinalStatus = ["expired", "confirmed", "bridged"].includes(data.status);
       if (isFinalStatus) {
         clearInterval(countdownInterval);
@@ -270,7 +280,7 @@ document.getElementById("confNetReceived").textContent = `${netReceived} ${data.
         return;
       }
 
-      // Countdown timer
+      // Start or update countdown timer
       if (countdownInterval) clearInterval(countdownInterval);
       if (data.expiresIn && data.expiresIn > 0) {
         let remaining = data.expiresIn;
@@ -289,28 +299,26 @@ document.getElementById("confNetReceived").textContent = `${netReceived} ${data.
       } else {
         document.getElementById("countdownTimer").textContent = "—";
       }
-
     } catch (err) {
       document.getElementById("bridgeStatus").textContent = "Error loading transaction.";
       document.getElementById("countdownTimer").textContent = "—";
       console.error(err);
     }
   }
-  
+
   function openSupportChat(memoId) {
     window.$crisp.push(["do", "chat:open"]);
     window.$crisp.push(["do", "message:send", ["text", `Hi, I need help with my bridge: ${memoId}`]]);
   }
 
-  function setCrispUser(wallet, memoId, category) {
+  function setCrispUser(wallet, memoId) {
     window.$crisp.push(["set", "user:nickname", [wallet]]);
     window.$crisp.push(["set", "session:data", [
       ["wallet", wallet],
       ["memoId", memoId],
-      ["stakeType", stakeType]
     ]]);
   }
-  
+
   async function pollStatus() {
     await fetchBridgeData();
     setTimeout(pollStatus, 30000);

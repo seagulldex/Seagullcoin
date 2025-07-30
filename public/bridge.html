@@ -176,12 +176,14 @@
   if (asset === "SeagullCoin") fee = 0.2;
   else if (asset === "SeagullCash") fee = 5;
 
+    
   const received = amountNum - fee;
   return {
     feeText: `${fee} ${asset}`,
     receivedAmount: received > 0 ? received.toFixed(4) : "0",
   };
 }
+  
 
 
 
@@ -236,54 +238,62 @@
   refreshChainDropdowns();
 
   document.getElementById("bridge-form").addEventListener("submit", async function (e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    const amount = document.getElementById("amount").value;
-    const { feeText, receivedAmount } = calculateBridgeFee(amount);
+  const amount = document.getElementById("amount").value;
+  const minFee = selectedAsset === "SeagullCoin" ? 0.2 : 5;
 
-    const confirmBridge = window.confirm(
-      `Bridge Details:\n` +
-      `Asset: ${selectedAsset}\n` +
-      `Amount: ${amount} ${selectedAsset}\n` +
-      `Bridge Fee: ${feeText}\n` +
-      `You Will Receive: ${receivedAmount} ${selectedAsset}\n\n` +
-      `Proceed with bridging?`
-    );
+  if (parseFloat(amount) <= minFee) {
+    alert(`Amount must be greater than the bridge fee of ${minFee} ${selectedAsset}.`);
+    return;
+  }
 
-    if (!confirmBridge) return;
+  const { feeText, receivedAmount } = calculateBridgeFee(selectedAsset, amount);
 
-    document.getElementById("loading").classList.remove("hidden");
+  const confirmBridge = window.confirm(
+    `Bridge Details:\n` +
+    `Asset: ${selectedAsset}\n` +
+    `Amount: ${amount} ${selectedAsset}\n` +
+    `Bridge Fee: ${feeText}\n` +
+    `You Will Receive: ${receivedAmount} ${selectedAsset}\n\n` +
+    `Proceed with bridging?`
+  );
 
-    const payload = {
-      category: selectedAsset,
-      fromChain,
-      toChain,
-      amount,
-      receiveAddress: document.getElementById("receiveAddress").value,
-    };
+  if (!confirmBridge) return;
 
-    try {
-      const res = await fetch("/api/bridge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+  document.getElementById("loading").classList.remove("hidden");
 
-      const data = await res.json();
-      if (res.ok) {
-        const link = document.getElementById("confirmationLink");
-        link.href = `/confirm.html?memoId=${data.memoId}`;
-        link.style.display = "block";
-      } else {
-        alert(data.error || "Something went wrong.");
-      }
-    } catch (err) {
-      alert("Server error.");
-      console.error(err);
-    } finally {
-      document.getElementById("loading").classList.add("hidden");
+  const payload = {
+    category: selectedAsset,
+    fromChain,
+    toChain,
+    amount,
+    receiveAddress: document.getElementById("receiveAddress").value,
+  };
+
+  try {
+    const res = await fetch("/api/bridge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      const link = document.getElementById("confirmationLink");
+      link.href = `/confirm.html?memoId=${data.memoId}`;
+      link.style.display = "block";
+    } else {
+      alert(data.error || "Something went wrong.");
     }
-  });
+  } catch (err) {
+    alert("Server error.");
+    console.error(err);
+  } finally {
+    document.getElementById("loading").classList.add("hidden");
+  }
+});
+
 </script>
 
 

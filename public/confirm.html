@@ -437,6 +437,13 @@ content.innerHTML = `
     ${includeSpinner ? `<div class="loader" style="margin-top: 1rem;"></div>` : ''}
   </div>
 `;
+    if (!includeSpinner) {
+  setTimeout(() => {
+    const btn = document.getElementById("closeBridgeModal");
+    if (btn) btn.addEventListener("click", closeModal);
+  }, 0);
+}
+
 
     modal.appendChild(content);
     document.body.appendChild(modal);

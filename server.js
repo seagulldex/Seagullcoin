@@ -338,18 +338,17 @@ setInterval(() => {
     .catch(console.error);
 }, 10 * 60 * 1000);
 
-const memoId = "someMemoId"; // from request param or query
+export async function archiveBridgedRequest(memoId) {
+  const db = await connectDB();
+  const bridgedDoc = await db.collection('bridge_requests').findOne({ memoId });
 
-const bridgedDoc = await db.collection('bridge_requests').findOne({ memoId });
-
-if (bridgedDoc && bridgedDoc.status === 'bridged') {
-  await db.collection('history').insertOne({
-    ...bridgedDoc,
-    archivedAt: new Date() // optional: useful for analytics
-  });
-
-  await db.collection('bridge_requests').deleteOne({ _id: bridgedDoc._id });
+  if (bridgedDoc?.status === 'bridged') {
+    await db.collection('history').insertOne({ ...bridgedDoc, archivedAt: new Date() });
+    await db.collection('bridge_requests').deleteOne({ _id: bridgedDoc._id });
+    console.log(`Archived and removed bridged request: ${memoId}`);
+  }
 }
+
 
 
 

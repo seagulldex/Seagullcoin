@@ -295,71 +295,53 @@ document.getElementById("limitDismiss").onclick = function () {
 
 
 
-  function createDropdown(id, options, onSelect, exclude = null) {
-  const container = document.getElementById(id);
-  const selected = document.createElement("div");
-  selected.className = "dropdown-selected";
-  container.appendChild(selected);
+  function createDropdown(id, options, onSelect) {
+    const container = document.getElementById(id);
+    const selected = document.createElement("div");
+    selected.className = "dropdown-selected";
+    container.appendChild(selected);
 
-  const list = document.createElement("div");
-  list.className = "dropdown-list";
-  container.appendChild(list);
+    const list = document.createElement("div");
+    list.className = "dropdown-list";
+    container.appendChild(list);
 
-  function updateSelection(value) {
-    selected.innerHTML = `<div style="display:flex;align-items:center;"><img src="${logos[value]}" /> ${value}</div>`;
-    list.style.display = "none";
-    onSelect(value);
+    function updateSelection(value) {
+      selected.innerHTML = `<div style="display:flex;align-items:center;"><img src="${logos[value]}" /> ${value}</div>`;
+      list.style.display = "none";
+      onSelect(value);
+    }
+
+    selected.addEventListener("click", () => {
+      list.style.display = list.style.display === "block" ? "none" : "block";
+    });
+
+    options.forEach(value => {
+      const item = document.createElement("div");
+      item.className = "dropdown-item";
+      item.innerHTML = `<img src="${logos[value]}" /> ${value}`;
+      item.addEventListener("click", () => updateSelection(value));
+      list.appendChild(item);
+    });
+
+    updateSelection(options[0]); // default select
   }
-
-  selected.addEventListener("click", () => {
-    list.style.display = list.style.display === "block" ? "none" : "block";
-  });
-
-  const filteredOptions = exclude ? options.filter(opt => opt !== exclude) : options;
-
-  filteredOptions.forEach(value => {
-    const item = document.createElement("div");
-    item.className = "dropdown-item";
-    item.innerHTML = `<img src="${logos[value]}" /> ${value}`;
-    item.addEventListener("click", () => updateSelection(value));
-    list.appendChild(item);
-  });
-
-  updateSelection(filteredOptions[0]); // default select
-}
-
 
   let selectedAsset = "SeagullCash";
   let fromChain = "";
   let toChain = "";
 
   function refreshChainDropdowns() {
-  const chains = bridgeAssets[selectedAsset];
-
-  // Clear both dropdowns
-  document.getElementById("fromDropdown").innerHTML = "";
-  document.getElementById("toDropdown").innerHTML = "";
-
-  // Set initial fromChain and toChain
-  fromChain = chains[0];
-  toChain = chains.find(c => c !== fromChain) || chains[0];
-
-  // Build FROM chain dropdown
-  createDropdown("fromDropdown", chains, val => {
-    fromChain = val;
-
-    // Rebuild TO dropdown to exclude new fromChain
+    const chains = bridgeAssets[selectedAsset];
+    document.getElementById("fromDropdown").innerHTML = "";
     document.getElementById("toDropdown").innerHTML = "";
-    const toOptions = chains.filter(c => c !== fromChain);
-    toChain = toOptions[0] || fromChain;
-    createDropdown("toDropdown", toOptions, val2 => toChain = val2);
+    createDropdown("fromDropdown", chains, val => fromChain = val);
+    createDropdown("toDropdown", chains, val => toChain = val);
+  }
+
+  createDropdown("assetDropdown", Object.keys(bridgeAssets), val => {
+    selectedAsset = val;
+    refreshChainDropdowns();
   });
-
-  // Initial build of TO dropdown
-  const toOptions = chains.filter(c => c !== fromChain);
-  createDropdown("toDropdown", toOptions, val => toChain = val);
-}
-
 
   refreshChainDropdowns();
 
@@ -433,7 +415,7 @@ document.getElementById("limitDismiss").onclick = function () {
   };
 });
 
- 
+
 </script>
 
 

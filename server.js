@@ -340,7 +340,7 @@ setInterval(() => {
 
 
 
-export async function fetchAndStoreDailyTotals() {  try {
+async function fetchAndStoreDailyTotals() {  try {
     const db = await connectDB();
     const stakesCollection = db.collection('stakes');
     const statsCollection = db.collection('dailyStakeStats');

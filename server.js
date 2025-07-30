@@ -90,6 +90,7 @@ import './priceTrackerSGLCNXRP.js';
 import SGLCNRLUSDPrice from './models/SGLCNRLUSDPrice.js';
 import Iso20022 from './models/Iso20022.js';  // adjust the path
 import BridgeRequest from "./models/BridgeRequest.js";
+import requireAdminWallet from './middlewares/requireAdminWallet.js';
 
 dotenv.config();
 
@@ -8436,7 +8437,9 @@ app.get('/checkin-login', async (req, res) => {
 });
 
 
-
+app.get('/admin', requireAdminWallet, (req, res) => {
+  res.send('Welcome, admin wallet!');
+});
 
 
 // Call the XRPL ping when the server starts

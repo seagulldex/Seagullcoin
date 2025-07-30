@@ -91,7 +91,6 @@ import SGLCNRLUSDPrice from './models/SGLCNRLUSDPrice.js';
 import Iso20022 from './models/Iso20022.js';  // adjust the path
 import BridgeRequest from "./models/BridgeRequest.js";
 
-
 dotenv.config();
 
 const xummSDK = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
@@ -168,7 +167,7 @@ async function fetchIPFSMetadata(uri) {
 async function checkAndFixIndexes() {
   const indexes = await NFTModel.collection.indexes();
   console.log(indexes);
-
+}
 
 
 
@@ -341,6 +340,67 @@ setInterval(() => {
 
 
 
+export async function fetchAndStoreDailyTotals() {  try {
+    const db = await connectDB();
+    const stakesCollection = db.collection('stakes');
+    const statsCollection = db.collection('dailyStakeStats');
+
+    const dailyTotals = await stakesCollection.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: '$timestamp' },
+            month: { $month: '$timestamp' },
+            day: { $dayOfMonth: '$timestamp' }
+          },
+          totalStaked: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+    ]).toArray();
+
+    // Format dates and calculate cumulativeTotal
+    let cumulativeTotal = 0;
+    const dailyTotalsFormatted = dailyTotals.map(item => {
+      const { year, month, day } = item._id;
+      const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      cumulativeTotal += item.totalStaked;
+
+      return {
+        date,
+        totalStaked: item.totalStaked,
+        count: item.count,
+        cumulativeTotal
+      };
+    });
+
+    console.log('[Daily Stats] Saving/Updating:', dailyTotalsFormatted);
+
+    for (const item of dailyTotalsFormatted) {
+      const result = await statsCollection.updateOne(
+        { date: item.date },
+        {
+          $set: {
+            totalStaked: item.totalStaked,
+            count: item.count,
+            cumulativeTotal: item.cumulativeTotal
+          },
+          $setOnInsert: {
+            date: item.date
+          }
+        },
+        { upsert: true }
+      );
+
+      console.log(`[Daily Stats] Upserted ${item.date}:`, result.upsertedCount || result.modifiedCount);
+    }
+
+    console.log('[Daily Stats] Completed successfully.');
+  } catch (err) {
+    console.error('[Daily Stats] Failed:', err);
+  }
+}
 
 
 // ----------------------
@@ -516,6 +576,10 @@ export async function archivePaidEventsLoop() {
 (async () => {
   await archivePaidEventsLoop();
 })();
+
+
+
+
 
 async function cleanUpOldProcessedNotifications() {
   const db = await connectDB();
@@ -1381,10 +1445,6 @@ app.get('/stake-status/:wallet', async (req, res) => {
   }
 });
 
-
-
-
-
 app.get('/stake-rewards/:walletAddress', async (req, res) => {
   const wallet = req.params.walletAddress;
 
@@ -1782,8 +1842,6 @@ app.get('/auth', async (req, res) => {
         res.status(500).json({ error: 'Error initiating XUMM authentication.' });
     }
 });// ===== Listing NFT Route =====
-
-
 app.post('/login', async (req, res) => {
   const { xummPayload } = req.body;
 
@@ -3963,7 +4021,6 @@ app.post('/nft-offers', async (req, res) => {
   }
 });
 
-
 app.get('/verify-trustline/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
 
@@ -5001,6 +5058,11 @@ app.get('/stake-payload-three/:walletAddress', async (req, res) => {
   }
 });
 
+
+
+
+
+
 // Define schema for storing AMM data in MongoDB
 const ammSchema = new mongoose.Schema({
   sglcn_to_xrp: String,
@@ -5555,6 +5617,9 @@ app.get('/api/sglcn-xau', async (req, res) => {
   }
 });
 
+
+
+
 // --- Currency issuers ---
 const issuers = {
   SGLCN_ISSUER: 'rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno',
@@ -5800,7 +5865,6 @@ app.get('/rate-preview', async (req, res) => {
     }
   }
 });
-
 
 app.get('/amm/view/sglcn-xau', async (req, res) => {
   const client = new Client("wss://s2.ripple.com");
@@ -6520,6 +6584,7 @@ fetchBlocks().then(data => {
   allBlocks = data;
   renderBlocks();
 });
+
 
 app.post('/mine', async (req, res) => {
   try {
@@ -7629,6 +7694,11 @@ app.get('/nft-total', async (req, res) => {
   }
 });
 
+// routes/admin.js or similar
+
+
+
+
 app.post('/update-staker-stats', async (req, res) => {
   try {
     const db = await connectDB();
@@ -8350,33 +8420,7 @@ app.get('/api/bridge-requests', async (req, res) => {
   }
 });
 
-app.get('/checkin-login', async (req, res) => {
-  const uuid = req.query.uuid;
-  if (!uuid) {
-    return res.status(400).json({ error: 'Missing UUID' });
-  }
 
-  try {
-    const payload = await xumm.payload.get(uuid);
-
-    // Validate if signed and account exists
-    if (payload?.meta?.signed && payload?.response?.account) {
-      return res.json({
-        loggedIn: true,
-        account: payload.response.account,
-        uuid
-      });
-    } else {
-      return res.json({ loggedIn: false });
-    }
-  } catch (err) {
-    console.error('Error checking login:', err);
-    return res.status(500).json({ error: 'Error checking login' });
-  }
-});
-
-
-  
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {
   console.log("XRPL network connection check complete.");

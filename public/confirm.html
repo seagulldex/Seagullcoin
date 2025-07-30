@@ -51,6 +51,20 @@
 <body>
   <div class="form-box">
     <h2>Bridge Confirmation</h2>
+    <div class="info-box" style="margin-top: 1rem;">
+  <h3>Save Your Confirmation Link</h3>
+  <p>This link allows you to return to this page later if needed:</p>
+  <p>
+    <input 
+      type="text" 
+      id="confirmationUrl" 
+      readonly 
+      style="width: 100%; padding: 0.5rem; font-size: 0.9rem; border-radius: 4px; border: 1px solid #555; background: #111; color: #00ffff;" 
+    />
+    <button class="copy-btn" onclick="copyToClipboard('confirmationUrl')">📋 Copy Link</button>
+  </p>
+  <p style="font-size: 0.85rem; color: #ccc;">Tip: Bookmark this page or email the link to yourself to access it later.</p>
+</div>
     <p>
       <strong>From Chain:</strong> 
       <img id="confFromChainLogo" alt="From Chain Logo" style="height:24px; vertical-align:middle; margin-right:6px;"/>
@@ -306,6 +320,13 @@
     }
   }
 
+  function setConfirmationLink() {
+  const memoId = getMemoId();
+  const url = `${window.location.origin}${window.location.pathname}?memoId=${memoId}`;
+  document.getElementById("confirmationUrl").value = url;
+}
+
+
   function openSupportChat(memoId) {
     window.$crisp.push(["do", "chat:open"]);
     window.$crisp.push(["do", "message:send", ["text", `Hi, I need help with my bridge: ${memoId}`]]);
@@ -324,6 +345,7 @@
     setTimeout(pollStatus, 30000);
   }
 
+  setConfirmationLink();
   pollStatus();
 </script>
 </body>

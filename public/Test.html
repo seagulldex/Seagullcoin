@@ -2,447 +2,434 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://unpkg.com/qrcode/build/qrcode.min.js"></script>
-  <title>Bridge Confirmation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Seagull Bridge</title>
   <style>
-    body { 
-      background: #000 url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1350&q=80') no-repeat center center fixed; 
-      background-size: cover;
-      color: #fff; 
-      font-family: sans-serif; 
-      padding: 2rem; 
-    }
-    .form-box { 
-      background: rgba(17,17,17,0.9); 
-      padding: 2rem; 
-      max-width: 600px; 
-      margin: auto; 
-      border-radius: 8px; 
-      box-shadow: 0 0 15px rgba(30,144,255, 0.7); 
-    }
-    .info-box {
-      background: rgba(0, 0, 0, 0.6);
-      margin-top: 1rem;
-      padding: 1rem;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      box-shadow: 0 0 10px rgba(30,144,255,0.5);
-    }
-    button.copy-btn {
-      background: #1e90ff;
-      border: none;
-      padding: 0.2rem 0.5rem;
-      margin-left: 0.5rem;
-      border-radius: 4px;
-      cursor: pointer;
+    body {
+      font-family: sans-serif;
+      background-color: #000;
       color: #fff;
-      font-size: 1rem;
-      vertical-align: middle;
+      padding: 2rem;
     }
-    button.copy-btn:hover {
-      background: #1c7ddb;
+
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      text-align: center;
     }
-    #saveLinkWidget {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 999;
-}
 
-#saveLinkBtn {
-  background: #1e90ff;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 18px;
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(30,144,255,0.6);
-}
+    .form-box {
+      background-color: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 0 15px rgba(30,144,255, 0.3);
+    }
 
-#saveLinkPopup {
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  border-radius: 6px;
+    label {
+      display: block;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background-color: #222;
+      color: #fff;
+    }
+
+    input:focus {
+      border-color: #1e90ff;
+      outline: none;
+    }
+
+    button {
+      background-color: #1e90ff;
+      border: none;
+      margin-top: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0077cc;
+    }
+
+    .dropdown {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .dropdown-selected {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .dropdown-selected img {
+      height: 24px;
+      margin-right: 10px;
+    }
+
+    .dropdown-list {
+      position: absolute;
+      width: 100%;
+      background: #222;
+      border: 1px solid #444;
+      border-top: none;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem;
+      cursor: pointer;
+      border-top: 1px solid #333;
+    }
+
+    .dropdown-item img {
+      height: 24px;
+      margin-right: 10px;
+    }
+
+    .dropdown-item:hover {
+      background-color: #333;
+    }
+
+    .hidden {
+      display: none;
+    }
+  .modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+  }
+
+  .modal-content {
+    background-color: #111a3c;
+    border: 1px solid #1f2b60;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    color: #f0f0f0;
+    box-shadow: 0 0 20px rgba(0,170,228, 0.3);
+  }
+
+  .modal-content h3 {
+    margin-bottom: 1rem;
+    color: #00aae4;
+  }
+
+  .modal-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .modal-actions button {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  #cancelModal {
+    background-color: #333;
+    color: #ccc;
+  }
+
+  #confirmModal {
+    background-color: #00aae4;
+    color: #fff;
+
+  }
+    #limitModal .modal-content {
+  background-color: #111a3c;
+  border: 1px solid #1f2b60;
+  box-shadow: 0 0 20px rgba(0, 170, 228, 0.3);
+  color: #f0f0f0;
+}
+    #limitDismiss {
+  background-color: #00aae4;
+  color: #fff;
   padding: 0.75rem;
-  width: 260px;
-  margin-top: 8px;
-  box-shadow: 0 0 10px rgba(0,255,255,0.2);
-}
-
-#saveLinkPopup input {
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
   width: 100%;
-  padding: 0.25rem;
-  margin-bottom: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #444;
-  background: #111;
-  color: #00ffff;
-  font-size: 0.9rem;
 }
-
-#saveLinkPopup.hidden {
-  display: none;
-}
+      .hidden {
+    display: none;
+      }
   </style>
 </head>
 <body>
-<div id="saveLinkWidget">
-  <button id="saveLinkBtn" title="Click to show/save your confirmation link">🔗</button>
-  <div id="saveLinkPopup" class="hidden">
-    <p style="margin: 0 0 0.5rem;"><strong>Remember to copy this link:</strong></p>
-    <input type="text" id="confirmationUrl" readonly />
-    <button class="copy-btn" onclick="copyToClipboard('confirmationUrl')">📋</button>
-    <p style="font-size: 0.75rem; color: #aaa;">Bookmark or save this link to return here later.</p>
-  </div>
+
+<h2>Bridge Your Seagull Assets</h2>
+
+<div class="form-box">
+  <form id="bridge-form">
+
+    <!-- Asset Type Dropdown -->
+    <label>Asset Type</label>
+    <div id="assetDropdown" class="dropdown"></div>
+
+    <label>From Chain</label>
+    <div id="fromDropdown" class="dropdown"></div>
+
+    <label>To Chain</label>
+    <div id="toDropdown" class="dropdown"></div>
+
+    <label>Your Wallet Address (to receive)</label>
+    <input type="text" id="receiveAddress" required />
+
+    <label>Amount</label>
+    <input type="number" id="amount" required />
+
+    <button type="submit">Bridge Now</button>
+  </form>
+</div>
+
+<div id="loading" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); color: white; font-size: 1.5rem; text-align: center; padding-top: 40vh; z-index: 9999;">
+  Processing bridge...
 </div>
 
 
 
-  
-  <div class="form-box">
-    <h2>Bridge Confirmation</h2>
-    
-    <p>
-      <strong>From Chain:</strong> 
-      <img id="confFromChainLogo" alt="From Chain Logo" style="height:24px; vertical-align:middle; margin-right:6px;"/>
-      <span id="confFromChain"></span>
-    </p>
-    <p>
-      <strong>To Chain:</strong> 
-      <img id="confToChainLogo" alt="To Chain Logo" style="height:24px; vertical-align:middle; margin-right:6px;"/>
-      <span id="confToChain"></span>
-    </p>
-    <p><strong>Send:</strong> <span id="confAmount"></span></p>
-    <p><strong>Deposit Address:</strong> 
-      <span id="confEscrow" style="word-break: break-word;"></span>
-      <button class="copy-btn" onclick="copyToClipboard('confEscrow')">📋 Copy</button>
-    </p>
-    <p id="memoRow"><strong>Memo ID / Tag:</strong> 
-      <span id="confMemo" style="color: #1e90ff;"></span>
-      <button class="copy-btn" onclick="copyToClipboard('confMemo')">📋 Copy</button>
-    </p>
-    <p><strong>Status:</strong> <span id="bridgeStatus">Fetching...</span></p>
-    <p><strong>Expires in:</strong> <span id="countdownTimer">—</span></p>
+  <div id="confirmationModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Confirm Bridge</h3>
+    <p id="modalDetails" style="white-space: pre-line;"></p>
+    <div class="modal-actions">
+      <button id="cancelModal">Cancel</button>
+      <button id="confirmModal">Confirm</button>
+    </div>
   </div>
+</div>
 
-  <div class="info-box" id="userInfoBox" style="display:none;">
-    <h3>Your Information</h3>
-    <p><strong>Bridge Fee:</strong> <span id="confFee" style="color: #ff4d4d;"></span></p>
-    <p><strong>Net Received:</strong> <span id="confNetReceived" style="color: #00ffcc;"></span></p>
-    <p><strong>Receive Address:</strong> <span id="userReceiveAddress" style="word-break: break-word;"></span></p>
-    <p id="userMemoRow"><strong>Memo ID / Tag:</strong> <span id="userMemoId" style="color: #1e90ff;"></span></p>
+  <!-- Daily Limit Modal -->
+<div id="limitModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Daily Bridge Limit Reached</h3>
+    <p style="margin-top: 1rem;">
+      We've hit the maximum daily limit for bridging <strong><span id="limitAssetName"></span></strong>.<br/>
+      Please try again tomorrow.
+    </p>
+    <div class="modal-actions">
+      <button id="limitDismiss">OK</button>
+    </div>
   </div>
+</div>
 
-  <div id="qrCodeContainer" style="margin-top: 10px;"></div>
-  
-<script type="text/javascript">
-  window.$crisp = [];
-  window.CRISP_WEBSITE_ID = "c4c177f3-5bf9-4f53-8a57-5ed64696616e"; // Replace with your actual Crisp ID
-  (function () {
-    const d = document;
-    const s = d.createElement("script");
-    s.src = "https://client.crisp.chat/l.js";
-    s.async = 1;
-    d.getElementsByTagName("head")[0].appendChild(s);
-  })();
-</script>
-
+<!-- 🧠 Only showing the fixed JavaScript portion for brevity -->
 <script>
-  const escrowAddresses = {
-    XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
-    XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
-    HBAR: "0.0.2928384",
-    ALGO: "YFZD6UWU5KXQINAN4CV6UCMIMRFSTKXNFQWV7WUSYQIWASCH2AX4LT4RMM",
-    FLR: "0x3B51F488f729e5Cfa566990Fd7f069F364b6984D",
-    XDC: "xdc870f64E73e7D2dc5022b4b74e58C323b3148A984"
+  const logos = {
+    SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
+    SeagullCash: 'https://d1fdloi71mui9q.cloudfront.net/Z2URVu3eSjyXF3fPVdyq_png_20221121_111630_0000.png',
+    XRP: 'https://altcoinsbox.com/wp-content/uploads/2023/01/xrp-logo-1140x1140.webp',
+    HBAR: 'https://altcoinsbox.com/wp-content/uploads/2023/03/hedera-logo-1140x1140.webp',
+    FLR: 'https://s2.coinmarketcap.com/static/img/coins/64x64/7950.png',
+    XDC: 'https://cdn.coincircle.com/icons/fallback/xdc-network.png',
+    XLM: 'https://files.swissborg.com/product/wealth-app/assets/ic_crypto_xlm.png',
+    ALGO: 'https://cdn.freelogovectors.net/wp-content/uploads/2021/10/algorand-logo-freelogovectors.net_.png',
   };
 
-  const chainsUsingMemo = ["XRP", "XLM", "HBAR"];
+  const bridgeAssets = {
+    SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"],
+    SeagullCoin: ["XRP", "FLR", "XDC"]
+  };
 
-  function copyToClipboard(id) {
-    const text = document.getElementById(id).textContent;
-    navigator.clipboard.writeText(text).then(() => {
-      alert('Copied to clipboard!');
-    }).catch(() => {
-      alert('Failed to copy!');
-    });
-  }
+  let selectedAsset = "SeagullCash";
+  let fromChain = "";
+  let toChain = "";
 
-  function getMemoId() {
-    return new URL(window.location.href).searchParams.get("memoId");
-  }
+  function calculateBridgeFee(asset, amount) {
+    const amountNum = parseFloat(amount);
+    const fee = asset === "SeagullCoin" ? 0.2 : 5;
+    const received = amountNum - fee;
 
-  function generateQRCode(address, elementId, fromChain, memoId) {
-    const container = document.getElementById(elementId);
-    container.innerHTML = ""; // Clear previous QR
-
-    let uri;
-
-    switch (fromChain) {
-      case "XRP":
-        uri = `xrp:${address}?dt=${memoId}`;
-        break;
-      case "XLM":
-        uri = `stellar:${address}?memo=${memoId}`;
-        break;
-      case "HBAR":
-        uri = `hedera:${address}?memo=${memoId}`;
-        break;
-      case "ALGO":
-        uri = `algo:${address}`;
-        break;
-      case "FLR":
-        uri = `flare:${address}`;
-        break;
-      case "XDC":
-        uri = `xdc:${address}`;
-        break;
-      default:
-        uri = address; // fallback
-    }
-
-    new QRCode(container, {
-      text: uri,
-      width: 128,
-      height: 128,
-    });
-  }
-
-  function getLogo(chainName) {
-    const logos = {
-      SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
-      SeagullCash: 'https://d1fdloi71mui9q.cloudfront.net/Z2URVu3eSjyXF3fPVdyq_png_20221121_111630_0000.png',
-      XRP: 'https://altcoinsbox.com/wp-content/uploads/2023/01/xrp-logo-1140x1140.webp',
-      HBAR: 'https://altcoinsbox.com/wp-content/uploads/2023/03/hedera-logo-1140x1140.webp',
-      FLR: 'https://s2.coinmarketcap.com/static/img/coins/64x64/7950.png',
-      XDC: 'https://cdn.coincircle.com/icons/fallback/xdc-network.png',
-      XLM: 'https://files.swissborg.com/product/wealth-app/assets/ic_crypto_xlm.png',
-      ALGO: 'https://cdn.freelogovectors.net/wp-content/uploads/2021/10/algorand-logo-freelogovectors.net_.png',
+    return {
+      feeText: `${fee} ${asset}`,
+      receivedAmount: received > 0 ? received.toFixed(4) : "0"
     };
-    return logos[chainName] || '';
   }
 
-  function formatCountdown(seconds) {
-    const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');
-    const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
-    const secs = (seconds % 60).toString().padStart(2, '0');
-    return `${hrs}:${mins}:${secs}`;
-  }
-let countdownInterval;
-
-async function fetchBridgeData() {
-  const memoId = getMemoId();
-  if (!memoId) {
-    document.getElementById("bridgeStatus").textContent = "No transaction specified.";
-    document.getElementById("countdownTimer").textContent = "—";
-    return;
+  function showLimitModal(assetName) {
+    document.getElementById("limitAssetName").innerText = assetName;
+    document.getElementById("limitModal").classList.remove("hidden");
   }
 
-  try {
-    const res = await fetch(`/api/bridge-status?memoId=${memoId}`);
-    const data = await res.json();
+  document.getElementById("limitDismiss").onclick = function () {
+    document.getElementById("limitModal").classList.add("hidden");
+  };
 
-    if (!res.ok) throw new Error(data.error || "Failed to fetch");
-
-    // Update chain names and logos
-    document.getElementById("confFromChain").textContent = data.fromChain || "N/A";
-    document.getElementById("confToChain").textContent = data.toChain || "N/A";
-    document.getElementById("confFromChainLogo").src = getLogo(data.fromChain);
-    document.getElementById("confToChainLogo").src = getLogo(data.toChain);
-
-    // Show amount
-    const currencyLabel = data.category ? `${data.category} (${data.fromChain})` : `${data.fromChain}`;
-    document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
-
-    // Calculate and show fees
-    let fee = 5;
-    if (data.category === "SeagullCoin") fee = 0.2;
-    const rawAmount = parseFloat(data.amount || "0");
-    const netReceived = Math.max(0, rawAmount - fee);
-    document.getElementById("confFee").textContent = `- ${fee} ${data.category || ""}`;
-    document.getElementById("confNetReceived").textContent = `${netReceived} ${data.category || ""}`;
-
-    // Show escrow address and QR
-    const escrow = escrowAddresses[data.fromChain];
-    const container = document.getElementById("qrCodeContainer");
+  function createDropdown(id, options, onSelect, selectedValue, exclude) {
+    const container = document.getElementById(id);
     container.innerHTML = "";
-    if (escrow && memoId) {
+
+    const filtered = exclude ? options.filter(opt => opt !== exclude) : options;
+
+    const selected = document.createElement("div");
+    selected.className = "dropdown-selected";
+    container.appendChild(selected);
+
+    const list = document.createElement("div");
+    list.className = "dropdown-list";
+    container.appendChild(list);
+
+    function update(value) {
+      selected.innerHTML = `<div style="display:flex;align-items:center;"><img src="${logos[value]}" /> ${value}</div>`;
+      list.style.display = "none";
+      onSelect(value);
+    }
+
+    selected.addEventListener("click", () => {
+      list.style.display = list.style.display === "block" ? "none" : "block";
+    });
+
+    filtered.forEach(value => {
+      const item = document.createElement("div");
+      item.className = "dropdown-item";
+      item.innerHTML = `<img src="${logos[value]}" /> ${value}`;
+      item.addEventListener("click", () => update(value));
+      list.appendChild(item);
+    });
+
+    update(filtered.includes(selectedValue) ? selectedValue : filtered[0]);
+  }
+
+  function refreshChainDropdowns() {
+    const chains = bridgeAssets[selectedAsset];
+
+    // Set defaults if current values aren't valid
+    if (!chains.includes(fromChain)) fromChain = chains[0];
+    if (!chains.includes(toChain) || fromChain === toChain) {
+      toChain = chains.find(c => c !== fromChain) || chains[0];
+    }
+
+    createDropdown("fromDropdown", chains, val => {
+      fromChain = val;
+      // Update toDropdown excluding fromChain
+      const validToChains = chains.filter(c => c !== fromChain);
+      if (!validToChains.includes(toChain)) {
+        toChain = validToChains[0];
+      }
+      createDropdown("toDropdown", chains, val2 => toChain = val2, toChain, fromChain);
+    }, fromChain);
+
+    createDropdown("toDropdown", chains, val => toChain = val, toChain, fromChain);
+  }
+
+  createDropdown("assetDropdown", Object.keys(bridgeAssets), val => {
+    selectedAsset = val;
+    refreshChainDropdowns();
+  }, selectedAsset);
+
+  refreshChainDropdowns();
+
+  document.getElementById("bridge-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const amount = parseFloat(document.getElementById("amount").value);
+    const minFee = selectedAsset === "SeagullCoin" ? 0.2 : 5;
+
+    if (fromChain === toChain) {
+      alert("From Chain and To Chain cannot be the same.");
+      return;
+    }
+
+    if (isNaN(amount) || amount <= minFee) {
+      alert(`Amount must be greater than the bridge fee of ${minFee} ${selectedAsset}.`);
+      return;
+    }
+
+    const { feeText, receivedAmount } = calculateBridgeFee(selectedAsset, amount);
+
+    document.getElementById("modalDetails").innerText =
+      `Asset: ${selectedAsset}\n` +
+      `From Chain: ${fromChain}\n` +
+      `To Chain: ${toChain}\n` +
+      `Amount: ${amount} ${selectedAsset}\n` +
+      `Bridge Fee: ${feeText}\n` +
+      `You Will Receive: ${receivedAmount} ${selectedAsset}`;
+
+    document.getElementById("confirmationModal").classList.remove("hidden");
+
+    document.getElementById("confirmModal").onclick = async function () {
+      document.getElementById("confirmationModal").classList.add("hidden");
+      document.getElementById("loading").classList.remove("hidden");
+
+      const payload = {
+        category: selectedAsset,
+        fromChain,
+        toChain,
+        amount,
+        receiveAddress: document.getElementById("receiveAddress").value,
+      };
+
       try {
-        generateQRCode(escrow, "qrCodeContainer", data.fromChain, memoId);
-      } catch (qrErr) {
-        console.error("QR code generation failed:", qrErr);
-      }
-    }
+        const res = await fetch("/api/bridge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-    // Show/hide memo
-    const shouldShowMemo = chainsUsingMemo.includes(data.fromChain);
-    document.getElementById("memoRow").style.display = shouldShowMemo ? "block" : "none";
-    document.getElementById("confMemo").textContent = shouldShowMemo ? memoId : "—";
-    document.getElementById("confEscrow").textContent = escrow || "N/A";
+        const data = await res.json();
+if (res.ok) {
+  const confirmationUrl = `/confirm.html?memoId=${data.memoId}`;
+  window.open(confirmationUrl, "_blank"); // Open in new tab
 
-    // User info box
-    const userInfoBox = document.getElementById("userInfoBox");
-    if (data.receiveAddress) {
-      userInfoBox.style.display = "block";
-      document.getElementById("userReceiveAddress").textContent = data.receiveAddress;
-
-      const userMemoRow = document.getElementById("userMemoRow");
-      if (shouldShowMemo) {
-        userMemoRow.style.display = "block";
-        document.getElementById("userMemoId").textContent = memoId;
-      } else {
-        userMemoRow.style.display = "none";
-      }
-    } else {
-      userInfoBox.style.display = "none";
-    }
-
-    // Set status text
-    const statusTextMap = {
-      pending: "Pending confirmation...",
-      confirmed: "Confirmed ✅️",
-      bridged: "Bridged 🌉",
-      expired: "Expired ❌"
-    };
-    const status = data.status;
-    document.getElementById("bridgeStatus").textContent = statusTextMap[status] || "Pending";
-
-    // Clear existing countdown
-    if (countdownInterval) clearInterval(countdownInterval);
-
-    // === STATUS HANDLING === //
-
-    if (status === "pending" && data.expiresIn && data.expiresIn > 0) {
-      let remaining = data.expiresIn;
-      document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
-
-      countdownInterval = setInterval(() => {
-        remaining--;
-        if (remaining <= 0) {
-          clearInterval(countdownInterval);
-          document.getElementById("bridgeStatus").textContent = "Expired ❌ Please start a new transaction.";
-          document.getElementById("countdownTimer").textContent = "Expired";
-        } else {
-          document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
+  const link = document.getElementById("confirmationLink");
+  link.href = confirmationUrl; 
+  link.style.display = "none"; // Still show the link in case they closed the new tab
+} else {
+          if (res.status === 429 && data.error.includes("Daily bridge limit exceeded")) {
+            showLimitModal(selectedAsset);
+          } else {
+            alert(data.error || "Something went wrong.");
+          }
         }
-      }, 1000);
-      closeModal();
-    } else {
-      // All other statuses — no countdown
-      document.getElementById("countdownTimer").textContent =
-        status === "expired" ? "Expired" : "—";
-
-      // Show appropriate modal
-      if (status === "confirmed") {
-        showModal("Processing bridge... ⏳ Please wait while funds are being sent.");
-      } else if (status === "bridged") {
-        showModal("Bridged successfully! ✅ Funds have been sent.");
-      } else {
-        closeModal(); // hide for anything else
+      } catch (err) {
+        alert("Server error.");
+        console.error(err);
+      } finally {
+        document.getElementById("loading").classList.add("hidden");
       }
-    }
-  } catch (err) {
-    console.error(err);
-    document.getElementById("bridgeStatus").textContent = "Error loading transaction.";
-    document.getElementById("countdownTimer").textContent = "—";
-  }
-}
+    };
 
-
-  function setConfirmationLink() {
-  const memoId = getMemoId();
-  if (!memoId) return;
-  const url = `${window.location.origin}${window.location.pathname}?memoId=${memoId}`;
-  document.getElementById("confirmationUrl").value = url;
-}
-
-document.getElementById("saveLinkBtn").addEventListener("click", () => {
-  const popup = document.getElementById("saveLinkPopup");
-  popup.classList.toggle("hidden");
-});
-
-
-
-  function openSupportChat(memoId) {
-    window.$crisp.push(["do", "chat:open"]);
-    window.$crisp.push(["do", "message:send", ["text", `Hi, I need help with my bridge: ${memoId}`]]);
-  }
-
-  function setCrispUser(wallet, memoId) {
-    window.$crisp.push(["set", "user:nickname", [wallet]]);
-    window.$crisp.push(["set", "session:data", [
-      ["wallet", wallet],
-      ["memoId", memoId],
-    ]]);
-  }
-
-  function showModal(message) {
-  let existingModal = document.getElementById("bridgeModal");
-  if (!existingModal) {
-    const modal = document.createElement("div");
-    modal.id = "bridgeModal";
-    modal.style.position = "fixed";
-    modal.style.top = "0";
-    modal.style.left = "0";
-    modal.style.width = "100vw";
-    modal.style.height = "100vh";
-    modal.style.backgroundColor = "rgba(0, 0, 0, 0.85)";
-    modal.style.color = "#fff";
-    modal.style.display = "flex";
-    modal.style.justifyContent = "center";
-    modal.style.alignItems = "center";
-    modal.style.zIndex = "9999";
-    modal.style.fontSize = "1.5rem";
-    modal.style.padding = "2rem";
-    modal.style.textAlign = "center";
-    modal.style.backdropFilter = "blur(4px)";
-    modal.innerHTML = `<div><span>${message}</span><br/><br/><div class="loader"></div></div>`;
-    
-    // Optional spinner
-    const style = document.createElement("style");
-    style.innerHTML = `
-      .loader {
-        border: 6px solid rgba(255,255,255,0.2);
-        border-top: 6px solid #1e90ff;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        margin: 1rem auto 0;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    `;
-    document.head.appendChild(style);
-
-    document.body.appendChild(modal);
-  } else {
-    existingModal.querySelector("span").textContent = message;
-    existingModal.style.display = "flex";
-  }
-}
-
-function closeModal() {
-  const modal = document.getElementById("bridgeModal");
-  if (modal) modal.style.display = "none";
-}
-
-
-  async function pollStatus() {
-    await fetchBridgeData();
-    setTimeout(pollStatus, 30000);
-  }
-
-  setConfirmationLink();
-  pollStatus();
+    document.getElementById("cancelModal").onclick = function () {
+      document.getElementById("confirmationModal").classList.add("hidden");
+    };
+  });
 </script>
 </body>
 </html>

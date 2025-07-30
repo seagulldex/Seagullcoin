@@ -49,22 +49,20 @@
   </style>
 </head>
 <body>
+<div id="saveLinkWidget">
+  <button id="saveLinkBtn" title="Click to show/save your confirmation link">🔗</button>
+  <div id="saveLinkPopup" class="hidden">
+    <p style="margin: 0 0 0.5rem;"><strong>Remember to copy this link:</strong></p>
+    <input type="text" id="confirmationUrl" readonly />
+    <button class="copy-btn" onclick="copyToClipboard('confirmationUrl')">📋</button>
+    <p style="font-size: 0.75rem; color: #aaa;">Bookmark or save this link to return here later.</p>
+  </div>
+</div>
+
+  
   <div class="form-box">
     <h2>Bridge Confirmation</h2>
-    <div class="info-box" style="margin-top: 1rem;">
-  <h3>Save Your Confirmation Link</h3>
-  <p>This link allows you to return to this page later if needed:</p>
-  <p>
-    <input 
-      type="text" 
-      id="confirmationUrl" 
-      readonly 
-      style="width: 100%; padding: 0.5rem; font-size: 0.9rem; border-radius: 4px; border: 1px solid #555; background: #111; color: #00ffff;" 
-    />
-    <button class="copy-btn" onclick="copyToClipboard('confirmationUrl')">📋 Copy Link</button>
-  </p>
-  <p style="font-size: 0.85rem; color: #ccc;">Tip: Bookmark this page or email the link to yourself to access it later.</p>
-</div>
+    
     <p>
       <strong>From Chain:</strong> 
       <img id="confFromChainLogo" alt="From Chain Logo" style="height:24px; vertical-align:middle; margin-right:6px;"/>

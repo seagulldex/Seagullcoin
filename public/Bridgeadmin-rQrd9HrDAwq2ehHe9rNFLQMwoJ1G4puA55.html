@@ -109,6 +109,43 @@
     const scannerStatus = { active: [], pending: [], confirmed: [], bridged: []
 };
 
+    const ADMIN_WALLET = 'rQrd9HrDAwq2ehHe9rNFLQMwoJ1G4puA55';
+
+async function startLoginFlow() {
+  try {
+    const res = await fetch('/login');
+    const data = await res.json();
+
+    const xummWindow = window.open(data.payloadURL, '_blank');
+
+    const interval = setInterval(async () => {
+      const check = await fetch(`/checkin-login?uuid=${data.payloadUUID}`);
+      const loginStatus = await check.json();
+
+      if (loginStatus.loggedIn) {
+        clearInterval(interval);
+        if (xummWindow) xummWindow.close();
+
+        if (loginStatus.account !== ADMIN_WALLET) {
+          alert('Unauthorized wallet — access denied.');
+          document.body.innerHTML = '<h2 style="color:red;">Access Denied</h2>';
+          return;
+        }
+
+        // Continue with admin access
+        console.log('Admin authenticated:', loginStatus.account);
+        localStorage.setItem('admin_wallet', loginStatus.account);
+        fetchScannerStatus();
+        fetchTransactions();
+      }
+    }, 3000);
+  } catch (e) {
+    console.error('Login failed:', e);
+    alert('Login error.');
+  }
+}
+
+
 
     async function fetchScannerStatus() {
       try {

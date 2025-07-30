@@ -221,6 +221,30 @@
   </div>
 </div>
 
+  <!-- Daily Limit Modal -->
+<div id="limitModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Daily Bridge Limit Reached</h3>
+    <p style="margin-top: 1rem;">
+      You've hit the maximum daily limit for bridging <strong><span id="limitAssetName"></span></strong>.<br/>
+      Please try again tomorrow or contact support if you believe this is a mistake.
+    </p>
+    <div class="modal-actions">
+      <button id="limitDismiss">OK</button>
+    </div>
+  </div>
+</div>
+
+
+  <!-- Daily Limit Modal -->
+<div id="limitModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Daily Bridge Limit Reached</h3>
+    <p>You’ve reached your daily bridge limit for this asset. Please try again tomorrow or contact support for further assistance.</p>
+    <div class="modal-actions">
+      <button id="limitDismiss">
+
+
 <script>
   const logos = {
     SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
@@ -253,6 +277,14 @@
   };
 }
   
+function showLimitModal(assetName) {
+  document.getElementById("limitAssetName").innerText = assetName;
+  document.getElementById("limitModal").classList.remove("hidden");
+}
+
+document.getElementById("limitDismiss").onclick = function () {
+  document.getElementById("limitModal").classList.add("hidden");
+};
 
 
 

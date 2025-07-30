@@ -379,39 +379,51 @@ if (data.status === "confirmed") {
 
 
       // Handle countdown
-      const isFinalStatus = ["expired", "confirmed", "bridged"].includes(data.status);
-      if (isFinalStatus) {
-        clearInterval(countdownInterval);
-        document.getElementById("countdownTimer").textContent = 
-          data.status === "expired" ? "Expired" : "—";
-        return;
-      }
+      // Clear old intervals
+if (countdownInterval) clearInterval(countdownInterval);
+if (finalizeInterval) clearInterval(finalizeInterval);
 
-      // Start or update countdown timer
-      if (countdownInterval) clearInterval(countdownInterval);
-      if (data.expiresIn && data.expiresIn > 0) {
-        let remaining = data.expiresIn;
-        document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
+// Handle countdown (Expires In)
+const isFinalStatus = ["expired", "confirmed", "bridged"].includes(data.status);
+if (isFinalStatus) {
+  document.getElementById("countdownTimer").textContent = 
+    data.status === "expired" ? "Expired" : "—";
+} else if (data.expiresIn && data.expiresIn > 0) {
+  let remaining = data.expiresIn;
+  document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
 
-        countdownInterval = setInterval(() => {
-          remaining--;
-          if (remaining <= 0) {
-            clearInterval(countdownInterval);
-            document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
-            document.getElementById("countdownTimer").textContent = "Expired";
-          } else {
-            document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
-          }
-        }, 1000);
-      } else {
-        document.getElementById("countdownTimer").textContent = "—";
-      }
-    } catch (err) {
-      document.getElementById("bridgeStatus").textContent = "Error loading transaction.";
-      document.getElementById("countdownTimer").textContent = "—";
-      console.error(err);
+  countdownInterval = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(countdownInterval);
+      document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
+      document.getElementById("countdownTimer").textContent = "Expired";
+    } else {
+      document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
     }
-  }
+  }, 1000);
+} else {
+  document.getElementById("countdownTimer").textContent = "—";
+}
+
+// Handle "Bridge Finalizes In" timer (only if status is confirmed)
+if (data.status === "confirmed") {
+  let finalizeRemaining = 2 * 60 * 60; // 2 hours in seconds
+  document.getElementById("finalizeTimer").textContent = formatCountdown(finalizeRemaining);
+
+  finalizeInterval = setInterval(() => {
+    finalizeRemaining--;
+    if (finalizeRemaining <= 0) {
+      clearInterval(finalizeInterval);
+      document.getElementById("finalizeTimer").textContent = "Finalized ✅";
+    } else {
+      document.getElementById("finalizeTimer").textContent = formatCountdown(finalizeRemaining);
+    }
+  }, 1000);
+} else {
+  document.getElementById("finalizeTimer").textContent = "—";
+}
+
 
   function setConfirmationLink() {
   const memoId = getMemoId();

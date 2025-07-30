@@ -339,7 +339,7 @@ setInterval(() => {
 }, 10 * 60 * 1000);
 
 
-export async function archiveBridgedRequest(memoId) {
+
 export async function archiveBridgedRequestsBatch() {
   const db = await connectDB();
 

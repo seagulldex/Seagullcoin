@@ -338,6 +338,14 @@ setInterval(() => {
     .catch(console.error);
 }, 10 * 60 * 1000);
 
+const memoId = "someMemoId"; // e.g. from route param or query
+
+const bridgedDoc = await db.collection('bridge_requests').findOne({ memoId });
+
+if (bridgedDoc && bridgedDoc.status === 'bridged') {
+  await db.collection('history').insertOne(bridgedDoc);
+  await db.collection('bridges').deleteOne({ _id: bridgedDoc._id });
+}
 
 
 export async function fetchAndStoreDailyTotals() {  try {

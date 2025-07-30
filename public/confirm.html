@@ -415,7 +415,9 @@ document.getElementById("saveLinkBtn").addEventListener("click", () => {
       box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
       transform: translateX(-16px);
     `;
-    content.innerHTML = `<div>${message}</div><div class="loader" style="margin-top: 1rem;"></div>`;
+    const includeSpinner = message.toLowerCase().includes("processing");
+content.innerHTML = `<div>${message}</div>` + 
+                    (includeSpinner ? `<div class="loader" style="margin-top: 1rem;"></div>` : '');
 
     modal.appendChild(content);
     document.body.appendChild(modal);

@@ -319,49 +319,59 @@
 
   const { feeText, receivedAmount } = calculateBridgeFee(selectedAsset, amount);
 
-  const confirmBridge = window.confirm(
-    `Bridge Details:\n` +
+  // Populate and show modal
+  document.getElementById("modalDetails").innerText =
     `Asset: ${selectedAsset}\n` +
     `Amount: ${amount} ${selectedAsset}\n` +
     `Bridge Fee: ${feeText}\n` +
-    `You Will Receive: ${receivedAmount} ${selectedAsset}\n\n` +
-    `Proceed with bridging?`
-  );
+    `You Will Receive: ${receivedAmount} ${selectedAsset}`;
 
-  if (!confirmBridge) return;
+  document.getElementById("confirmationModal").classList.remove("hidden");
 
-  document.getElementById("loading").classList.remove("hidden");
+  const confirmBtn = document.getElementById("confirmModal");
+  const cancelBtn = document.getElementById("cancelModal");
 
-  const payload = {
-    category: selectedAsset,
-    fromChain,
-    toChain,
-    amount,
-    receiveAddress: document.getElementById("receiveAddress").value,
+  // Wait for user choice
+  confirmBtn.onclick = async function () {
+    document.getElementById("confirmationModal").classList.add("hidden");
+    document.getElementById("loading").classList.remove("hidden");
+
+    const payload = {
+      category: selectedAsset,
+      fromChain,
+      toChain,
+      amount,
+      receiveAddress: document.getElementById("receiveAddress").value,
+    };
+
+    try {
+      const res = await fetch("/api/bridge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        const link = document.getElementById("confirmationLink");
+        link.href = `/confirm.html?memoId=${data.memoId}`;
+        link.style.display = "block";
+      } else {
+        alert(data.error || "Something went wrong.");
+      }
+    } catch (err) {
+      alert("Server error.");
+      console.error(err);
+    } finally {
+      document.getElementById("loading").classList.add("hidden");
+    }
   };
 
-  try {
-    const res = await fetch("/api/bridge", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      const link = document.getElementById("confirmationLink");
-      link.href = `/confirm.html?memoId=${data.memoId}`;
-      link.style.display = "block";
-    } else {
-      alert(data.error || "Something went wrong.");
-    }
-  } catch (err) {
-    alert("Server error.");
-    console.error(err);
-  } finally {
-    document.getElementById("loading").classList.add("hidden");
-  }
+  cancelBtn.onclick = () => {
+    document.getElementById("confirmationModal").classList.add("hidden");
+  };
 });
+
 
 </script>
 

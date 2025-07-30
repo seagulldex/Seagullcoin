@@ -8489,6 +8489,10 @@ app.get('/checkin-login', async (req, res) => {
   }
 });
 
+app.get('/Bridgeadmin.html', basicAuth, (req, res) => {
+  res.send('Welcome to the admin dashboard');
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

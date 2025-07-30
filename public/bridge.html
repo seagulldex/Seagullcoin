@@ -169,6 +169,22 @@
     SeagullCoin: ["XRP", "FLR", "XDC"]
   };
 
+  function calculateBridgeFee(asset, amount) {
+  const feeCoin = 0.1;
+  const feeCash = 5;
+
+  const amountNum = parseFloat(amount);
+  const fee = asset === "SeagullCoin" ? feeCoin : 0;
+  const deduction = asset === "SeagullCash" ? feeCash : 0;
+
+  const received = amountNum - fee;
+  return {
+    feeText: `${fee} ${asset} + ${deduction} ${asset === "SeagullCash" ? "SeagullCash" : ""}`,
+    receivedAmount: received > 0 ? received.toFixed(4) : "0"
+  };
+}
+
+
   function createDropdown(id, options, onSelect) {
     const container = document.getElementById(id);
     const selected = document.createElement("div");
@@ -220,8 +236,55 @@
   refreshChainDropdowns();
 
   document.getElementById("bridge-form").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    document.getElementById("loading").classList.remove("hidden");
+  e.preventDefault();
+
+  const amount = document.getElementById("amount").value;
+  const { feeText, receivedAmount } = calculateBridgeFee(selectedAsset, amount);
+
+  const confirmBridge = window.confirm(
+    `Bridge Details:\n` +
+    `Asset: ${selectedAsset}\n` +
+    `Amount: ${amount} ${selectedAsset}\n` +
+    `Bridge Fee: ${feeText}\n` +
+    `You Will Receive: ${receivedAmount} ${selectedAsset}\n\n` +
+    `Proceed with bridging?`
+  );
+
+  if (!confirmBridge) return;
+
+  document.getElementById("loading").classList.remove("hidden");
+
+  const payload = {
+    category: selectedAsset,
+    fromChain,
+    toChain,
+    amount,
+    receiveAddress: document.getElementById("receiveAddress").value,
+  };
+
+  try {
+    const res = await fetch("/api/bridge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      const link = document.getElementById("confirmationLink");
+      link.href = `/confirm.html?memoId=${data.memoId}`;
+      link.style.display = "block";
+    } else {
+      alert(data.error || "Something went wrong.");
+    }
+  } catch (err) {
+    alert("Server error.");
+    console.error(err);
+  } finally {
+    document.getElementById("loading").classList.add("hidden");
+  }
+});
+
 
     const payload = {
       category: selectedAsset,

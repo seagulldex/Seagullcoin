@@ -234,134 +234,126 @@
     const secs = (seconds % 60).toString().padStart(2, '0');
     return `${hrs}:${mins}:${secs}`;
   }
+let countdownInterval;
 
-  let countdownInterval;
-
-  async function fetchBridgeData() {
-    const memoId = getMemoId();
-    if (!memoId) {
-      document.getElementById("bridgeStatus").textContent = "No transaction specified.";
-      document.getElementById("countdownTimer").textContent = "—";
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/bridge-status?memoId=${memoId}`);
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || "Failed to fetch");
-
-      // Update chain names
-      document.getElementById("confFromChain").textContent = data.fromChain || "N/A";
-      document.getElementById("confToChain").textContent = data.toChain || "N/A";
-
-      // Update chain logos
-      document.getElementById("confFromChainLogo").src = getLogo(data.fromChain);
-      document.getElementById("confToChainLogo").src = getLogo(data.toChain);
-
-      const currencyLabel = data.category 
-        ? `${data.category} (${data.fromChain})` 
-        : `${data.fromChain}`;
-
-      document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
-
-      // Calculate fee and net
-      let fee = 5;
-      if (data.category === "SeagullCoin") {
-        fee = 0.2;
-      }
-
-      const rawAmount = parseFloat(data.amount || "0");
-      const netReceived = Math.max(0, rawAmount - fee);
-
-      document.getElementById("confFee").textContent = `- ${fee} ${data.category || ''}`;
-      document.getElementById("confNetReceived").textContent = `${netReceived} ${data.category || ''}`;
-
-      // Generate QR code if possible
-      const escrow = escrowAddresses[data.fromChain];
-      const container = document.getElementById("qrCodeContainer");
-      container.innerHTML = "";
-      if (escrow && memoId) {
-        try {
-          generateQRCode(escrow, "qrCodeContainer", data.fromChain, memoId);
-        } catch (qrErr) {
-          console.error("QR code generation failed:", qrErr);
-          container.innerHTML = "";
-        }
-      }
-
-      const statusTextMap = {
-        pending: "Pending confirmation...",
-        confirmed: "Confirmed ✅️",
-        bridged: "Bridged 🌉",
-        expired: "Expired ❌"
-      };
-
-      // Show or hide Memo ID row depending on chain
-      const shouldShowMemo = chainsUsingMemo.includes(data.fromChain);
-      const memoRow = document.getElementById("memoRow");
-      memoRow.style.display = shouldShowMemo ? "block" : "none";
-      document.getElementById("confMemo").textContent = shouldShowMemo ? memoId : "—";
-
-      // Show escrow address
-      document.getElementById("confEscrow").textContent = escrow || "N/A";
-
-      // Show user info box with receive address and memo ID
-      const userInfoBox = document.getElementById("userInfoBox");
-      if (data.receiveAddress) {
-        userInfoBox.style.display = "block";
-        document.getElementById("userReceiveAddress").textContent = data.receiveAddress;
-
-        const userMemoRow = document.getElementById("userMemoRow");
-        if (shouldShowMemo) {
-          userMemoRow.style.display = "block";
-          document.getElementById("userMemoId").textContent = memoId;
-        } else {
-          userMemoRow.style.display = "none";
-          document.getElementById("userMemoId").textContent = "";
-        }
-      } else {
-        userInfoBox.style.display = "none";
-      }
-
-      // Update status text
-      const statusText = statusTextMap[data.status] || "Pending";
-      document.getElementById("bridgeStatus").textContent = statusText;
-
-      // Handle countdown
-      const isFinalStatus = ["expired", "confirmed", "bridged"].includes(data.status);
-      if (isFinalStatus) {
-        clearInterval(countdownInterval);
-        document.getElementById("countdownTimer").textContent = 
-          data.status === "expired" ? "Expired" : "—";
-        return;
-      }
-
-      // Start or update countdown timer
-      if (countdownInterval) clearInterval(countdownInterval);
-      if (data.expiresIn && data.expiresIn > 0) {
-        let remaining = data.expiresIn;
-        document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
-
-        countdownInterval = setInterval(() => {
-          remaining--;
-          if (remaining <= 0) {
-            clearInterval(countdownInterval);
-            document.getElementById("bridgeStatus").textContent = "Expired. Please start a new transaction.";
-            document.getElementById("countdownTimer").textContent = "Expired";
-          } else {
-            document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
-          }
-        }, 1000);
-      } else {
-        document.getElementById("countdownTimer").textContent = "—";
-      }
-    } catch (err) {
-      document.getElementById("bridgeStatus").textContent = "Error loading transaction.";
-      document.getElementById("countdownTimer").textContent = "—";
-      console.error(err);
-    }
+async function fetchBridgeData() {
+  const memoId = getMemoId();
+  if (!memoId) {
+    document.getElementById("bridgeStatus").textContent = "No transaction specified.";
+    document.getElementById("countdownTimer").textContent = "—";
+    return;
   }
+
+  try {
+    const res = await fetch(`/api/bridge-status?memoId=${memoId}`);
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || "Failed to fetch");
+
+    // Update chain names and logos
+    document.getElementById("confFromChain").textContent = data.fromChain || "N/A";
+    document.getElementById("confToChain").textContent = data.toChain || "N/A";
+    document.getElementById("confFromChainLogo").src = getLogo(data.fromChain);
+    document.getElementById("confToChainLogo").src = getLogo(data.toChain);
+
+    // Show amount
+    const currencyLabel = data.category ? `${data.category} (${data.fromChain})` : `${data.fromChain}`;
+    document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
+
+    // Calculate and show fees
+    let fee = 5;
+    if (data.category === "SeagullCoin") fee = 0.2;
+    const rawAmount = parseFloat(data.amount || "0");
+    const netReceived = Math.max(0, rawAmount - fee);
+    document.getElementById("confFee").textContent = `- ${fee} ${data.category || ""}`;
+    document.getElementById("confNetReceived").textContent = `${netReceived} ${data.category || ""}`;
+
+    // Show escrow address and QR
+    const escrow = escrowAddresses[data.fromChain];
+    const container = document.getElementById("qrCodeContainer");
+    container.innerHTML = "";
+    if (escrow && memoId) {
+      try {
+        generateQRCode(escrow, "qrCodeContainer", data.fromChain, memoId);
+      } catch (qrErr) {
+        console.error("QR code generation failed:", qrErr);
+      }
+    }
+
+    // Show/hide memo
+    const shouldShowMemo = chainsUsingMemo.includes(data.fromChain);
+    document.getElementById("memoRow").style.display = shouldShowMemo ? "block" : "none";
+    document.getElementById("confMemo").textContent = shouldShowMemo ? memoId : "—";
+    document.getElementById("confEscrow").textContent = escrow || "N/A";
+
+    // User info box
+    const userInfoBox = document.getElementById("userInfoBox");
+    if (data.receiveAddress) {
+      userInfoBox.style.display = "block";
+      document.getElementById("userReceiveAddress").textContent = data.receiveAddress;
+
+      const userMemoRow = document.getElementById("userMemoRow");
+      if (shouldShowMemo) {
+        userMemoRow.style.display = "block";
+        document.getElementById("userMemoId").textContent = memoId;
+      } else {
+        userMemoRow.style.display = "none";
+      }
+    } else {
+      userInfoBox.style.display = "none";
+    }
+
+    // Set status text
+    const statusTextMap = {
+      pending: "Pending confirmation...",
+      confirmed: "Confirmed ✅️",
+      bridged: "Bridged 🌉",
+      expired: "Expired ❌"
+    };
+    const status = data.status;
+    document.getElementById("bridgeStatus").textContent = statusTextMap[status] || "Pending";
+
+    // Clear existing countdown
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    // === STATUS HANDLING === //
+
+    if (status === "pending" && data.expiresIn && data.expiresIn > 0) {
+      let remaining = data.expiresIn;
+      document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
+
+      countdownInterval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(countdownInterval);
+          document.getElementById("bridgeStatus").textContent = "Expired ❌ Please start a new transaction.";
+          document.getElementById("countdownTimer").textContent = "Expired";
+        } else {
+          document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
+        }
+      }, 1000);
+      closeModal();
+    } else {
+      // All other statuses — no countdown
+      document.getElementById("countdownTimer").textContent =
+        status === "expired" ? "Expired" : "—";
+
+      // Show appropriate modal
+      if (status === "confirmed") {
+        showModal("Processing bridge... ⏳ Please wait while funds are being sent.");
+      } else if (status === "bridged") {
+        showModal("Bridged successfully! ✅ Funds have been sent.");
+      } else {
+        closeModal(); // hide for anything else
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById("bridgeStatus").textContent = "Error loading transaction.";
+    document.getElementById("countdownTimer").textContent = "—";
+  }
+}
+
 
   function setConfirmationLink() {
   const memoId = getMemoId();
@@ -389,6 +381,60 @@ document.getElementById("saveLinkBtn").addEventListener("click", () => {
       ["memoId", memoId],
     ]]);
   }
+
+  function showModal(message) {
+  let existingModal = document.getElementById("bridgeModal");
+  if (!existingModal) {
+    const modal = document.createElement("div");
+    modal.id = "bridgeModal";
+    modal.style.position = "fixed";
+    modal.style.top = "0";
+    modal.style.left = "0";
+    modal.style.width = "100vw";
+    modal.style.height = "100vh";
+    modal.style.backgroundColor = "rgba(0, 0, 0, 0.85)";
+    modal.style.color = "#fff";
+    modal.style.display = "flex";
+    modal.style.justifyContent = "center";
+    modal.style.alignItems = "center";
+    modal.style.zIndex = "9999";
+    modal.style.fontSize = "1.5rem";
+    modal.style.padding = "2rem";
+    modal.style.textAlign = "center";
+    modal.style.backdropFilter = "blur(4px)";
+    modal.innerHTML = `<div><span>${message}</span><br/><br/><div class="loader"></div></div>`;
+    
+    // Optional spinner
+    const style = document.createElement("style");
+    style.innerHTML = `
+      .loader {
+        border: 6px solid rgba(255,255,255,0.2);
+        border-top: 6px solid #1e90ff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin: 1rem auto 0;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(modal);
+  } else {
+    existingModal.querySelector("span").textContent = message;
+    existingModal.style.display = "flex";
+  }
+}
+
+function closeModal() {
+  const modal = document.getElementById("bridgeModal");
+  if (modal) modal.style.display = "none";
+}
+
 
   async function pollStatus() {
     await fetchBridgeData();

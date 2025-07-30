@@ -344,14 +344,20 @@ export async function archiveBridgedRequest(memoId) {
 
   const doc = await db.collection('bridge_requests').findOne({ memoId });
 
-  if (doc?.status === 'bridged') {
-    await db.collection('history').insertOne({ ...doc, archivedAt: new Date() });
+  if (doc?.bridgedAt) {
+    await db.collection('history').insertOne({
+      ...doc,
+      archivedAt: new Date(),
+    });
+
     await db.collection('bridge_requests').deleteOne({ _id: doc._id });
+
     console.log(`Archived and removed bridged request: ${memoId}`);
   } else {
-    console.log(`No bridged doc to archive for: ${memoId}`);
+    console.log(`No bridged document found for memoId: ${memoId}`);
   }
 }
+
 
 
 

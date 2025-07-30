@@ -169,16 +169,20 @@
     SeagullCoin: ["XRP", "FLR", "XDC"]
   };
 
-  function calculateBridgeFee(amount) {
-  const flatFee = 5;
+  function calculateBridgeFee(asset, amount) {
   const amountNum = parseFloat(amount);
 
-  const received = amountNum - flatFee;
+  let fee = 0;
+  if (asset === "SeagullCoin") fee = 0.2;
+  else if (asset === "SeagullCash") fee = 5;
+
+  const received = amountNum - fee;
   return {
-    feeText: `${flatFee} flat fee`,
-    receivedAmount: received > 0 ? received.toFixed(4) : "0"
+    feeText: `${fee} ${asset}`,
+    receivedAmount: received > 0 ? received.toFixed(4) : "0",
   };
 }
+
 
 
   function createDropdown(id, options, onSelect) {

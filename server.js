@@ -1184,7 +1184,15 @@ app.use(limiter);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Protected route first
+app.get('/Bridgeadmin.html', basicAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'Bridgeadmin.html'));
+});
+
+// Then static files
 app.use(express.static('public'));
+
 
 const mintLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes

@@ -8437,32 +8437,6 @@ app.get('/checkin-login', async (req, res) => {
 });
 
 
-app.get('/admin', requireAdminWallet, (req, res) => {
-  res.send('Welcome, admin wallet!');
-});
-
-app.post('/api/marks-confirmed', requireAdminWallet, (req, res) => {
-  const { memoId } = req.body;
-  let data = readData();
-  const tx = data.find(t => t.memoId === memoId);
-  if (!tx) return res.status(404).json({ error: 'Not found' });
-
-  tx.status = 'confirmed';
-  writeData(data);
-  res.json({ success: true });
-});
-
-  app.post('/api/marks-bridged', requireAdminWallet, (req, res) => {
-  const { memoId } = req.body;
-  let data = readData();
-  const tx = data.find(t => t.memoId === memoId);
-  if (!tx) return res.status(404).json({ error: 'Not found' });
-
-  tx.status = 'bridged';
-  writeData(data);
-  res.json({ success: true });
-});
-
   
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

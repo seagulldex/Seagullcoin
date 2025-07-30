@@ -154,6 +154,9 @@
 </script>
 
 <script>
+let modalDismissedForever = false;
+
+  
   const escrowAddresses = {
     XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
     XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
@@ -484,7 +487,9 @@ content.innerHTML = `
 function closeModal() {
   const modal = document.getElementById("bridgeModal");
   if (modal) modal.style.display = "none";
+  modalDismissedForever = true;
 }
+
 
 
   async function pollStatus() {

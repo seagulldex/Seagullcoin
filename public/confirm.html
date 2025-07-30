@@ -386,6 +386,7 @@ document.getElementById("saveLinkBtn").addEventListener("click", () => {
   }
 
   function showModal(message) {
+    if (modalDismissedForever) return;
   let existingModal = document.getElementById("bridgeModal");
   if (!existingModal) {
     const modal = document.createElement("div");

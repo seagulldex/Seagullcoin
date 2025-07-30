@@ -339,26 +339,27 @@ setInterval(() => {
 }, 10 * 60 * 1000);
 
 export async function archiveBridgedRequest(memoId) {
-  try {
-    const db = await connectDB();
-    const bridgedDoc = await db.collection('bridge_requests').findOne({ memoId });
+  const db = await connectDB();
+  
+  // Find the bridged document by memoId
+  const bridgedDoc = await db.collection('bridge_requests').findOne({ memoId });
 
-    if (!bridgedDoc) {
-      console.log(`[Archive] No document found for memoId: ${memoId}`);
-      return;
-    }
+  if (bridgedDoc && bridgedDoc.status === 'bridged') {
+    // Add archivedAt field to the document before inserting
+    const archivedDoc = { ...bridgedDoc, archivedAt: new Date() };
 
-    if (bridgedDoc.status === 'bridged') {
-      await db.collection('history').insertOne({ ...bridgedDoc, archivedAt: new Date() });
-      await db.collection('bridge_requests').deleteOne({ _id: bridgedDoc._id });
-      console.log(`Archived and removed bridged request: ${memoId}`);
-    } else {
-      console.log(`[Archive] Skipped. Status is not 'bridged': ${bridgedDoc.status}`);
-    }
-  } catch (err) {
-    console.error('[Archive] Error archiving bridged request:', err);
+    // Insert into history collection
+    await db.collection('history').insertOne(archivedDoc);
+
+    // Remove from bridge_requests collection by _id
+    await db.collection('bridge_requests').deleteOne({ _id: bridgedDoc._id });
+
+    console.log(`Archived and removed bridged request: ${memoId}`);
+  } else {
+    console.log(`No bridged document found with memoId: ${memoId}`);
   }
 }
+
 
 const threshold = new Date(Date.now() - 10 * 60 * 1000); // 10 minutes ago
 

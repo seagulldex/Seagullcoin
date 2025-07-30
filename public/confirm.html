@@ -128,7 +128,8 @@
       <button class="copy-btn" onclick="copyToClipboard('confMemo')">📋 Copy</button>
     </p>
     <p><strong>Status:</strong> <span id="bridgeStatus">Fetching...</span></p>
-    <p><strong>Expires in:</strong> <span id="countdownTimer">—</span></p>
+    <p><strong>Expires In:</strong> <span id="countdownTimer">—</span></p>
+<p><strong>Bridge Finalizes In:</strong> <span id="finalizeTimer">—</span></p>
   </div>
 
   <div class="info-box" id="userInfoBox" style="display:none;">
@@ -154,6 +155,9 @@
 </script>
 
 <script>
+  let countdownInterval;
+  let finalizeInterval;
+
   const escrowAddresses = {
     XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
     XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
@@ -327,6 +331,26 @@
       // Update status text
       const statusText = statusTextMap[data.status] || "Pending";
       document.getElementById("bridgeStatus").textContent = statusText;
+
+      // Handle "Bridge Finalizes In" timer if confirmed
+if (finalizeInterval) clearInterval(finalizeInterval);
+if (data.status === "confirmed") {
+  let finalizeRemaining = 2 * 60 * 60; // 2 hours in seconds
+  document.getElementById("finalizeTimer").textContent = formatCountdown(finalizeRemaining);
+
+  finalizeInterval = setInterval(() => {
+    finalizeRemaining--;
+    if (finalizeRemaining <= 0) {
+      clearInterval(finalizeInterval);
+      document.getElementById("finalizeTimer").textContent = "Finalized ✅";
+    } else {
+      document.getElementById("finalizeTimer").textContent = formatCountdown(finalizeRemaining);
+    }
+  }, 1000);
+} else {
+  document.getElementById("finalizeTimer").textContent = "—";
+}
+
 
       if (data.status === "confirmed") {
   let remaining = 2 * 60 * 60; // 2 hours in seconds

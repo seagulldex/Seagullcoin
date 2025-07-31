@@ -91,8 +91,8 @@ import Iso20022 from './models/Iso20022.js';  // adjust the path
 import BridgeRequest from "./models/BridgeRequest.js";
 import { basicAuth } from './authMiddleware.js';
 import AssetRegistry from './models/AssetRegistry.js'; // example if in ./db/
-import IsoMessage from './models/IsoMessage.js'; // 
-import BridgeHistory from './models/BridgeHistory.js'; // 
+import isoMessageSchema from './models/isoMessageSchema.js'; // 
+import bridgeHistorySchema from './models/isoMessageSchema.js'; // 
 
 
 dotenv.config();

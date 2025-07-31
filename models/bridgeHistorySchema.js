@@ -15,3 +15,5 @@ const bridgeHistorySchema = new mongoose.Schema({
   expiresAt: Date,
   archivedAt: Date
 });
+
+bridgeHistorySchema.index({ memoId: 1 });

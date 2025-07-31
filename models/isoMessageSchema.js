@@ -9,10 +9,6 @@ const isoMessageSchema = new mongoose.Schema({
   ref: "AssetRegistry",
   required: true
 },
-  transactionHash: {
-    type: String,
-    required: true
-  },
   messageType: {
     type: String,
     required: true // e.g., pacs.008, camt.053

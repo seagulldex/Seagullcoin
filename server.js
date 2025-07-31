@@ -124,9 +124,6 @@ const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
 
 const PRIVATE_KEY_PEM = fs.readFileSync(path.resolve('./keys/private.pem'), 'utf-8');
 const PUBLIC_KEY_PEM = fs.readFileSync(path.resolve('./keys/public.pem'), 'utf-8');
-const AssetRegistry = mongoose.model('AssetRegistry', assetRegistrySchema);
-const IsoMessage = mongoose.model('IsoMessage', isoMessageSchema);
-const BridgeHistory = mongoose.model('BridgeHistory', bridgeHistorySchema);
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 
@@ -613,6 +610,10 @@ export async function archivePaidEventsLoop() {
 })();
 
 
+const AssetRegistry = mongoose.model('AssetRegistry', assetRegistrySchema);
+const IsoMessage = mongoose.model('IsoMessage', isoMessageSchema);
+const BridgeHistory = mongoose.model('BridgeHistory', bridgeHistorySchema);
+export { AssetRegistry, IsoMessage, BridgeHistory };
 
 
 

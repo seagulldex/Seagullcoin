@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <title>Seagull Bridge</title>
   <style>
     body {
@@ -250,6 +251,9 @@
   </div>
 </div>
 
+  <canvas id="assetChart" width="400" height="200" style="max-width: 600px; margin: 2rem auto; display: block;"></canvas>
+
+
 <!-- 🧠 Only showing the fixed JavaScript portion for brevity -->
 <script>
   const logos = {
@@ -271,6 +275,59 @@
   let selectedAsset = "SeagullCash";
   let fromChain = "";
   let toChain = "";
+
+
+  async function renderBridgeChart() {
+    try {
+      const res = await fetch('/api/bridge-chart');
+      const data = await res.json();
+
+      const ctx = document.getElementById('assetChart').getContext('2d');
+      const labels = data.map(d => d._id);
+      const values = data.map(d => d.total.toFixed(2));
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Total Bridged',
+            data: values,
+            backgroundColor: '#00aae4',
+            borderRadius: 5,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: 'Total Bridged per Asset',
+              color: '#fff',
+              font: {
+                size: 18
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#fff' }
+            },
+            y: {
+              ticks: { color: '#fff' },
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Failed to load chart:", err);
+    }
+  }
+
+  renderBridgeChart();
+
 
   function calculateBridgeFee(asset, amount) {
     const amountNum = parseFloat(amount);

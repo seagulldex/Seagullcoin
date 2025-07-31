@@ -7,10 +7,10 @@ const isoMessageSchema = new mongoose.Schema({
     enum: ["XRP", "XDC", "XLM", "ETH", "Other"]
   },
   asset: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "AssetRegistry",
-  required: true
-},
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "AssetRegistry",
+    required: true
+  },
   messageType: {
     type: String,
     required: true // e.g., pacs.008, camt.053
@@ -46,5 +46,4 @@ const isoMessageSchema = new mongoose.Schema({
     default: Date.now
   }
 });
-
 isoMessageSchema.index({ memoId: 1 });

@@ -16,4 +16,12 @@ const bridgeHistorySchema = new mongoose.Schema({
   archivedAt: Date
 });
 
+eventLog: [
+  {
+    status: { type: String },
+    timestamp: { type: Date, default: Date.now },
+    metadata: mongoose.Schema.Types.Mixed
+  }
+]
+
 bridgeHistorySchema.index({ memoId: 1 });

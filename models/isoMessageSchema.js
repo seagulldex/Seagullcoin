@@ -5,10 +5,10 @@ const isoMessageSchema = new mongoose.Schema({
     enum: ["XRP", "XDC", "XLM", "ETH", "Other"]
   },
   asset: {
-    type: String,
-    required: true,
-    enum: ["SeagullCoin", "SeagullCash", "OtherToken"] // expand as needed
-  },
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "AssetRegistry",
+  required: true
+},
   transactionHash: {
     type: String,
     required: true

@@ -46,3 +46,5 @@ const isoMessageSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+isoMessageSchema.index({ memoId: 1 });

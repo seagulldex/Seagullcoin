@@ -8515,6 +8515,26 @@ app.get('/api/bridge-history', async (req, res) => {
   }
 });
 
+// Express backend route
+app.get('/api/bridge-chart', async (req, res) => {
+  try {
+    const history = await db.collection('history').aggregate([
+      {
+        $group: {
+          _id: "$category", // SeagullCoin, SeagullCash, etc.
+          total: { $sum: "$amount" }
+        }
+      },
+      { $sort: { total: -1 } }
+    ]).toArray();
+
+    res.json(history);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Chart data fetch failed" });
+  }
+});
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

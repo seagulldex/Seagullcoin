@@ -90,6 +90,7 @@ import SGLCNRLUSDPrice from './models/SGLCNRLUSDPrice.js';
 import Iso20022 from './models/Iso20022.js';  // adjust the path
 import BridgeRequest from "./models/BridgeRequest.js";
 import { basicAuth } from './authMiddleware.js';
+import { AssetRegistry, IsoMessage, BridgeHistory } from './models.js';
 
 
 dotenv.config();
@@ -608,13 +609,6 @@ export async function archivePaidEventsLoop() {
 (async () => {
   await archivePaidEventsLoop();
 })();
-
-
-const AssetRegistry = mongoose.model('AssetRegistry', assetRegistrySchema);
-const IsoMessage = mongoose.model('IsoMessage', isoMessageSchema);
-const BridgeHistory = mongoose.model('BridgeHistory', bridgeHistorySchema);
-export { AssetRegistry, IsoMessage, BridgeHistory };
-
 
 
 async function cleanUpOldProcessedNotifications() {

@@ -1,5 +1,5 @@
 const bridgeHistorySchema = new mongoose.Schema({
-  memoId: { type: String, required: true, unique: true },
+  memoId: { type: String, required: true, unique: true, index: true },
   category: { type: String, required: true }, // SeagullCoin, etc.
   fromChain: { type: String, required: true },
   toChain: { type: String, required: true },
@@ -13,15 +13,14 @@ const bridgeHistorySchema = new mongoose.Schema({
   confirmedAt: Date,
   bridgedAt: Date,
   expiresAt: Date,
-  archivedAt: Date
+  archivedAt: Date,
+
+  eventLog: [
+    {
+      status: { type: String },
+      timestamp: { type: Date, default: Date.now },
+      metadata: mongoose.Schema.Types.Mixed
+    }
+  ]
 });
-
-eventLog: [
-  {
-    status: { type: String },
-    timestamp: { type: Date, default: Date.now },
-    metadata: mongoose.Schema.Types.Mixed
-  }
-]
-
 bridgeHistorySchema.index({ memoId: 1 });

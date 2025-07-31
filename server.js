@@ -8501,9 +8501,20 @@ app.get('/checkin-login', async (req, res) => {
 });
 
 
-app.get('/Bridgeadmin.html', basicAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'Bridgeadmin.html'));
+// Example endpoint
+app.get('/api/bridge-history', async (req, res) => {
+  try {
+    const history = await db.collection('history')
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(500)
+      .toArray();
+    res.json(history);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
 });
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

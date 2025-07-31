@@ -74,16 +74,17 @@
 
   <table id="transactionsTable">
     <thead>
-      <tr>
-        <th>Memo ID</th>
-        <th>From Chain</th>
-        <th>To Chain</th>
-        <th>Amount</th>
-        <th>Status</th>
-        <th>Expires In</th>
-        <th>Action</th>
-      </tr>
-    </thead>
+  <tr>
+    <th>Memo ID</th>
+    <th>From Chain</th>
+    <th>To Chain</th>
+    <th>Amount</th>
+    <th>Status</th>
+    <th>Expires In</th>
+    <th>Receive Address</th>
+    <th>Action</th>
+  </tr>
+</thead>
     <tbody></tbody>
   </table>
 
@@ -226,6 +227,7 @@ async function startLoginFlow() {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
+        <td>${tx.receiveAddress || '—'}</td>
           <td>${tx.memoId}</td>
           <td>${tx.fromChain}</td>
           <td>${tx.toChain}</td>

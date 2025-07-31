@@ -90,7 +90,6 @@ import SGLCNRLUSDPrice from './models/SGLCNRLUSDPrice.js';
 import Iso20022 from './models/Iso20022.js';  // adjust the path
 import BridgeRequest from "./models/BridgeRequest.js";
 import { basicAuth } from './authMiddleware.js';
-import { AssetRegistry, IsoMessage, BridgeHistory } from './models.js';
 
 
 dotenv.config();

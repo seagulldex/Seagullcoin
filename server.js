@@ -136,7 +136,6 @@ console.log(JSON.stringify(parsedJson, null, 2));
 
 
 const xml = fs.readFileSync('./message.xml', 'utf8');
-const parser = new XMLParser({ ignoreAttributes: false });
 
 const parsed = parser.parse(xml);
 console.log(JSON.stringify(parsed, null, 2));

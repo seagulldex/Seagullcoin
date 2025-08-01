@@ -121,6 +121,20 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking service wallet
 const token = randomBytes(32).toString('hex')
 
+const rawXml = fs.readFileSync('message.xml', 'utf8');
+
+// Configure parser
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_"
+});
+
+// Parse XML into JSON
+const parsedJson = parser.parse(rawXml);
+
+console.log(JSON.stringify(parsedJson, null, 2));
+
+
 const xml = fs.readFileSync('./message.xml', 'utf8');
 const parser = new XMLParser({ ignoreAttributes: false });
 

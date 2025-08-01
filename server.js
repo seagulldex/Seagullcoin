@@ -1185,6 +1185,7 @@ app.use(limiter);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.text({ type: ['application/xml', 'text/xml'] }));
 
 // Protected route first
 app.get('/Bridgeadmin.html', basicAuth, (req, res) => {

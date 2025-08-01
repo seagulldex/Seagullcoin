@@ -1,3 +1,6 @@
+import mongoose from 'mongoose';
+
+
 const bridgeHistorySchema = new mongoose.Schema({
   memoId: { type: String, required: true, unique: true, index: true },
   category: { type: String, required: true }, // SeagullCoin, etc.

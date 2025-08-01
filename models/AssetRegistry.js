@@ -26,3 +26,5 @@ const assetRegistrySchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+export default assetRegistrySchema;

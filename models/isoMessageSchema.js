@@ -47,3 +47,4 @@ const isoMessageSchema = new mongoose.Schema({
   }
 });
 isoMessageSchema.index({ memoId: 1 });
+export default isoMessageSchema;

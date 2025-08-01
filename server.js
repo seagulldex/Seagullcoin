@@ -2,7 +2,6 @@
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
-import { parseString } from 'xml2js';
 import fetch from 'node-fetch';
 import path, { dirname } from 'path';
 import multer from 'multer';
@@ -58,6 +57,7 @@ createTables();
 
 
 // Import your business logic modules
+import convert from 'xml-js';
 import { client, fetchNFTs } from './xrplClient.js';
 import { addListing, getNFTDetails, unlistNFT, getAllNFTListings } from './nftListings.js';
 import { OfferModel } from './models/offerModel.js';

@@ -121,9 +121,9 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking service wallet
 const token = randomBytes(32).toString('hex')
 
-const rawXml = fs.readFileSync('message.xml', 'utf8');
+const rawXml = fs.readFileSync('./message.xml', 'utf8');
 
-// Configure parser
+// Configure the parser
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_"
@@ -132,13 +132,9 @@ const parser = new XMLParser({
 // Parse XML into JSON
 const parsedJson = parser.parse(rawXml);
 
+// Output parsed JSON
 console.log(JSON.stringify(parsedJson, null, 2));
 
-
-const xml = fs.readFileSync('./message.xml', 'utf8');
-
-const parsed = parser.parse(xml);
-console.log(JSON.stringify(parsed, null, 2));
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }

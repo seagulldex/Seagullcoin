@@ -91,7 +91,8 @@ import Iso20022 from './models/Iso20022.js';  // adjust the path
 import BridgeRequest from "./models/BridgeRequest.js";
 import { basicAuth } from './authMiddleware.js';
 import { AssetRegistry, IsoMessage, BridgeHistory } from './models/index.js';
-import XMLParser from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
+
 
 dotenv.config();
 
@@ -119,6 +120,12 @@ const nftCache = new Map(); // key: wallet address, value: { data, timestamp }
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking service wallet
 const token = randomBytes(32).toString('hex')
+
+const xml = fs.readFileSync('./message.xml', 'utf8');
+const parser = new XMLParser({ ignoreAttributes: false });
+
+const parsed = parser.parse(xml);
+console.log(JSON.stringify(parsed, null, 2));
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse
 const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }

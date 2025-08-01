@@ -42,7 +42,6 @@
     "uuid": "^11.1.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
-    "xml2js": "^0.6.2",
     "xrpl": "^4.2.5",
     "xumm-oauth2-pkce": "^2.8.7",
     "xumm-sdk": "^1.11.2",

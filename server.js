@@ -91,7 +91,6 @@ import Iso20022 from './models/Iso20022.js';  // adjust the path
 import BridgeRequest from "./models/BridgeRequest.js";
 import { basicAuth } from './authMiddleware.js';
 import { AssetRegistry, IsoMessage, BridgeHistory } from './models/index.js';
-import { XMLParser } from 'fast-xml-parser';
 
 
 dotenv.config();
@@ -121,19 +120,6 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking service wallet
 const token = randomBytes(32).toString('hex')
 
-const rawXml = fs.readFileSync('./message.xml', 'utf8');
-
-// Configure the parser
-const parser = new XMLParser({
-  ignoreAttributes: false,
-  attributeNamePrefix: "@_"
-});
-
-// Parse XML into JSON
-const parsedJson = parser.parse(rawXml);
-
-// Output parsed JSON
-console.log(JSON.stringify(parsedJson, null, 2));
 
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse

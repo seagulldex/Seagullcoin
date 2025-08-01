@@ -8,8 +8,7 @@
     "client": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-      "preinstall": "npx npm-force-resolutions",
+    "eject": "react-scripts eject"
   },
   "dependencies": {
     "axios": "^1.9.0",
@@ -51,9 +50,6 @@
   "devDependencies": {
     "nodemon": "^3.1.10"
   },
-  "resolutions": {
-  "xmldom": "^0.8.6"
-},
   "engines": {
     "node": "16.20.2"
   },
@@ -69,3 +65,5 @@
   ],
   "author": "KoreyXRP",
   "license": "MIT",
+  "type": "module"
+}

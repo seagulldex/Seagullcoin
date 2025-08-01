@@ -24,3 +24,4 @@ const bridgeHistorySchema = new mongoose.Schema({
   ]
 });
 bridgeHistorySchema.index({ memoId: 1 });
+export default bridgeHistorySchema;

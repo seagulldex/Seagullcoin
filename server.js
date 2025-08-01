@@ -91,7 +91,7 @@ import Iso20022 from './models/Iso20022.js';  // adjust the path
 import BridgeRequest from "./models/BridgeRequest.js";
 import { basicAuth } from './authMiddleware.js';
 import { AssetRegistry, IsoMessage, BridgeHistory } from './models/index.js';
-import { XMLParser } from 'fast-xml-parser';
+import XMLParser from 'fast-xml-parser';
 
 dotenv.config();
 
@@ -125,17 +125,6 @@ const stakes = {}; // Format: { walletAddress: { uuid, amount, status } }
 
 const PRIVATE_KEY_PEM = fs.readFileSync(path.resolve('./keys/private.pem'), 'utf-8');
 const PUBLIC_KEY_PEM = fs.readFileSync(path.resolve('./keys/public.pem'), 'utf-8');
-
-const xml = fs.readFileSync('message.xml', 'utf8');
-const xsd = fs.readFileSync('pain.001.001.03.xsd', 'utf8');
-
-const xmlDoc = libxml.parseXml(xml);
-const xsdDoc = libxml.parseXml(xsd);
-
-const isValid = xmlDoc.validate(xsdDoc);
-if (!isValid) {
-  console.error(xmlDoc.validationErrors);
-}
 
 const api = new RippleAPI({ server: 'wss://s2.ripple.com' });
 

@@ -1,3 +1,6 @@
+import mongoose from 'mongoose';
+
+
 const assetRegistrySchema = new mongoose.Schema({
   assetSymbol: {
     type: String,

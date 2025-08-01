@@ -93,7 +93,7 @@ import { basicAuth } from './authMiddleware.js';
 import { AssetRegistry, IsoMessage, BridgeHistory } from './models/index.js';
 
 
-const parsed = parseIsoXml(xml);
+
 
 
 dotenv.config();

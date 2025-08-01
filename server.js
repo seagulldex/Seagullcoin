@@ -118,7 +118,7 @@ const xrplClient = new Client('wss://xrplcluster.com');
 const nftCache = new Map(); // key: wallet address, value: { data, timestamp }
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking service wallet
-const token = randomBytes(32).toString('hex')
+const token = randomBytes(32).toString('hex');
 
 
 

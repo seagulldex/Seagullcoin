@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 const isoMessageSchema = new mongoose.Schema({
   memoId: { type: String, required: true, unique: true, index: true }, // Primary ID for L2
 

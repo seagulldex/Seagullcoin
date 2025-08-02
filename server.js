@@ -1185,6 +1185,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.text({ type: ['application/xml', 'text/xml'] }));
+app.use('/.well-known', express.static(path.join(__dirname, 'public/.well-known')));
+
 
 // Protected route first
 app.get('/Bridgeadmin.html', basicAuth, (req, res) => {
@@ -8535,6 +8537,8 @@ app.get('/api/bridge-chart', async (req, res) => {
     res.status(500).json({ error: "Chart data fetch failed" });
   }
 });
+
+
 
 
 // Call the XRPL ping when the server starts

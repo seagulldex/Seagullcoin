@@ -8538,6 +8538,15 @@ app.get('/api/bridge-chart', async (req, res) => {
   }
 });
 
+// Helper function to promisify fs.readFile with a callback
+function readFileAsync(filePath) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(filePath, 'utf8', (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
+}
 
 app.get('/.well-known/hedera.json', async (req, res) => {
   try {

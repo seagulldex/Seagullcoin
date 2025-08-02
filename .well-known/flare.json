@@ -1,0 +1,12 @@
+{
+  "name": "SeagullCoin",
+  "description": "The Gold Standard of the Bored Seagull Club ecosystem.
+SeagullCoin acts as the plumbing of our Ecosystem, with pairing to FLR,XDC,and XRP and highly liquid to XAU.
+  On Flare these coins represent Collateral Loans amd financial tools.",
+  "network": "mainnet",
+  "contractAddress": "0x495dafa49ed19f3bfc3ddeb7e048f20ff149778f",
+  "website": "https://bored-seagull-club.xyz",
+  "logo": "https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH_400x400.jpg",
+  "twitter": "@bored_club",
+  "support": "support@boredseagullclub.com"
+}

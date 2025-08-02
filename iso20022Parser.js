@@ -3,8 +3,12 @@ import { DOMParser } from 'xmldom';
 
 export function parseIsoXml(rawXml) {
   try {
-    const doc = new DOMParser().parseFromString(rawXml, 'application/xml');
+    // Wrap raw XML with a root element to allow multiple root nodes
+    const wrappedXml = `<root>${rawXml}</root>`;
 
+    const doc = new DOMParser().parseFromString(wrappedXml, 'application/xml');
+
+    // Now you can safely access MsgId and InstdAmt anywhere inside the wrapper
     const messageId = doc.getElementsByTagName('MsgId')[0]?.textContent;
     const amount = doc.getElementsByTagName('InstdAmt')[0]?.textContent;
 
@@ -16,3 +20,4 @@ export function parseIsoXml(rawXml) {
     throw new Error('Basic XML parse failed: ' + err.message);
   }
 }
+

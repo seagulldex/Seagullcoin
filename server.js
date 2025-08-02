@@ -1185,7 +1185,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.text({ type: ['application/xml', 'text/xml'] }));
-app.use('/.well-known', express.static(path.join(__dirname, 'public/.well-known')));
+app.use('/.well-known', express.static(path.join(__dirname, '.well-known')));
 
 
 // Protected route first

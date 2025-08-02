@@ -8539,8 +8539,17 @@ app.get('/api/bridge-chart', async (req, res) => {
 });
 
 
-app.get('/test-hed', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/.well-known/hedera.json'));
+app.get('/.well-known/hedera.json', (req, res) => {
+  const filePath = path.join(__dirname, 'public', '.well-known', 'hedera.json');
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Failed to read hedera.json:', err);
+      return res.status(500).send('Internal Server Error');
+    }
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow cross-origin requests if needed
+    res.send(data);
+  });
 });
 
 

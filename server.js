@@ -8542,13 +8542,15 @@ app.get('/api/bridge-chart', async (req, res) => {
 app.get('/.well-known/hedera.json', async (req, res) => {
   try {
     const filePath = path.join(__dirname, 'public', '.well-known', 'hedera.json');
+    console.log('📄 Reading file from:', filePath);
+
     const data = await fs.readFile(filePath, 'utf8');
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Access-Control-Allow-Origin', '*'); // CORS for wallets
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.send(data);
   } catch (err) {
-    console.error('Error reading hedera.json:', err);
+    console.error('❌ Error reading hedera.json:', err.message);
     res.status(500).send('Internal Server Error');
   }
 });

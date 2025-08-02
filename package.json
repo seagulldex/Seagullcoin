@@ -50,9 +50,6 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
-  },
-  "resolutions": {
-  "xmldom": "^0.8.6"
 },
   "engines": {
     "node": "16.20.2"

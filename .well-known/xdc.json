@@ -1,0 +1,10 @@
+{
+  "name": "SeagullCoin",
+  "description": "The Gold Standard of the Bored Seagull Club ecosystem. SeagullCoin acts as a liquidity bridge protocol and ISO20022 messaging system between XRP, XDC, and FLR. On XDC SeagullCoin represents Enterprise leverage and EVM compatibility.",
+  "network": "mainnet",
+  "contractAddress": "0xd38109f587bd0326cad60a18cf3c1ecd546809a6",
+  "website": "https://bored-seagull-club.xyz",
+  "logo": "https://pbs.twimg.com/profile_images/1874512448151314432/Axe_9hCH_400x400.jpg",
+  "twitter": "@bored_club",
+  "support": "support@boredseagullclub.com"
+}

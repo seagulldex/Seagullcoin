@@ -1,15 +1,18 @@
-import { XMLParser } from 'fast-xml-parser';
+// iso20022Parser.js
+import { DOMParser } from 'xmldom';
 
 export function parseIsoXml(rawXml) {
-  const parser = new XMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: '@_'
-  });
-
   try {
-    const parsedJson = parser.parse(rawXml);
-    return parsedJson;
+    const doc = new DOMParser().parseFromString(rawXml, 'application/xml');
+
+    const messageId = doc.getElementsByTagName('MsgId')[0]?.textContent;
+    const amount = doc.getElementsByTagName('InstdAmt')[0]?.textContent;
+
+    return {
+      messageId,
+      amount,
+    };
   } catch (err) {
-    throw new Error('ISO XML Parsing Failed: ' + err.message);
+    throw new Error('Basic XML parse failed: ' + err.message);
   }
 }

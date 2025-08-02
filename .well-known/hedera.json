@@ -1,0 +1,9 @@
+{
+  "name": "SeagullCash",
+  "description": "A privacy-focused payment protocol on Hedera",
+  "network": "mainnet",
+  "tokenId": "0.0.3115556",
+  "issuer": "0.0.987654",
+  "website": "https://bored-seagull-club.xyz",
+  "support": "support@boredseagullclub.com"
+}

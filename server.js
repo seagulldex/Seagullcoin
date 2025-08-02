@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 import path, { dirname } from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import fs from 'fs';
+import fs from 'fs/promises';
 import mongoose from 'mongoose';
 import { fileURLToPath } from 'url';
 import rateLimit from 'express-rate-limit';

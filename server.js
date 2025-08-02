@@ -8539,6 +8539,9 @@ app.get('/api/bridge-chart', async (req, res) => {
 });
 
 
+app.get('/test-hed', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/.well-known/hedera.json'));
+});
 
 
 // Call the XRPL ping when the server starts

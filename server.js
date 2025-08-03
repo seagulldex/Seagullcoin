@@ -8619,28 +8619,29 @@ app.post("/api/submit-iso-message", async (req, res) => {
     const rawXml = req.body.rawXml || ""; // if you’re sending raw XML
 
     const doc = {
-      memoId: parsed.MsgId || generateUUID(),
-      chain: parsed.Chain || 'XRP',
-      messageType: parsed.MessageType || 'pacs.008',
-      sender: {
-        name: parsed.SenderName || 'Unknown',
-        partyId: parsed.SenderId || 'N/A'
-      },
-      receiver: {
-        name: parsed.ReceiverName || 'Unknown',
-        partyId: parsed.ReceiverId || 'N/A'
-      },
-      amount: {
-        value: parseFloat(parsed.InstdAmt || 0),
-        currency: parsed.Currency || 'USD'
-      },
-      direction: parsed.Direction || 'inbound',
-      validated: false,
-      rawXml,
-      parsedJson: parsed,
-      createdAt: new Date(),
-      status: 'pending'
-    };
+  memoId: parsed.MsgId || generateUUID(),
+  chain: parsed.Chain || 'XRP',
+  messageType: parsed.MessageType || 'pacs.008',
+  sender: {
+    name: parsed.SenderName || 'Unknown',
+    partyId: parsed.SenderId || 'N/A'
+  },
+  receiver: {
+    name: parsed.ReceiverName || 'Unknown',
+    partyId: parsed.ReceiverId || 'N/A'
+  },
+  amount: {
+    value: parseFloat(parsed.InstdAmt || 0),
+    currency: parsed.Currency || 'USD'
+  },
+  direction: parsed.Direction || 'inbound',
+  validated: false,
+  rawXml: req.body, // original XML
+  parsedJson: parsed, // parsed ISO object
+  createdAt: new Date(),
+  status: 'pending'
+};
+
 
     // Save doc to DB (MongoDB or whatever you’re using)
     const saved = await db.collection('iso_messages').insertOne(doc);

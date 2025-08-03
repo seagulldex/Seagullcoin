@@ -528,17 +528,17 @@ document.getElementById("isoForm").addEventListener("submit", function (e) {
   };
 
   const rawXml = `<ISO20022>
-  <MsgId>${parsed.MsgId}</MsgId>
-  <InstdAmt>${parsed.InstdAmt}</InstdAmt>
-  <Currency>${parsed.Currency}</Currency>
-  <Chain>${parsed.Chain}</Chain>
-  <MessageType>${parsed.MessageType}</MessageType>
-  <SenderName>${parsed.SenderName}</SenderName>
-  <SenderId>${parsed.SenderId}</SenderId>
-  <ReceiverName>${parsed.ReceiverName}</ReceiverName>
-  <ReceiverId>${parsed.ReceiverId}</ReceiverId>
-  <Direction>${parsed.Direction}</Direction>
-</ISO20022>`;
+  <MsgId>${payload.memoId}</MsgId>
+  <InstdAmt>${payload.amount.value}</InstdAmt>
+  <Currency>${payload.amount.currency}</Currency>
+  <Chain>${payload.chain}</Chain>
+  <MessageType>${payload.messageType}</MessageType>
+  <SenderName>${payload.sender.name}</SenderName>
+  <SenderId>${payload.sender.partyId}</SenderId>
+  <ReceiverName>${payload.receiver.name}</ReceiverName>
+  <ReceiverId>${payload.receiver.partyId}</ReceiverId>
+  <Direction>${payload.direction}</Direction>
+</ISO20022>`.trim();
 
   const doc = {
     memoId: parsed.MsgId,
@@ -566,12 +566,25 @@ document.getElementById("isoForm").addEventListener("submit", function (e) {
 
   console.log("ISO20022 Message Created:", doc);
 
-  // Submit to backend if needed:
-  // fetch('/api/iso', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(doc)
-  // })
+  const res = await fetch("/iso-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/xml" },
+        body: xml
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        alert("✅ ISO Message submitted successfully.\nMemo ID: " + result.insertedId);
+      } else {
+        alert("❌ Submission failed: " + (result.error || "Unknown error"));
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("❌ Server error while submitting ISO message.");
+    }
+  });
 
   document.getElementById("isoModal").classList.add("hidden");
   alert("ISO 20022 message created.");

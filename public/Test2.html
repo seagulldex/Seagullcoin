@@ -144,9 +144,11 @@
     <label for="receiveAddress">Receiving Address</label>
     <input type="text" id="receiveAddress" required />
 
-    <button type="submit">Bridge Asset</button>
-  </form>
-</div>
+  <button type="submit">Bridge Asset</button>
+</form>
+
+<!-- ADD THIS AFTER THE FORM -->
+<div id="confirmationResult" style="display:none; margin-top: 2rem; background:#111; padding:1rem; border-radius:8px; border:1px solid #333;"></div>
 
 <!-- Hidden ISO Form Modal -->
 <div id="isoModal" class="modal">
@@ -262,8 +264,36 @@
     const result = await res.json();
 
     if (res.ok) {
-      alert("✅ Bridge submitted successfully: TX ID " + result.txId);
-      isoModal.classList.add("active"); // show ISO modal after bridge
+      // Call /confirm to get bridge result
+try {
+  const confirmRes = await fetch(`/confirm?memoId=${result.memoId}`);
+  const confirmData = await confirmRes.json();
+
+  if (confirmRes.ok) {
+    const output = `
+      <h3>Bridge Confirmation</h3>
+      <p><strong>Memo ID:</strong> ${confirmData.memoId}</p>
+      <p><strong>Asset:</strong> ${confirmData.asset}</p>
+      <p><strong>From Chain:</strong> ${confirmData.fromChain}</p>
+      <p><strong>To Chain:</strong> ${confirmData.toChain}</p>
+      <p><strong>Amount:</strong> ${confirmData.amount}</p>
+      <p><strong>Receive Address:</strong> ${confirmData.receiveAddress}</p>
+      <p><strong>Status:</strong> ${confirmData.status || 'Pending'}</p>
+    `;
+    const confirmDiv = document.getElementById("confirmationResult");
+    confirmDiv.innerHTML = output;
+    confirmDiv.style.display = "block";
+  } else {
+    alert("❌ Failed to load confirmation: " + (confirmData.error || "Unknown error"));
+  }
+} catch (err) {
+  alert("❌ Error fetching confirmation data.");
+  console.error(err);
+}
+
+// Show ISO modal after
+isoModal.classList.add("active");
+document.getElementById("memo").value = result.memoId || "";
     } else {
       alert("❌ Bridge failed: " + (result.error || "Unknown error"));
     }

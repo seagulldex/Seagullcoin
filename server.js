@@ -92,6 +92,7 @@ import BridgeRequest from "./models/BridgeRequest.js";
 import { basicAuth } from './authMiddleware.js';
 import { AssetRegistry, IsoMessage, BridgeHistory } from './models/index.js';
 import { parseIsoXml } from './iso20022Parser.js'; // ← note the .js
+import { parseSimpleXml } from './simpleXmlParser.js';
 
 
 

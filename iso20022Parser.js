@@ -1,5 +1,3 @@
-// iso20022Parser.js
-import { DOMParser } from 'xmldom';
 
 export function parseIsoXml(rawXml) {
   try {

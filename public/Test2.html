@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ISO 20022 + Bridge</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #000;
+      color: #fff;
+      padding: 2rem;
+    }
+
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .form-box {
+      background-color: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 15px rgba(30,144,255, 0.3);
+    }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background-color: #222;
+      color: #fff;
+    }
+
+    button {
+      background-color: #1e90ff;
+      border: none;
+      margin-top: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .section-title {
+      margin-top: 3rem;
+      font-size: 1.5rem;
+      border-bottom: 1px solid #444;
+      padding-bottom: 0.5rem;
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background-color: #111;
+      padding: 2rem;
+      border-radius: 12px;
+      border: 1px solid #333;
+      width: 90%;
+      max-width: 500px;
+    }
+
+    .modal-close {
+      background: #444;
+      border: none;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      margin-top: 1rem;
+      cursor: pointer;
+    }
+
+  </style>
+</head>
+<body>
+
+<h2>ISO 20022-Compliant Payment + Bridge</h2>
+
+<div class="form-box">
+  <div class="section-title">Bridge Asset</div>
+  <form id="bridge-form">
+    <label for="asset">Asset</label>
+    <select id="assetDropdown" required>
+      <option value="">-- Select Asset --</option>
+      <option value="SeagullCoin">SeagullCoin</option>
+      <option value="SeagullCash">SeagullCash</option>
+    </select>
+
+    <label for="fromDropdown">From Chain</label>
+    <select id="fromDropdown" required>
+      <option value="XRP">XRP</option>
+      <option value="XDC">XDC</option>
+      <option value="FLR">FLR</option>
+      <option value="XLM">XLM</option>
+      <option value="HBAR">HBAR</option>
+      <option value="ALGO">ALGO</option>
+    </select>
+
+    <label for="toDropdown">To Chain</label>
+    <select id="toDropdown" required>
+      <option value="XRP">XRP</option>
+      <option value="XDC">XDC</option>
+      <option value="FLR">FLR</option>
+      <option value="XLM">XLM</option>
+      <option value="HBAR">HBAR</option>
+      <option value="ALGO">ALGO</option>
+    </select>
+
+    <label for="amountBridge">Amount</label>
+    <input type="number" id="amountBridge" required />
+
+    <label for="receiveAddress">Receiving Address</label>
+    <input type="text" id="receiveAddress" required />
+
+    <button type="submit">Bridge Asset</button>
+  </form>
+</div>
+
+<!-- Hidden ISO Form Modal -->
+<div id="isoModal" class="modal">
+  <div class="modal-content">
+    <form id="isoForm">
+      <h3 style="margin-top:0">Submit ISO 20022 Message</h3>
+
+      <label for="messageType">Message Type</label>
+      <select id="messageType" required>
+        <option value="pacs.008">pacs.008</option>
+        <option value="pain.001">pain.001</option>
+        <option value="camt.056">camt.056</option>
+      </select>
+
+      <label for="senderName">Sending Client</label>
+      <input type="text" id="senderName" required />
+
+      <label for="senderId">Sender Address</label>
+      <input type="text" id="senderId" required />
+
+      <label for="receiverName">Receiving Client</label>
+      <input type="text" id="receiverName" required />
+
+      <label for="receiverId">Receiver Address</label>
+      <input type="text" id="receiverId" required />
+
+      <label for="amount">Amount</label>
+      <input type="number" id="amount" required />
+
+      <label for="currency">Currency</label>
+      <select id="currency" required>
+        <option value="">-- Select Currency --</option>
+        <option value="SeagullCoin">SeagullCoin</option>
+        <option value="SeagullCash">SeagullCash</option>
+      </select>
+
+      <label for="chain">Chain</label>
+      <select id="chain" required></select>
+
+      <label for="direction">Direction</label>
+      <select id="direction" required>
+        <option value="inbound">Inbound</option>
+        <option value="outbound">Outbound</option>
+      </select>
+
+      <label for="memo">Memo</label>
+      <input type="text" id="memo" />
+
+      <button type="submit">Submit ISO Message</button>
+    </form>
+    <button class="modal-close" onclick="closeIsoModal()">Cancel</button>
+  </div>
+</div>
+
+<script>
+  const isoModal = document.getElementById("isoModal");
+
+  document.getElementById("bridge-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    // You can do bridge logic here if needed
+
+    // Now show the ISO modal
+    isoModal.classList.add("active");
+  });
+
+  function closeIsoModal() {
+    isoModal.classList.remove("active");
+  }
+
+  const currencyToChains = {
+    SeagullCoin: ["XRP", "XDC", "FLR"],
+    SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
+  };
+
+  document.getElementById("currency").addEventListener("change", function () {
+    const selectedCurrency = this.value;
+    const chainSelect = document.getElementById("chain");
+    chainSelect.innerHTML = '<option value="">-- Select Chain --</option>';
+    if (currencyToChains[selectedCurrency]) {
+      currencyToChains[selectedCurrency].forEach(chain => {
+        const option = document.createElement("option");
+        option.value = chain;
+        option.textContent = chain;
+        chainSelect.appendChild(option);
+      });
+    }
+  });
+
+  document.getElementById("isoForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const payload = {
+      messageType: document.getElementById("messageType").value,
+      sender: {
+        name: document.getElementById("senderName").value,
+        partyId: document.getElementById("senderId").value
+      },
+      receiver: {
+        name: document.getElementById("receiverName").value,
+        partyId: document.getElementById("receiverId").value
+      },
+      amount: {
+        value: parseFloat(document.getElementById("amount").value),
+        currency: document.getElementById("currency").value
+      },
+      chain: document.getElementById("chain").value,
+      direction: document.getElementById("direction").value,
+      memoId: document.getElementById("memo").value
+    };
+
+    const xml = `<ISO20022>
+  <MsgId>${payload.memoId}</MsgId>
+  <InstdAmt>${payload.amount.value}</InstdAmt>
+  <Currency>${payload.amount.currency}</Currency>
+  <Chain>${payload.chain}</Chain>
+  <MessageType>${payload.messageType}</MessageType>
+  <SenderName>${payload.sender.name}</SenderName>
+  <SenderId>${payload.sender.partyId}</SenderId>
+  <ReceiverName>${payload.receiver.name}</ReceiverName>
+  <ReceiverId>${payload.receiver.partyId}</ReceiverId>
+  <Direction>${payload.direction}</Direction>
+</ISO20022>`;
+
+    try {
+      const res = await fetch("/iso-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/xml" },
+        body: xml
+      });
+      const result = await res.json();
+      if (res.ok) {
+        alert("✅ ISO Message submitted successfully. Memo ID: " + result.insertedId);
+        closeIsoModal();
+      } else {
+        alert("❌ Submission failed: " + (result.error || "Unknown error"));
+      }
+    } catch (err) {
+      alert("❌ Server error while submitting ISO message.");
+    }
+  });
+</script>
+
+</body>
+</html>

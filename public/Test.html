@@ -251,54 +251,43 @@
   </div>
 </div>
 
-  <div class="form-box">
-  <form id="isoForm">
-    <label for="messageType">Message Type</label>
-    <select id="messageType" required>
-      <option value="pacs.008">pacs.008</option>
-      <option value="pain.001">pain.001</option>
-      <option value="camt.056">camt.056</option>
-    </select>
+  <!-- ISO20022 Modal -->
+<div id="isoModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Submit ISO 20022 Message</h3>
+    <form id="isoForm">
+      <label>Message ID</label>
+      <input type="text" id="isoMsgId" required>
 
-    <label for="senderName">Sending Client</label>
-    <input type="text" id="senderName" required />
+      <label>Amount</label>
+      <input type="number" id="isoAmount" required>
 
-    <label for="senderId">Sender Address</label>
-    <input type="text" id="senderId" required />
+      <label>Currency</label>
+      <input type="text" id="isoCurrency" required>
 
-    <label for="receiverName">Receiving Client</label>
-    <input type="text" id="receiverName" required />
+      <label>Sender Name</label>
+      <input type="text" id="isoSenderName" required>
 
-    <label for="receiverID">Receiver Address</label>
-    <input type="text" id="receiverId" required />
+      <label>Sender ID</label>
+      <input type="text" id="isoSenderId" required>
 
-    <label for="amount">Amount</label>
-    <input type="number" id="amount" required />
+      <label>Receiver Name</label>
+      <input type="text" id="isoReceiverName" required>
 
-    <label for="currency">Currency</label>
-    <select id="currency" required>
-      <option value="">-- Select Currency --</option>
-      <option value="SeagullCoin">SeagullCoin</option>
-      <option value="SeagullCash">SeagullCash</option>
-    </select>
+      <label>Receiver ID</label>
+      <input type="text" id="isoReceiverId" required>
 
-    <label for="chain">Chain</label>
-    <select id="chain" required>
-      <option value="">-- Select Chain --</option>
-    </select>
+      <label>Direction</label>
+      <input type="text" id="isoDirection" required>
 
-    <label for="direction">Direction</label>
-    <select id="direction" required>
-      <option value="inbound">Inbound</option>
-      <option value="outbound">Outbound</option>
-    </select>
-
-    <label for="memo">Memo</label>
-    <input type="text" id="memo" />
-
-    <button type="submit">Submit ISO Message</button>
-  </form>
+      <div class="modal-actions">
+        <button type="button" id="closeIsoModal">Cancel</button>
+        <button type="submit" id="submitIsoModal">Submit</button>
+      </div>
+    </form>
   </div>
+</div>
+
 
 <!-- 🧠 Only showing the fixed JavaScript portion for brevity -->
 <script>

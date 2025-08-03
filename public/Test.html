@@ -273,12 +273,18 @@
       <label>Amount</label>
       <input type="number" id="isoAmount" required />
 
-      <label>Currency</label>
-      <input type="text" id="isoCurrency" required />
+      <label for="currency">Currency</label>
+    <select id="currency" required>
+      <option value="">-- Select Currency --</option>
+      <option value="SeagullCoin">SeagullCoin</option>
+      <option value="SeagullCash">SeagullCash</option>
+    </select>
 
-      <label>Chain</label>
-      <input type="text" id="isoChain" value="XRP" required />
-
+    <label for="chain">Chain</label>
+    <select id="chain" required>
+      <option value="">-- Select Chain --</option>
+    </select>
+      
       <label>Direction</label>
       <input type="text" id="isoDirection" value="inbound" required />
 

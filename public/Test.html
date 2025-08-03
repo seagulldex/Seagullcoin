@@ -35,7 +35,7 @@
       font-weight: bold;
     }
 
-    input, button {
+    input, button, select {
       width: 100%;
       padding: 0.75rem;
       border-radius: 6px;
@@ -44,7 +44,7 @@
       color: #fff;
     }
 
-    input:focus {
+    input:focus, select:focus {
       border-color: #1e90ff;
       outline: none;
     }
@@ -112,94 +112,92 @@
       background-color: #333;
     }
 
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    .modal-content {
+      background-color: #111a3c;
+      border: 1px solid #1f2b60;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      color: #f0f0f0;
+      box-shadow: 0 0 20px rgba(0,170,228, 0.3);
+    }
+
+    .modal-content h3 {
+      margin-bottom: 1rem;
+      color: #00aae4;
+    }
+
+    .modal-actions {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    #cancelModal {
+      background-color: #333;
+      color: #ccc;
+    }
+
+    #confirmModal {
+      background-color: #00aae4;
+      color: #fff;
+    }
+
+    #limitModal .modal-content {
+      background-color: #111a3c;
+      border: 1px solid #1f2b60;
+      box-shadow: 0 0 20px rgba(0, 170, 228, 0.3);
+      color: #f0f0f0;
+    }
+
+    #limitDismiss {
+      background-color: #00aae4;
+      color: #fff;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      width: 100%;
+    }
+
     .hidden {
       display: none;
     }
-  .modal {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-  }
-
-  .modal-content {
-    background-color: #111a3c;
-    border: 1px solid #1f2b60;
-    padding: 2rem;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 400px;
-    text-align: center;
-    color: #f0f0f0;
-    box-shadow: 0 0 20px rgba(0,170,228, 0.3);
-  }
-
-  .modal-content h3 {
-    margin-bottom: 1rem;
-    color: #00aae4;
-  }
-
-  .modal-actions {
-    margin-top: 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .modal-actions button {
-    flex: 1;
-    padding: 0.75rem;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-  }
-
-  #cancelModal {
-    background-color: #333;
-    color: #ccc;
-  }
-
-  #confirmModal {
-    background-color: #00aae4;
-    color: #fff;
-
-  }
-    #limitModal .modal-content {
-  background-color: #111a3c;
-  border: 1px solid #1f2b60;
-  box-shadow: 0 0 20px rgba(0, 170, 228, 0.3);
-  color: #f0f0f0;
-}
-    #limitDismiss {
-  background-color: #00aae4;
-  color: #fff;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  font-size: 1rem;
-  cursor: pointer;
-  width: 100%;
-}
-      .hidden {
-    display: none;
-      }
   </style>
 </head>
+
 <body>
 
 <h2>Bridge Your Seagull Assets</h2>
 
 <div class="form-box">
   <form id="bridge-form">
-
-    <!-- Asset Type Dropdown -->
     <label>Asset Type</label>
     <div id="assetDropdown" class="dropdown"></div>
 
@@ -223,9 +221,7 @@
   Processing bridge...
 </div>
 
-
-
-  <div id="confirmationModal" class="modal hidden">
+<div id="confirmationModal" class="modal hidden">
   <div class="modal-content">
     <h3>Confirm Bridge</h3>
     <p id="modalDetails" style="white-space: pre-line;"></p>
@@ -236,7 +232,7 @@
   </div>
 </div>
 
-  <!-- Daily Limit Modal -->
+<!-- Daily Limit Modal -->
 <div id="limitModal" class="modal hidden">
   <div class="modal-content">
     <h3>Daily Bridge Limit Reached</h3>
@@ -250,7 +246,7 @@
   </div>
 </div>
 
-  <!-- ISO20022 Modal -->
+<!-- ISO20022 Modal -->
 <div id="isoModal" class="modal hidden">
   <div class="modal-content">
     <h3>Create ISO 20022 Message</h3>
@@ -274,17 +270,17 @@
       <input type="number" id="isoAmount" required />
 
       <label for="currency">Currency</label>
-    <select id="currency" required>
-      <option value="">-- Select Currency --</option>
-      <option value="SeagullCoin">SeagullCoin</option>
-      <option value="SeagullCash">SeagullCash</option>
-    </select>
+      <select id="currency" required>
+        <option value="">-- Select Currency --</option>
+        <option value="SeagullCoin">SeagullCoin</option>
+        <option value="SeagullCash">SeagullCash</option>
+      </select>
 
-    <label for="chain">Chain</label>
-    <select id="chain" required>
-      <option value="">-- Select Chain --</option>
-    </select>
-      
+      <label for="chain">Chain</label>
+      <select id="chain" required>
+        <option value="">-- Select Chain --</option>
+      </select>
+
       <label>Direction</label>
       <input type="text" id="isoDirection" value="inbound" required />
 
@@ -303,6 +299,10 @@
 <div style="text-align: center; margin-top: 2rem;">
   <button onclick="document.getElementById('isoModal').classList.remove('hidden')">Create ISO 20022 Message</button>
 </div>
+
+</body>
+</html>
+
 
 
 <!-- 🧠 Only showing the fixed JavaScript portion for brevity -->

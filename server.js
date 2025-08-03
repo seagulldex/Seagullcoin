@@ -8580,18 +8580,29 @@ app.post('/iso-message', async (req, res) => {
     const parsed = parseSimpleXml(req.body);
 
     const doc = {
-      memoId: parsed.MsgId,
-      chain: 'XRP',
-      messageType: 'pacs.008',
-      sender: { name: 'Frontend App', partyId: 'App01' },
-      receiver: { name: 'XRPL', partyId: 'XRP01' },
-      amount: { value: parseFloat(parsed.InstdAmt), currency: 'USD' },
-      timestamp: new Date(),
-      rawXml: req.body,
-      parsedJson: parsed,
-      status: 'pending',
-      createdAt: new Date()
-    };
+  memoId: parsed.MsgId || generateUUID(),
+  chain: parsed.Chain || 'XRP',
+  messageType: parsed.MessageType || 'pacs.008',
+  sender: {
+    name: parsed.SenderName || 'Unknown',
+    partyId: parsed.SenderId || 'N/A'
+  },
+  receiver: {
+    name: parsed.ReceiverName || 'Unknown',
+    partyId: parsed.ReceiverId || 'N/A'
+  },
+  amount: {
+    value: parseFloat(parsed.InstdAmt),
+    currency: parsed.Currency || 'USD'
+  },
+  direction: parsed.Direction || 'inbound',
+  validated: false,
+  rawXml: req.body,
+  parsedJson: parsed,
+  createdAt: new Date(),
+  status: 'pending'
+};
+
 
     const result = await collection.insertOne(doc);
 

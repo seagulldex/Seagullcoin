@@ -242,7 +242,10 @@
     }
   });
 
-  document.getElementById("bridge-form").addEventListener("submit", async function (e) {
+
+const isoModal = document.getElementById("isoModal");
+
+document.getElementById("bridge-form").addEventListener("submit", async function (e) {
   e.preventDefault();
 
   const selectedAsset = document.getElementById("assetDropdown").value;
@@ -267,32 +270,32 @@
     });
 
     const data = await res.json();
-if (res.ok) {
-  const confirmationUrl = `/confirm.html?memoId=${data.memoId}`;
-  window.open(confirmationUrl, "_blank"); // Open in new tab
+    if (res.ok) {
+      // Optionally open confirmation in new tab
+      const confirmationUrl = `/confirm.html?memoId=${data.memoId}`;
+      window.open(confirmationUrl, "_blank");
 
-  const link = document.getElementById("confirmationLink");
-  link.href = confirmationUrl; 
-  link.style.display = "none"; // Still show the link in case they closed the new tab
-} else {
-          if (res.status === 429 && data.error.includes("Daily bridge limit exceeded")) {
-            showLimitModal(selectedAsset);
-          } else {
-            alert(data.error || "Something went wrong.");
-          }
-        }
-      } catch (err) {
-        alert("Server error.");
-        console.error(err);
-      } finally {
-        document.getElementById("loading").classList.add("hidden");
+      // Now show the ISO modal
+      isoModal.classList.add("active");
+
+      // Optionally fill in memo field in ISO form
+      document.getElementById("memo").value = data.memoId || "";
+    } else {
+      if (res.status === 429 && data.error.includes("Daily bridge limit exceeded")) {
+        showLimitModal(selectedAsset);
+      } else {
+        alert(data.error || "Something went wrong.");
       }
-    };
+    }
+  } catch (err) {
+    alert("Server error.");
+    console.error(err);
+  }
+});
 
-    document.getElementById("cancelModal").onclick = function () {
-      document.getElementById("confirmationModal").classList.add("hidden");
-    };
-  });
+function closeIsoModal() {
+  isoModal.classList.remove("active");
+}
 
 
   document.getElementById("isoForm").addEventListener("submit", async function(e) {

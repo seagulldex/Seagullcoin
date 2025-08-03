@@ -589,6 +589,44 @@ document.getElementById("isoForm").addEventListener("submit", function (e) {
   document.getElementById("isoModal").classList.add("hidden");
   alert("ISO 20022 message created.");
 });
+  
+const asset = document.getElementById("assetDropdown-select").value;
+const fromChain = document.getElementById("fromDropdown-select").value;
+const toChain = document.getElementById("toDropdown-select").value;
+
+
+  const assets = ["SeagullCoin", "SeagullCash"];
+  const chains = ["XRP", "XDC", "FLR", "XLM", "HBAR", "ALGO"];
+
+  function createDropdown(dropdownId, options) {
+    const container = document.getElementById(dropdownId);
+    const select = document.createElement("select");
+    select.id = dropdownId + "-select";
+    select.required = true;
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    placeholder.textContent = "-- Select --";
+    select.appendChild(placeholder);
+
+    options.forEach(opt => {
+      const option = document.createElement("option");
+      option.value = opt;
+      option.textContent = opt;
+      select.appendChild(option);
+    });
+
+    container.appendChild(select);
+  }
+
+  // Initialize dropdowns on page load
+  window.addEventListener("DOMContentLoaded", () => {
+    createDropdown("assetDropdown", assets);
+    createDropdown("fromDropdown", chains);
+    createDropdown("toDropdown", chains);
+  });
 
 </script>
 </body>

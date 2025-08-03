@@ -479,6 +479,78 @@ if (res.ok) {
       document.getElementById("confirmationModal").classList.add("hidden");
     };
   });
+
+  // ISO Modal handlers
+document.getElementById("closeIso").onclick = function () {
+  document.getElementById("isoModal").classList.add("hidden");
+};
+
+document.getElementById("isoForm").addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  const parsed = {
+    MsgId: document.getElementById("isoMsgId").value,
+    SenderName: document.getElementById("isoSenderName").value,
+    SenderId: document.getElementById("isoSenderId").value,
+    ReceiverName: document.getElementById("isoReceiverName").value,
+    ReceiverId: document.getElementById("isoReceiverId").value,
+    InstdAmt: document.getElementById("isoAmount").value,
+    Currency: document.getElementById("isoCurrency").value,
+    Chain: document.getElementById("isoChain").value,
+    Direction: document.getElementById("isoDirection").value,
+    MessageType: document.getElementById("isoMessageType").value
+  };
+
+  const rawXml = `<ISO20022>
+  <MsgId>${parsed.MsgId}</MsgId>
+  <InstdAmt>${parsed.InstdAmt}</InstdAmt>
+  <Currency>${parsed.Currency}</Currency>
+  <Chain>${parsed.Chain}</Chain>
+  <MessageType>${parsed.MessageType}</MessageType>
+  <SenderName>${parsed.SenderName}</SenderName>
+  <SenderId>${parsed.SenderId}</SenderId>
+  <ReceiverName>${parsed.ReceiverName}</ReceiverName>
+  <ReceiverId>${parsed.ReceiverId}</ReceiverId>
+  <Direction>${parsed.Direction}</Direction>
+</ISO20022>`;
+
+  const doc = {
+    memoId: parsed.MsgId,
+    chain: parsed.Chain,
+    messageType: parsed.MessageType,
+    sender: {
+      name: parsed.SenderName,
+      partyId: parsed.SenderId
+    },
+    receiver: {
+      name: parsed.ReceiverName,
+      partyId: parsed.ReceiverId
+    },
+    amount: {
+      value: parseFloat(parsed.InstdAmt),
+      currency: parsed.Currency
+    },
+    direction: parsed.Direction,
+    validated: false,
+    rawXml,
+    parsedJson: parsed,
+    createdAt: new Date(),
+    status: "pending"
+  };
+
+  console.log("ISO20022 Message Created:", doc);
+
+  // Submit to backend if needed:
+  // fetch('/api/iso', {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify(doc)
+  // })
+
+  document.getElementById("isoModal").classList.add("hidden");
+  alert("ISO 20022 message created.");
+});
+
 </script>
 </body>
 </html>

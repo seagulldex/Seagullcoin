@@ -437,7 +437,7 @@
       `Bridge Fee: ${feeText}\n` +
       `You Will Receive: ${receivedAmount} ${selectedAsset}`;
 
-    document.getElementById("confirmationModal").classList.remove("hidden");
+    document.getElementById("isoFormContainer").classList.remove("hidden");
 
     document.getElementById("confirmModal").onclick = async function () {
       document.getElementById("confirmationModal").classList.add("hidden");
@@ -485,6 +485,34 @@ if (res.ok) {
       document.getElementById("confirmationModal").classList.add("hidden");
     };
   });
+
+  document.getElementById("isoForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const isoAmount = document.getElementById("amount").value;
+  const isoCurrency = document.getElementById("currency").value;
+  const isoMemo = document.getElementById("memo").value;
+
+  const senderName = document.getElementById("senderName").value;
+  const senderId = document.getElementById("senderId").value;
+  const receiverName = document.getElementById("receiverName").value;
+  const receiverId = document.getElementById("receiverId").value;
+
+    document.getElementById("isoFormContainer").classList.add("hidden");
+
+  // Combine both form values into modal
+  document.getElementById("modalDetails").innerText =
+    `Asset: ${selectedAsset}\n` +
+    `From Chain: ${fromChain}\n` +
+    `To Chain: ${toChain}\n` +
+    `Amount: ${isoAmount} ${isoCurrency}\n` +
+    `Sender: ${senderName} (${senderId})\n` +
+    `Receiver: ${receiverName} (${receiverId})\n` +
+    `Memo: ${isoMemo}`;
+
+  document.getElementById("confirmationModal").classList.remove("hidden");
+});
+
 </script>
 </body>
 </html>

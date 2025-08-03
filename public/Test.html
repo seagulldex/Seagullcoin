@@ -196,8 +196,7 @@
 
 <h2>Bridge Your Seagull Assets</h2>
 
-<div class="form-box hidden" id="isoFormContainer">
-
+<div class="form-box">
   <form id="bridge-form">
 
     <!-- Asset Type Dropdown -->
@@ -219,11 +218,6 @@
     <button type="submit">Bridge Now</button>
   </form>
 </div>
-
-  <button style="margin: 2rem auto; display:block;" onclick="document.getElementById('isoModal').classList.remove('hidden')">
-  Submit ISO 20022 Message
-</button>
-
 
 <div id="loading" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); color: white; font-size: 1.5rem; text-align: center; padding-top: 40vh; z-index: 9999;">
   Processing bridge...
@@ -259,38 +253,49 @@
   <!-- ISO20022 Modal -->
 <div id="isoModal" class="modal hidden">
   <div class="modal-content">
-    <h3>Submit ISO 20022 Message</h3>
+    <h3>Create ISO 20022 Message</h3>
     <form id="isoForm">
       <label>Message ID</label>
-      <input type="text" id="isoMsgId" required>
-
-      <label>Amount</label>
-      <input type="number" id="isoAmount" required>
-
-      <label>Currency</label>
-      <input type="text" id="isoCurrency" required>
+      <input type="text" id="isoMsgId" required />
 
       <label>Sender Name</label>
-      <input type="text" id="isoSenderName" required>
+      <input type="text" id="isoSenderName" required />
 
       <label>Sender ID</label>
-      <input type="text" id="isoSenderId" required>
+      <input type="text" id="isoSenderId" required />
 
       <label>Receiver Name</label>
-      <input type="text" id="isoReceiverName" required>
+      <input type="text" id="isoReceiverName" required />
 
       <label>Receiver ID</label>
-      <input type="text" id="isoReceiverId" required>
+      <input type="text" id="isoReceiverId" required />
+
+      <label>Amount</label>
+      <input type="number" id="isoAmount" required />
+
+      <label>Currency</label>
+      <input type="text" id="isoCurrency" required />
+
+      <label>Chain</label>
+      <input type="text" id="isoChain" value="XRP" required />
 
       <label>Direction</label>
-      <input type="text" id="isoDirection" required>
+      <input type="text" id="isoDirection" value="inbound" required />
+
+      <label>Message Type</label>
+      <input type="text" id="isoMessageType" value="pacs.008" required />
 
       <div class="modal-actions">
-        <button type="button" id="closeIsoModal">Cancel</button>
-        <button type="submit" id="submitIsoModal">Submit</button>
+        <button type="button" id="closeIso">Cancel</button>
+        <button type="submit" id="submitIso">Submit</button>
       </div>
     </form>
   </div>
+</div>
+
+<!-- ISO Button -->
+<div style="text-align: center; margin-top: 2rem;">
+  <button onclick="document.getElementById('isoModal').classList.remove('hidden')">Create ISO 20022 Message</button>
 </div>
 
 
@@ -305,11 +310,6 @@
     XDC: 'https://cdn.coincircle.com/icons/fallback/xdc-network.png',
     XLM: 'https://files.swissborg.com/product/wealth-app/assets/ic_crypto_xlm.png',
     ALGO: 'https://cdn.freelogovectors.net/wp-content/uploads/2021/10/algorand-logo-freelogovectors.net_.png',
-  };
-
-  const currencyToChains = {
-    SeagullCoin: ["XRP", "XDC", "FLR"],
-    SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
   };
 
   const bridgeAssets = {
@@ -431,7 +431,7 @@
       `Bridge Fee: ${feeText}\n` +
       `You Will Receive: ${receivedAmount} ${selectedAsset}`;
 
-    document.getElementById("isoFormContainer").classList.remove("hidden");
+    document.getElementById("confirmationModal").classList.remove("hidden");
 
     document.getElementById("confirmModal").onclick = async function () {
       document.getElementById("confirmationModal").classList.add("hidden");
@@ -479,79 +479,6 @@ if (res.ok) {
       document.getElementById("confirmationModal").classList.add("hidden");
     };
   });
-
-  document.getElementById("isoForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
-
-  const isoAmount = document.getElementById("amount").value;
-  const isoCurrency = document.getElementById("currency").value;
-  const isoMemo = document.getElementById("memo").value;
-
-  const senderName = document.getElementById("senderName").value;
-  const senderId = document.getElementById("senderId").value;
-  const receiverName = document.getElementById("receiverName").value;
-  const receiverId = document.getElementById("receiverId").value;
-
-    document.getElementById("isoFormContainer").classList.add("hidden");
-
-  // Combine both form values into modal
-  document.getElementById("modalDetails").innerText =
-    `Asset: ${selectedAsset}\n` +
-    `From Chain: ${fromChain}\n` +
-    `To Chain: ${toChain}\n` +
-    `Amount: ${isoAmount} ${isoCurrency}\n` +
-    `Sender: ${senderName} (${senderId})\n` +
-    `Receiver: ${receiverName} (${receiverId})\n` +
-    `Memo: ${isoMemo}`;
-
-  document.getElementById("confirmationModal").classList.remove("hidden");
-});
-
-  document.getElementById("closeIsoModal").onclick = () => {
-  document.getElementById("isoModal").classList.add("hidden");
-};
-
-document.getElementById("isoForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
-
-  const xmlData = `
-    <ISO20022>
-      <MsgId>${document.getElementById("isoMsgId").value}</MsgId>
-      <InstdAmt>${document.getElementById("isoAmount").value}</InstdAmt>
-      <Currency>${document.getElementById("isoCurrency").value}</Currency>
-      <Chain>XRP</Chain>
-      <MessageType>pacs.008</MessageType>
-      <SenderName>${document.getElementById("isoSenderName").value}</SenderName>
-      <SenderId>${document.getElementById("isoSenderId").value}</SenderId>
-      <ReceiverName>${document.getElementById("isoReceiverName").value}</ReceiverName>
-      <ReceiverId>${document.getElementById("isoReceiverId").value}</ReceiverId>
-      <Direction>${document.getElementById("isoDirection").value}</Direction>
-    </ISO20022>
-  `.trim();
-
-  try {
-    const res = await fetch("/iso-message", {
-      method: "POST",
-      headers: { "Content-Type": "application/xml" },
-      body: xmlData,
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      alert(`ISO 20022 message submitted.\nMongo ID: ${data.insertedId}`);
-    } else {
-      alert(`Error: ${data.error}`);
-    }
-  } catch (err) {
-    alert("Failed to submit ISO message.");
-    console.error(err);
-  }
-
-  document.getElementById("isoModal").classList.add("hidden");
-});
-
-
 </script>
 </body>
 </html>

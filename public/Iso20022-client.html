@@ -85,10 +85,16 @@
     <input type="number" id="amount" required />
 
     <label for="currency">Currency</label>
-    <input type="text" id="currency" required />
+    <select id="currency" required>
+      <option value="">-- Select Currency --</option>
+      <option value="SeagullCoin">SeagullCoin</option>
+      <option value="SeagullCash">SeagullCash</option>
+    </select>
 
     <label for="chain">Chain</label>
-    <input type="text" id="chain" value="XRP" required />
+    <select id="chain" required>
+      <option value="">-- Select Chain --</option>
+    </select>
 
     <label for="direction">Direction</label>
     <select id="direction" required>
@@ -104,6 +110,26 @@
 </div>
 
 <script>
+  const currencyToChains = {
+    SeagullCoin: ["XRP", "XDC", "FLR"],
+    SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
+  };
+
+  document.getElementById("currency").addEventListener("change", function () {
+    const selectedCurrency = this.value;
+    const chainSelect = document.getElementById("chain");
+    chainSelect.innerHTML = '<option value="">-- Select Chain --</option>';
+
+    if (currencyToChains[selectedCurrency]) {
+      currencyToChains[selectedCurrency].forEach(chain => {
+        const option = document.createElement("option");
+        option.value = chain;
+        option.textContent = chain;
+        chainSelect.appendChild(option);
+      });
+    }
+  });
+
   document.getElementById("isoForm").addEventListener("submit", async function(e) {
     e.preventDefault();
 

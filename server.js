@@ -8612,6 +8612,45 @@ app.post('/iso-message', async (req, res) => {
   }
 });
 
+// Example backend route (Node.js + Express-style)
+app.post("/api/submit-iso-message", async (req, res) => {
+  try {
+    const parsed = req.body.parsed || {}; // assuming this comes from XML parsing middleware
+    const rawXml = req.body.rawXml || ""; // if you’re sending raw XML
+
+    const doc = {
+      memoId: parsed.MsgId || generateUUID(),
+      chain: parsed.Chain || 'XRP',
+      messageType: parsed.MessageType || 'pacs.008',
+      sender: {
+        name: parsed.SenderName || 'Unknown',
+        partyId: parsed.SenderId || 'N/A'
+      },
+      receiver: {
+        name: parsed.ReceiverName || 'Unknown',
+        partyId: parsed.ReceiverId || 'N/A'
+      },
+      amount: {
+        value: parseFloat(parsed.InstdAmt || 0),
+        currency: parsed.Currency || 'USD'
+      },
+      direction: parsed.Direction || 'inbound',
+      validated: false,
+      rawXml,
+      parsedJson: parsed,
+      createdAt: new Date(),
+      status: 'pending'
+    };
+
+    // Save doc to DB (MongoDB or whatever you’re using)
+    const saved = await db.collection('iso_messages').insertOne(doc);
+    res.json({ memoId: doc.memoId, status: "ok" });
+
+  } catch (err) {
+    console.error("Submit error", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

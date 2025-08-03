@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ISO 20022 Bridge</title>
   <style>
-    body {
+    body{
       font-family: sans-serif;
       background-color: #000;
       color: #fff;

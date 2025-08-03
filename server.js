@@ -123,6 +123,11 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 const STAKING_WALLET = 'rHN78EpNHLDtY6whT89WsZ6mMoTm9XPi5U'; // Your staking service wallet
 const token = randomBytes(32).toString('hex');
 
+const rawXml = `<MsgId>12345</MsgId><InstdAmt>1000</InstdAmt>`;
+
+const parsed = parseSimpleXml(rawXml);
+console.log(parsed);
+// Output: { MsgId: '12345', InstdAmt: '1000' }
 
 
 const usedPayloads = new Set(); // In-memory cache to prevent reuse

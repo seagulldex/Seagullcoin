@@ -173,11 +173,13 @@ const res = await fetch("/iso-message", {
   body: xml
 });
 
+const result = await res.json(); // ✅ now you can use result.memoId
 
-      if (res.ok) {
-        alert("Message submitted. Memo ID: " + result.memoId);
-      } else {
-        alert("Error: " + (result.error || "Unknown error"));
+if (res.ok) {
+  alert("Message submitted. Memo ID: " + result.insertedId);
+} else {
+  alert("Error: " + (result.error || "Unknown error"));
+}
       }
     } catch (err) {
       console.error(err);

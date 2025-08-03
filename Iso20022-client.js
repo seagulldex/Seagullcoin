@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ISO 20022 Bridge</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #000;
+      color: #fff;
+      padding: 2rem;
+    }
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .form-box {
+      background-color: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 0 15px rgba(30,144,255, 0.3);
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background-color: #222;
+      color: #fff;
+    }
+    input:focus, select:focus {
+      border-color: #1e90ff;
+      outline: none;
+    }
+    button {
+      background-color: #1e90ff;
+      border: none;
+      margin-top: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #0077cc;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Send ISO 20022-Compliant Payment Message</h2>
+
+<div class="form-box">
+  <form id="isoForm">
+    <label for="messageType">Message Type</label>
+    <select id="messageType" required>
+      <option value="pacs.008">pacs.008</option>
+      <option value="pain.001">pain.001</option>
+      <option value="camt.056">camt.056</option>
+    </select>
+
+    <label for="senderName">Sender Name</label>
+    <input type="text" id="senderName" required />
+
+    <label for="senderId">Sender ID</label>
+    <input type="text" id="senderId" required />
+
+    <label for="receiverName">Receiver Name</label>
+    <input type="text" id="receiverName" required />
+
+    <label for="receiverId">Receiver ID</label>
+    <input type="text" id="receiverId" required />
+
+    <label for="amount">Amount</label>
+    <input type="number" id="amount" required />
+
+    <label for="currency">Currency</label>
+    <input type="text" id="currency" required />
+
+    <label for="chain">Chain</label>
+    <input type="text" id="chain" value="XRP" required />
+
+    <label for="direction">Direction</label>
+    <select id="direction" required>
+      <option value="inbound">Inbound</option>
+      <option value="outbound">Outbound</option>
+    </select>
+
+    <label for="memo">Memo / Reference</label>
+    <input type="text" id="memo" />
+
+    <button type="submit">Submit ISO Message</button>
+  </form>
+</div>
+
+<script>
+  document.getElementById("isoForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const payload = {
+      messageType: document.getElementById("messageType").value,
+      sender: {
+        name: document.getElementById("senderName").value,
+        partyId: document.getElementById("senderId").value
+      },
+      receiver: {
+        name: document.getElementById("receiverName").value,
+        partyId: document.getElementById("receiverId").value
+      },
+      amount: {
+        value: parseFloat(document.getElementById("amount").value),
+        currency: document.getElementById("currency").value
+      },
+      chain: document.getElementById("chain").value,
+      direction: document.getElementById("direction").value,
+      memoId: document.getElementById("memo").value
+    };
+
+    try {
+      const res = await fetch("/api/submit-iso-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        alert("Message submitted. Memo ID: " + result.memoId);
+      } else {
+        alert("Error: " + (result.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Server error while submitting message.");
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -106,7 +106,7 @@
 </head>
 <body>
 
-<h2>ISO 20022-Compliant Payment + Bridge</h2>
+<h2>ISO 20022-Compliant Bridge</h2>
 
 <div class="form-box">
   <div class="section-title">Bridge Asset</div>
@@ -201,19 +201,12 @@
   </div>
 </div>
 
-  <div id="confirmationModal" class="modal hidden">
-  <div class="modal-content">
-    <h3>Confirm Bridge</h3>
-    <p id="modalDetails" style="white-space: pre-line;"></p>
-    <div class="modal-actions">
-      <button id="cancelModal">Cancel</button>
-      <button id="confirmModal">Confirm</button>
-    </div>
-  </div>
-  </div>
-  
 <script>
   const isoModal = document.getElementById("isoModal");
+
+  document.getElementById("bridge-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    // You can do bridge logic here if needed
 
     // Now show the ISO modal
     isoModal.classList.add("active");
@@ -242,10 +235,7 @@
     }
   });
 
-
-const isoModal = document.getElementById("isoModal");
-
-document.getElementById("bridge-form").addEventListener("submit", async function (e) {
+  document.getElementById("bridge-form").addEventListener("submit", async function (e) {
   e.preventDefault();
 
   const selectedAsset = document.getElementById("assetDropdown").value;
@@ -269,57 +259,43 @@ document.getElementById("bridge-form").addEventListener("submit", async function
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json();
+    const result = await res.json();
+
     if (res.ok) {
-      // Optionally open confirmation in new tab
-      const confirmationUrl = `/confirm.html?memoId=${data.memoId}`;
-      window.open(confirmationUrl, "_blank");
-
-      // Now show the ISO modal
-      isoModal.classList.add("active");
-
-      // Optionally fill in memo field in ISO form
-      document.getElementById("memo").value = data.memoId || "";
+      alert("✅ Bridge submitted successfully: TX ID " + result.txId);
+      isoModal.classList.add("active"); // show ISO modal after bridge
     } else {
-      if (res.status === 429 && data.error.includes("Daily bridge limit exceeded")) {
-        showLimitModal(selectedAsset);
-      } else {
-        alert(data.error || "Something went wrong.");
-      }
+      alert("❌ Bridge failed: " + (result.error || "Unknown error"));
     }
   } catch (err) {
-    alert("Server error.");
     console.error(err);
+    alert("❌ Network or server error while submitting bridge.");
   }
 });
 
-function closeIsoModal() {
-  isoModal.classList.remove("active");
-}
-
 
   document.getElementById("isoForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
-  const payload = {
-    messageType: document.getElementById("messageType").value,
-    sender: {
-      name: document.getElementById("senderName").value,
-      partyId: document.getElementById("senderId").value
-    },
-    receiver: {
-      name: document.getElementById("receiverName").value,
-      partyId: document.getElementById("receiverId").value
-    },
-    amount: {
-      value: parseFloat(document.getElementById("amount").value),
-      currency: document.getElementById("currency").value
-    },
-    chain: document.getElementById("chain").value,
-    direction: document.getElementById("direction").value,
-    memoId: document.getElementById("memo").value
-  };
+    e.preventDefault();
+    const payload = {
+      messageType: document.getElementById("messageType").value,
+      sender: {
+        name: document.getElementById("senderName").value,
+        partyId: document.getElementById("senderId").value
+      },
+      receiver: {
+        name: document.getElementById("receiverName").value,
+        partyId: document.getElementById("receiverId").value
+      },
+      amount: {
+        value: parseFloat(document.getElementById("amount").value),
+        currency: document.getElementById("currency").value
+      },
+      chain: document.getElementById("chain").value,
+      direction: document.getElementById("direction").value,
+      memoId: document.getElementById("memo").value
+    };
 
-  const xml = `<ISO20022>
+    const xml = `<ISO20022>
   <MsgId>${payload.memoId}</MsgId>
   <InstdAmt>${payload.amount.value}</InstdAmt>
   <Currency>${payload.amount.currency}</Currency>
@@ -332,23 +308,23 @@ function closeIsoModal() {
   <Direction>${payload.direction}</Direction>
 </ISO20022>`;
 
-  try {
-    const res = await fetch("/iso-message", {
-      method: "POST",
-      headers: { "Content-Type": "application/xml" },
-      body: xml
-    });
-    const result = await res.json();
-    if (res.ok) {
-      window.location.href = `/confirm.html?memoId=${payload.memoId}`;
-    } else {
-      alert("❌ Submission failed: " + (result.error || "Unknown error"));
+    try {
+      const res = await fetch("/iso-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/xml" },
+        body: xml
+      });
+      const result = await res.json();
+      if (res.ok) {
+        alert("✅ ISO Message submitted successfully. Memo ID: " + result.insertedId);
+        closeIsoModal();
+      } else {
+        alert("❌ Submission failed: " + (result.error || "Unknown error"));
+      }
+    } catch (err) {
+      alert("❌ Server error while submitting ISO message.");
     }
-  } catch (err) {
-    alert("❌ Server error while submitting ISO message.");
-  }
-});
-
+  });
 </script>
 
 </body>

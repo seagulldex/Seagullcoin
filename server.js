@@ -8571,6 +8571,36 @@ app.get('/.well-known/hedera.json', async (req, res) => {
   }
 });
 
+// ISO message submission endpoint
+app.post('/iso-message', async (req, res) => {
+  const rawXml = req.body;
+
+  try {
+    const parsed = parseSimpleXml(rawXml);
+
+    const isoMsg = new IsoMessage({
+      memoId: parsed.MsgId,
+      chain: 'XRP', // or dynamic from query/body
+      asset: null, // link to asset if needed
+      messageType: 'pacs.008',
+      sender: { name: "Frontend App", partyId: "App01" },
+      receiver: { name: "XRPL", partyId: "XRP01" },
+      amount: {
+        value: parseFloat(parsed.InstdAmt),
+        currency: 'USD'
+      },
+      timestamp: new Date(),
+      rawXml,
+      parsedJson: parsed
+    });
+
+await isoMsg.save();
+    res.status(200).json({ success: true, isoMsg });
+
+  } catch (err) {
+    res.status(500).json({ error: 'ISO XML Parse Failed', details: err.message });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

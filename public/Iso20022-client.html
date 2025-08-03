@@ -153,13 +153,26 @@
     };
 
     try {
-      const res = await fetch("/iso-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      const xml = `
+<ISO20022>
+  <MsgId>${document.getElementById("memo").value}</MsgId>
+  <InstdAmt>${document.getElementById("amount").value}</InstdAmt>
+  <Currency>${document.getElementById("currency").value}</Currency>
+  <Chain>${document.getElementById("chain").value}</Chain>
+  <MessageType>${document.getElementById("messageType").value}</MessageType>
+  <SenderName>${document.getElementById("senderName").value}</SenderName>
+  <SenderId>${document.getElementById("senderId").value}</SenderId>
+  <ReceiverName>${document.getElementById("receiverName").value}</ReceiverName>
+  <ReceiverId>${document.getElementById("receiverId").value}</ReceiverId>
+  <Direction>${document.getElementById("direction").value}</Direction>
+</ISO20022>`.trim();
 
-      const result = await res.json();
+const res = await fetch("/iso-message", {
+  method: "POST",
+  headers: { "Content-Type": "application/xml" },
+  body: xml
+});
+
 
       if (res.ok) {
         alert("Message submitted. Memo ID: " + result.memoId);

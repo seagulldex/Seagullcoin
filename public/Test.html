@@ -307,6 +307,26 @@
 
 <!-- 🧠 Only showing the fixed JavaScript portion for brevity -->
 <script>
+  const currencyToChains = {
+    SeagullCoin: ["XRP", "XDC", "FLR"],
+    SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
+  };
+
+  document.getElementById("currency").addEventListener("change", function () {
+    const selectedCurrency = this.value;
+    const chainSelect = document.getElementById("chain");
+    chainSelect.innerHTML = '<option value="">-- Select Chain --</option>';
+
+    if (currencyToChains[selectedCurrency]) {
+      currencyToChains[selectedCurrency].forEach(chain => {
+        const option = document.createElement("option");
+        option.value = chain;
+        option.textContent = chain;
+        chainSelect.appendChild(option);
+      });
+    }
+  });
+  
   const logos = {
     SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
     SeagullCash: 'https://d1fdloi71mui9q.cloudfront.net/Z2URVu3eSjyXF3fPVdyq_png_20221121_111630_0000.png',

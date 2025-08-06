@@ -263,7 +263,6 @@
     }
 
     // Confirm the memo
-window.location.href = `/confirm.html?memoId=${result.memoId}`;
     const confirmData = await confirmRes.json();
 
     if (!confirmRes.ok) {

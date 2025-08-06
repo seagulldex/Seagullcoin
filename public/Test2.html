@@ -303,17 +303,7 @@
 });
 
 
-// Show ISO modal after
-isoModal.classList.add("active");
-document.getElementById("memo").value = result.memoId || "";
-    } else {
-      alert("❌ Bridge failed: " + (result.error || "Unknown error"));
-    }
-  } catch (err) {
-    console.error(err);
-    alert("❌ Network or server error while submitting bridge.");
-  }
-});
+
 
 
   document.getElementById("isoForm").addEventListener("submit", async function(e) {

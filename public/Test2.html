@@ -263,30 +263,21 @@
 
     const result = await res.json();
 
-    if (res.ok && result.memoId) {
-  try {
+    if (!res.ok || !result.memoId) {
+      alert("❌ Bridge failed: " + (result.error || "Unknown error"));
+      return;
+    }
+
+    // Confirm the memo
     const confirmRes = await fetch(`/confirm?memoId=${result.memoId}`);
     const confirmData = await confirmRes.json();
 
-    if (confirmRes.ok) {
-      // render bridge confirmation...
-    } else {
-      alert("❌ Could not confirm: " + (confirmData.error || "Unknown error"));
+    if (!confirmRes.ok) {
+      alert("❌ Could not confirm bridge: " + (confirmData.error || "Unknown error"));
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    alert("❌ Error contacting confirm endpoint.");
-  }
 
-  // Auto-fill memo for ISO
-  document.getElementById("memo").value = result.memoId;
-  isoModal.classList.add("active");
-
-} else {
-  alert("❌ Bridge failed or invalid memo ID.");
-}
-
-  if (confirmRes.ok) {
+    // Show confirmation
     const output = `
       <h3>Bridge Confirmation</h3>
       <p><strong>Memo ID:</strong> ${confirmData.memoId}</p>
@@ -300,13 +291,17 @@
     const confirmDiv = document.getElementById("confirmationResult");
     confirmDiv.innerHTML = output;
     confirmDiv.style.display = "block";
-  } else {
-    alert("❌ Failed to load confirmation: " + (confirmData.error || "Unknown error"));
+
+    // Show ISO modal and prefill memo
+    document.getElementById("memo").value = result.memoId;
+    isoModal.classList.add("active");
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Network or server error while processing bridge.");
   }
-} catch (err) {
-  alert("❌ Error fetching confirmation data.");
-  console.error(err);
-}
+});
+
 
 // Show ISO modal after
 isoModal.classList.add("active");

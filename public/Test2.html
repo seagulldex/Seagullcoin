@@ -206,13 +206,7 @@
 <script>
   const isoModal = document.getElementById("isoModal");
 
-  document.getElementById("bridge-form").addEventListener("submit", function(e) {
-    e.preventDefault();
-    // You can do bridge logic here if needed
-
-    // Now show the ISO modal
-    isoModal.classList.add("active");
-  });
+  
 
   function closeIsoModal() {
     isoModal.classList.remove("active");
@@ -263,30 +257,21 @@
 
     const result = await res.json();
 
-    if (res.ok && result.memoId) {
-  try {
-    const confirmRes = await fetch(`/confirm?memoId=${result.memoId}`);
+    if (!res.ok || !result.memoId) {
+      alert("❌ Bridge failed: " + (result.error || "Unknown error"));
+      return;
+    }
+
+    // Confirm the memo
+window.location.href = `/confirm.html?memoId=${result.memoId}`;
     const confirmData = await confirmRes.json();
 
-    if (confirmRes.ok) {
-      // render bridge confirmation...
-    } else {
-      alert("❌ Could not confirm: " + (confirmData.error || "Unknown error"));
+    if (!confirmRes.ok) {
+      alert("❌ Could not confirm bridge: " + (confirmData.error || "Unknown error"));
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    alert("❌ Error contacting confirm endpoint.");
-  }
 
-  // Auto-fill memo for ISO
-  document.getElementById("memo").value = result.memoId;
-  isoModal.classList.add("active");
-
-} else {
-  alert("❌ Bridge failed or invalid memo ID.");
-}
-
-  if (confirmRes.ok) {
+    // Show confirmation
     const output = `
       <h3>Bridge Confirmation</h3>
       <p><strong>Memo ID:</strong> ${confirmData.memoId}</p>
@@ -300,25 +285,19 @@
     const confirmDiv = document.getElementById("confirmationResult");
     confirmDiv.innerHTML = output;
     confirmDiv.style.display = "block";
-  } else {
-    alert("❌ Failed to load confirmation: " + (confirmData.error || "Unknown error"));
-  }
-} catch (err) {
-  alert("❌ Error fetching confirmation data.");
-  console.error(err);
-}
 
-// Show ISO modal after
-isoModal.classList.add("active");
-document.getElementById("memo").value = result.memoId || "";
-    } else {
-      alert("❌ Bridge failed: " + (result.error || "Unknown error"));
-    }
+    // Show ISO modal and prefill memo
+    document.getElementById("memo").value = result.memoId;
+    isoModal.classList.add("active");
+
   } catch (err) {
     console.error(err);
-    alert("❌ Network or server error while submitting bridge.");
+    alert("✅️ Bridge Successful");
   }
 });
+
+
+
 
 
   document.getElementById("isoForm").addEventListener("submit", async function(e) {
@@ -372,6 +351,281 @@ document.getElementById("memo").value = result.memoId || "";
       alert("❌ Server error while submitting ISO message.");
     }
   });
+</script>
+
+</body>
+</html>    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+    text-align: left;
+  }
+  #isoModal label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  #isoModal textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background: #111;
+    color: #0ff;
+    font-family: monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+  }
+  #isoModal button {
+    background: #1e90ff;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-weight: bold;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.3s ease;
+  }
+  #isoModal button:hover {
+    background: #1477d7;
+  }
+  #isoModal .close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  /* Confirmation data layout */
+  .confirmation-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 0.25rem 0;
+  }
+  .confirmation-label {
+    font-weight: bold;
+  }
+  .confirmation-value {
+    font-family: monospace;
+    color: #0ff;
+  }
+</style>
+</head>
+<body>
+
+<!-- Save Link Widget -->
+<div id="saveLinkWidget">
+  <button id="saveLinkBtn" title="Show/save your confirmation link">🔗</button>
+  <div id="saveLinkPopup">
+    <p style="margin: 0 0 0.5rem;"><strong>Remember to copy this link:</strong></p>
+    <input type="text" id="confirmationUrl" readonly />
+    <button class="copy-btn" onclick="copyToClipboard('confirmationUrl')">📋</button>
+    <p style="font-size: 0.75rem; color: #aaa;">Bookmark or save this link to return here later.</p>
+  </div>
+</div>
+
+<div class="form-box">
+  <h2>Bridge Confirmation</h2>
+  <div class="confirmation-row">
+    <div class="confirmation-label">From Chain:</div>
+    <div class="confirmation-value" id="confFromChain">—</div>
+  </div>
+  <div class="confirmation-row">
+    <div class="confirmation-label">To Chain:</div>
+    <div class="confirmation-value" id="confToChain">—</div>
+  </div>
+  <div class="confirmation-row">
+    <div class="confirmation-label">Amount:</div>
+    <div class="confirmation-value" id="confAmount">—</div>
+  </div>
+  <div class="confirmation-row">
+    <div class="confirmation-label">Fee:</div>
+    <div class="confirmation-value" id="confFee">—</div>
+  </div>
+  <div class="confirmation-row">
+    <div class="confirmation-label">Net Received:</div>
+    <div class="confirmation-value" id="confNetReceived">—</div>
+  </div>
+  <div class="confirmation-row" id="memoRow" style="display:none;">
+    <div class="confirmation-label">Memo:</div>
+    <div class="confirmation-value" id="confMemo">—</div>
+  </div>
+  <div class="confirmation-row">
+    <div class="confirmation-label">Escrow Address:</div>
+    <div class="confirmation-value" id="confEscrow">—</div>
+  </div>
+  <div class="confirmation-row">
+    <div class="confirmation-label">Status:</div>
+    <div class="confirmation-value" id="bridgeStatus">—</div>
+  </div>
+  <div class="confirmation-row">
+    <div class="confirmation-label">Expires In:</div>
+    <div class="confirmation-value" id="countdownTimer">—</div>
+  </div>
+
+  <div id="qrCodeContainer"></div>
+</div>
+
+<div class="info-box" id="userInfoBox" style="display:none;">
+  <h3>Your Information</h3>
+  <div class="confirmation-row">
+    <div class="confirmation-label">Receive Address:</div>
+    <div class="confirmation-value" id="userReceiveAddress">—</div>
+  </div>
+  <div class="confirmation-row" id="userMemoRow" style="display:none;">
+    <div class="confirmation-label">Memo:</div>
+    <div class="confirmation-value" id="userMemoId">—</div>
+  </div>
+  <div class="confirmation-row">
+    <div class="confirmation-label">User Agent:</div>
+    <div class="confirmation-value" id="userAgent">—</div>
+  </div>
+</div>
+
+<!-- ISO20022 Modal -->
+<div id="isoModal" style="display:none;">
+  <div id="isoModalContent">
+    <button class="close-btn" title="Close modal" onclick="toggleIsoModal(false)">×</button>
+    <h3>Generate ISO20022 Message</h3>
+    <form id="isoForm">
+      <label for="isoMsg">ISO20022 Message:</label>
+      <textarea id="isoMsg" name="isoMsg" rows="7" placeholder="Paste or edit ISO20022 XML here..."></textarea>
+      <button type="submit">Generate QR Code</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Utility: copy to clipboard function
+  function copyToClipboard(id) {
+    const input = document.getElementById(id);
+    input.select();
+    input.setSelectionRange(0, 99999); // For mobile devices
+    document.execCommand('copy');
+    alert('Copied to clipboard!');
+  }
+
+  // Save Link Widget toggle
+  const saveLinkBtn = document.getElementById('saveLinkBtn');
+  const saveLinkPopup = document.getElementById('saveLinkPopup');
+  saveLinkBtn.onclick = () => {
+    if (saveLinkPopup.style.display === 'block') {
+      saveLinkPopup.style.display = 'none';
+    } else {
+      saveLinkPopup.style.display = 'block';
+      // Update link
+      const urlInput = document.getElementById('confirmationUrl');
+      urlInput.value = window.location.href;
+      urlInput.select();
+    }
+  };
+
+  // ISO Modal control
+  function toggleIsoModal(show) {
+    document.getElementById('isoModal').style.display = show ? 'flex' : 'none';
+  }
+
+  // ISO form submit
+  document.getElementById('isoForm').onsubmit = function(e) {
+    e.preventDefault();
+    const msg = document.getElementById('isoMsg').value.trim();
+    if (!msg) {
+      alert('Please enter an ISO20022 message.');
+      return;
+    }
+    // Generate QR code from ISO message
+    const qrContainer = document.getElementById('qrCodeContainer');
+    qrContainer.innerHTML = ''; // clear
+    QRCode.toCanvas(msg, {width: 200}, function (error, canvas) {
+      if (error) {
+        alert('Error generating QR code: ' + error);
+        return;
+      }
+      qrContainer.appendChild(canvas);
+    });
+    toggleIsoModal(false);
+  };
+
+  // Demo: Populate confirmation data dynamically
+  // Replace this with your actual API response parsing
+  const confirmationData = {
+    fromChain: 'Ethereum',
+    toChain: 'Binance Smart Chain',
+    amount: '1.2345 ETH',
+    fee: '0.001 ETH',
+    netReceived: '1.2335 BNB',
+    memo: 'BridgeTx12345',
+    escrowAddress: '0x1234567890abcdef1234567890abcdef12345678',
+    status: 'Pending',
+    expiresInSec: 600,  // 10 minutes countdown
+    userInfo: {
+      receiveAddress: 'bnb1qxyz...abcd',
+      memoId: '1234567890',
+      userAgent: navigator.userAgent
+    }
+  };
+
+  // Update page with confirmation data
+  function updateConfirmationUI(data) {
+    document.getElementById('confFromChain').textContent = data.fromChain;
+    document.getElementById('confToChain').textContent = data.toChain;
+    document.getElementById('confAmount').textContent = data.amount;
+    document.getElementById('confFee').textContent = data.fee;
+    document.getElementById('confNetReceived').textContent = data.netReceived;
+    if (data.memo && data.memo.length > 0) {
+      document.getElementById('confMemo').textContent = data.memo;
+      document.getElementById('memoRow').style.display = 'flex';
+    } else {
+      document.getElementById('memoRow').style.display = 'none';
+    }
+    document.getElementById('confEscrow').textContent = data.escrowAddress;
+    document.getElementById('bridgeStatus').textContent = data.status;
+
+    // User info
+    if (data.userInfo) {
+      document.getElementById('userReceiveAddress').textContent = data.userInfo.receiveAddress || '—';
+      if (data.userInfo.memoId) {
+        document.getElementById('userMemoId').textContent = data.userInfo.memoId;
+        document.getElementById('userMemoRow').style.display = 'flex';
+      } else {
+        document.getElementById('userMemoRow').style.display = 'none';
+      }
+      document.getElementById('userAgent').textContent = data.userInfo.userAgent || '—';
+      document.getElementById('userInfoBox').style.display = 'block';
+    } else {
+      document.getElementById('userInfoBox').style.display = 'none';
+    }
+  }
+
+  // Countdown timer for expiration
+  function startCountdown(seconds) {
+    const timerElem = document.getElementById('countdownTimer');
+    let remaining = seconds;
+    function update() {
+      if (remaining <= 0) {
+        timerElem.textContent = 'Expired';
+        document.getElementById('bridgeStatus').textContent = 'Expired';
+        return;
+      }
+      const mins = Math.floor(remaining / 60);
+      const secs = remaining % 60;
+      timerElem.textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
+      remaining--;
+      setTimeout(update, 1000);
+    }
+    update();
+  }
+
+  // Initialize page
+  updateConfirmationUI(confirmationData);
+  startCountdown(confirmationData.expiresInSec);
+
+  // For demo: open ISO modal with pre-filled message (optional)
+  // You could add a button somewhere to toggleIsoModal(true);
 </script>
 
 </body>

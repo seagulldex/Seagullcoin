@@ -269,7 +269,7 @@
     }
 
     // Confirm the memo
-    const confirmRes = await fetch(`/confirm?memoId=${result.memoId}`);
+window.location.href = `/confirm.html?memoId=${result.memoId}`;
     const confirmData = await confirmRes.json();
 
     if (!confirmRes.ok) {

@@ -263,11 +263,28 @@
 
     const result = await res.json();
 
-    if (res.ok) {
-      // Call /confirm to get bridge result
-try {
-  const confirmRes = await fetch(`/confirm?memoId=${result.memoId}`);
-  const confirmData = await confirmRes.json();
+    if (res.ok && result.memoId) {
+  try {
+    const confirmRes = await fetch(`/confirm?memoId=${result.memoId}`);
+    const confirmData = await confirmRes.json();
+
+    if (confirmRes.ok) {
+      // render bridge confirmation...
+    } else {
+      alert("❌ Could not confirm: " + (confirmData.error || "Unknown error"));
+    }
+  } catch (err) {
+    console.error(err);
+    alert("❌ Error contacting confirm endpoint.");
+  }
+
+  // Auto-fill memo for ISO
+  document.getElementById("memo").value = result.memoId;
+  isoModal.classList.add("active");
+
+} else {
+  alert("❌ Bridge failed or invalid memo ID.");
+}
 
   if (confirmRes.ok) {
     const output = `

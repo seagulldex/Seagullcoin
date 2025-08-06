@@ -263,21 +263,30 @@
 
     const result = await res.json();
 
-    if (!res.ok || !result.memoId) {
-      alert("❌ Bridge failed: " + (result.error || "Unknown error"));
-      return;
-    }
-
-    // Confirm the memo
+    if (res.ok && result.memoId) {
+  try {
     const confirmRes = await fetch(`/confirm?memoId=${result.memoId}`);
     const confirmData = await confirmRes.json();
 
-    if (!confirmRes.ok) {
-      alert("❌ Could not confirm bridge: " + (confirmData.error || "Unknown error"));
-      return;
+    if (confirmRes.ok) {
+      // render bridge confirmation...
+    } else {
+      alert("❌ Could not confirm: " + (confirmData.error || "Unknown error"));
     }
+  } catch (err) {
+    console.error(err);
+    alert("❌ Error contacting confirm endpoint.");
+  }
 
-    // Show confirmation
+  // Auto-fill memo for ISO
+  document.getElementById("memo").value = result.memoId;
+  isoModal.classList.add("active");
+
+} else {
+  alert("❌ Bridge failed or invalid memo ID.");
+}
+
+  if (confirmRes.ok) {
     const output = `
       <h3>Bridge Confirmation</h3>
       <p><strong>Memo ID:</strong> ${confirmData.memoId}</p>
@@ -291,17 +300,13 @@
     const confirmDiv = document.getElementById("confirmationResult");
     confirmDiv.innerHTML = output;
     confirmDiv.style.display = "block";
-
-    // Show ISO modal and prefill memo
-    document.getElementById("memo").value = result.memoId;
-    isoModal.classList.add("active");
-
-  } catch (err) {
-    console.error(err);
-    alert("❌ Network or server error while processing bridge.");
+  } else {
+    alert("❌ Failed to load confirmation: " + (confirmData.error || "Unknown error"));
   }
-});
-
+} catch (err) {
+  alert("❌ Error fetching confirmation data.");
+  console.error(err);
+}
 
 // Show ISO modal after
 isoModal.classList.add("active");
@@ -314,326 +319,6 @@ document.getElementById("memo").value = result.memoId || "";
     alert("❌ Network or server error while submitting bridge.");
   }
 });
-
-
-  document.getElementById("isoForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const payload = {
-      messageType: document.getElementById("messageType").value,
-      sender: {
-        name: document.getElementById("senderName").value,
-        partyId: document.getElementById("senderId").value
-      },
-      receiver: {
-        name: document.getElementById("receiverName").value,
-        partyId: document.getElementById("receiverId").value
-      },
-      amount: {
-        value: parseFloat(document.getElementById("amount").value),
-        currency: document.getElementById("currency").value
-      },
-      chain: document.getElementById("chain").value,
-      direction: document.getElementById("direction").value,
-      memoId: document.getElementById("memo").value
-    };
-
-    const xml = `<ISO20022>
-  <MsgId>${payload.memoId}</MsgId>
-  <InstdAmt>${payload.amount.value}</InstdAmt>
-  <Currency>${payload.amount.currency}</Currency>
-  <Chain>${payload.chain}</Chain>
-  <MessageType>${payload.messageType}</MessageType>
-  <SenderName>${payload.sender.name}</SenderName>
-  <SenderId>${payload.sender.partyId}</SenderId>
-  <ReceiverName>${payload.receiver.name}</ReceiverName>
-  <ReceiverId>${payload.receiver.partyId}</ReceiverId>
-  <Direction>${payload.direction}</Direction>
-</ISO20022>`;
-
-    try {
-      const res = await fetch("/iso-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/xml" },
-        body: xml
-      });
-      const result = await res.json();
-      if (res.ok) {
-        alert("✅ ISO Message submitted successfully. Memo ID: " + result.insertedId);
-        closeIsoModal();
-      } else {
-        alert("❌ Submission failed: " + (result.error || "Unknown error"));
-      }
-    } catch (err) {
-      alert("❌ Server error while submitting ISO message.");
-    }
-  });
-</script>
-
-</body>
-</html>
-    input, select, button {
-      width: 100%;
-      padding: 0.75rem;
-      border-radius: 6px;
-      border: 1px solid #444;
-      background-color: #222;
-      color: #fff;
-    }
-
-    button {
-      background-color: #1e90ff;
-      border: none;
-      margin-top: 1.5rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .section-title {
-      margin-top: 3rem;
-      font-size: 1.5rem;
-      border-bottom: 1px solid #444;
-      padding-bottom: 0.5rem;
-    }
-
-    /* Modal Styles */
-    .modal {
-  display: none;
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  padding: 1rem;
-}
-
-.modal.active {
-  display: flex;
-}
-
-.modal-content {
-  background-color: #111;
-  padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid #333;
-  width: 100%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-sizing: border-box;
-}
-
-.modal-content input,
-.modal-content select {
-  margin-bottom: 1rem;
-}
-
-.modal-close {
-  background: #444;
-  border: none;
-  color: #fff;
-  padding: 0.5rem 1rem;
-  margin-top: 1rem;
-  cursor: pointer;
-  width: 100%;
-}
-  </style>
-</head>
-<body>
-
-<h2>ISO 20022-Compliant Bridge</h2>
-
-<div class="form-box">
-  <div class="section-title">Bridge Asset</div>
-  <form id="bridge-form">
-    <label for="asset">Asset</label>
-    <select id="assetDropdown" required>
-      <option value="">-- Select Asset --</option>
-      <option value="SeagullCoin">SeagullCoin</option>
-      <option value="SeagullCash">SeagullCash</option>
-    </select>
-
-    <label for="fromDropdown">From Chain</label>
-    <select id="fromDropdown" required>
-      <option value="XRP">XRP</option>
-      <option value="XDC">XDC</option>
-      <option value="FLR">FLR</option>
-      <option value="XLM">XLM</option>
-      <option value="HBAR">HBAR</option>
-      <option value="ALGO">ALGO</option>
-    </select>
-
-    <label for="toDropdown">To Chain</label>
-    <select id="toDropdown" required>
-      <option value="XRP">XRP</option>
-      <option value="XDC">XDC</option>
-      <option value="FLR">FLR</option>
-      <option value="XLM">XLM</option>
-      <option value="HBAR">HBAR</option>
-      <option value="ALGO">ALGO</option>
-    </select>
-
-    <label for="amountBridge">Amount</label>
-    <input type="number" id="amountBridge" required />
-
-    <label for="receiveAddress">Receiving Address</label>
-    <input type="text" id="receiveAddress" required />
-
-  <button type="submit">Bridge Asset</button>
-</form>
-
-<!-- ADD THIS AFTER THE FORM -->
-<div id="confirmationResult" style="display:none; margin-top: 2rem; background:#111; padding:1rem; border-radius:8px; border:1px solid #333;"></div>
-
-<!-- Hidden ISO Form Modal -->
-<div id="isoModal" class="modal">
-  <div class="modal-content">
-    <form id="isoForm">
-      <h3 style="margin-top:0">Submit ISO 20022 Message</h3>
-
-      <label for="messageType">Message Type</label>
-      <select id="messageType" required>
-        <option value="pacs.008">pacs.008</option>
-        <option value="pain.001">pain.001</option>
-        <option value="camt.056">camt.056</option>
-      </select>
-
-      <label for="senderName">Sending Client</label>
-      <input type="text" id="senderName" required />
-
-      <label for="senderId">Sender Address</label>
-      <input type="text" id="senderId" required />
-
-      <label for="receiverName">Receiving Client</label>
-      <input type="text" id="receiverName" required />
-
-      <label for="receiverId">Receiver Address</label>
-      <input type="text" id="receiverId" required />
-
-      <label for="amount">Amount</label>
-      <input type="number" id="amount" required />
-
-      <label for="currency">Currency</label>
-      <select id="currency" required>
-        <option value="">-- Select Currency --</option>
-        <option value="SeagullCoin">SeagullCoin</option>
-        <option value="SeagullCash">SeagullCash</option>
-      </select>
-
-      <label for="chain">Chain</label>
-      <select id="chain" required></select>
-
-      <label for="direction">Direction</label>
-      <select id="direction" required>
-        <option value="inbound">Inbound</option>
-        <option value="outbound">Outbound</option>
-      </select>
-
-      <label for="memo">Memo</label>
-      <input type="text" id="memo" />
-
-      <button type="submit">Submit ISO Message</button>
-    </form>
-    <button class="modal-close" onclick="closeIsoModal()">Cancel</button>
-  </div>
-</div>
-
-<script>
-  const isoModal = document.getElementById("isoModal");
-
-  
-
-  function closeIsoModal() {
-    isoModal.classList.remove("active");
-  }
-
-  const currencyToChains = {
-    SeagullCoin: ["XRP", "XDC", "FLR"],
-    SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
-  };
-
-  document.getElementById("currency").addEventListener("change", function () {
-    const selectedCurrency = this.value;
-    const chainSelect = document.getElementById("chain");
-    chainSelect.innerHTML = '<option value="">-- Select Chain --</option>';
-    if (currencyToChains[selectedCurrency]) {
-      currencyToChains[selectedCurrency].forEach(chain => {
-        const option = document.createElement("option");
-        option.value = chain;
-        option.textContent = chain;
-        chainSelect.appendChild(option);
-      });
-    }
-  });
-
-  document.getElementById("bridge-form").addEventListener("submit", async function (e) {
-  e.preventDefault();
-
-  const selectedAsset = document.getElementById("assetDropdown").value;
-  const fromChain = document.getElementById("fromDropdown").value;
-  const toChain = document.getElementById("toDropdown").value;
-  const amount = parseFloat(document.getElementById("amountBridge").value);
-  const receiveAddress = document.getElementById("receiveAddress").value;
-
-  const payload = {
-    category: selectedAsset,
-    fromChain,
-    toChain,
-    amount,
-    receiveAddress
-  };
-
-  try {
-    const res = await fetch("/api/bridge", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const result = await res.json();
-
-    if (!res.ok || !result.memoId) {
-      alert("❌ Bridge failed: " + (result.error || "Unknown error"));
-      return;
-    }
-
-    // Confirm the memo
-    const confirmRes = await fetch(`/confirm?memoId=${result.memoId}`);
-    const confirmData = await confirmRes.json();
-
-    if (!confirmRes.ok) {
-      alert("❌ Could not confirm bridge: " + (confirmData.error || "Unknown error"));
-      return;
-    }
-
-    // Show confirmation
-    const output = `
-      <h3>Bridge Confirmation</h3>
-      <p><strong>Memo ID:</strong> ${confirmData.memoId}</p>
-      <p><strong>Asset:</strong> ${confirmData.asset}</p>
-      <p><strong>From Chain:</strong> ${confirmData.fromChain}</p>
-      <p><strong>To Chain:</strong> ${confirmData.toChain}</p>
-      <p><strong>Amount:</strong> ${confirmData.amount}</p>
-      <p><strong>Receive Address:</strong> ${confirmData.receiveAddress}</p>
-      <p><strong>Status:</strong> ${confirmData.status || 'Pending'}</p>
-    `;
-    const confirmDiv = document.getElementById("confirmationResult");
-    confirmDiv.innerHTML = output;
-    confirmDiv.style.display = "block";
-
-    // Show ISO modal and prefill memo
-    document.getElementById("memo").value = result.memoId;
-    isoModal.classList.add("active");
-
-  } catch (err) {
-    console.error(err);
-    alert("✅️ Bridge Successful");
-  }
-});
-
-
-
 
 
   document.getElementById("isoForm").addEventListener("submit", async function(e) {

@@ -178,9 +178,9 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
 
     const result = await res.json();
 
-    if (res.ok) {
-      // 🚀 Redirect to confirm.html with memoId in query string
-      window.location.href = `/confirm.html?memoId=${payload.memoId}`;
+    if (res.ok && result.memoId) {
+      // ✅ Redirect with server-generated memoId
+      window.location.href = `/confirm.html?memoId=${result.memoId}`;
     } else {
       alert("❌ Submission failed: " + (result.error || "Unknown error"));
     }

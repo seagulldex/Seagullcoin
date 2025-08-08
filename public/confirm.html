@@ -142,7 +142,11 @@
 
   <div id="qrCodeContainer" style="margin-top: 10px;"></div>
 
-  
+  <div id="isoFormModal" style="display:none; position: fixed; z-index:10000; top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,0.8); color:#fff; overflow:auto; padding: 2rem;">
+  <button onclick="closeIsoFormModal()" style="position:absolute; top:1rem; right:1rem; font-size: 1.5rem; background:transparent; border:none; color:#fff; cursor:pointer;">&times;</button>
+  <h2>ISO 20022 Message</h2>
+  <pre id="isoFormContent" style="white-space: pre-wrap; word-wrap: break-word; background: #222; padding:1rem; border-radius: 8px; max-height: 80vh; overflow-y: auto;"></pre>
+  </div>
   
 <script type="text/javascript">
   window.$crisp = [];
@@ -494,6 +498,15 @@ function closeModal() {
   modalDismissedForever = true;
 }
 
+fetch(`/api/get-bridge?memoId=${memoId}`)
+  .then(res => res.json())
+  .then(data => {
+    // populate your confirmation page data here...
+
+    // Show the ISO message automatically
+    openIsoFormModal(data.rawXml || 'No ISO 20022 message found.');
+  })
+  .catch(err => console.error(err));
 
 
   async function pollStatus() {

@@ -132,13 +132,24 @@ const urlParams = new URLSearchParams(window.location.search);
   
   document.getElementById("currency").addEventListener("change", function () {
     const selectedCurrency = this.value;
-    const chainSelect = document.getElementById("chain");
+    const chainSelect = document.getElementById("Fromchain");
+    const chainSelect = document.getElementById("Tochain");
   fromchainSelect.innerHTML = '<option value="">-- Select From Chain --</option>';
   toChainSelect.innerHTML = '<option value="">-- Select To Chain --</option>';
 
 
     if (currencyToChains[selectedCurrency]) {
       currencyToChains[selectedCurrency].forEach(chain => {
+        const option = document.createElement("option");
+        option.value = chain;
+        option.textContent = chain;
+        chainSelect.appendChild(option);
+      });
+    }
+  });
+
+  if (currencyFromChains[selectedCurrency]) {
+      currencyFromChains[selectedCurrency].forEach(chain => {
         const option = document.createElement("option");
         option.value = chain;
         option.textContent = chain;

@@ -110,6 +110,12 @@
 </div>
 
 <script>
+const urlParams = new URLSearchParams(window.location.search);
+  const memoFromURL = urlParams.get("memoId");
+  if (memoFromURL) {
+    document.getElementById("memo").value = memoFromURL;
+  }
+  
   const currencyToChains = {
     SeagullCoin: ["XRP", "XDC", "FLR"],
     SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]

@@ -8653,6 +8653,40 @@ app.post("/api/submit-iso-message", async (req, res) => {
   }
 });
 
+app.get("/api/bridge/:memoId", async (req, res) => {
+  try {
+    const bridgeDoc = await bridgeCollection.findOne({ memoId: req.params.memoId });
+    if (!bridgeDoc) return res.status(404).json({ error: "Bridge request not found" });
+    res.json(bridgeDoc);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.post("/api/submit-iso-messages", async (req, res) => {
+  try {
+    const { memoId, isoMessage } = req.body;
+    if (!memoId || !isoMessage) {
+      return res.status(400).json({ error: "Missing memoId or ISO message" });
+    }
+    
+    // Update bridge request with ISO message
+    const result = await bridgeCollection.updateOne(
+      { memoId },
+      { $set: { isoMessage, isoSubmittedAt: new Date() } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Bridge request not found" });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 
 // Call the XRPL ping when the server starts

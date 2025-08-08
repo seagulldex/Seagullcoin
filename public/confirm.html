@@ -498,16 +498,6 @@ function closeModal() {
   modalDismissedForever = true;
 }
 
-fetch(`/api/get-bridge?memoId=${memoId}`)
-  .then(res => res.json())
-  .then(data => {
-    // populate your confirmation page data here...
-
-    // Show the ISO message automatically
-    openIsoFormModal(data.rawXml || 'No ISO 20022 message found.');
-  })
-  .catch(err => console.error(err));
-
 
   async function pollStatus() {
     await fetchBridgeData();

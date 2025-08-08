@@ -156,23 +156,24 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
   e.preventDefault();
 
   const payload = {
-    messageType: document.getElementById("messageType").value,
-    sender: {
-      name: document.getElementById("senderName").value,
-      partyId: document.getElementById("senderId").value
-    },
-    receiver: {
-      name: document.getElementById("receiverName").value,
-      partyId: document.getElementById("receiverId").value
-    },
-    amount: {
-      value: parseFloat(document.getElementById("amount").value),
-      currency: document.getElementById("currency").value
-    },
-    fromchain: document.getElementById("fromchain").value,
-    toChain: document.getElementById("toChain").value,
-    direction: document.getElementById("direction").value
-      };
+  messageType: document.getElementById("messageType").value,
+  sender: {
+    name: document.getElementById("senderName").value,
+    partyId: document.getElementById("senderId").value
+  },
+  receiver: {
+    name: document.getElementById("receiverName").value,
+    partyId: document.getElementById("receiverId").value
+  },
+  amount: {
+    value: parseFloat(document.getElementById("amount").value),
+    currency: document.getElementById("currency").value
+  },
+  fromchain: document.getElementById("fromchain").value,
+  toChain: document.getElementById("toChain").value,
+  direction: document.getElementById("direction").value
+};
+
 
   try {
     const xml = `

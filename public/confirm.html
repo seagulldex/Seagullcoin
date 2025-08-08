@@ -42,88 +42,89 @@
       color: #fff;
       font-size: 1rem;
       vertical-align: middle;
-      transition: background-color 0.3s ease;
     }
     button.copy-btn:hover {
       background: #1c7ddb;
     }
     #saveLinkWidget {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 999;
-    }
-    #saveLinkBtn {
-      background: #1e90ff;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 36px;
-      height: 36px;
-      font-size: 18px;
-      cursor: pointer;
-      box-shadow: 0 0 10px rgba(30,144,255,0.6);
-      transition: background-color 0.3s ease;
-    }
-    #saveLinkBtn:hover {
-      background: #1c7ddb;
-    }
-    #saveLinkPopup {
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      border-radius: 6px;
-      padding: 0.75rem;
-      width: 260px;
-      margin-top: 8px;
-      box-shadow: 0 0 10px rgba(0,255,255,0.2);
-    }
-    #saveLinkPopup input {
-      width: 100%;
-      padding: 0.25rem;
-      margin-bottom: 0.5rem;
-      border-radius: 4px;
-      border: 1px solid #444;
-      background: #111;
-      color: #00ffff;
-      font-size: 0.9rem;
-      user-select: all;
-    }
-    #saveLinkPopup.hidden {
-      display: none;
-    }
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 999;
+}
+
+#saveLinkBtn {
+  background: #1e90ff;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(30,144,255,0.6);
+}
+
+#saveLinkPopup {
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  border-radius: 6px;
+  padding: 0.75rem;
+  width: 260px;
+  margin-top: 8px;
+  box-shadow: 0 0 10px rgba(0,255,255,0.2);
+}
+
+#saveLinkPopup input {
+  width: 100%;
+  padding: 0.25rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #111;
+  color: #00ffff;
+  font-size: 0.9rem;
+}
+
+#saveLinkPopup.hidden {
+  display: none;
+}
   </style>
 </head>
 <body>
-  <div id="saveLinkWidget">
-    <button id="saveLinkBtn" title="Click to show/save your confirmation link">🔗</button>
-    <div id="saveLinkPopup" class="hidden">
-      <p style="margin: 0 0 0.5rem;"><strong>Remember to copy this link:</strong></p>
-      <input type="text" id="confirmationUrl" readonly />
-      <button class="copy-btn" onclick="copyToClipboard('confirmationUrl')">📋</button>
-      <p style="font-size: 0.75rem; color: #aaa;">Bookmark or save this link to return here later.</p>
-    </div>
+<div id="saveLinkWidget">
+  <button id="saveLinkBtn" title="Click to show/save your confirmation link">🔗</button>
+  <div id="saveLinkPopup" class="hidden">
+    <p style="margin: 0 0 0.5rem;"><strong>Remember to copy this link:</strong></p>
+    <input type="text" id="confirmationUrl" readonly />
+    <button class="copy-btn" onclick="copyToClipboard('confirmationUrl')">📋</button>
+    <p style="font-size: 0.75rem; color: #aaa;">Bookmark or save this link to return here later.</p>
   </div>
+</div>
 
+
+
+  
   <div class="form-box">
     <h2>Bridge Confirmation</h2>
     
     <p>
       <strong>From Chain:</strong> 
       <img id="confFromChainLogo" alt="From Chain Logo" style="height:24px; vertical-align:middle; margin-right:6px;"/>
-      <span id="confFromChain">Loading...</span>
+      <span id="confFromChain"></span>
     </p>
     <p>
       <strong>To Chain:</strong> 
       <img id="confToChainLogo" alt="To Chain Logo" style="height:24px; vertical-align:middle; margin-right:6px;"/>
-      <span id="confToChain">Loading...</span>
+      <span id="confToChain"></span>
     </p>
-    <p><strong>Send:</strong> <span id="confAmount">Loading...</span></p>
+    <p><strong>Send:</strong> <span id="confAmount"></span></p>
     <p><strong>Deposit Address:</strong> 
-      <span id="confEscrow" style="word-break: break-word;">Loading...</span>
+      <span id="confEscrow" style="word-break: break-word;"></span>
       <button class="copy-btn" onclick="copyToClipboard('confEscrow')">📋 Copy</button>
     </p>
     <p id="memoRow"><strong>Memo ID / Tag:</strong> 
-      <span id="confMemo" style="color: #1e90ff;">—</span>
+      <span id="confMemo" style="color: #1e90ff;"></span>
       <button class="copy-btn" onclick="copyToClipboard('confMemo')">📋 Copy</button>
     </p>
     <p><strong>Status:</strong> <span id="bridgeStatus">Fetching...</span></p>
@@ -135,202 +136,370 @@
     <p><strong>Bridge Fee:</strong> <span id="confFee" style="color: #ff4d4d;"></span></p>
     <p><strong>Net Received:</strong> <span id="confNetReceived" style="color: #00ffcc;"></span></p>
     <p><strong>Receive Address:</strong> <span id="userReceiveAddress" style="word-break: break-word;"></span></p>
-    <p id="userMemoRow"><strong>Memo ID / Tag:</strong> <span id="userMemoId" style="color: #1e90ff;">—</span></p>
+    <p id="userMemoRow"><strong>Memo ID / Tag:</strong> <span id="userMemoId" style="color: #1e90ff;"></span></p>
   </div>
 
   <div id="qrCodeContainer" style="margin-top: 10px;"></div>
+  
+<script type="text/javascript">
+  window.$crisp = [];
+  window.CRISP_WEBSITE_ID = "c4c177f3-5bf9-4f53-8a57-5ed64696616e"; // Replace with your actual Crisp ID
+  (function () {
+    const d = document;
+    const s = d.createElement("script");
+    s.src = "https://client.crisp.chat/l.js";
+    s.async = 1;
+    d.getElementsByTagName("head")[0].appendChild(s);
+  })();
+</script>
 
-  <script type="text/javascript">
-    window.$crisp = [];
-    window.CRISP_WEBSITE_ID = "c4c177f3-5bf9-4f53-8a57-5ed64696616e"; // Replace with your actual Crisp ID
-    (function () {
-      const d = document;
-      const s = d.createElement("script");
-      s.src = "https://client.crisp.chat/l.js";
-      s.async = 1;
-      d.getElementsByTagName("head")[0].appendChild(s);
-    })();
-  </script>
+<script>
+let modalDismissedForever = false;
 
-  <script>
-    let modalDismissedForever = false;
-    let countdownInterval;
+  
+  const escrowAddresses = {
+    XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
+    XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
+    HBAR: "0.0.2928384",
+    ALGO: "YFZD6UWU5KXQINAN4CV6UCMIMRFSTKXNFQWV7WUSYQIWASCH2AX4LT4RMM",
+    FLR: "0x3B51F488f729e5Cfa566990Fd7f069F364b6984D",
+    XDC: "xdc870f64E73e7D2dc5022b4b74e58C323b3148A984"
+  };
 
-    const escrowAddresses = {
-      XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
-      XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
-      HBAR: "0.0.2928384",
-      ALGO: "YFZD6UWU5KXQINAN4CV6UCMIMRFSTKXNFQWV7WUSYQIWASCH2AX4LT4RMM",
-      FLR: "0x3B51F488f729e5Cfa566990Fd7f069F364b6984D",
-      XDC: "xdc870f64E73e7D2dc5022b4b74e58C323b3148A984"
+  const chainsUsingMemo = ["XRP", "XLM", "HBAR"];
+
+  function copyToClipboard(id) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Copied to clipboard!');
+    }).catch(() => {
+      alert('Failed to copy!');
+    });
+  }
+
+  function getMemoId() {
+    return new URL(window.location.href).searchParams.get("memoId");
+  }
+
+  function generateQRCode(address, elementId, fromChain, memoId) {
+    const container = document.getElementById(elementId);
+    container.innerHTML = ""; // Clear previous QR
+
+    let uri;
+
+    switch (fromChain) {
+      case "XRP":
+        uri = `xrp:${address}?dt=${memoId}`;
+        break;
+      case "XLM":
+        uri = `stellar:${address}?memo=${memoId}`;
+        break;
+      case "HBAR":
+        uri = `hedera:${address}?memo=${memoId}`;
+        break;
+      case "ALGO":
+        uri = `algo:${address}`;
+        break;
+      case "FLR":
+        uri = `flare:${address}`;
+        break;
+      case "XDC":
+        uri = `xdc:${address}`;
+        break;
+      default:
+        uri = address; // fallback
+    }
+
+    new QRCode(container, {
+      text: uri,
+      width: 128,
+      height: 128,
+    });
+  }
+
+  function getLogo(chainName) {
+    const logos = {
+      SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
+      SeagullCash: 'https://d1fdloi71mui9q.cloudfront.net/Z2URVu3eSjyXF3fPVdyq_png_20221121_111630_0000.png',
+      XRP: 'https://altcoinsbox.com/wp-content/uploads/2023/01/xrp-logo-1140x1140.webp',
+      HBAR: 'https://altcoinsbox.com/wp-content/uploads/2023/03/hedera-logo-1140x1140.webp',
+      FLR: 'https://s2.coinmarketcap.com/static/img/coins/64x64/7950.png',
+      XDC: 'https://cdn.coincircle.com/icons/fallback/xdc-network.png',
+      XLM: 'https://files.swissborg.com/product/wealth-app/assets/ic_crypto_xlm.png',
+      ALGO: 'https://cdn.freelogovectors.net/wp-content/uploads/2021/10/algorand-logo-freelogovectors.net_.png',
     };
+    return logos[chainName] || '';
+  }
 
-    const chainsUsingMemo = ["XRP", "XLM", "HBAR"];
+  function formatCountdown(seconds) {
+    const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');
+    const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${hrs}:${mins}:${secs}`;
+  }
+let countdownInterval;
 
-    function copyToClipboard(id) {
-      const text = document.getElementById(id).textContent.trim();
-      if (!text || text === "—" || text === "Loading...") {
-        alert("Nothing to copy!");
-        return;
-      }
-      navigator.clipboard.writeText(text).then(() => {
-        alert('Copied to clipboard!');
-      }).catch(() => {
-        alert('Failed to copy!');
-      });
-    }
+async function fetchBridgeData() {
+  const memoId = getMemoId();
+  if (!memoId) {
+    document.getElementById("bridgeStatus").textContent = "No transaction specified.";
+    document.getElementById("countdownTimer").textContent = "—";
+    return;
+  }
 
-    function getMemoId() {
-      return new URL(window.location.href).searchParams.get("memoId");
-    }
+  try {
+    const res = await fetch(`/api/bridge-status?memoId=${memoId}`);
+    const data = await res.json();
 
-    function generateQRCode(address, elementId, fromChain, memoId) {
-      const container = document.getElementById(elementId);
-      container.innerHTML = ""; // Clear previous QR
+    if (!res.ok) throw new Error(data.error || "Failed to fetch");
 
-      let uri;
+    // Update chain names and logos
+    document.getElementById("confFromChain").textContent = data.fromChain || "N/A";
+    document.getElementById("confToChain").textContent = data.toChain || "N/A";
+    document.getElementById("confFromChainLogo").src = getLogo(data.fromChain);
+    document.getElementById("confToChainLogo").src = getLogo(data.toChain);
 
-      switch (fromChain) {
-        case "XRP":
-          uri = `xrp:${address}${memoId ? `?dt=${memoId}` : ''}`;
-          break;
-        case "XLM":
-          uri = `stellar:${address}${memoId ? `?memo=${memoId}` : ''}`;
-          break;
-        case "HBAR":
-          uri = `hedera:${address}${memoId ? `?memo=${memoId}` : ''}`;
-          break;
-        case "ALGO":
-          uri = `algo:${address}`;
-          break;
-        case "FLR":
-          uri = `flare:${address}`;
-          break;
-        case "XDC":
-          uri = `xdc:${address}`;
-          break;
-        default:
-          uri = address;
-          break;
-      }
+    // Show amount
+    const currencyLabel = data.category ? `${data.category} (${data.fromChain})` : `${data.fromChain}`;
+    document.getElementById("confAmount").textContent = `${data.amount || "0"} ${currencyLabel}`;
 
-      QRCode.toCanvas(uri, { width: 150 }, function (error, canvas) {
-        if (error) {
-          console.error(error);
-          container.innerHTML = "<p style='color:red;'>QR Code failed to generate.</p>";
-          return;
-        }
-        container.appendChild(canvas);
-      });
-    }
+    // Calculate and show fees
+    let fee = 5;
+    if (data.category === "SeagullCoin") fee = 0.2;
+    const rawAmount = parseFloat(data.amount || "0");
+    const netReceived = Math.max(0, rawAmount - fee);
+    document.getElementById("confFee").textContent = `- ${fee} ${data.category || ""}`;
+    document.getElementById("confNetReceived").textContent = `${netReceived} ${data.category || ""}`;
 
-    function getFromChainLogoUrl(chain) {
-      switch (chain.toUpperCase()) {
-        case "XRP": return "https://cryptologos.cc/logos/xrp-xrp-logo.svg?v=024";
-        case "XLM": return "https://cryptologos.cc/logos/stellar-xlm-logo.svg?v=024";
-        case "HBAR": return "https://cryptologos.cc/logos/hedera-hbar-logo.svg?v=024";
-        case "ALGO": return "https://cryptologos.cc/logos/algorand-algo-logo.svg?v=024";
-        case "FLR": return "https://cryptologos.cc/logos/flare-flr-logo.svg?v=024";
-        case "XDC": return "https://cryptologos.cc/logos/xinfin-xdc-logo.svg?v=024";
-        default: return "";
+    // Show escrow address and QR
+    const escrow = escrowAddresses[data.fromChain];
+    const container = document.getElementById("qrCodeContainer");
+    container.innerHTML = "";
+    if (escrow && memoId) {
+      try {
+        generateQRCode(escrow, "qrCodeContainer", data.fromChain, memoId);
+      } catch (qrErr) {
+        console.error("QR code generation failed:", qrErr);
       }
     }
 
-    function displayBridgeData() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const fromChain = urlParams.get("fromChain") || "N/A";
-      const toChain = urlParams.get("toChain") || "N/A";
-      const amount = urlParams.get("amount") || "N/A";
-      const fee = urlParams.get("fee") || "0";
-      const escrow = urlParams.get("escrow") || escrowAddresses[fromChain] || "N/A";
-      const status = urlParams.get("status") || "Pending";
-      const receiveAddress = urlParams.get("receiveAddress") || "N/A";
-      const memoId = getMemoId() || null;
+    // Show/hide memo
+    const shouldShowMemo = chainsUsingMemo.includes(data.fromChain);
+    document.getElementById("memoRow").style.display = shouldShowMemo ? "block" : "none";
+    document.getElementById("confMemo").textContent = shouldShowMemo ? memoId : "—";
+    document.getElementById("confEscrow").textContent = escrow || "N/A";
 
-      const netReceived = (parseFloat(amount) - parseFloat(fee)).toFixed(6);
+    // User info box
+    const userInfoBox = document.getElementById("userInfoBox");
+    if (data.receiveAddress) {
+      userInfoBox.style.display = "block";
+      document.getElementById("userReceiveAddress").textContent = data.receiveAddress;
 
-      // Populate UI
-      document.getElementById("confFromChain").textContent = fromChain;
-      document.getElementById("confToChain").textContent = toChain;
-      document.getElementById("confAmount").textContent = amount;
-      document.getElementById("confFee").textContent = `${fee} ${fromChain}`;
-      document.getElementById("confNetReceived").textContent = `${netReceived} ${toChain}`;
-      document.getElementById("confEscrow").textContent = escrow;
-      document.getElementById("bridgeStatus").textContent = status;
-      document.getElementById("userReceiveAddress").textContent = receiveAddress;
-
-      document.getElementById("confFromChainLogo").src = getFromChainLogoUrl(fromChain);
-      document.getElementById("confToChainLogo").src = getFromChainLogoUrl(toChain);
-
-      if (chainsUsingMemo.includes(fromChain.toUpperCase())) {
-        document.getElementById("memoRow").style.display = "block";
-        document.getElementById("confMemo").textContent = memoId || "—";
-        document.getElementById("userMemoRow").style.display = "block";
-        document.getElementById("userMemoId").textContent = memoId || "—";
+      const userMemoRow = document.getElementById("userMemoRow");
+      if (shouldShowMemo) {
+        userMemoRow.style.display = "block";
+        document.getElementById("userMemoId").textContent = memoId;
       } else {
-        document.getElementById("memoRow").style.display = "none";
-        document.getElementById("userMemoRow").style.display = "none";
+        userMemoRow.style.display = "none";
       }
-
-      // Show user info box
-      document.getElementById("userInfoBox").style.display = "block";
-
-      generateQRCode(escrow, "qrCodeContainer", fromChain, memoId);
-
-      // Set confirmation URL in save link widget
-      const currentUrl = window.location.href;
-      document.getElementById("confirmationUrl").value = currentUrl;
+    } else {
+      userInfoBox.style.display = "none";
     }
 
-    function copyToClipboard(id) {
-      const el = document.getElementById(id);
-      let text;
-      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
-        text = el.value;
-      } else {
-        text = el.textContent;
-      }
-      if (!text || text === "—" || text === "Loading...") {
-        alert("Nothing to copy!");
-        return;
-      }
-      navigator.clipboard.writeText(text).then(() => {
-        alert("Copied to clipboard!");
-      }).catch(() => {
-        alert("Copy failed. Try manually.");
-      });
-    }
+    // Set status text
+    const statusTextMap = {
+      pending: "Pending confirmation...",
+      confirmed: "Confirmed ✅️",
+      bridged: "Bridged 🌉",
+      expired: "Expired ❌"
+    };
+    const status = data.status;
+    document.getElementById("bridgeStatus").textContent = statusTextMap[status] || "Pending";
 
-    function startCountdown(durationSeconds) {
-      const countdownElem = document.getElementById("countdownTimer");
-      let remaining = durationSeconds;
+    // Clear existing countdown
+    if (countdownInterval) clearInterval(countdownInterval);
 
-      function updateTimer() {
+    // === STATUS HANDLING === //
+
+    if (status === "pending" && data.expiresIn && data.expiresIn > 0) {
+      let remaining = data.expiresIn;
+      document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
+
+      countdownInterval = setInterval(() => {
+        remaining--;
         if (remaining <= 0) {
           clearInterval(countdownInterval);
-          countdownElem.textContent = "Expired";
-          return;
+          document.getElementById("bridgeStatus").textContent = "Expired ❌ Please start a new transaction.";
+          document.getElementById("countdownTimer").textContent = "Expired";
+        } else {
+          document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
         }
-        const mins = Math.floor(remaining / 60);
-        const secs = remaining % 60;
-        countdownElem.textContent = `${mins}m ${secs}s`;
-        remaining--;
+      }, 1000);
+      closeModal();
+    } else {
+      // All other statuses — no countdown
+      document.getElementById("countdownTimer").textContent =
+        status === "expired" ? "Expired" : "—";
+
+      // Show appropriate modal
+      if (status === "confirmed") {
+        showModal("Processing bridge... ⏳ Please wait while funds are being sent.");
+      } else if (status === "bridged") {
+        showModal("Bridged successfully! ✅ Funds have been sent.");
+      } else {
+        closeModal(); // hide for anything else
       }
-      updateTimer();
-      countdownInterval = setInterval(updateTimer, 1000);
     }
+  } catch (err) {
+    console.error(err);
+    document.getElementById("bridgeStatus").textContent = "Error loading transaction.";
+    document.getElementById("countdownTimer").textContent = "—";
+  }
+}
 
-    function toggleSaveLinkPopup() {
-      const popup = document.getElementById("saveLinkPopup");
-      popup.classList.toggle("hidden");
-    }
 
-    document.getElementById("saveLinkBtn").addEventListener("click", toggleSaveLinkPopup);
+  function setConfirmationLink() {
+  const memoId = getMemoId();
+  if (!memoId) return;
+  const url = `${window.location.origin}${window.location.pathname}?memoId=${memoId}`;
+  document.getElementById("confirmationUrl").value = url;
+}
 
-    // Initialization
-    displayBridgeData();
-    startCountdown(20 * 60); // 20 minutes countdown
+document.getElementById("saveLinkBtn").addEventListener("click", () => {
+  const popup = document.getElementById("saveLinkPopup");
+  popup.classList.toggle("hidden");
+});
 
-  </script>
+
+
+  function openSupportChat(memoId) {
+    window.$crisp.push(["do", "chat:open"]);
+    window.$crisp.push(["do", "message:send", ["text", `Hi, I need help with my bridge: ${memoId}`]]);
+  }
+
+  function setCrispUser(wallet, memoId) {
+    window.$crisp.push(["set", "user:nickname", [wallet]]);
+    window.$crisp.push(["set", "session:data", [
+      ["wallet", wallet],
+      ["memoId", memoId],
+    ]]);
+  }
+
+  function showModal(message) {
+    if (modalDismissedForever) return;
+  let existingModal = document.getElementById("bridgeModal");
+  if (!existingModal) {
+    const modal = document.createElement("div");
+    modal.id = "bridgeModal";
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      padding: 1rem;
+      text-align: center;
+      backdrop-filter: blur(6px);
+    `;
+
+    const content = document.createElement("div");
+    content.style.cssText = `
+      max-width: 90%;
+      font-size: 1.2rem;
+      line-height: 1.5;
+      padding: 1.5rem;
+      background: rgba(20, 20, 20, 0.9);
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
+      transform: translateX(-16px);
+    `;
+    const includeSpinner = message.toLowerCase().includes("processing");
+
+content.innerHTML = `
+  <div style="position: relative;">
+    ${!includeSpinner ? `<button id="closeBridgeModal" style="
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 0 6px rgba(0,255,255,0.4);
+    ">&times;</button>` : ''}
+    <div>${message}</div>
+    ${includeSpinner ? `<div class="loader" style="margin-top: 1rem;"></div>` : ''}
+  </div>
+`;
+    if (!includeSpinner) {
+  setTimeout(() => {
+    const btn = document.getElementById("closeBridgeModal");
+    if (btn) btn.addEventListener("click", closeModal);
+  }, 0);
+}
+
+
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    const style = document.createElement("style");
+    style.innerHTML = `
+      .loader {
+        border: 6px solid rgba(255,255,255,0.2);
+        border-top: 6px solid #1e90ff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @media (max-width: 480px) {
+        #bridgeModal div {
+          font-size: 1rem !important;
+          padding: 1rem !important;
+        }
+        .loader {
+          width: 30px;
+          height: 30px;
+          border-width: 4px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  } else {
+    existingModal.querySelector("div").innerHTML = `<div>${message}</div><div class="loader" style="margin-top: 1rem;"></div>`;
+    existingModal.style.display = "flex";
+  }
+}
+
+function closeModal() {
+  const modal = document.getElementById("bridgeModal");
+  if (modal) modal.style.display = "none";
+  modalDismissedForever = true;
+}
+
+
+
+  async function pollStatus() {
+    await fetchBridgeData();
+    setTimeout(pollStatus, 30000);
+  }
+
+  setConfirmationLink();
+  pollStatus();
+</script>
 </body>
 </html>

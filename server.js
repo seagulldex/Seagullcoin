@@ -8577,36 +8577,39 @@ app.post('/iso-message', async (req, res) => {
     const db = await connectDB();
     const collection = db.collection('iso_messages');
 
+    // ✅ Generate memoId same as normal bridge
+    const memoId = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+
     const parsed = parseSimpleXml(req.body);
 
     const doc = {
-  memoId: parsed.MsgId || generateUUID(),
-  chain: parsed.Chain || 'XRP',
-  messageType: parsed.MessageType || 'pacs.008',
-  sender: {
-    name: parsed.SenderName || 'Unknown',
-    partyId: parsed.SenderId || 'N/A'
-  },
-  receiver: {
-    name: parsed.ReceiverName || 'Unknown',
-    partyId: parsed.ReceiverId || 'N/A'
-  },
-  amount: {
-    value: parseFloat(parsed.InstdAmt),
-    currency: parsed.Currency || 'USD'
-  },
-  direction: parsed.Direction || 'inbound',
-  validated: false,
-  rawXml: req.body,
-  parsedJson: parsed,
-  createdAt: new Date(),
-  status: 'pending'
-};
+      memoId,
+      chain: parsed.Chain || 'XRP',
+      messageType: parsed.MessageType || 'pacs.008',
+      sender: {
+        name: parsed.SenderName || 'Unknown',
+        partyId: parsed.SenderId || 'N/A'
+      },
+      receiver: {
+        name: parsed.ReceiverName || 'Unknown',
+        partyId: parsed.ReceiverId || 'N/A'
+      },
+      amount: {
+        value: parseFloat(parsed.InstdAmt),
+        currency: parsed.Currency || 'USD'
+      },
+      direction: parsed.Direction || 'inbound',
+      validated: false,
+      rawXml: req.body,
+      parsedJson: parsed,
+      createdAt: new Date(),
+      status: 'pending'
+    };
 
+    await collection.insertOne(doc);
 
-    const result = await collection.insertOne(doc);
-
-    res.status(200).json({ success: true, insertedId: result.insertedId });
+    // ✅ Return memoId so frontend can use it for confirmation page
+    res.status(200).json({ success: true, memoId });
   } catch (err) {
     res.status(500).json({ error: 'Failed to save ISO message', details: err.message });
   }

@@ -125,6 +125,11 @@ const urlParams = new URLSearchParams(window.location.search);
     SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
   };
 
+  const currencyFromChains = {
+    SeagullCoin: ["XRP", "XDC", "FLR"],
+    SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
+  };
+  
   document.getElementById("currency").addEventListener("change", function () {
     const selectedCurrency = this.value;
     const chainSelect = document.getElementById("chain");

@@ -128,7 +128,9 @@ const urlParams = new URLSearchParams(window.location.search);
   document.getElementById("currency").addEventListener("change", function () {
     const selectedCurrency = this.value;
     const chainSelect = document.getElementById("chain");
-    chainSelect.innerHTML = '<option value="">-- Select Chain --</option>';
+  fromchainSelect.innerHTML = '<option value="">-- Select From Chain --</option>';
+  toChainSelect.innerHTML = '<option value="">-- Select To Chain --</option>';
+
 
     if (currencyToChains[selectedCurrency]) {
       currencyToChains[selectedCurrency].forEach(chain => {

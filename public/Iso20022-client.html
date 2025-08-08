@@ -92,15 +92,15 @@
     </select>
 
     <label for="fromchain">From Chain</label>
-    <select id="chain" required>
-      <option value="">-- Select Chain --</option>
-    </select>
+<select id="fromchain" required>
+  <option value="">-- Select From Chain --</option>
+</select>
 
-    <label for="toChain">To Chain</label>
+<label for="toChain">To Chain</label>
 <select id="toChain" required>
   <option value="">-- Select To Chain --</option>
-  <!-- You can fill this dynamically or hardcode options -->
 </select>
+
 
 
     <label for="direction">Direction</label>
@@ -121,42 +121,36 @@ const urlParams = new URLSearchParams(window.location.search);
   }
   
   const currencyToChains = {
-    SeagullCoin: ["XRP", "XDC", "FLR"],
-    SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
-  };
+  const currencyToChains = {
+  SeagullCoin: ["XRP", "XDC", "FLR"],
+  SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
+};
 
-  const currencyFromChains = {
-    SeagullCoin: ["XRP", "XDC", "FLR"],
-    SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
-  };
+document.getElementById("currency").addEventListener("change", function () {
+  const selectedCurrency = this.value;
   
-  document.getElementById("currency").addEventListener("change", function () {
-    const selectedCurrency = this.value;
-    const chainSelect = document.getElementById("Fromchain");
-    const chainSelect = document.getElementById("Tochain");
-  fromchainSelect.innerHTML = '<option value="">-- Select From Chain --</option>';
+  const fromChainSelect = document.getElementById("fromchain");
+  const toChainSelect = document.getElementById("toChain");
+
+  // Clear existing options (except the placeholder)
+  fromChainSelect.innerHTML = '<option value="">-- Select From Chain --</option>';
   toChainSelect.innerHTML = '<option value="">-- Select To Chain --</option>';
 
+  if (currencyToChains[selectedCurrency]) {
+    currencyToChains[selectedCurrency].forEach(chain => {
+      const optionFrom = document.createElement("option");
+      optionFrom.value = chain;
+      optionFrom.textContent = chain;
+      fromChainSelect.appendChild(optionFrom);
 
-    if (currencyToChains[selectedCurrency]) {
-      currencyToChains[selectedCurrency].forEach(chain => {
-        const option = document.createElement("option");
-        option.value = chain;
-        option.textContent = chain;
-        chainSelect.appendChild(option);
-      });
-    }
-  });
+      const optionTo = document.createElement("option");
+      optionTo.value = chain;
+      optionTo.textContent = chain;
+      toChainSelect.appendChild(optionTo);
+    });
+  }
+});
 
-  if (currencyFromChains[selectedCurrency]) {
-      currencyFromChains[selectedCurrency].forEach(chain => {
-        const option = document.createElement("option");
-        option.value = chain;
-        option.textContent = chain;
-        chainSelect.appendChild(option);
-      });
-    }
-  });
 
 document.getElementById("isoForm").addEventListener("submit", async function(e) {
   e.preventDefault();

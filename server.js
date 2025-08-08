@@ -8653,6 +8653,145 @@ app.post("/api/submit-iso-message", async (req, res) => {
   }
 });
 
+// helper to escape XML entities
+function escapeXml(unsafe) {
+  if (unsafe === undefined || unsafe === null) return '';
+  return String(unsafe).replace(/[<>&'"]/g, (c) => {
+    return { '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c];
+  });
+}
+
+app.post("/api/bridge2", async (req, res) => {
+  try {
+    const db = await connectDB();
+    const bridgeCollection = db.collection("bridge_requests");
+    const isoCollection = db.collection("iso_messages");
+
+    const { category, fromChain, toChain, amount, receiveAddress } = req.body;
+    const amountNum = Number(amount);
+
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    const limits = {
+      SeagullCoin: 50000,
+      SeagullCash: 10000000000
+    };
+
+    if (!limits.hasOwnProperty(category)) {
+      return res.status(400).json({ error: "Unsupported token category" });
+    }
+
+    const todayStart = new Date();
+    todayStart.setHours(0,0,0,0);
+
+    const aggregateResult = await bridgeCollection.aggregate([
+      { $match: { category, createdAt: { $gte: todayStart } } },
+      { $group: { _id: null, totalAmountToday: { $sum: "$amount" } } }
+    ]).toArray();
+
+    const totalAmountToday = aggregateResult.length > 0 ? aggregateResult[0].totalAmountToday : 0;
+
+    if (totalAmountToday + amountNum > limits[category]) {
+      return res.status(429).json({
+        error: `Daily bridge limit exceeded for ${category}. Limit: ${limits[category]}, Already bridged: ${totalAmountToday}`
+      });
+    }
+
+    // IDs
+    const memoId = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+    const bridgeId = `BRDG-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // Insert bridge request
+    await bridgeCollection.insertOne({
+      category,
+      fromChain,
+      toChain,
+      amount: amountNum,
+      receiveAddress,
+      memoId,
+      status: "pending",
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 24*60*60*1000)
+    });
+
+    // Build parsed representation (JSON) for convenience
+    const isoParsed = {
+      MsgId: memoId,
+      CreDtTm: new Date().toISOString(),
+      PmtInfId: bridgeId,
+      DebtorName: "Bridge Service",
+      CreditorName: receiveAddress,
+      InstdAmt: amountNum.toFixed(2),
+      Currency: category, // using token category as "currency" here — change if you want a different field
+      Chain: fromChain,
+      FromChain: fromChain,
+      ToChain: toChain,
+      Memo: `${category} bridge ${fromChain}→${toChain}`
+    };
+
+    // Create a safe XML (escaped)
+    const isoXml = `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02">
+  <CstmrCdtTrfInitn>
+    <GrpHdr>
+      <MsgId>${escapeXml(isoParsed.MsgId)}</MsgId>
+      <CreDtTm>${escapeXml(isoParsed.CreDtTm)}</CreDtTm>
+      <NbOfTxs>1</NbOfTxs>
+      <CtrlSum>${escapeXml(isoParsed.InstdAmt)}</CtrlSum>
+    </GrpHdr>
+    <PmtInf>
+      <PmtInfId>${escapeXml(isoParsed.PmtInfId)}</PmtInfId>
+      <PmtMtd>TRF</PmtMtd>
+      <ReqdExctnDt>${escapeXml(isoParsed.CreDtTm.split('T')[0])}</ReqdExctnDt>
+      <Dbtr>
+        <Nm>${escapeXml(isoParsed.DebtorName)}</Nm>
+      </Dbtr>
+      <Cdtr>
+        <Nm>${escapeXml(isoParsed.CreditorName)}</Nm>
+      </Cdtr>
+      <CdtTrfTxInf>
+        <PmtId>
+          <InstrId>${escapeXml(isoParsed.MsgId)}</InstrId>
+        </PmtId>
+        <Amt>
+          <InstdAmt Ccy="${escapeXml(isoParsed.Currency)}">${escapeXml(isoParsed.InstdAmt)}</InstdAmt>
+        </Amt>
+        <RmtInf>
+          <Ustrd>${escapeXml(isoParsed.Memo)}</Ustrd>
+        </RmtInf>
+      </CdtTrfTxInf>
+    </PmtInf>
+  </CstmrCdtTrfInitn>
+</Document>`.trim();
+
+    // Save ISO message record (so it's available later)
+    await isoCollection.insertOne({
+      memoId,
+      bridgeId,
+      rawXml: isoXml,
+      parsed: isoParsed,
+      createdAt: new Date(),
+      status: "pending"
+    });
+
+    // Return BOTH parsed JSON and XML so the frontend can show it or let the user edit it
+    return res.status(200).json({
+      message: "Bridge saved and ISO prepared",
+      memoId,
+      bridgeId,
+      isoParsed,
+      isoXml
+    });
+
+  } catch (err) {
+    console.error("❌ /api/bridge2 error:", err.stack || err);
+    return res.status(500).json({ error: "Server error", detail: err.message });
+  }
+});
+
+
 
 // Call the XRPL ping when the server starts
 xrplPing().then(() => {

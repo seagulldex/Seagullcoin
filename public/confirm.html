@@ -507,6 +507,19 @@ function closeModal() {
     setTimeout(pollStatus, 30000);
   }
 
+  function openIsoFormModal(isoJson) {
+  const modal = document.getElementById("isoFormModal");
+  const content = document.getElementById("isoFormContent");
+  content.textContent = JSON.stringify(isoJson, null, 2);
+  modal.style.display = "block";
+}
+
+function closeIsoFormModal() {
+  const modal = document.getElementById("isoFormModal");
+  modal.style.display = "none";
+}
+
+  openIsoFormModal(parsedIsoMessage);
   setConfirmationLink();
   pollStatus();
 </script>

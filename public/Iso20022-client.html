@@ -168,7 +168,8 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
   <MsgId>${payload.memoId}</MsgId>
   <InstdAmt>${payload.amount.value}</InstdAmt>
   <Currency>${payload.amount.currency}</Currency>
-  <Chain>${payload.chain}</Chain>
+  <FromChain>${payload.fromchain}</FromChain>
+   <ToChain>${payload.toChain}</ToChain>
   <MessageType>${payload.messageType}</MessageType>
   <SenderName>${payload.sender.name}</SenderName>
   <SenderId>${payload.sender.partyId}</SenderId>

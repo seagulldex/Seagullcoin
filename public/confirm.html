@@ -503,6 +503,60 @@ function closeModal() {
     setTimeout(pollStatus, 30000);
   }
 
+  function copyIsoXml() {
+  const txt = document.getElementById('isoRawXml').textContent || '';
+  navigator.clipboard.writeText(txt).then(()=>alert('XML copied'));
+}
+function downloadIsoXml() {
+  const txt = document.getElementById('isoRawXml').textContent || '';
+  const blob = new Blob([txt], {type: 'application/xml'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `iso_${document.getElementById('memo').value || 'message'}.xml`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+// example: when user confirms the bridge action
+async function submitBridgeAndPrepareIso(payload) {
+  // payload must contain: category, fromChain, toChain, amount, receiveAddress
+  try {
+    const res = await fetch('/api/bridge2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+
+    if (!res.ok) {
+      alert("Bridge error: " + (result.error || "Unknown"));
+      return;
+    }
+
+    // open confirmation page in a new tab (optional)
+    if (result.memoId) {
+      const confirmationUrl = `/confirm.html?memoId=${result.memoId}`;
+      window.open(confirmationUrl, '_blank');
+    }
+
+    // show ISO XML in modal (pre-filled)
+    // ensure your modal contains an element with id="isoRawXml" and elements for iso form fields
+    document.getElementById('memo').value = result.memoId || '';
+    document.getElementById('isoRawXml').textContent = result.isoXml || '';
+    // optionally prefill form fields from parsed object:
+    const p = result.isoParsed || {};
+    if (p.InstdAmt) document.getElementById('amount').value = p.InstdAmt;
+    if (p.Currency) document.getElementById('currency').value = p.Currency;
+    if (p.CreditorName) document.getElementById('receiverName').value = p.CreditorName;
+    // open your ISO modal
+    isoModal.classList.add('active');
+
+  } catch (err) {
+    console.error(err);
+    alert("Network/server error while creating bridge.");
+  }
+}
+
+
   setConfirmationLink();
   pollStatus();
 </script>

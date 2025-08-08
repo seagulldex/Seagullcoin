@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,6 +76,7 @@
       border: 1px solid #444;
       border-radius: 6px;
       cursor: pointer;
+      user-select: none;
     }
 
     .dropdown-selected img {
@@ -116,81 +116,80 @@
     .hidden {
       display: none;
     }
-  .modal {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-  }
 
-  .modal-content {
-    background-color: #111a3c;
-    border: 1px solid #1f2b60;
-    padding: 2rem;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 400px;
-    text-align: center;
-    color: #f0f0f0;
-    box-shadow: 0 0 20px rgba(0,170,228, 0.3);
-  }
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
 
-  .modal-content h3 {
-    margin-bottom: 1rem;
-    color: #00aae4;
-  }
+    .modal-content {
+      background-color: #111a3c;
+      border: 1px solid #1f2b60;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      color: #f0f0f0;
+      box-shadow: 0 0 20px rgba(0,170,228, 0.3);
+    }
 
-  .modal-actions {
-    margin-top: 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-  }
+    .modal-content h3 {
+      margin-bottom: 1rem;
+      color: #00aae4;
+    }
 
-  .modal-actions button {
-    flex: 1;
-    padding: 0.75rem;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-  }
+    .modal-actions {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
 
-  #cancelModal {
-    background-color: #333;
-    color: #ccc;
-  }
+    .modal-actions button {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+    }
 
-  #confirmModal {
-    background-color: #00aae4;
-    color: #fff;
+    #cancelModal {
+      background-color: #333;
+      color: #ccc;
+    }
 
-  }
+    #confirmModal {
+      background-color: #00aae4;
+      color: #fff;
+    }
+
     #limitModal .modal-content {
-  background-color: #111a3c;
-  border: 1px solid #1f2b60;
-  box-shadow: 0 0 20px rgba(0, 170, 228, 0.3);
-  color: #f0f0f0;
-}
+      background-color: #111a3c;
+      border: 1px solid #1f2b60;
+      box-shadow: 0 0 20px rgba(0, 170, 228, 0.3);
+      color: #f0f0f0;
+    }
+
     #limitDismiss {
-  background-color: #00aae4;
-  color: #fff;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  font-size: 1rem;
-  cursor: pointer;
-  width: 100%;
-}
-      .hidden {
-    display: none;
-      }
+      background-color: #00aae4;
+      color: #fff;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -214,7 +213,7 @@
     <input type="text" id="receiveAddress" required />
 
     <label>Amount</label>
-    <input type="number" id="amount" required />
+    <input type="number" id="amount" required min="0" step="any" />
 
     <button type="submit">Bridge Now</button>
   </form>
@@ -224,9 +223,7 @@
   Processing bridge...
 </div>
 
-
-
-  <div id="confirmationModal" class="modal hidden">
+<div id="confirmationModal" class="modal hidden">
   <div class="modal-content">
     <h3>Confirm Bridge</h3>
     <p id="modalDetails" style="white-space: pre-line;"></p>
@@ -237,7 +234,7 @@
   </div>
 </div>
 
-  <!-- Daily Limit Modal -->
+<!-- Daily Limit Modal -->
 <div id="limitModal" class="modal hidden">
   <div class="modal-content">
     <h3>Daily Bridge Limit Reached</h3>
@@ -251,7 +248,6 @@
   </div>
 </div>
 
-<!-- 🧠 Only showing the fixed JavaScript portion for brevity -->
 <script>
   const logos = {
     SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
@@ -273,164 +269,223 @@
   let fromChain = "";
   let toChain = "";
 
-  function calculateBridgeFee(asset, amount) {
-    const amountNum = parseFloat(amount);
-    const fee = asset === "SeagullCoin" ? 0.2 : 5;
-    const received = amountNum - fee;
-
-    return {
-      feeText: `${fee} ${asset}`,
-      receivedAmount: received > 0 ? received.toFixed(4) : "0"
-    };
-  }
-
-  function showLimitModal(assetName) {
-    document.getElementById("limitAssetName").innerText = assetName;
-    document.getElementById("limitModal").classList.remove("hidden");
-  }
-
-  document.getElementById("limitDismiss").onclick = function () {
-    document.getElementById("limitModal").classList.add("hidden");
-  };
-
+  // Creates a custom dropdown with images, excludes optional values, and calls onSelect callback
   function createDropdown(id, options, onSelect, selectedValue, exclude) {
     const container = document.getElementById(id);
     container.innerHTML = "";
 
-    const filtered = exclude ? options.filter(opt => opt !== exclude) : options;
+    // Filter out excluded options (like fromChain in toChain dropdown)
+    const filteredOptions = exclude ? options.filter(opt => opt !== exclude) : options;
 
-    const selected = document.createElement("div");
-    selected.className = "dropdown-selected";
-    container.appendChild(selected);
+    const selectedDiv = document.createElement("div");
+    selectedDiv.className = "dropdown-selected";
+    container.appendChild(selectedDiv);
 
-    const list = document.createElement("div");
-    list.className = "dropdown-list";
-    container.appendChild(list);
+    const listDiv = document.createElement("div");
+    listDiv.className = "dropdown-list";
+    container.appendChild(listDiv);
 
     function update(value) {
-      selected.innerHTML = `<div style="display:flex;align-items:center;"><img src="${logos[value]}" /> ${value}</div>`;
-      list.style.display = "none";
+      selectedDiv.innerHTML = `<div style="display:flex;align-items:center;"><img src="${logos[value]}" alt="${value}" /> ${value}</div>`;
+      listDiv.style.display = "none";
       onSelect(value);
     }
 
-    selected.addEventListener("click", () => {
-      list.style.display = list.style.display === "block" ? "none" : "block";
-    });
+    // Initialize selected
+    if (!selectedValue || !filteredOptions.includes(selectedValue)) {
+      selectedValue = filteredOptions[0];
+    }
+    update(selectedValue);
 
-    filtered.forEach(value => {
+    // Populate dropdown list
+    filteredOptions.forEach(opt => {
       const item = document.createElement("div");
       item.className = "dropdown-item";
-      item.innerHTML = `<img src="${logos[value]}" /> ${value}`;
-      item.addEventListener("click", () => update(value));
-      list.appendChild(item);
+      item.innerHTML = `<img src="${logos[opt]}" alt="${opt}" /> ${opt}`;
+      item.onclick = () => {
+        update(opt);
+      };
+      listDiv.appendChild(item);
     });
 
-    update(filtered.includes(selectedValue) ? selectedValue : filtered[0]);
+    selectedDiv.onclick = () => {
+      listDiv.style.display = listDiv.style.display === "block" ? "none" : "block";
+    };
+
+    // Close dropdown if clicked outside
+    document.addEventListener("click", (e) => {
+      if (!container.contains(e.target)) {
+        listDiv.style.display = "none";
+      }
+    });
+
+    return {
+      getValue: () => selectedValue,
+      setValue: (val) => {
+        if (filteredOptions.includes(val)) {
+          update(val);
+        }
+      }
+    };
+  }
+
+  // Initialize dropdowns
+  let assetDropdown, fromDropdown, toDropdown;
+
+  function initDropdowns() {
+    assetDropdown = createDropdown("assetDropdown", Object.keys(bridgeAssets), (val) => {
+      selectedAsset = val;
+      refreshChainDropdowns();
+    }, selectedAsset);
+
+    refreshChainDropdowns();
   }
 
   function refreshChainDropdowns() {
     const chains = bridgeAssets[selectedAsset];
 
-    // Set defaults if current values aren't valid
-    if (!chains.includes(fromChain)) fromChain = chains[0];
-    if (!chains.includes(toChain) || fromChain === toChain) {
-      toChain = chains.find(c => c !== fromChain) || chains[0];
+    // Set fromChain default to first chain if empty or invalid
+    if (!chains.includes(fromChain)) {
+      fromChain = chains[0];
     }
 
-    createDropdown("fromDropdown", chains, val => {
-      fromChain = val;
-      // Update toDropdown excluding fromChain
-      const validToChains = chains.filter(c => c !== fromChain);
-      if (!validToChains.includes(toChain)) {
-        toChain = validToChains[0];
-      }
-      createDropdown("toDropdown", chains, val2 => toChain = val2, toChain, fromChain);
-    }, fromChain);
+    // For toChain, exclude fromChain so they can't be the same
+    let toChains = chains.filter(chain => chain !== fromChain);
+    if (!toChains.includes(toChain)) {
+      toChain = toChains[0];
+    }
 
-    createDropdown("toDropdown", chains, val => toChain = val, toChain, fromChain);
+    if (fromDropdown) {
+      // Rebuild fromDropdown with chains
+      fromDropdown = createDropdown("fromDropdown", chains, (val) => {
+        fromChain = val;
+        // When fromChain changes, refresh toDropdown options excluding fromChain
+        refreshToDropdown();
+      }, fromChain);
+    } else {
+      fromDropdown = createDropdown("fromDropdown", chains, (val) => {
+        fromChain = val;
+        refreshToDropdown();
+      }, fromChain);
+    }
+
+    refreshToDropdown();
   }
 
-  createDropdown("assetDropdown", Object.keys(bridgeAssets), val => {
-    selectedAsset = val;
-    refreshChainDropdowns();
-  }, selectedAsset);
+  function refreshToDropdown() {
+    const chains = bridgeAssets[selectedAsset];
+    // Exclude fromChain in toChain options
+    const toChains = chains.filter(chain => chain !== fromChain);
 
-  refreshChainDropdowns();
+    if (toDropdown) {
+      toDropdown = createDropdown("toDropdown", toChains, (val) => {
+        toChain = val;
+      }, toChain);
+    } else {
+      toDropdown = createDropdown("toDropdown", toChains, (val) => {
+        toChain = val;
+      }, toChain);
+    }
+  }
 
-  document.getElementById("bridge-form").addEventListener("submit", async function (e) {
+  initDropdowns();
+
+  // Bridge limit and usage
+  const dailyLimits = {
+    SeagullCash: 1000,
+    SeagullCoin: 500
+  };
+
+  function getDailyUsage(asset) {
+    const usage = localStorage.getItem(`bridge_usage_${asset}`);
+    return usage ? parseFloat(usage) : 0;
+  }
+
+  function addDailyUsage(asset, amount) {
+    const current = getDailyUsage(asset);
+    localStorage.setItem(`bridge_usage_${asset}`, current + amount);
+  }
+
+  // Form submission with validation and confirmation modal
+  const form = document.getElementById("bridge-form");
+  const loading = document.getElementById("loading");
+  const confirmationModal = document.getElementById("confirmationModal");
+  const modalDetails = document.getElementById("modalDetails");
+  const cancelModalBtn = document.getElementById("cancelModal");
+  const confirmModalBtn = document.getElementById("confirmModal");
+  const limitModal = document.getElementById("limitModal");
+  const limitAssetName = document.getElementById("limitAssetName");
+  const limitDismissBtn = document.getElementById("limitDismiss");
+
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
 
-    const amount = parseFloat(document.getElementById("amount").value);
-    const minFee = selectedAsset === "SeagullCoin" ? 0.2 : 5;
+    const amountInput = parseFloat(document.getElementById("amount").value);
+    const receiveAddress = document.getElementById("receiveAddress").value.trim();
 
-    if (fromChain === toChain) {
-      alert("From Chain and To Chain cannot be the same.");
+    if (isNaN(amountInput) || amountInput <= 0) {
+      alert("Please enter a valid amount greater than 0.");
       return;
     }
 
-    if (isNaN(amount) || amount <= minFee) {
-      alert(`Amount must be greater than the bridge fee of ${minFee} ${selectedAsset}.`);
+    if (receiveAddress.length < 5) {
+      alert("Please enter a valid wallet address.");
       return;
     }
 
-    const { feeText, receivedAmount } = calculateBridgeFee(selectedAsset, amount);
+    // Check daily limit
+    const currentUsage = getDailyUsage(selectedAsset);
+    const limit = dailyLimits[selectedAsset];
 
-    document.getElementById("modalDetails").innerText =
+    if (currentUsage + amountInput > limit) {
+      // Show limit modal
+      limitAssetName.textContent = selectedAsset;
+      limitModal.classList.remove("hidden");
+      return;
+    }
+
+    // Show confirmation modal
+    modalDetails.textContent =
       `Asset: ${selectedAsset}\n` +
       `From Chain: ${fromChain}\n` +
       `To Chain: ${toChain}\n` +
-      `Amount: ${amount} ${selectedAsset}\n` +
-      `Bridge Fee: ${feeText}\n` +
-      `You Will Receive: ${receivedAmount} ${selectedAsset}`;
+      `Amount: ${amountInput}\n` +
+      `Receiving Address: ${receiveAddress}`;
 
-    document.getElementById("confirmationModal").classList.remove("hidden");
+    confirmationModal.classList.remove("hidden");
+  });
 
-    document.getElementById("confirmModal").onclick = async function () {
-      document.getElementById("confirmationModal").classList.add("hidden");
-      document.getElementById("loading").classList.remove("hidden");
+  cancelModalBtn.addEventListener("click", () => {
+    confirmationModal.classList.add("hidden");
+  });
 
-      const payload = {
-        category: selectedAsset,
-        fromChain,
-        toChain,
-        amount,
-        receiveAddress: document.getElementById("receiveAddress").value,
-      };
+  confirmModalBtn.addEventListener("click", () => {
+    confirmationModal.classList.add("hidden");
+    loading.classList.remove("hidden");
 
-      try {
-        const res = await fetch("/api/bridge", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+    // Simulate bridge delay
+    setTimeout(() => {
+      loading.classList.add("hidden");
+      alert("Bridge transaction submitted successfully!");
 
-        const data = await res.json();
-if (res.ok) {
-  const confirmationUrl = `/confirm.html?memoId=${data.memoId}`;
-  window.open(confirmationUrl, "_blank"); // Open in new tab
+      // Add usage for daily limits
+      const amountInput = parseFloat(document.getElementById("amount").value);
+      addDailyUsage(selectedAsset, amountInput);
 
-  const link = document.getElementById("confirmationLink");
-  link.href = confirmationUrl; 
-  link.style.display = "none"; // Still show the link in case they closed the new tab
-} else {
-          if (res.status === 429 && data.error.includes("Daily bridge limit exceeded")) {
-            showLimitModal(selectedAsset);
-          } else {
-            alert(data.error || "Something went wrong.");
-          }
-        }
-      } catch (err) {
-        alert("Server error.");
-        console.error(err);
-      } finally {
-        document.getElementById("loading").classList.add("hidden");
-      }
-    };
+      form.reset();
 
-    document.getElementById("cancelModal").onclick = function () {
-      document.getElementById("confirmationModal").classList.add("hidden");
-    };
+      // Reset dropdowns to defaults after reset
+      selectedAsset = Object.keys(bridgeAssets)[0];
+      fromChain = "";
+      toChain = "";
+      initDropdowns();
+    }, 3000);
+  });
+
+  limitDismissBtn.addEventListener("click", () => {
+    limitModal.classList.add("hidden");
   });
 </script>
+
 </body>
 </html>

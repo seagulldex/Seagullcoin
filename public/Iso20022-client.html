@@ -130,30 +130,30 @@
     }
   });
 
-  document.getElementById("isoForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
+document.getElementById("isoForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
 
-    const payload = {
-      messageType: document.getElementById("messageType").value,
-      sender: {
-        name: document.getElementById("senderName").value,
-        partyId: document.getElementById("senderId").value
-      },
-      receiver: {
-        name: document.getElementById("receiverName").value,
-        partyId: document.getElementById("receiverId").value
-      },
-      amount: {
-        value: parseFloat(document.getElementById("amount").value),
-        currency: document.getElementById("currency").value
-      },
-      chain: document.getElementById("chain").value,
-      direction: document.getElementById("direction").value,
-      memoId: document.getElementById("memo").value
-    };
+  const payload = {
+    messageType: document.getElementById("messageType").value,
+    sender: {
+      name: document.getElementById("senderName").value,
+      partyId: document.getElementById("senderId").value
+    },
+    receiver: {
+      name: document.getElementById("receiverName").value,
+      partyId: document.getElementById("receiverId").value
+    },
+    amount: {
+      value: parseFloat(document.getElementById("amount").value),
+      currency: document.getElementById("currency").value
+    },
+    chain: document.getElementById("chain").value,
+    direction: document.getElementById("direction").value,
+    memoId: document.getElementById("memo").value
+  };
 
-    try {
-      const xml = `
+  try {
+    const xml = `
 <ISO20022>
   <MsgId>${payload.memoId}</MsgId>
   <InstdAmt>${payload.amount.value}</InstdAmt>
@@ -167,25 +167,27 @@
   <Direction>${payload.direction}</Direction>
 </ISO20022>`.trim();
 
-      const res = await fetch("/iso-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/xml" },
-        body: xml
-      });
+    const res = await fetch("/iso-message", {
+      method: "POST",
+      headers: { "Content-Type": "application/xml" },
+      body: xml
+    });
 
-      const result = await res.json();
+    const result = await res.json();
 
-      if (res.ok) {
-        alert("✅ ISO Message submitted successfully.\nMemo ID: " + result.insertedId);
-      } else {
-        alert("❌ Submission failed: " + (result.error || "Unknown error"));
-      }
-
-    } catch (err) {
-      console.error(err);
-      alert("❌ Server error while submitting ISO message.");
+    if (res.ok) {
+      // 🚀 Redirect to confirm.html with memoId in query string
+      window.location.href = `/confirm.html?memoId=${payload.memoId}`;
+    } else {
+      alert("❌ Submission failed: " + (result.error || "Unknown error"));
     }
-  });
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Server error while submitting ISO message.");
+  }
+});
+
 </script>
 
 

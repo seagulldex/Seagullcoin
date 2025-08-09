@@ -182,7 +182,7 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
 
     if (res.ok && result.memoId) {
       // Redirect to confirm page with memoId
-      window.location.href = `/confirm.html?memoId=${result.memoId}`;
+      window.location.href = `/confirm-two.html?memoId=${result.memoId}`;
     } else {
       alert("❌ Submission failed: " + (result.error || "Unknown error"));
     }

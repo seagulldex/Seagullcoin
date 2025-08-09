@@ -137,8 +137,6 @@
 
 <script>
   const escrowAddresses = {
-    SeagullCoin: "SEA-ADDR-111111111111",
-    SeagullCash: "SEA-ADDR-222222222222",
     XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
     XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
     HBAR: "0.0.2928384",
@@ -164,17 +162,38 @@
 
   function generateQRCode(address, elementId, fromChain, memoId) {
     const container = document.getElementById(elementId);
-    container.innerHTML = "";
+    container.innerHTML = ""; // Clear previous QR
 
     let uri;
+
     switch (fromChain) {
-      case "XRP": uri = `xrp:${address}?dt=${memoId}`; break;
-      case "XLM": uri = `stellar:${address}?memo=${memoId}`; break;
-      case "HBAR": uri = `hedera:${address}?memo=${memoId}`; break;
-      default: uri = address;
+      case "XRP":
+        uri = `xrp:${address}?dt=${memoId}`;
+        break;
+      case "XLM":
+        uri = `stellar:${address}?memo=${memoId}`;
+        break;
+      case "HBAR":
+        uri = `hedera:${address}?memo=${memoId}`;
+        break;
+      case "ALGO":
+        uri = `algo:${address}`;
+        break;
+      case "FLR":
+        uri = `flare:${address}`;
+        break;
+      case "XDC":
+        uri = `xdc:${address}`;
+        break;
+      default:
+        uri = address; // fallback
     }
 
-    new QRCode(container, { text: uri, width: 128, height: 128 });
+    new QRCode(container, {
+      text: uri,
+      width: 128,
+      height: 128,
+    });
   }
 
   function getLogo(chainName) {
@@ -189,6 +208,29 @@
       XDC: 'https://cryptologos.cc/logos/xdc-network-xdc-logo.svg?v=023',
     };
     return logos[chainName] || '';
+  }
+
+  function fetchBridgeStatus(memoId) {
+    // Mock fetch for example
+    // Replace with your actual API endpoint
+    // Returning a Promise that resolves with a status object
+
+    // Simulate network delay
+    return new Promise(resolve => {
+      setTimeout(() => {
+        // Example status, random success for demo
+        const statuses = ["pending", "processing", "completed", "failed"];
+        const status = statuses[Math.floor(Math.random() * statuses.length)];
+        resolve({
+          status,
+          expiresAt: Date.now() + 15 * 60 * 1000 // expires in 15 min
+        });
+      }, 800);
+    });
+  }
+
+  function formatNumber(num) {
+    return Number(num).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 8});
   }
 
   function updateCountdown(expiryTimestamp) {
@@ -209,53 +251,83 @@
     const interval = setInterval(update, 1000);
   }
 
-  function formatNumber(num) {
-    return Number(num).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 8});
-  }
-
   function displayBridgeInfo(data, memoId) {
     document.getElementById("confFromChain").textContent = data.fromChain;
     document.getElementById("confToChain").textContent = data.toChain;
-    document.getElementById("confAmount").textContent = `${formatNumber(data.amount.value)} ${data.amount.currency}`;
+    document.getElementById("confAmount").textContent = `${formatNumber(data.sendAmount)} ${data.fromChain}`;
     document.getElementById("confEscrow").textContent = escrowAddresses[data.fromChain] || "N/A";
     document.getElementById("confMemo").textContent = memoId || "N/A";
 
     document.getElementById("confFromChainLogo").src = getLogo(data.fromChain);
     document.getElementById("confToChainLogo").src = getLogo(data.toChain);
 
-    document.getElementById("memoRow").style.display = chainsUsingMemo.includes(data.fromChain) ? "block" : "none";
-
-    if (data.userReceiveAddress) {
-      document.getElementById("userInfoBox").style.display = "block";
-      document.getElementById("confFee").textContent = `${formatNumber(data.bridgeFee)} ${data.amount.currency}`;
-      const netReceived = (data.amount.value - data.bridgeFee).toFixed(8);
-      document.getElementById("confNetReceived").textContent = `${formatNumber(netReceived)} ${data.amount.currency}`;
-      document.getElementById("userReceiveAddress").textContent = data.userReceiveAddress;
-      document.getElementById("userMemoRow").style.display = chainsUsingMemo.includes(data.toChain) ? "block" : "none";
-      document.getElementById("userMemoId").textContent = data.userMemoId || "N/A";
+    // Show memo row only if applicable
+    if (!chainsUsingMemo.includes(data.fromChain)) {
+      document.getElementById("memoRow").style.display = "none";
+    } else {
+      document.getElementById("memoRow").style.display = "block";
     }
 
+    // User info box
+    const userInfoBox = document.getElementById("userInfoBox");
+    if (data.userReceiveAddress) {
+      userInfoBox.style.display = "block";
+      document.getElementById("confFee").textContent = `${formatNumber(data.bridgeFee)} ${data.fromChain}`;
+      const netReceived = (data.sendAmount - data.bridgeFee).toFixed(8);
+      document.getElementById("confNetReceived").textContent = `${formatNumber(netReceived)} ${data.toChain}`;
+      document.getElementById("userReceiveAddress").textContent = data.userReceiveAddress;
+      if (chainsUsingMemo.includes(data.toChain)) {
+        document.getElementById("userMemoId").textContent = data.userMemoId || "N/A";
+        document.getElementById("userMemoRow").style.display = "block";
+      } else {
+        document.getElementById("userMemoRow").style.display = "none";
+      }
+    } else {
+      userInfoBox.style.display = "none";
+    }
+
+    // Generate QR code for deposit address + memo if applicable
     generateQRCode(escrowAddresses[data.fromChain], "qrCodeContainer", data.fromChain, memoId);
   }
 
   async function main() {
     const memoId = getMemoId();
+
     if (!memoId) {
-      alert("No memoId found in URL.");
+      alert("No memoId found in URL. Please access this page with a valid memoId.");
       return;
     }
 
-    const response = await fetch(`/api/bridge-status?memoId=${memoId}`);
-    if (!response.ok) {
-      alert("Failed to fetch bridge details.");
-      return;
-    }
-    const data = await response.json();
+    // Set confirmation URL in saveLinkWidget
+    const confirmUrlInput = document.getElementById("confirmationUrl");
+    confirmUrlInput.value = window.location.href;
 
-    displayBridgeInfo(data, memoId);
+    // Toggle save link popup
+    document.getElementById("saveLinkBtn").addEventListener("click", () => {
+      const popup = document.getElementById("saveLinkPopup");
+      popup.classList.toggle("hidden");
+    });
 
-    document.getElementById("bridgeStatus").textContent = data.status || "Unknown";
-    updateCountdown(data.expiresAt);
+    // Replace this with your actual bridge fetch API
+    // For demo, we simulate fetching a bridge record using the memoId
+    // Sample data
+    const bridgeData = {
+      fromChain: "XRP",
+      toChain: "XLM",
+      sendAmount: 123.45678901,
+      bridgeFee: 0.0001,
+      userReceiveAddress: "GB3JDWC7N4PKURTZDDMYYWQY2RDRLUXR2TVWT6C6WJZTY7LBW5Z56HD7",
+      userMemoId: "9876543210"
+    };
+
+    displayBridgeInfo(bridgeData, memoId);
+
+    // Fetch bridge status and update status + countdown
+    const statusInfo = await fetchBridgeStatus(memoId);
+    const statusEl = document.getElementById("bridgeStatus");
+    statusEl.textContent = statusInfo.status.charAt(0).toUpperCase() + statusInfo.status.slice(1);
+
+    updateCountdown(statusInfo.expiresAt);
   }
 
   main();

@@ -252,16 +252,23 @@
   }
 
 function displayBridgeInfo(data, memoId) {
-  document.getElementById("confFromChain").textContent = data.fromChain || data.chain;
-  document.getElementById("confToChain").textContent = data.toChain;
+  const fromChain = data.fromChain;
+  const toChain = data.toChain;
+
+  document.getElementById("confFromChain").textContent = fromChain;
+  document.getElementById("confToChain").textContent = toChain;
   document.getElementById("confAmount").textContent = `${formatNumber(data.amount.value)} ${data.amount.currency}`;
-  document.getElementById("confEscrow").textContent = escrowAddresses[data.fromChain || data.chain] || "N/A";
+  
+  // escrow address based on FROM chain
+  document.getElementById("confEscrow").textContent = escrowAddresses[fromChain] || "N/A";
   document.getElementById("confMemo").textContent = memoId || "N/A";
 
-  document.getElementById("confFromChainLogo").src = getLogo(data.amount.currency) || getLogo(data.fromChain || data.chain);
-  document.getElementById("confToChainLogo").src = getLogo(data.toChain);
+  // Correct logo matching
+  document.getElementById("confFromChainLogo").src = getLogo(fromChain);
+  document.getElementById("confToChainLogo").src = getLogo(toChain);
 
-  if (!chainsUsingMemo.includes(data.fromChain || data.chain)) {
+  // Memo visibility for FROM chain
+  if (!chainsUsingMemo.includes(fromChain)) {
     document.getElementById("memoRow").style.display = "none";
   } else {
     document.getElementById("memoRow").style.display = "block";
@@ -275,7 +282,9 @@ function displayBridgeInfo(data, memoId) {
     const netReceived = (data.amount.value - data.bridgeFee).toFixed(8);
     document.getElementById("confNetReceived").textContent = `${formatNumber(netReceived)} ${data.amount.currency}`;
     document.getElementById("userReceiveAddress").textContent = data.userReceiveAddress;
-    if (chainsUsingMemo.includes(data.toChain)) {
+    
+    // Memo visibility for TO chain
+    if (chainsUsingMemo.includes(toChain)) {
       document.getElementById("userMemoId").textContent = data.userMemoId || "N/A";
       document.getElementById("userMemoRow").style.display = "block";
     } else {
@@ -285,9 +294,8 @@ function displayBridgeInfo(data, memoId) {
     userInfoBox.style.display = "none";
   }
 
-  generateQRCode(escrowAddresses[data.fromChain || data.chain], "qrCodeContainer", data.fromChain || data.chain, memoId);
+  generateQRCode(escrowAddresses[fromChain], "qrCodeContainer", fromChain, memoId);
 }
-
 
 async function main() {
   const memoId = getMemoId();

@@ -115,13 +115,14 @@
 
 <script>
 const urlParams = new URLSearchParams(window.location.search);
-  const memoFromURL = urlParams.get("memoId");
-  if (memoFromURL) {
-    document.getElementById("memo").value = memoFromURL;
-  }
-  
-  const currencyToChains = {
-  const currencyToChains = {
+const memoFromURL = urlParams.get("memoId");
+
+// Function to generate random 12-digit memoId
+function generateMemoId() {
+  return Math.floor(100000000000 + Math.random() * 900000000000).toString();
+}
+
+const currencyToChains = {
   SeagullCoin: ["XRP", "XDC", "FLR"],
   SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
 };
@@ -132,7 +133,6 @@ document.getElementById("currency").addEventListener("change", function () {
   const fromChainSelect = document.getElementById("fromchain");
   const toChainSelect = document.getElementById("toChain");
 
-  // Clear existing options (except the placeholder)
   fromChainSelect.innerHTML = '<option value="">-- Select From Chain --</option>';
   toChainSelect.innerHTML = '<option value="">-- Select To Chain --</option>';
 
@@ -151,29 +151,28 @@ document.getElementById("currency").addEventListener("change", function () {
   }
 });
 
-
 document.getElementById("isoForm").addEventListener("submit", async function(e) {
   e.preventDefault();
 
   const payload = {
-  messageType: document.getElementById("messageType").value,
-  sender: {
-    name: document.getElementById("senderName").value,
-    partyId: document.getElementById("senderId").value
-  },
-  receiver: {
-    name: document.getElementById("receiverName").value,
-    partyId: document.getElementById("receiverId").value
-  },
-  amount: {
-    value: parseFloat(document.getElementById("amount").value),
-    currency: document.getElementById("currency").value
-  },
-  fromchain: document.getElementById("fromchain").value,
-  toChain: document.getElementById("toChain").value,
-  direction: document.getElementById("direction").value
-};
-
+    memoId: memoFromURL || generateMemoId(), // ✅ Fix: always have MsgId
+    messageType: document.getElementById("messageType").value,
+    sender: {
+      name: document.getElementById("senderName").value,
+      partyId: document.getElementById("senderId").value
+    },
+    receiver: {
+      name: document.getElementById("receiverName").value,
+      partyId: document.getElementById("receiverId").value
+    },
+    amount: {
+      value: parseFloat(document.getElementById("amount").value),
+      currency: document.getElementById("currency").value
+    },
+    fromchain: document.getElementById("fromchain").value,
+    toChain: document.getElementById("toChain").value,
+    direction: document.getElementById("direction").value
+  };
 
   try {
     const xml = `
@@ -182,7 +181,7 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
   <InstdAmt>${payload.amount.value}</InstdAmt>
   <Currency>${payload.amount.currency}</Currency>
   <FromChain>${payload.fromchain}</FromChain>
-   <ToChain>${payload.toChain}</ToChain>
+  <ToChain>${payload.toChain}</ToChain>
   <MessageType>${payload.messageType}</MessageType>
   <SenderName>${payload.sender.name}</SenderName>
   <SenderId>${payload.sender.partyId}</SenderId>
@@ -200,7 +199,6 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
     const result = await res.json();
 
     if (res.ok && result.memoId) {
-      // ✅ Redirect with server-generated memoId
       window.location.href = `/confirm.html?memoId=${result.memoId}`;
     } else {
       alert("❌ Submission failed: " + (result.error || "Unknown error"));
@@ -211,9 +209,6 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
     alert("❌ Server error while submitting ISO message.");
   }
 });
-
 </script>
-
-
 </body>
 </html>

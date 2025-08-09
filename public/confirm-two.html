@@ -251,84 +251,66 @@
     const interval = setInterval(update, 1000);
   }
 
-  function displayBridgeInfo(data, memoId) {
-    document.getElementById("confFromChain").textContent = data.fromChain;
-    document.getElementById("confToChain").textContent = data.toChain;
-    document.getElementById("confAmount").textContent = `${formatNumber(data.sendAmount)} ${data.fromChain}`;
-    document.getElementById("confEscrow").textContent = escrowAddresses[data.fromChain] || "N/A";
-    document.getElementById("confMemo").textContent = memoId || "N/A";
+function displayBridgeInfo(data, memoId) {
+  document.getElementById("confFromChain").textContent = data.fromChain || data.chain;
+  document.getElementById("confToChain").textContent = data.toChain;
+  document.getElementById("confAmount").textContent = `${formatNumber(data.amount.value)} ${data.amount.currency}`;
+  document.getElementById("confEscrow").textContent = escrowAddresses[data.fromChain || data.chain] || "N/A";
+  document.getElementById("confMemo").textContent = memoId || "N/A";
 
-    document.getElementById("confFromChainLogo").src = getLogo(data.fromChain);
-    document.getElementById("confToChainLogo").src = getLogo(data.toChain);
+  document.getElementById("confFromChainLogo").src = getLogo(data.amount.currency) || getLogo(data.fromChain || data.chain);
+  document.getElementById("confToChainLogo").src = getLogo(data.toChain);
 
-    // Show memo row only if applicable
-    if (!chainsUsingMemo.includes(data.fromChain)) {
-      document.getElementById("memoRow").style.display = "none";
-    } else {
-      document.getElementById("memoRow").style.display = "block";
-    }
-
-    // User info box
-    const userInfoBox = document.getElementById("userInfoBox");
-    if (data.userReceiveAddress) {
-      userInfoBox.style.display = "block";
-      document.getElementById("confFee").textContent = `${formatNumber(data.bridgeFee)} ${data.fromChain}`;
-      const netReceived = (data.sendAmount - data.bridgeFee).toFixed(8);
-      document.getElementById("confNetReceived").textContent = `${formatNumber(netReceived)} ${data.toChain}`;
-      document.getElementById("userReceiveAddress").textContent = data.userReceiveAddress;
-      if (chainsUsingMemo.includes(data.toChain)) {
-        document.getElementById("userMemoId").textContent = data.userMemoId || "N/A";
-        document.getElementById("userMemoRow").style.display = "block";
-      } else {
-        document.getElementById("userMemoRow").style.display = "none";
-      }
-    } else {
-      userInfoBox.style.display = "none";
-    }
-
-    // Generate QR code for deposit address + memo if applicable
-    generateQRCode(escrowAddresses[data.fromChain], "qrCodeContainer", data.fromChain, memoId);
+  if (!chainsUsingMemo.includes(data.fromChain || data.chain)) {
+    document.getElementById("memoRow").style.display = "none";
+  } else {
+    document.getElementById("memoRow").style.display = "block";
   }
 
-  async function main() {
-    const memoId = getMemoId();
-
-    if (!memoId) {
-      alert("No memoId found in URL. Please access this page with a valid memoId.");
-      return;
+  // User info box
+  const userInfoBox = document.getElementById("userInfoBox");
+  if (data.userReceiveAddress) {
+    userInfoBox.style.display = "block";
+    document.getElementById("confFee").textContent = `${formatNumber(data.bridgeFee)} ${data.amount.currency}`;
+    const netReceived = (data.amount.value - data.bridgeFee).toFixed(8);
+    document.getElementById("confNetReceived").textContent = `${formatNumber(netReceived)} ${data.amount.currency}`;
+    document.getElementById("userReceiveAddress").textContent = data.userReceiveAddress;
+    if (chainsUsingMemo.includes(data.toChain)) {
+      document.getElementById("userMemoId").textContent = data.userMemoId || "N/A";
+      document.getElementById("userMemoRow").style.display = "block";
+    } else {
+      document.getElementById("userMemoRow").style.display = "none";
     }
-
-    // Set confirmation URL in saveLinkWidget
-    const confirmUrlInput = document.getElementById("confirmationUrl");
-    confirmUrlInput.value = window.location.href;
-
-    // Toggle save link popup
-    document.getElementById("saveLinkBtn").addEventListener("click", () => {
-      const popup = document.getElementById("saveLinkPopup");
-      popup.classList.toggle("hidden");
-    });
-
-    // Replace this with your actual bridge fetch API
-    // For demo, we simulate fetching a bridge record using the memoId
-    // Sample data
-    const bridgeData = {
-      fromChain: "XRP",
-      toChain: "XLM",
-      sendAmount: 123.45678901,
-      bridgeFee: 0.0001,
-      userReceiveAddress: "GB3JDWC7N4PKURTZDDMYYWQY2RDRLUXR2TVWT6C6WJZTY7LBW5Z56HD7",
-      userMemoId: "9876543210"
-    };
-
-    displayBridgeInfo(bridgeData, memoId);
-
-    // Fetch bridge status and update status + countdown
-    const statusInfo = await fetchBridgeStatus(memoId);
-    const statusEl = document.getElementById("bridgeStatus");
-    statusEl.textContent = statusInfo.status.charAt(0).toUpperCase() + statusInfo.status.slice(1);
-
-    updateCountdown(statusInfo.expiresAt);
+  } else {
+    userInfoBox.style.display = "none";
   }
+
+  generateQRCode(escrowAddresses[data.fromChain || data.chain], "qrCodeContainer", data.fromChain || data.chain, memoId);
+}
+
+
+async function main() {
+  const memoId = getMemoId();
+  if (!memoId) {
+    alert("No memoId found in URL.");
+    return;
+  }
+
+  // Fetch real data from your backend API
+  const response = await fetch(`/api/bridge-status?memoId=${memoId}`);
+  if (!response.ok) {
+    alert("Failed to fetch bridge details.");
+    return;
+  }
+  const data = await response.json();
+
+  displayBridgeInfo(data, memoId);
+
+  // Fetch status and expiry
+  const statusInfo = await fetchBridgeStatus(memoId); // or get it from data.status & data.expiresAt
+  document.getElementById("bridgeStatus").textContent = statusInfo.status || data.status || "Unknown";
+  updateCountdown(statusInfo.expiresAt || data.expiresAt);
+}
 
   main();
 </script>

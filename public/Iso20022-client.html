@@ -112,10 +112,22 @@
 </div>
 
 <script>
-const urlParams = new URLSearchParams(window.location.search);
-const memoFromURL = urlParams.get("memoId");
-const memoId = memoFromURL || Math.floor(100000000000 + Math.random() * 900000000000).toString();
+const EXPIRY_MINUTES = 5;
 
+// get memoId from URL
+const urlParams = new URLSearchParams(window.location.search);
+const memoIdFromURL = urlParams.get("memoId");
+
+let createdAt, expiresAt;
+
+if (memoIdFromURL) {
+  createdAt = new Date();
+  expiresAt = new Date(createdAt.getTime() + EXPIRY_MINUTES * 60000);
+} else {
+  alert("❌ Missing memoId in URL. Cannot proceed.");
+}
+
+// chain selection logic
 const currencyToChains = {
   SeagullCoin: ["XRP", "XDC", "FLR"],
   SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
@@ -123,6 +135,7 @@ const currencyToChains = {
 
 document.getElementById("currency").addEventListener("change", function () {
   const selectedCurrency = this.value;
+  
   const fromChainSelect = document.getElementById("fromchain");
   const toChainSelect = document.getElementById("toChain");
 
@@ -131,17 +144,33 @@ document.getElementById("currency").addEventListener("change", function () {
 
   if (currencyToChains[selectedCurrency]) {
     currencyToChains[selectedCurrency].forEach(chain => {
-      fromChainSelect.add(new Option(chain, chain));
-      toChainSelect.add(new Option(chain, chain));
+      const optionFrom = document.createElement("option");
+      optionFrom.value = chain;
+      optionFrom.textContent = chain;
+      fromChainSelect.appendChild(optionFrom);
+
+      const optionTo = document.createElement("option");
+      optionTo.value = chain;
+      optionTo.textContent = chain;
+      toChainSelect.appendChild(optionTo);
     });
   }
 });
 
+// form submission
 document.getElementById("isoForm").addEventListener("submit", async function(e) {
   e.preventDefault();
 
+  // expiry check
+  if (new Date() > expiresAt) {
+    alert("❌ This MsgId has expired. Please refresh to get a new one.");
+    return;
+  }
+
   const payload = {
-    memoId,
+    memoId: memoIdFromURL,
+    createdAt: createdAt.toISOString(),
+    expiresAt: expiresAt.toISOString(),
     messageType: document.getElementById("messageType").value,
     sender: {
       name: document.getElementById("senderName").value,
@@ -164,6 +193,8 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
     const xml = `
 <ISO20022>
   <MsgId>${payload.memoId}</MsgId>
+  <CreatedAt>${payload.createdAt}</CreatedAt>
+  <ExpiresAt>${payload.expiresAt}</ExpiresAt>
   <InstdAmt>${payload.amount.value}</InstdAmt>
   <Currency>${payload.amount.currency}</Currency>
   <FromChain>${payload.fromchain}</FromChain>
@@ -189,12 +220,14 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
     } else {
       alert("❌ Submission failed: " + (result.error || "Unknown error"));
     }
+
   } catch (err) {
     console.error(err);
     alert("❌ Server error while submitting ISO message.");
   }
 });
 </script>
+
 
 </body>
 </html>

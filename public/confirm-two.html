@@ -332,20 +332,38 @@ function startCountdownToTimestamp(targetTs) {
   countdownTimerId = setInterval(tick, 1000);
 }
 
-async function fetchBridgeRecord(memoId) {
+// confirm-two.html script
+async function loadMessageDetails() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const memoId = urlParams.get("memoId");
+
+  if (!memoId) {
+    document.getElementById("status").innerText = "❌ Missing memoId";
+    return;
+  }
+
   try {
-    const resp = await fetch(`/api/bridge-status?memoId=${encodeURIComponent(memoId)}`, { cache: 'no-store' });
-    if (!resp.ok) {
-      const txt = await resp.text().catch(()=>null);
-      throw new Error(`HTTP ${resp.status} ${txt || ''}`);
-    }
-    const json = await resp.json();
-    return json;
+    const res = await fetch(`/iso-message/${memoId}`);
+    if (!res.ok) throw new Error("Failed to fetch message");
+
+    const message = await res.json();
+
+    document.getElementById("status").innerText = `✅ Status: ${message.status}`;
+    document.getElementById("details").innerHTML = `
+      <p><strong>Message Type:</strong> ${message.messageType}</p>
+      <p><strong>Sender:</strong> ${message.sender.name} (${message.sender.partyId})</p>
+      <p><strong>Receiver:</strong> ${message.receiver.name} (${message.receiver.partyId})</p>
+      <p><strong>Amount:</strong> ${message.amount.value} ${message.amount.currency}</p>
+      <p><strong>From Chain:</strong> ${message.chain}</p>
+      <p><strong>Direction:</strong> ${message.direction}</p>
+    `;
   } catch (err) {
-    console.error('fetchBridgeRecord error', err);
-    throw err;
+    document.getElementById("status").innerText = `❌ Error: ${err.message}`;
   }
 }
+
+loadMessageDetails();
+
 
 async function main() {
   const memoId = getMemoIdFromUrl();

@@ -50,7 +50,7 @@
     #saveLinkPopup input { width: 100%; padding: 0.35rem; margin-bottom: 0.5rem; border-radius: 4px; border: 1px solid #444; background: #111; color: #00ffff; font-size: 0.9rem; }
     #saveLinkPopup.hidden { display: none; }
     img.chain-logo { height:24px; vertical-align:middle; margin-right:6px; }
-    #qrCodeContainer { margin-top: 12px; }
+    #qrCodeContainer { margin-top: 12px; text-align: center; }
     .mono { font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, "Roboto Mono", "Source Code Pro", monospace; color: #00e5ff; }
   </style>
 </head>
@@ -81,6 +81,9 @@
 
   <p><strong>Send:</strong> <span id="confAmount" class="mono"></span></p>
 
+  <p><strong>Sender:</strong> <span id="confSender" class="mono"></span></p>
+  <p><strong>Receiver:</strong> <span id="confReceiver" class="mono"></span></p>
+
   <p><strong>Deposit Address:</strong>
     <span id="confEscrow" style="word-break:break-word;" class="mono"></span>
     <button class="copy-btn" onclick="copyToClipboard('confEscrow')">📋 Copy</button>
@@ -91,29 +94,13 @@
     <button class="copy-btn" onclick="copyToClipboard('confMemo')">📋 Copy</button>
   </p>
 
-  <p><strong>Status:</strong> <span id="bridgeStatus">Fetching...</span></p>
+  <p><strong>Status:</strong> <span id="bridgeStatus">Loading...</span></p>
   <p><strong>Expires in:</strong> <span id="countdownTimer">—</span></p>
 </div>
 
-<div class="info-box" id="userInfoBox" style="display:none;">
-  <h3>Your Information</h3>
-  <p><strong>Bridge Fee:</strong> <span id="confFee" class="mono"></span></p>
-  <p><strong>Net Received:</strong> <span id="confNetReceived" class="mono"></span></p>
-  <p><strong>Receive Address:</strong> <span id="userReceiveAddress" style="word-break:break-word;" class="mono"></span></p>
-  <p id="userMemoRow"><strong>Memo ID / Tag:</strong> <span id="userMemoId" class="mono"></span></p>
-</div>
-
-<div id="qrCodeContainer" style="text-align:center;"></div>
+<div id="qrCodeContainer"></div>
 
 <script>
-/**
- * confirm-two.html
- * Works with backend JSON like the example you provided.
- * - prefers parsedJson.FromChain and parsedJson.ToChain if present (ISO message)
- * - uses amount.value and amount.currency
- * - fetches /api/bridge-status?memoId=...
- */
-
 const escrowAddresses = {
   XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
   XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
@@ -125,7 +112,6 @@ const escrowAddresses = {
 
 const chainsUsingMemo = ["XRP", "XLM", "HBAR"];
 
-// logos keyed by chain or token
 function getLogo(key) {
   const map = {
     SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
@@ -154,255 +140,171 @@ function getMemoIdFromUrl() {
 }
 
 function formatNumber(n) {
-  if (n === null || n === undefined || isNaN(Number(n))) return n;
-  // show up to 8 decimals but keep at least 0.00 for whole numbers
-  const v = Number(n);
-  return v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 });
+  if (n === null || n === undefined || isNaN(Number(n))) return 'N/A';
+  if (n > 1000000) return (n/1e6).toFixed(2) + 'M';
+  if (n > 1000) return (n/1000).toFixed(1) + 'k';
+  return n.toString();
 }
 
-function clearElement(elId, text = '') {
-  const el = document.getElementById(elId);
-  if (el) el.textContent = text;
-}
-
-function showElement(elId, show = true) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  el.style.display = show ? '' : 'none';
-}
-
-function buildQRCode(escrowAddr, fromChain, memoId) {
-  const container = document.getElementById('qrCodeContainer');
-  container.innerHTML = '';
-  if (!escrowAddr) return;
-  let uri = escrowAddr;
-  switch ((fromChain || '').toUpperCase()) {
-    case 'XRP': uri = `xrp:${escrowAddr}${memoId ? `?dt=${memoId}` : ''}`; break;
-    case 'XLM': uri = `stellar:${escrowAddr}${memoId ? `?memo=${memoId}` : ''}`; break;
-    case 'HBAR': uri = `hedera:${escrowAddr}${memoId ? `?memo=${memoId}` : ''}`; break;
-    case 'ALGO': uri = `algo:${escrowAddr}`; break;
-    case 'FLR': uri = `flare:${escrowAddr}`; break;
-    case 'XDC': uri = `xdc:${escrowAddr}`; break;
-    default: uri = escrowAddr;
-  }
-  try {
-    new QRCode(container, { text: uri, width: 160, height: 160 });
-  } catch (err) {
-    console.error('QR generation failed', err);
-  }
-}
-
-function setConfirmationLinkInput() {
-  const input = document.getElementById('confirmationUrl');
-  if (!input) return;
-  input.value = window.location.href;
-  // toggle popup
-  const btn = document.getElementById('saveLinkBtn');
-  if (btn) btn.addEventListener('click', () => {
-    const popup = document.getElementById('saveLinkPopup');
-    if (popup) popup.classList.toggle('hidden');
-  });
-}
-
-/**
- * Populate the page using the backend "bridge-status" JSON.
- * This function prefers parsedJson.FromChain / ToChain when present.
- */
 function displayDataFromBackend(data, memoId) {
-  // defensive
-  if (!data) {
-    document.getElementById('bridgeStatus').textContent = 'No data';
-    return;
+  // Prefer parsedJson fields if present
+  const fromChain = data.parsedJson?.FromChain || data.chain || 'N/A';
+  const toChain = data.parsedJson?.ToChain || data.chain || 'N/A';
+
+  document.getElementById('confFromChain').textContent = fromChain;
+  document.getElementById('confToChain').textContent = toChain;
+  document.getElementById('confFromChainLogo').src = getLogo(fromChain);
+  document.getElementById('confFromChainLogo').alt = fromChain + ' logo';
+  document.getElementById('confToChainLogo').src = getLogo(toChain);
+  document.getElementById('confToChainLogo').alt = toChain + ' logo';
+
+  // Amount & currency
+  let amountStr = '';
+  if (data.amount) {
+    amountStr = formatNumber(data.amount.value) + ' ' + (data.amount.currency || '');
+  } else if (data.parsedJson?.Amount && data.parsedJson?.Currency) {
+    amountStr = formatNumber(data.parsedJson.Amount) + ' ' + data.parsedJson.Currency;
+  } else {
+    amountStr = 'N/A';
+  }
+  document.getElementById('confAmount').textContent = amountStr;
+
+  // Sender & Receiver info
+  const senderStr = data.sender ? `${data.sender.name || 'N/A'} (${data.sender.partyId || 'N/A'})` : 'N/A';
+  const receiverStr = data.receiver ? `${data.receiver.name || 'N/A'} (${data.receiver.partyId || 'N/A'})` : 'N/A';
+  document.getElementById('confSender').textContent = senderStr;
+  document.getElementById('confReceiver').textContent = receiverStr;
+
+  // Memo / Tag - prefer parsedJson Memo if present, fallback to data.memoId
+  const memoValue = data.parsedJson?.Memo || data.memoId || 'N/A';
+  document.getElementById('confMemo').textContent = memoValue;
+
+  // Escrow deposit address by fromChain
+  const escrowAddress = escrowAddresses[fromChain] || 'N/A';
+  document.getElementById('confEscrow').textContent = escrowAddress;
+
+  // Hide memo row if the chain does not use memos/tags
+  if (!chainsUsingMemo.includes(fromChain)) {
+    document.getElementById('memoRow').style.display = 'none';
+  } else {
+    document.getElementById('memoRow').style.display = 'block';
   }
 
-  // Prefer parsedJson values if present (ISO message)
-  const parsed = data.parsedJson || {};
-  const fromChain = (parsed.FromChain || data.chain || parsed.FromChain || '').toString();
-  const toChain = (parsed.ToChain || data.toChain || parsed.ToChain || '').toString();
+  // Status & countdown
+  const status = data.status || (data.validated ? "validated" : "pending") || 'N/A';
+  document.getElementById('bridgeStatus').textContent = status;
 
-  // Amount: prefer top-level amount object
-  const amountObj = data.amount || {};
-  const amountValue = amountObj.value !== undefined ? amountObj.value : parsed.InstdAmt || parsed.InstdAmt === 0 ? parsed.InstdAmt : null;
-  const amountCurrency = amountObj.currency || parsed.Currency || parsed.Currency || '';
-
-  // Fill page fields
-  document.getElementById('confFromChain').textContent = fromChain || (data.chain || 'N/A');
-  document.getElementById('confToChain').textContent = toChain || (data.toChain || 'N/A');
-
-  document.getElementById('confFromChainLogo').src = getLogo(fromChain) || getLogo(amountCurrency) || '';
-  document.getElementById('confToChainLogo').src = getLogo(toChain) || '';
-
-  document.getElementById('confAmount').textContent =
-    (amountValue !== null && amountValue !== undefined)
-      ? `${formatNumber(amountValue)} ${amountCurrency || ''}`
-      : `N/A ${amountCurrency || ''}`;
-
-  // Escrow deposit address (based on actual fromChain)
-  const escrow = escrowAddresses[fromChain] || escrowAddresses[data.chain] || 'N/A';
-  document.getElementById('confEscrow').textContent = escrow;
-
-  // Memo always show the memoId generated by server
-  document.getElementById('confMemo').textContent = memoId || (data.memoId || 'N/A');
-
-  // Memo row visibility (if chain requires memos)
-  showElement('memoRow', chainsUsingMemo.includes((fromChain || data.chain || '').toUpperCase()));
-
-  // User info box: we try to show receive address if present in record
-  // For ISO data, receiver.partyId might be the “receive address”
-  const userReceive = data.receiveAddress || data.receiver?.partyId || data.parsedJson?.ReceiverId || null;
-  if (userReceive) {
-    showElement('userInfoBox', true);
-    // Bridge fee & net received: if backend provides them use them, otherwise compute using data.bridgeFee
-    const bridgeFee = (data.bridgeFee !== undefined) ? data.bridgeFee : (data.fee || 0);
-    const netReceived = (Number(amountValue) || 0) - (Number(bridgeFee) || 0);
-
-    document.getElementById('confFee').textContent = `${formatNumber(bridgeFee || 0)} ${amountCurrency || ''}`;
-    document.getElementById('confNetReceived').textContent = `${formatNumber(netReceived)} ${amountCurrency || ''}`;
-    document.getElementById('userReceiveAddress').textContent = userReceive;
-    // user memo when applicable
-    if (chainsUsingMemo.includes((toChain || '').toUpperCase())) {
-      document.getElementById('userMemoId').textContent = data.userMemoId || data.parsedJson?.ReceiverId || '—';
-      showElement('userMemoRow', true);
-    } else {
-      showElement('userMemoRow', false);
-    }
+  // Countdown timer - if we have expiry info in ISO datetime string
+  if (data.expiry) {
+    startCountdown(new Date(data.expiry));
+  } else if (data.parsedJson?.ExpiryDateTime) {
+    startCountdown(new Date(data.parsedJson.ExpiryDateTime));
   } else {
-    showElement('userInfoBox', false);
-  }
-
-  // status (map backend statuses if needed)
-  const status = data.status || 'pending';
-  const statusMap = {
-    pending: 'Pending confirmation...',
-    confirmed: 'Confirmed ✅',
-    bridged: 'Bridged 🌉',
-    completed: 'Completed ✅',
-    expired: 'Expired ❌',
-    failed: 'Failed ❌'
-  };
-  document.getElementById('bridgeStatus').textContent = statusMap[status] || status;
-
-  // Generate QR with escrow + memo for convenience
-  buildQRCode(escrow, fromChain || data.chain, memoId || data.memoId);
-
-  // Countdown: backend might provide expiresIn (seconds) or expiresAt (timestamp ms/ISO)
-  if (data.expiresIn && Number(data.expiresIn) > 0) {
-    startCountdownFromSeconds(Number(data.expiresIn));
-  } else if (data.expiresAt) {
-    // accepts ms timestamp or ISO date string
-    let ts = Number(data.expiresAt);
-    if (!ts || isNaN(ts)) ts = Date.parse(data.expiresAt);
-    if (ts && !isNaN(ts)) startCountdownToTimestamp(ts);
-  } else if (data.createdAt && data.expiresSeconds) {
-    // alternate: createdAt + expiresSeconds
-    const created = Date.parse(data.createdAt) || Date.now();
-    const ts = created + (Number(data.expiresSeconds) * 1000);
-    startCountdownToTimestamp(ts);
-  } else {
-    // no countdown info -> display dash
     document.getElementById('countdownTimer').textContent = '—';
   }
+
+  // QR Code for deposit address + memo (if chain supports memo/tag)
+  const qrEl = document.getElementById('qrCodeContainer');
+  qrEl.innerHTML = '';
+  if (escrowAddress !== 'N/A') {
+    let qrData = escrowAddress;
+    if (chainsUsingMemo.includes(fromChain) && memoValue && memoValue !== 'N/A') {
+      if (fromChain === 'XRP') {
+        qrData = `xrpl:${escrowAddress}?dt=${memoValue}`;
+      } else if (fromChain === 'XLM') {
+        qrData = `web+stellar:pay?destination=${escrowAddress}&memo=${memoValue}`;
+      } else if (fromChain === 'HBAR') {
+        qrData = `hedera:${escrowAddress}?memo=${memoValue}`;
+      } else {
+        // generic fallback with memo/tag appended
+        qrData = escrowAddress + '?memo=' + memoValue;
+      }
+    }
+    QRCode.toCanvas(qrData, { width: 180 }, function (error, canvas) {
+      if (error) {
+        console.error(error);
+        qrEl.textContent = 'Failed to generate QR code.';
+        return;
+      }
+      qrEl.appendChild(canvas);
+      const caption = document.createElement('div');
+      caption.textContent = 'Scan to pay deposit';
+      caption.style.marginTop = '0.5rem';
+      caption.style.fontSize = '0.85rem';
+      caption.style.color = '#ccc';
+      qrEl.appendChild(caption);
+    });
+  }
 }
 
-// helpers for countdown
-let countdownTimerId = null;
-function startCountdownFromSeconds(seconds) {
-  const end = Date.now() + (seconds * 1000);
-  startCountdownToTimestamp(end);
-}
-function startCountdownToTimestamp(targetTs) {
-  if (countdownTimerId) clearInterval(countdownTimerId);
-  function tick() {
-    const diff = targetTs - Date.now();
-    const el = document.getElementById('countdownTimer');
+let countdownInterval;
+function startCountdown(expiryDate) {
+  if (countdownInterval) clearInterval(countdownInterval);
+
+  function updateTimer() {
+    const now = new Date();
+    const diff = expiryDate - now;
     if (diff <= 0) {
-      el.textContent = 'Expired';
-      clearInterval(countdownTimerId);
-      countdownTimerId = null;
-      // also update status to expired (non-destructive)
-      document.getElementById('bridgeStatus').textContent = 'Expired ❌';
+      document.getElementById('countdownTimer').textContent = 'Expired';
+      clearInterval(countdownInterval);
       return;
     }
-    const hrs = Math.floor(diff / (3600 * 1000));
-    const mins = Math.floor((diff % (3600 * 1000)) / (60 * 1000));
-    const secs = Math.floor((diff % (60 * 1000)) / 1000);
-    el.textContent = `${hrs}h ${mins}m ${secs}s`;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const secs = Math.floor((diff % (1000 * 60)) / 1000);
+    document.getElementById('countdownTimer').textContent = 
+      `${hours}h ${mins}m ${secs}s`;
   }
-  tick();
-  countdownTimerId = setInterval(tick, 1000);
+  updateTimer();
+  countdownInterval = setInterval(updateTimer, 1000);
 }
 
-// confirm-two.html script
-async function loadMessageDetails() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const memoId = urlParams.get("memoId");
+// Save Link Widget logic
+const saveLinkBtn = document.getElementById('saveLinkBtn');
+const saveLinkPopup = document.getElementById('saveLinkPopup');
+const confirmationUrlInput = document.getElementById('confirmationUrl');
 
-  if (!memoId) {
-    document.getElementById("status").innerText = "❌ Missing memoId";
-    return;
-  }
-
-  try {
-    const res = await fetch(`/iso-message/${memoId}`);
-    if (!res.ok) throw new Error("Failed to fetch message");
-
-    const message = await res.json();
-
-    document.getElementById("status").innerText = `✅ Status: ${message.status}`;
-    document.getElementById("details").innerHTML = `
-      <p><strong>Message Type:</strong> ${message.messageType}</p>
-      <p><strong>Sender:</strong> ${message.sender.name} (${message.sender.partyId})</p>
-      <p><strong>Receiver:</strong> ${message.receiver.name} (${message.receiver.partyId})</p>
-      <p><strong>Amount:</strong> ${message.amount.value} ${message.amount.currency}</p>
-      <p><strong>From Chain:</strong> ${message.chain}</p>
-      <p><strong>Direction:</strong> ${message.direction}</p>
-    `;
-  } catch (err) {
-    document.getElementById("status").innerText = `❌ Error: ${err.message}`;
-  }
+function setConfirmationLinkInput() {
+  const url = new URL(window.location.href);
+  confirmationUrlInput.value = url.toString();
 }
 
-loadMessageDetails();
+saveLinkBtn.addEventListener('click', () => {
+  if (saveLinkPopup.classList.contains('hidden')) {
+    saveLinkPopup.classList.remove('hidden');
+    saveLinkPopup.setAttribute('aria-hidden', 'false');
+  } else {
+    saveLinkPopup.classList.add('hidden');
+    saveLinkPopup.setAttribute('aria-hidden', 'true');
+  }
+});
 
+// Main load function
+async function fetchIsoMessage(memoId) {
+  const res = await fetch(`/iso-message/${memoId}`);
+  if (!res.ok) throw new Error(`Failed to fetch ISO message with memoId ${memoId}`);
+  return await res.json();
+}
 
-async function main() {
+async function loadAndDisplay() {
   const memoId = getMemoIdFromUrl();
   if (!memoId) {
-    alert('No memoId in URL. Access this page with ?memoId=<id>');
+    alert('No memoId in URL. Please access this page with ?memoId=your_memoId');
     return;
   }
-
   setConfirmationLinkInput();
 
-  // First fetch the full bridge record from your backend
   try {
-    const data = await fetchBridgeRecord(memoId);
-    // Display
+    const data = await fetchIsoMessage(memoId);
     displayDataFromBackend(data, memoId);
   } catch (err) {
-    document.getElementById('bridgeStatus').textContent = 'Error loading transaction.';
+    document.getElementById('bridgeStatus').textContent = `Error loading data: ${err.message}`;
     console.error(err);
-    return;
   }
-
-  // Start polling status updates every 30s (non-blocking)
-  (function poll() {
-    setTimeout(async () => {
-      try {
-        const updated = await fetchBridgeRecord(memoId);
-        // Keep current display but update status / expiry / fields if changed
-        displayDataFromBackend(updated, memoId);
-      } catch (e) {
-        console.warn('poll error', e);
-      } finally {
-        poll();
-      }
-    }, 30000);
-  })();
 }
 
-// run
-main();
+// Run on page load
+window.addEventListener('load', loadAndDisplay);
 </script>
 
 </body>

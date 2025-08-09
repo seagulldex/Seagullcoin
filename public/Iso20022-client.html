@@ -117,16 +117,16 @@
 const urlParams = new URLSearchParams(window.location.search);
 const memoFromURL = urlParams.get("memoId");
 
-// Function to generate random 12-digit memoId
-function generateMemoId() {
-  return Math.floor(100000000000 + Math.random() * 900000000000).toString();
-}
+// Generate memoId if not in URL
+const memoId = memoFromURL || "msg-" + Date.now();
 
+// Map currency to available chains
 const currencyToChains = {
   SeagullCoin: ["XRP", "XDC", "FLR"],
   SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
 };
 
+// Populate chain dropdowns when currency changes
 document.getElementById("currency").addEventListener("change", function () {
   const selectedCurrency = this.value;
   
@@ -138,15 +138,10 @@ document.getElementById("currency").addEventListener("change", function () {
 
   if (currencyToChains[selectedCurrency]) {
     currencyToChains[selectedCurrency].forEach(chain => {
-      const optionFrom = document.createElement("option");
-      optionFrom.value = chain;
-      optionFrom.textContent = chain;
-      fromChainSelect.appendChild(optionFrom);
-
-      const optionTo = document.createElement("option");
-      optionTo.value = chain;
-      optionTo.textContent = chain;
-      toChainSelect.appendChild(optionTo);
+      const optFrom = new Option(chain, chain);
+      const optTo = new Option(chain, chain);
+      fromChainSelect.add(optFrom);
+      toChainSelect.add(optTo);
     });
   }
 });
@@ -155,7 +150,7 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
   e.preventDefault();
 
   const payload = {
-    memoId: memoFromURL || generateMemoId(), // ✅ Fix: always have MsgId
+    memoId: memoId,
     messageType: document.getElementById("messageType").value,
     sender: {
       name: document.getElementById("senderName").value,
@@ -203,7 +198,6 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
     } else {
       alert("❌ Submission failed: " + (result.error || "Unknown error"));
     }
-
   } catch (err) {
     console.error(err);
     alert("❌ Server error while submitting ISO message.");

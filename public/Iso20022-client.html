@@ -112,15 +112,12 @@
 </div>
 
 <script>
-const urlParams = new URLSearchParams(window.location.search);
-const memoFromURL = urlParams.get("memoId");
-const memoId = memoFromURL || Math.floor(100000000000 + Math.random() * 900000000000).toString();
-
 const currencyToChains = {
   SeagullCoin: ["XRP", "XDC", "FLR"],
   SeagullCash: ["XRP", "XLM", "HBAR", "ALGO"]
 };
 
+// Populate dropdowns when currency changes
 document.getElementById("currency").addEventListener("change", function () {
   const selectedCurrency = this.value;
   const fromChainSelect = document.getElementById("fromchain");
@@ -141,7 +138,6 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
   e.preventDefault();
 
   const payload = {
-    memoId,
     messageType: document.getElementById("messageType").value,
     sender: {
       name: document.getElementById("senderName").value,
@@ -161,6 +157,7 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
   };
 
   try {
+    // Build XML without memoId — backend will generate and return it
     const xml = `
 <ISO20022>
   <InstdAmt>${payload.amount.value}</InstdAmt>
@@ -175,19 +172,23 @@ document.getElementById("isoForm").addEventListener("submit", async function(e) 
   <Direction>${payload.direction}</Direction>
 </ISO20022>`.trim();
 
-const res = await fetch("/iso-message", {
-  method: "POST",
-  headers: { "Content-Type": "application/xml" },
-  body: xml
-});
+    const res = await fetch("/iso-message", {
+      method: "POST",
+      headers: { "Content-Type": "application/xml" },
+      body: xml
+    });
 
-const result = await res.json();
+    const result = await res.json();
 
-if (res.ok && result.memoId) {
-  window.location.href = `/confirm.html?memoId=${result.memoId}`;
-} else {
-  alert("❌ Submission failed: " + (result.error || "Unknown error"));
-}
+    if (res.ok && result.memoId) {
+      // Redirect to confirm page with memoId
+      window.location.href = `/confirm.html?memoId=${result.memoId}`;
+    } else {
+      alert("❌ Submission failed: " + (result.error || "Unknown error"));
+    }
+  } catch (err) {
+    alert("❌ Error submitting message: " + err.message);
+  }
 });
 </script>
 

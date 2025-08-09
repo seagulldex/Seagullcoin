@@ -210,45 +210,62 @@
     return logos[chainName] || '';
   }
 
-  function fetchBridgeStatus(memoId) {
-    // Mock fetch for example
-    // Replace with your actual API endpoint
-    // Returning a Promise that resolves with a status object
-
-    // Simulate network delay
-    return new Promise(resolve => {
-      setTimeout(() => {
-        // Example status, random success for demo
-        const statuses = ["pending", "processing", "completed", "failed"];
-        const status = statuses[Math.floor(Math.random() * statuses.length)];
-        resolve({
-          status,
-          expiresAt: Date.now() + 15 * 60 * 1000 // expires in 15 min
-        });
-      }, 800);
-    });
-  }
+  
+    
 
   function formatNumber(num) {
     return Number(num).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 8});
   }
 
   function updateCountdown(expiryTimestamp) {
-    const countdownEl = document.getElementById('countdownTimer');
-    function update() {
-      const now = Date.now();
-      const diff = expiryTimestamp - now;
-      if(diff <= 0){
-        countdownEl.textContent = "Expired";
-        clearInterval(interval);
+      const statusTextMap = {
+      pending: "Pending confirmation...",
+      confirmed: "Confirmed ✅️",
+      bridged: "Bridged 🌉",
+      expired: "Expired ❌"
+    };
+    const status = data.status;
+    document.getElementById("bridgeStatus").textContent = statusTextMap[status] || "Pending";
+
+    // Clear existing countdown
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    // === STATUS HANDLING === //
+
+    if (status === "pending" && data.expiresIn && data.expiresIn > 0) {
+      let remaining = data.expiresIn;
+      document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
+
+      countdownInterval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(countdownInterval);
+          document.getElementById("bridgeStatus").textContent = "Expired ❌ Please start a new transaction.";
+          document.getElementById("countdownTimer").textContent = "Expired";
+        } else {
+          document.getElementById("countdownTimer").textContent = formatCountdown(remaining);
+        }
+      }, 1000);
+      closeModal();
+    } else {
+      // All other statuses — no countdown
+      document.getElementById("countdownTimer").textContent =
+        status === "expired" ? "Expired" : "—";
+
+      // Show appropriate modal
+      if (status === "confirmed") {
+        showModal("Processing bridge... ⏳ Please wait while funds are being sent.");
+      } else if (status === "bridged") {
+        showModal("Bridged successfully! ✅ Funds have been sent.");
       } else {
-        const mins = Math.floor(diff / 60000);
-        const secs = Math.floor((diff % 60000) / 1000);
-        countdownEl.textContent = `${mins}m ${secs}s`;
+        closeModal(); // hide for anything else
       }
     }
-    update();
-    const interval = setInterval(update, 1000);
+  } catch (err) {
+    console.error(err);
+    document.getElementById("bridgeStatus").textContent = "Error loading transaction.";
+    document.getElementById("countdownTimer").textContent = "—";
+  }
   }
 
   function displayBridgeInfo(data, memoId) {

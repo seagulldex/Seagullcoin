@@ -8657,6 +8657,22 @@ app.post("/api/submit-iso-message", async (req, res) => {
 });
 
 
+app.get('/iso-message/:memoId', async (req, res) => {
+  try {
+    const db = await connectDB();
+    const collection = db.collection('iso_messages');
+
+    const message = await collection.findOne({ memoId: req.params.memoId });
+
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    res.status(200).json(message);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch ISO message', details: err.message });
+  }
+});
 
 
 

@@ -1,15 +1,15 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <script src="https://unpkg.com/qrcode/build/qrcode.min.js"></script>
   <title>Bridge Confirmation (ISO20022)</title>
   <style>
     body {
       background: #000 url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1350&q=80') center/cover fixed;
       color: #fff;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
       padding: 2rem;
     }
     .form-box {
@@ -24,9 +24,7 @@
     .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
     .label { min-width:120px; color:#cfeeff; font-weight:600; }
     .mono { font-family: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace; color:#00e5ff; }
-    .copy-btn {
-      background:#1e90ff; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer;
-    }
+    .copy-btn { background:#1e90ff; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; }
     .copy-btn:active { transform:translateY(1px); }
     #qrCodeContainer { margin-top:12px; text-align:center; }
     .small { font-size:0.9rem; color:#bbb; }
@@ -41,6 +39,12 @@
     .status-confirmed { background: rgba(0,200,120,0.12); color:#8ff; border:1px solid rgba(0,200,120,0.08); }
     .status-bridged { background: rgba(30,144,255,0.12); color:#cfe; border:1px solid rgba(30,144,255,0.08); }
     .status-expired { background: rgba(255,60,60,0.12); color:#f88; border:1px solid rgba(255,60,60,0.08); }
+
+    /* deposit-specific layout so long addresses wrap and the copy button stays visible */
+    .deposit-row { display:flex; gap:12px; align-items:center; width:100%; }
+    .deposit-value { flex: 1 1 auto; min-width: 0; word-break: break-word; overflow-wrap: anywhere; }
+    .memo-value { flex: 1 1 auto; min-width: 0; word-break: break-word; overflow-wrap: anywhere; }
+
     @media (max-width:640px){ .label { min-width: 100px } }
   </style>
 </head>
@@ -81,13 +85,15 @@
     <div id="confReceiver" class="mono">—</div>
   </div>
 
-  <div class="row"><div class="label">Deposit Address</div>
-    <div id="confEscrow" class="mono" style="word-break:break-all">—</div>
+  <div class="row deposit-row">
+    <div class="label">Deposit Address</div>
+    <div id="confEscrow" class="mono deposit-value">—</div>
     <button class="copy-btn" onclick="copyTextFromEl('confEscrow')">📋 Copy</button>
   </div>
 
-  <div class="row" id="memoRow"><div class="label">Memo / Tag</div>
-    <div id="confMemo" class="mono">—</div>
+  <div class="row" id="memoRow">
+    <div class="label">Memo / Tag</div>
+    <div id="confMemo" class="mono memo-value">—</div>
     <button class="copy-btn" onclick="copyTextFromEl('confMemo')">📋 Copy</button>
   </div>
 
@@ -101,26 +107,16 @@
 
   <div class="controls">
     <button class="copy-btn" id="toggleIsoBtn">View ISO XML</button>
-    <button class="copy-btn" id="toggleParsedBtn">View parsed JSON</button>
-    <button class="copy-btn" id="openSupportBtn">Open Support Chat</button>
   </div>
 
   <div style="margin-top:12px;display:none" id="isoSection">
     <h3 style="margin:0 0 8px;">ISO20022 Raw XML</h3>
     <pre id="rawXml" aria-live="polite">—</pre>
   </div>
-
-  <div style="margin-top:12px;display:none" id="parsedSection">
-    <h3 style="margin:0 0 8px;">Parsed JSON</h3>
-    <pre id="parsedJson" aria-live="polite">—</pre>
-  </div>
 </div>
 
 <script>
-/* ===========================
-   CONFIG / HELPERS
-   - Default expiry hours: 24 (you can override with ?expiresHours=6)
-   =========================== */
+/* ---------- helpers & config ---------- */
 const escrowAddresses = {
   XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
   XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
@@ -131,12 +127,9 @@ const escrowAddresses = {
 };
 const chainsUsingMemo = ["XRP","XLM","HBAR"];
 
-function getUrlParam(name) {
-  return new URLSearchParams(window.location.search).get(name);
-}
-function getMemoIdFromUrl() {
-  return getUrlParam('memoId');
-}
+function getUrlParam(name){ return new URLSearchParams(window.location.search).get(name); }
+function getMemoIdFromUrl(){ return getUrlParam('memoId'); }
+
 function copyInputValue(id) {
   const el = document.getElementById(id);
   if (!el) return alert('No input found');
@@ -154,7 +147,6 @@ function setConfirmationLinkInput(){
   input.value = window.location.href;
 }
 
-/* Logo map */
 function getLogo(key) {
   const map = {
     SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
@@ -172,43 +164,30 @@ function formatNumber(n){
   return Number(n).toLocaleString(undefined, {maximumFractionDigits:8});
 }
 
-/* QR generation helper (works with both libs: QRCode.toCanvas or constructor) */
+/* ---------- QR generation (robust) ---------- */
 function generateQRCode(containerEl, text) {
-  if (!containerEl) return;
   containerEl.innerHTML = '';
   if (!text) return;
-  // try qrcode library toCanvas first (most common)
+  // prefer QRCode.toCanvas if available
   try {
-    // create canvas
-    const canvas = document.createElement('canvas');
-    // prefer QRCode.toCanvas if available
     if (window.QRCode && typeof window.QRCode.toCanvas === 'function') {
-      // qrcode library: QRCode.toCanvas(canvas, text, options, cb)
+      const canvas = document.createElement('canvas');
       window.QRCode.toCanvas(canvas, text, { width: 180 }, (err) => {
-        if (err) {
-          console.warn('QRCode.toCanvas failed, trying constructor...', err);
-          fallbackConstructor();
-          return;
-        }
-        containerEl.appendChild(canvas);
+        if (err) fallbackConstructor();
+        else containerEl.appendChild(canvas);
       });
       return;
     }
-  } catch (err) {
-    console.warn('toCanvas attempt failed:', err);
-  }
-
-  // fallback to constructor-style API (some libs expose new QRCode(element, options))
+  } catch(e){ console.warn('toCanvas attempt failed', e); }
+  // constructor fallback
   function fallbackConstructor(){
     try {
       if (typeof window.QRCode === 'function') {
         new window.QRCode(containerEl, { text, width:180, height:180 });
         return;
       }
-    } catch (e) {
-      console.warn('constructor fallback failed:', e);
-    }
-    // Last fallback: generate a data URL using a minimal canvas QR lib not available here -> show text
+    } catch(e){ console.warn('constructor fallback failed', e); }
+    // final fallback: show the text so user can copy
     const txt = document.createElement('div');
     txt.className = 'small';
     txt.textContent = text;
@@ -217,8 +196,8 @@ function generateQRCode(containerEl, text) {
   fallbackConstructor();
 }
 
-/* STATUS mapping */
-function mapStatusLabel(statusStr) {
+/* ---------- status mapping ---------- */
+function mapStatusLabel(statusStr){
   statusStr = (statusStr||'').toString().toLowerCase();
   switch(statusStr){
     case 'pending': return {text:'Pending confirmation...', cls:'status-pending'};
@@ -227,11 +206,11 @@ function mapStatusLabel(statusStr) {
     case 'validated': return {text:'Validated ✅', cls:'status-confirmed'};
     case 'expired': return {text:'Expired ❌', cls:'status-expired'};
     case 'failed': return {text:'Failed ❌', cls:'status-expired'};
-    default: return {text: statusStr || 'Pending', cls:'status-pending'};
+    default: return {text: statusStr || 'Pending confirmation...', cls:'status-pending'};
   }
 }
 
-/* Countdown that derives expiry from createdAt + expiresHours */
+/* ---------- countdown from createdAt (default 24h, override via ?expiresHours=6) ---------- */
 let countdownInterval = null;
 function startCountdownFromCreated(createdAtStr, expiresHours) {
   if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
@@ -259,8 +238,6 @@ function startCountdownFromCreated(createdAtStr, expiresHours) {
   tick();
   countdownInterval = setInterval(tick, 1000);
 }
-
-/* set status to expired visually */
 function setStatusExpired(){
   const statusEl = document.getElementById('bridgeStatus');
   if (!statusEl) return;
@@ -268,21 +245,19 @@ function setStatusExpired(){
   statusEl.className = 'status-badge status-expired';
 }
 
-/* display function */
+/* ---------- render function ---------- */
 function renderData(data){
-  // parsedJson preference
   const parsed = data.parsedJson || {};
   const fromChain = (parsed.FromChain || data.chain || '').toString();
   const toChain = (parsed.ToChain || data.toChain || '').toString();
 
-  // amount
   const amountValue = data.amount?.value ?? parsed.InstdAmt ?? data.amount;
   const amountCurrency = data.amount?.currency ?? parsed.Currency ?? '';
 
-  // fill fields
   const setText = (id, txt) => { const e=document.getElementById(id); if(e) e.textContent = (txt===undefined||txt===null)?'—':String(txt); };
   setText('confFromChain', fromChain || 'N/A');
   setText('confToChain', toChain || 'N/A');
+
   const fromLogo = getLogo(fromChain) || getLogo(amountCurrency);
   const toLogo = getLogo(toChain);
   const logoFromEl = document.getElementById('confFromChainLogo');
@@ -294,28 +269,25 @@ function renderData(data){
   setText('confSender', (data.sender?.name || parsed.SenderName || 'N/A') + ' (' + (data.sender?.partyId || parsed.SenderId || 'N/A') + ')');
   setText('confReceiver', (data.receiver?.name || parsed.ReceiverName || 'N/A') + ' (' + (data.receiver?.partyId || parsed.ReceiverId || 'N/A') + ')');
 
-  // memo: always show server memoId (unique)
+  // use server memoId (unique) but fallback to parsed reference
   const memoId = data.memoId || parsed.Memo || parsed.Reference || 'N/A';
   setText('confMemo', memoId);
 
-  // escrow deposit address by fromChain (use uppercase keys)
+  // escrow deposit address
   const escrowAddr = escrowAddresses[fromChain] || escrowAddresses[(data.chain||'').toUpperCase()] || 'N/A';
   setText('confEscrow', escrowAddr);
 
-  // hide memo row if not required
+  // memo row visibility
   const memoRow = document.getElementById('memoRow');
   if (memoRow) memoRow.style.display = chainsUsingMemo.includes(String(fromChain).toUpperCase()) ? '' : 'none';
 
-  // status
+  // status mapping (default pending)
   const statusRaw = data.status || (data.validated ? 'validated' : 'pending');
   const statusInfo = mapStatusLabel(statusRaw);
   const statusEl = document.getElementById('bridgeStatus');
-  if (statusEl) {
-    statusEl.textContent = statusInfo.text;
-    statusEl.className = 'status-badge ' + statusInfo.cls;
-  }
+  if (statusEl) { statusEl.textContent = statusInfo.text; statusEl.className = 'status-badge ' + statusInfo.cls; }
 
-  // QR code: build deposit + memo when appropriate
+  // QR code: include memo when applicable
   const qrContainer = document.getElementById('qrCodeContainer');
   let qrData = escrowAddr;
   if (escrowAddr && chainsUsingMemo.includes(String(fromChain).toUpperCase()) && memoId && memoId!=='N/A') {
@@ -326,19 +298,17 @@ function renderData(data){
   }
   generateQRCode(qrContainer, qrData);
 
-  // raw XML and parsed JSON display
+  // raw XML display
   const rawXmlEl = document.getElementById('rawXml');
-  const parsedEl = document.getElementById('parsedJson');
-  if (rawXmlEl) rawXmlEl.textContent = data.rawXml || (typeof data === 'string' ? data : '—');
-  if (parsedEl) parsedEl.textContent = JSON.stringify(data.parsedJson || data.parsed || parsed || {}, null, 2);
+  if (rawXmlEl) rawXmlEl.textContent = data.rawXml || '—';
 
-  // countdown: get createdAt and expiry hours
+  // countdown — default 24h from createdAt (override via ?expiresHours=N)
   const urlExpires = Number(getUrlParam('expiresHours'));
-  const expiresHours = Number(data.expiresHours || urlExpires || 24); // default 24h but can be overridden with ?expiresHours=6
+  const expiresHours = Number(data.expiresHours || urlExpires || 24);
   startCountdownFromCreated(data.createdAt || parsed.CreatedAt || new Date().toISOString(), expiresHours);
 }
 
-/* fetch function */
+/* ---------- data fetch ---------- */
 async function fetchIsoMessage(memoId){
   const res = await fetch(`/iso-message/${memoId}`);
   if (!res.ok) {
@@ -348,7 +318,7 @@ async function fetchIsoMessage(memoId){
   return await res.json();
 }
 
-/* poll & main */
+/* ---------- main / polling ---------- */
 let currentMemo = null;
 async function loadAndPollOnce() {
   const memoId = getMemoIdFromUrl();
@@ -386,7 +356,7 @@ async function loadAndPollOnce() {
   }, 30000);
 }
 
-/* UI toggles */
+/* ---------- UI toggles ---------- */
 document.getElementById('saveLinkBtn').addEventListener('click', ()=>{
   const pop = document.getElementById('saveLinkPopup');
   if (!pop) return;
@@ -399,22 +369,8 @@ document.getElementById('toggleIsoBtn').addEventListener('click', ()=>{
   if (!s) return;
   s.style.display = (s.style.display === 'block') ? 'none' : 'block';
 });
-document.getElementById('toggleParsedBtn').addEventListener('click', ()=>{
-  const s = document.getElementById('parsedSection');
-  if (!s) return;
-  s.style.display = (s.style.display === 'block') ? 'none' : 'block';
-});
-document.getElementById('openSupportBtn').addEventListener('click', ()=>{
-  // stub: open support — integrate with Crisp or your chat widget if present
-  if (window.$crisp) {
-    window.$crisp.push(["do","chat:open"]);
-    window.$crisp.push(["do","message:send",["text", `Need help with memoId ${currentMemo}`]]);
-  } else {
-    alert('Support chat not configured.');
-  }
-});
 
-/* start */
+/* ---------- start ---------- */
 window.addEventListener('load', loadAndPollOnce);
 </script>
 

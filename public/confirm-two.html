@@ -1,106 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://unpkg.com/qrcode/build/qrcode.min.js"></script>
   <title>Bridge Confirmation (ISO20022)</title>
   <style>
-    body { 
-      background: #000 url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1350&q=80') no-repeat center center fixed; 
-      background-size: cover;
-      color: #fff; 
-      font-family: sans-serif; 
-      padding: 2rem; 
-    }
-    .form-box { 
-      background: rgba(17,17,17,0.92); 
-      padding: 2rem; 
-      max-width: 760px; 
-      margin: auto; 
-      border-radius: 8px; 
-      box-shadow: 0 0 18px rgba(30,144,255, 0.7); 
-    }
-    .info-box {
-      background: rgba(0, 0, 0, 0.6);
-      margin-top: 1rem;
-      padding: 1rem;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      max-width: 760px;
-      margin-left: auto;
-      margin-right: auto;
-      box-shadow: 0 0 10px rgba(30,144,255,0.45);
-    }
-    button.copy-btn {
-      background: #1e90ff;
-      border: none;
-      padding: 0.25rem 0.6rem;
-      margin-left: 0.5rem;
-      border-radius: 4px;
-      cursor: pointer;
+    body {
+      background: #000 url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1350&q=80') center/cover fixed;
       color: #fff;
-      font-size: 0.95rem;
-      vertical-align: middle;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      padding: 2rem;
     }
-    button.copy-btn:hover { background: #1c7ddb; }
-    #saveLinkWidget { position: fixed; top: 20px; left: 20px; z-index: 999; }
-    #saveLinkBtn { background: #1e90ff; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; box-shadow: 0 0 10px rgba(30,144,255,0.6); }
-    #saveLinkPopup { background: rgba(0,0,0,0.9); color: white; border-radius: 6px; padding: 0.75rem; width: 300px; margin-top: 8px; box-shadow: 0 0 10px rgba(0,255,255,0.2); }
-    #saveLinkPopup input { width: 100%; padding: 0.35rem; margin-bottom: 0.5rem; border-radius: 4px; border: 1px solid #444; background: #111; color: #00ffff; font-size: 0.9rem; }
-    #saveLinkPopup.hidden { display: none; }
-    img.chain-logo { height:24px; vertical-align:middle; margin-right:6px; }
-    #qrCodeContainer { margin-top: 12px; text-align: center; }
-    .mono { font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, "Roboto Mono", "Source Code Pro", monospace; color: #00e5ff; }
+    .form-box {
+      background: rgba(17,17,17,0.94);
+      padding: 1.5rem;
+      max-width: 880px;
+      margin: 0 auto;
+      border-radius: 10px;
+      box-shadow: 0 6px 30px rgba(30,144,255,0.12);
+    }
+    h1 { color: #1e90ff; margin:0 0 12px; font-size:1.4rem; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+    .label { min-width:120px; color:#cfeeff; font-weight:600; }
+    .mono { font-family: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace; color:#00e5ff; }
+    .copy-btn {
+      background:#1e90ff; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer;
+    }
+    .copy-btn:active { transform:translateY(1px); }
+    #qrCodeContainer { margin-top:12px; text-align:center; }
+    .small { font-size:0.9rem; color:#bbb; }
+    pre { background:#0f0f12; padding:10px; border-radius:8px; overflow:auto; max-height:260px; color:#dbefff; }
+    .controls { display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+    #saveLinkWidget { position: fixed; top: 18px; left: 18px; z-index: 999; }
+    #saveLinkBtn { background: #1e90ff; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; cursor:pointer; box-shadow: 0 0 10px rgba(30,144,255,0.6); }
+    #saveLinkPopup { background: rgba(0,0,0,0.95); color: #fff; border-radius:8px; padding:10px; width:320px; margin-top:8px; display:none; box-shadow:0 6px 20px rgba(0,0,0,0.6); }
+    #saveLinkPopup input { width:100%; padding:8px; border-radius:6px; border:1px solid #333; background:#0b0b0b; color:#0ff; }
+    .status-badge { padding:6px 10px; border-radius:8px; font-weight:600; display:inline-block; }
+    .status-pending { background: rgba(255,255,255,0.04); color:#ffd; border:1px solid rgba(255,255,255,0.04); }
+    .status-confirmed { background: rgba(0,200,120,0.12); color:#8ff; border:1px solid rgba(0,200,120,0.08); }
+    .status-bridged { background: rgba(30,144,255,0.12); color:#cfe; border:1px solid rgba(30,144,255,0.08); }
+    .status-expired { background: rgba(255,60,60,0.12); color:#f88; border:1px solid rgba(255,60,60,0.08); }
+    @media (max-width:640px){ .label { min-width: 100px } }
   </style>
 </head>
 <body>
 
 <div id="saveLinkWidget">
   <button id="saveLinkBtn" title="Click to show/save your confirmation link">🔗</button>
-  <div id="saveLinkPopup" class="hidden" aria-hidden="true">
-    <p style="margin: 0 0 0.5rem;"><strong>Remember to copy this link:</strong></p>
-    <input type="text" id="confirmationUrl" readonly />
-    <button class="copy-btn" onclick="copyToClipboard('confirmationUrl')">📋</button>
-    <p style="font-size: 0.75rem; color: #aaa; margin-top:0.4rem;">Bookmark or save to return here later.</p>
+  <div id="saveLinkPopup" aria-hidden="true">
+    <p style="margin:0 0 8px;"><strong>Remember to copy this link:</strong></p>
+    <input id="confirmationUrl" readonly />
+    <div style="margin-top:8px;"><button class="copy-btn" onclick="copyInputValue('confirmationUrl')">📋 Copy link</button></div>
+    <p class="small" style="margin-top:8px;">Bookmark or save this link to return here later.</p>
   </div>
 </div>
 
 <div class="form-box" role="main" aria-labelledby="title">
-  <h2 id="title">Bridge Confirmation (ISO20022)</h2>
+  <h1 id="title">Bridge Confirmation (ISO20022)</h1>
 
-  <p><strong>From Chain:</strong>
-    <img id="confFromChainLogo" class="chain-logo" alt="From Chain Logo" />
-    <span id="confFromChain" class="mono"></span>
-  </p>
+  <div class="row"><div class="label">From Chain</div>
+    <img id="confFromChainLogo" alt="" style="height:22px;vertical-align:middle;margin-right:8px"/>
+    <div id="confFromChain" class="mono">—</div>
+  </div>
 
-  <p><strong>To Chain:</strong>
-    <img id="confToChainLogo" class="chain-logo" alt="To Chain Logo" />
-    <span id="confToChain" class="mono"></span>
-  </p>
+  <div class="row"><div class="label">To Chain</div>
+    <img id="confToChainLogo" alt="" style="height:22px;vertical-align:middle;margin-right:8px"/>
+    <div id="confToChain" class="mono">—</div>
+  </div>
 
-  <p><strong>Send:</strong> <span id="confAmount" class="mono"></span></p>
+  <div class="row"><div class="label">Send</div>
+    <div id="confAmount" class="mono">—</div>
+  </div>
 
-  <p><strong>Sender:</strong> <span id="confSender" class="mono"></span></p>
-  <p><strong>Receiver:</strong> <span id="confReceiver" class="mono"></span></p>
+  <div class="row"><div class="label">Sender</div>
+    <div id="confSender" class="mono">—</div>
+  </div>
 
-  <p><strong>Deposit Address:</strong>
-    <span id="confEscrow" style="word-break:break-word;" class="mono"></span>
-    <button class="copy-btn" onclick="copyToClipboard('confEscrow')">📋 Copy</button>
-  </p>
+  <div class="row"><div class="label">Receiver</div>
+    <div id="confReceiver" class="mono">—</div>
+  </div>
 
-  <p id="memoRow"><strong>Memo ID / Tag:</strong>
-    <span id="confMemo" class="mono"></span>
-    <button class="copy-btn" onclick="copyToClipboard('confMemo')">📋 Copy</button>
-  </p>
+  <div class="row"><div class="label">Deposit Address</div>
+    <div id="confEscrow" class="mono" style="word-break:break-all">—</div>
+    <button class="copy-btn" onclick="copyTextFromEl('confEscrow')">📋 Copy</button>
+  </div>
 
-  <p><strong>Status:</strong> <span id="bridgeStatus">Loading...</span></p>
-  <p><strong>Expires in:</strong> <span id="countdownTimer">—</span></p>
+  <div class="row" id="memoRow"><div class="label">Memo / Tag</div>
+    <div id="confMemo" class="mono">—</div>
+    <button class="copy-btn" onclick="copyTextFromEl('confMemo')">📋 Copy</button>
+  </div>
+
+  <div class="row">
+    <div class="label">Status</div>
+    <div id="bridgeStatus" class="status-badge status-pending">Loading...</div>
+    <div style="margin-left:auto" class="small">Expires in: <span id="countdownTimer">—</span></div>
+  </div>
+
+  <div id="qrCodeContainer" style="margin-top:12px;text-align:center"></div>
+
+  <div class="controls">
+    <button class="copy-btn" id="toggleIsoBtn">View ISO XML</button>
+    <button class="copy-btn" id="toggleParsedBtn">View parsed JSON</button>
+    <button class="copy-btn" id="openSupportBtn">Open Support Chat</button>
+  </div>
+
+  <div style="margin-top:12px;display:none" id="isoSection">
+    <h3 style="margin:0 0 8px;">ISO20022 Raw XML</h3>
+    <pre id="rawXml" aria-live="polite">—</pre>
+  </div>
+
+  <div style="margin-top:12px;display:none" id="parsedSection">
+    <h3 style="margin:0 0 8px;">Parsed JSON</h3>
+    <pre id="parsedJson" aria-live="polite">—</pre>
+  </div>
 </div>
 
-<div id="qrCodeContainer"></div>
-
 <script>
+/* ===========================
+   CONFIG / HELPERS
+   - Default expiry hours: 24 (you can override with ?expiresHours=6)
+   =========================== */
 const escrowAddresses = {
   XRP: "rU3y41mnPFxRhVLxdsCRDGbE2LAkVPEbLV",
   XLM: "GD2VMYH62JD2ZGTMMWFCU5YNMASC5NWZ5FM5WN2GWLYAACYXP6BKG44I",
@@ -109,13 +129,35 @@ const escrowAddresses = {
   FLR: "0x3B51F488f729e5Cfa566990Fd7f069F364b6984D",
   XDC: "xdc870f64E73e7D2dc5022b4b74e58C323b3148A984"
 };
+const chainsUsingMemo = ["XRP","XLM","HBAR"];
 
-const chainsUsingMemo = ["XRP", "XLM", "HBAR"];
+function getUrlParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+function getMemoIdFromUrl() {
+  return getUrlParam('memoId');
+}
+function copyInputValue(id) {
+  const el = document.getElementById(id);
+  if (!el) return alert('No input found');
+  navigator.clipboard.writeText(el.value).then(()=>alert('Copied link')).catch(()=>alert('Copy failed'));
+}
+function copyTextFromEl(id){
+  const el = document.getElementById(id);
+  const text = el ? el.textContent.trim() : '';
+  if (!text) return alert('Nothing to copy');
+  navigator.clipboard.writeText(text).then(()=>alert('Copied')).catch(()=>alert('Copy failed'));
+}
+function setConfirmationLinkInput(){
+  const input = document.getElementById('confirmationUrl');
+  if (!input) return;
+  input.value = window.location.href;
+}
 
+/* Logo map */
 function getLogo(key) {
   const map = {
     SeagullCoin: 'https://xpcdn.xpmarket.com/storage/logo/SeagullCoin_rnqiA8vuNriU9pqD1ZDGFH8ajQBL25Wkno.webp',
-    SeagullCash: 'https://d1fdloi71mui9q.cloudfront.net/Z2URVu3eSjyXF3fPVdyq_png_20221121_111630_0000.png',
     XRP: 'https://altcoinsbox.com/wp-content/uploads/2023/01/xrp-logo-1140x1140.webp',
     XLM: 'https://files.swissborg.com/product/wealth-app/assets/ic_crypto_xlm.png',
     HBAR: 'https://altcoinsbox.com/wp-content/uploads/2023/03/hedera-logo-1140x1140.webp',
@@ -125,186 +167,255 @@ function getLogo(key) {
   };
   return map[key] || '';
 }
-
-function copyToClipboard(id) {
-  const el = document.getElementById(id);
-  const text = el ? el.textContent.trim() : '';
-  if (!text) return alert('Nothing to copy');
-  navigator.clipboard.writeText(text)
-    .then(() => alert('Copied to clipboard!'))
-    .catch(() => alert('Failed to copy'));
+function formatNumber(n){
+  if (n===null||n===undefined||isNaN(Number(n))) return String(n);
+  return Number(n).toLocaleString(undefined, {maximumFractionDigits:8});
 }
 
-function getMemoIdFromUrl() {
-  return new URL(window.location.href).searchParams.get('memoId');
-}
-
-function formatNumber(n) {
-  if (n === null || n === undefined || isNaN(Number(n))) return 'N/A';
-  if (n > 1000000) return (n/1e6).toFixed(2) + 'M';
-  if (n > 1000) return (n/1000).toFixed(1) + 'k';
-  return n.toString();
-}
-
-function displayDataFromBackend(data, memoId) {
-  // Prefer parsedJson fields if present
-  const fromChain = data.parsedJson?.FromChain || data.chain || 'N/A';
-  const toChain = data.parsedJson?.ToChain || data.chain || 'N/A';
-
-  document.getElementById('confFromChain').textContent = fromChain;
-  document.getElementById('confToChain').textContent = toChain;
-  document.getElementById('confFromChainLogo').src = getLogo(fromChain);
-  document.getElementById('confFromChainLogo').alt = fromChain + ' logo';
-  document.getElementById('confToChainLogo').src = getLogo(toChain);
-  document.getElementById('confToChainLogo').alt = toChain + ' logo';
-
-  // Amount & currency
-  let amountStr = '';
-  if (data.amount) {
-    amountStr = formatNumber(data.amount.value) + ' ' + (data.amount.currency || '');
-  } else if (data.parsedJson?.Amount && data.parsedJson?.Currency) {
-    amountStr = formatNumber(data.parsedJson.Amount) + ' ' + data.parsedJson.Currency;
-  } else {
-    amountStr = 'N/A';
-  }
-  document.getElementById('confAmount').textContent = amountStr;
-
-  // Sender & Receiver info
-  const senderStr = data.sender ? `${data.sender.name || 'N/A'} (${data.sender.partyId || 'N/A'})` : 'N/A';
-  const receiverStr = data.receiver ? `${data.receiver.name || 'N/A'} (${data.receiver.partyId || 'N/A'})` : 'N/A';
-  document.getElementById('confSender').textContent = senderStr;
-  document.getElementById('confReceiver').textContent = receiverStr;
-
-  // Memo / Tag - prefer parsedJson Memo if present, fallback to data.memoId
-  const memoValue = data.parsedJson?.Memo || data.memoId || 'N/A';
-  document.getElementById('confMemo').textContent = memoValue;
-
-  // Escrow deposit address by fromChain
-  const escrowAddress = escrowAddresses[fromChain] || 'N/A';
-  document.getElementById('confEscrow').textContent = escrowAddress;
-
-  // Hide memo row if the chain does not use memos/tags
-  if (!chainsUsingMemo.includes(fromChain)) {
-    document.getElementById('memoRow').style.display = 'none';
-  } else {
-    document.getElementById('memoRow').style.display = 'block';
-  }
-
-  // Status & countdown
-  const status = data.status || (data.validated ? "validated" : "pending") || 'N/A';
-  document.getElementById('bridgeStatus').textContent = status;
-
-  // Countdown timer - if we have expiry info in ISO datetime string
-  if (data.expiry) {
-    startCountdown(new Date(data.expiry));
-  } else if (data.parsedJson?.ExpiryDateTime) {
-    startCountdown(new Date(data.parsedJson.ExpiryDateTime));
-  } else {
-    document.getElementById('countdownTimer').textContent = '—';
-  }
-
-  // QR Code for deposit address + memo (if chain supports memo/tag)
-  const qrEl = document.getElementById('qrCodeContainer');
-  qrEl.innerHTML = '';
-  if (escrowAddress !== 'N/A') {
-    let qrData = escrowAddress;
-    if (chainsUsingMemo.includes(fromChain) && memoValue && memoValue !== 'N/A') {
-      if (fromChain === 'XRP') {
-        qrData = `xrpl:${escrowAddress}?dt=${memoValue}`;
-      } else if (fromChain === 'XLM') {
-        qrData = `web+stellar:pay?destination=${escrowAddress}&memo=${memoValue}`;
-      } else if (fromChain === 'HBAR') {
-        qrData = `hedera:${escrowAddress}?memo=${memoValue}`;
-      } else {
-        // generic fallback with memo/tag appended
-        qrData = escrowAddress + '?memo=' + memoValue;
-      }
-    }
-    QRCode.toCanvas(qrData, { width: 180 }, function (error, canvas) {
-      if (error) {
-        console.error(error);
-        qrEl.textContent = 'Failed to generate QR code.';
-        return;
-      }
-      qrEl.appendChild(canvas);
-      const caption = document.createElement('div');
-      caption.textContent = 'Scan to pay deposit';
-      caption.style.marginTop = '0.5rem';
-      caption.style.fontSize = '0.85rem';
-      caption.style.color = '#ccc';
-      qrEl.appendChild(caption);
-    });
-  }
-}
-
-let countdownInterval;
-function startCountdown(expiryDate) {
-  if (countdownInterval) clearInterval(countdownInterval);
-
-  function updateTimer() {
-    const now = new Date();
-    const diff = expiryDate - now;
-    if (diff <= 0) {
-      document.getElementById('countdownTimer').textContent = 'Expired';
-      clearInterval(countdownInterval);
+/* QR generation helper (works with both libs: QRCode.toCanvas or constructor) */
+function generateQRCode(containerEl, text) {
+  if (!containerEl) return;
+  containerEl.innerHTML = '';
+  if (!text) return;
+  // try qrcode library toCanvas first (most common)
+  try {
+    // create canvas
+    const canvas = document.createElement('canvas');
+    // prefer QRCode.toCanvas if available
+    if (window.QRCode && typeof window.QRCode.toCanvas === 'function') {
+      // qrcode library: QRCode.toCanvas(canvas, text, options, cb)
+      window.QRCode.toCanvas(canvas, text, { width: 180 }, (err) => {
+        if (err) {
+          console.warn('QRCode.toCanvas failed, trying constructor...', err);
+          fallbackConstructor();
+          return;
+        }
+        containerEl.appendChild(canvas);
+      });
       return;
     }
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const secs = Math.floor((diff % (1000 * 60)) / 1000);
-    document.getElementById('countdownTimer').textContent = 
-      `${hours}h ${mins}m ${secs}s`;
+  } catch (err) {
+    console.warn('toCanvas attempt failed:', err);
   }
-  updateTimer();
-  countdownInterval = setInterval(updateTimer, 1000);
+
+  // fallback to constructor-style API (some libs expose new QRCode(element, options))
+  function fallbackConstructor(){
+    try {
+      if (typeof window.QRCode === 'function') {
+        new window.QRCode(containerEl, { text, width:180, height:180 });
+        return;
+      }
+    } catch (e) {
+      console.warn('constructor fallback failed:', e);
+    }
+    // Last fallback: generate a data URL using a minimal canvas QR lib not available here -> show text
+    const txt = document.createElement('div');
+    txt.className = 'small';
+    txt.textContent = text;
+    containerEl.appendChild(txt);
+  }
+  fallbackConstructor();
 }
 
-// Save Link Widget logic
-const saveLinkBtn = document.getElementById('saveLinkBtn');
-const saveLinkPopup = document.getElementById('saveLinkPopup');
-const confirmationUrlInput = document.getElementById('confirmationUrl');
-
-function setConfirmationLinkInput() {
-  const url = new URL(window.location.href);
-  confirmationUrlInput.value = url.toString();
+/* STATUS mapping */
+function mapStatusLabel(statusStr) {
+  statusStr = (statusStr||'').toString().toLowerCase();
+  switch(statusStr){
+    case 'pending': return {text:'Pending confirmation...', cls:'status-pending'};
+    case 'confirmed': return {text:'Confirmed ✅', cls:'status-confirmed'};
+    case 'bridged': return {text:'Bridged 🌉', cls:'status-bridged'};
+    case 'validated': return {text:'Validated ✅', cls:'status-confirmed'};
+    case 'expired': return {text:'Expired ❌', cls:'status-expired'};
+    case 'failed': return {text:'Failed ❌', cls:'status-expired'};
+    default: return {text: statusStr || 'Pending', cls:'status-pending'};
+  }
 }
 
-saveLinkBtn.addEventListener('click', () => {
-  if (saveLinkPopup.classList.contains('hidden')) {
-    saveLinkPopup.classList.remove('hidden');
-    saveLinkPopup.setAttribute('aria-hidden', 'false');
-  } else {
-    saveLinkPopup.classList.add('hidden');
-    saveLinkPopup.setAttribute('aria-hidden', 'true');
-  }
-});
+/* Countdown that derives expiry from createdAt + expiresHours */
+let countdownInterval = null;
+function startCountdownFromCreated(createdAtStr, expiresHours) {
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  let createdTs = Date.parse(createdAtStr);
+  if (!createdTs || isNaN(createdTs)) createdTs = Date.now();
+  const expiresMs = (Number(expiresHours) || 24) * 3600 * 1000;
+  const expiryTs = createdTs + expiresMs;
 
-// Main load function
-async function fetchIsoMessage(memoId) {
+  function tick(){
+    const diff = expiryTs - Date.now();
+    const el = document.getElementById('countdownTimer');
+    if (!el) return;
+    if (diff <= 0) {
+      el.textContent = 'Expired';
+      setStatusExpired();
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+      return;
+    }
+    const hrs = Math.floor(diff / (1000*60*60));
+    const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
+    const secs = Math.floor((diff % (1000*60)) / 1000);
+    el.textContent = `${hrs}h ${mins}m ${secs}s`;
+  }
+  tick();
+  countdownInterval = setInterval(tick, 1000);
+}
+
+/* set status to expired visually */
+function setStatusExpired(){
+  const statusEl = document.getElementById('bridgeStatus');
+  if (!statusEl) return;
+  statusEl.textContent = 'Expired ❌';
+  statusEl.className = 'status-badge status-expired';
+}
+
+/* display function */
+function renderData(data){
+  // parsedJson preference
+  const parsed = data.parsedJson || {};
+  const fromChain = (parsed.FromChain || data.chain || '').toString();
+  const toChain = (parsed.ToChain || data.toChain || '').toString();
+
+  // amount
+  const amountValue = data.amount?.value ?? parsed.InstdAmt ?? data.amount;
+  const amountCurrency = data.amount?.currency ?? parsed.Currency ?? '';
+
+  // fill fields
+  const setText = (id, txt) => { const e=document.getElementById(id); if(e) e.textContent = (txt===undefined||txt===null)?'—':String(txt); };
+  setText('confFromChain', fromChain || 'N/A');
+  setText('confToChain', toChain || 'N/A');
+  const fromLogo = getLogo(fromChain) || getLogo(amountCurrency);
+  const toLogo = getLogo(toChain);
+  const logoFromEl = document.getElementById('confFromChainLogo');
+  const logoToEl = document.getElementById('confToChainLogo');
+  if (logoFromEl) { if (fromLogo) { logoFromEl.src = fromLogo; logoFromEl.style.display='inline-block'; } else logoFromEl.style.display='none'; }
+  if (logoToEl) { if (toLogo) { logoToEl.src = toLogo; logoToEl.style.display='inline-block'; } else logoToEl.style.display='none'; }
+
+  setText('confAmount', `${formatNumber(amountValue)} ${amountCurrency || ''}`);
+  setText('confSender', (data.sender?.name || parsed.SenderName || 'N/A') + ' (' + (data.sender?.partyId || parsed.SenderId || 'N/A') + ')');
+  setText('confReceiver', (data.receiver?.name || parsed.ReceiverName || 'N/A') + ' (' + (data.receiver?.partyId || parsed.ReceiverId || 'N/A') + ')');
+
+  // memo: always show server memoId (unique)
+  const memoId = data.memoId || parsed.Memo || parsed.Reference || 'N/A';
+  setText('confMemo', memoId);
+
+  // escrow deposit address by fromChain (use uppercase keys)
+  const escrowAddr = escrowAddresses[fromChain] || escrowAddresses[(data.chain||'').toUpperCase()] || 'N/A';
+  setText('confEscrow', escrowAddr);
+
+  // hide memo row if not required
+  const memoRow = document.getElementById('memoRow');
+  if (memoRow) memoRow.style.display = chainsUsingMemo.includes(String(fromChain).toUpperCase()) ? '' : 'none';
+
+  // status
+  const statusRaw = data.status || (data.validated ? 'validated' : 'pending');
+  const statusInfo = mapStatusLabel(statusRaw);
+  const statusEl = document.getElementById('bridgeStatus');
+  if (statusEl) {
+    statusEl.textContent = statusInfo.text;
+    statusEl.className = 'status-badge ' + statusInfo.cls;
+  }
+
+  // QR code: build deposit + memo when appropriate
+  const qrContainer = document.getElementById('qrCodeContainer');
+  let qrData = escrowAddr;
+  if (escrowAddr && chainsUsingMemo.includes(String(fromChain).toUpperCase()) && memoId && memoId!=='N/A') {
+    if (String(fromChain).toUpperCase() === 'XRP') qrData = `xrpl:${escrowAddr}?dt=${memoId}`;
+    else if (String(fromChain).toUpperCase() === 'XLM') qrData = `web+stellar:pay?destination=${escrowAddr}&memo=${memoId}`;
+    else if (String(fromChain).toUpperCase() === 'HBAR') qrData = `hedera:${escrowAddr}?memo=${memoId}`;
+    else qrData = `${escrowAddr}?memo=${memoId}`;
+  }
+  generateQRCode(qrContainer, qrData);
+
+  // raw XML and parsed JSON display
+  const rawXmlEl = document.getElementById('rawXml');
+  const parsedEl = document.getElementById('parsedJson');
+  if (rawXmlEl) rawXmlEl.textContent = data.rawXml || (typeof data === 'string' ? data : '—');
+  if (parsedEl) parsedEl.textContent = JSON.stringify(data.parsedJson || data.parsed || parsed || {}, null, 2);
+
+  // countdown: get createdAt and expiry hours
+  const urlExpires = Number(getUrlParam('expiresHours'));
+  const expiresHours = Number(data.expiresHours || urlExpires || 24); // default 24h but can be overridden with ?expiresHours=6
+  startCountdownFromCreated(data.createdAt || parsed.CreatedAt || new Date().toISOString(), expiresHours);
+}
+
+/* fetch function */
+async function fetchIsoMessage(memoId){
   const res = await fetch(`/iso-message/${memoId}`);
-  if (!res.ok) throw new Error(`Failed to fetch ISO message with memoId ${memoId}`);
+  if (!res.ok) {
+    const txt = await res.text().catch(()=>res.statusText);
+    throw new Error(txt || `HTTP ${res.status}`);
+  }
   return await res.json();
 }
 
-async function loadAndDisplay() {
+/* poll & main */
+let currentMemo = null;
+async function loadAndPollOnce() {
   const memoId = getMemoIdFromUrl();
   if (!memoId) {
-    alert('No memoId in URL. Please access this page with ?memoId=your_memoId');
+    alert('No memoId in URL. Open this page with ?memoId=<id>');
     return;
   }
+  currentMemo = memoId;
   setConfirmationLinkInput();
 
-  try {
-    const data = await fetchIsoMessage(memoId);
-    displayDataFromBackend(data, memoId);
-  } catch (err) {
-    document.getElementById('bridgeStatus').textContent = `Error loading data: ${err.message}`;
-    console.error(err);
+  async function runOnce() {
+    try {
+      const data = await fetchIsoMessage(memoId);
+      renderData(data);
+    } catch (err) {
+      const statusEl = document.getElementById('bridgeStatus');
+      if (statusEl) {
+        statusEl.textContent = `Error loading data: ${err.message}`;
+        statusEl.className = 'status-badge status-expired';
+      }
+      console.error('load error', err);
+    }
   }
+
+  await runOnce();
+
+  // poll every 30s to refresh status and other fields
+  setInterval(async () => {
+    try {
+      const updated = await fetchIsoMessage(memoId);
+      renderData(updated);
+    } catch (e) {
+      console.warn('poll failed', e);
+    }
+  }, 30000);
 }
 
-// Run on page load
-window.addEventListener('load', loadAndDisplay);
+/* UI toggles */
+document.getElementById('saveLinkBtn').addEventListener('click', ()=>{
+  const pop = document.getElementById('saveLinkPopup');
+  if (!pop) return;
+  const visible = pop.style.display === 'block';
+  pop.style.display = visible ? 'none' : 'block';
+  pop.setAttribute('aria-hidden', String(visible ? 'true':'false'));
+});
+document.getElementById('toggleIsoBtn').addEventListener('click', ()=>{
+  const s = document.getElementById('isoSection');
+  if (!s) return;
+  s.style.display = (s.style.display === 'block') ? 'none' : 'block';
+});
+document.getElementById('toggleParsedBtn').addEventListener('click', ()=>{
+  const s = document.getElementById('parsedSection');
+  if (!s) return;
+  s.style.display = (s.style.display === 'block') ? 'none' : 'block';
+});
+document.getElementById('openSupportBtn').addEventListener('click', ()=>{
+  // stub: open support — integrate with Crisp or your chat widget if present
+  if (window.$crisp) {
+    window.$crisp.push(["do","chat:open"]);
+    window.$crisp.push(["do","message:send",["text", `Need help with memoId ${currentMemo}`]]);
+  } else {
+    alert('Support chat not configured.');
+  }
+});
+
+/* start */
+window.addEventListener('load', loadAndPollOnce);
 </script>
 
 </body>

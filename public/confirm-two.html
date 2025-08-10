@@ -20,7 +20,48 @@
       border-radius: 10px;
       box-shadow: 0 6px 30px rgba(30,144,255,0.12);
     }
-    h1 { color: #1e90ff; margin:0 0 12px; font-size:1.4rem; }
+    .deposit-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  flex-wrap: nowrap; /* prevent wrapping */
+}
+
+.deposit-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: calc(100% - 60px); /* leave space for copy button */
+}
+
+.deposit-row .copy-btn {
+  flex: 0 0 48px; /* fixed width for button */
+  white-space: nowrap;
+}
+
+/* For the status row (countdown on right) */
+.row.status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.row.status-row .label {
+  flex: 0 0 120px;
+}
+
+#bridgeStatus {
+  flex: 0 0 auto;
+}
+
+#countdownTimer {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-weight: 600;
+}
+   h1 { color: #1e90ff; margin:0 0 12px; font-size:1.4rem; }
     .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
     .label { min-width:120px; color:#cfeeff; font-weight:600; }
     .mono { font-family: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace; color:#00e5ff; }

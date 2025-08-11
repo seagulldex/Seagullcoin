@@ -88,6 +88,19 @@
     flex: none;
     width: auto;
   }
+    .deposit-value,
+.recipient-value {
+  max-width: 100%;
+  white-space: nowrap;       /* no wrapping */
+  overflow-x: auto;          /* horizontal scroll if too long */
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+  background-color: #111;    /* optional, matches your theme */
+  padding: 0.25em 0.5em;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace;
+  color: #00e5ff;
+}
+
 }
 
   </style>

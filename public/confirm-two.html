@@ -172,17 +172,19 @@ pre {
 
 /* Scroll behavior for deposit and recipient addresses */
 .deposit-value,
-.recipient-value {
+.sender-value,
+.receiver-value {
   max-width: 100%;
-  white-space: nowrap;                   /* no wrapping */
-  overflow-x: auto;                      /* horizontal scroll if too long */
-  -webkit-overflow-scrolling: touch;    /* smooth scrolling on iOS */
-  background-color: #111;                /* matches theme */
+  white-space: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background-color: #111;
   padding: 0.25em 0.5em;
   border-radius: 6px;
   font-family: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace;
   color: #00e5ff;
 }
+
 
 @media (max-width: 640px) {
   .sender-value,

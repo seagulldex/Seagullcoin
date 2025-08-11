@@ -20,32 +20,6 @@
       border-radius: 10px;
       box-shadow: 0 6px 30px rgba(30,144,255,0.12);
     }
-    .deposit-row {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  width: 100%;
-  flex-wrap: nowrap; /* prevent wrapping */
-}
-
-.deposit-value {
-  flex: 1 1 auto;
-  min-width: 0;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  max-width: calc(100% - 60px); /* leave space for copy button */
-}
-
-.deposit-row .copy-btn {
-  flex: 0 0 48px; /* fixed width for button */
-  white-space: nowrap;
-}
-.deposit-row .value {
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
-
 
 /* For the status row (countdown on right) */
 .row.status-row {
@@ -89,10 +63,33 @@
     .status-bridged { background: rgba(30,144,255,0.12); color:#cfe; border:1px solid rgba(30,144,255,0.08); }
     .status-expired { background: rgba(255,60,60,0.12); color:#f88; border:1px solid rgba(255,60,60,0.08); }
 
-    /* deposit-specific layout so long addresses wrap and the copy button stays visible */
-        .deposit-value { flex: 1 1 auto; min-width: 0; word-break: break-word; overflow-wrap: anywhere; }
+    
     .memo-value { flex: 1 1 auto; min-width: 0; word-break: break-word; overflow-wrap: anywhere; }
-    @media (max-width:640px){ .label { min-width: 100px } }
+    
+  @media (max-width: 640px) {
+  .deposit-row {
+    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .deposit-row .label {
+    margin-bottom: 0.25rem;
+    min-width: auto;
+  }
+  .deposit-value {
+    max-width: 100% !important;
+    width: 100% !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .deposit-row .copy-btn {
+    margin-top: 0.25rem;
+    align-self: flex-start;
+    flex: none;
+    width: auto;
+  }
+}
+
   </style>
 </head>
 <body>

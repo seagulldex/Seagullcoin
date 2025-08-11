@@ -43,7 +43,7 @@
 .deposit-row .value {
   word-wrap: break-word;
   overflow-wrap: anywhere;
-  white-space: normal; /* ensure it wraps */
+  white-space: normal;
 }
 
 
@@ -90,10 +90,8 @@
     .status-expired { background: rgba(255,60,60,0.12); color:#f88; border:1px solid rgba(255,60,60,0.08); }
 
     /* deposit-specific layout so long addresses wrap and the copy button stays visible */
-    .deposit-row { display:flex; gap:12px; align-items:center; width:100%; }
-    .deposit-value { flex: 1 1 auto; min-width: 0; word-break: break-word; overflow-wrap: anywhere; }
+        .deposit-value { flex: 1 1 auto; min-width: 0; word-break: break-word; overflow-wrap: anywhere; }
     .memo-value { flex: 1 1 auto; min-width: 0; word-break: break-word; overflow-wrap: anywhere; }
-
     @media (max-width:640px){ .label { min-width: 100px } }
   </style>
 </head>

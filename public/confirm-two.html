@@ -185,11 +185,14 @@ pre {
 }
 
 @media (max-width: 640px) {
-  .deposit-row {
-    flex-wrap: wrap;
-    flex-direction: column;
-    align-items: flex-start;
+  .sender-value,
+  .receiver-value {
+    max-width: 100% !important;
+    width: 100% !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
+}
   .deposit-row .label {
     margin-bottom: 0.25rem;
     min-width: auto;

@@ -7,19 +7,19 @@
   <title>Bridge Confirmation (ISO20022)</title>
   <style>
     body {
-      background: #000 url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1350&q=80') center/cover fixed;
-      color: #fff;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-      padding: 2rem;
-    }
-    .form-box {
-      background: rgba(17,17,17,0.94);
-      padding: 1.5rem;
-      max-width: 880px;
-      margin: 0 auto;
-      border-radius: 10px;
-      box-shadow: 0 6px 30px rgba(30,144,255,0.12);
-    }
+  background: #000 url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1350&q=80') center/cover fixed;
+  color: #fff;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  padding: 2rem;
+}
+.form-box {
+  background: rgba(17,17,17,0.94);
+  padding: 1.5rem;
+  max-width: 880px;
+  margin: 0 auto;
+  border-radius: 10px;
+  box-shadow: 0 6px 30px rgba(30,144,255,0.12);
+}
 
 /* For the status row (countdown on right) */
 .row.status-row {
@@ -43,30 +43,144 @@
   margin-left: auto;
   font-weight: 600;
 }
-   h1 { color: #1e90ff; margin:0 0 12px; font-size:1.4rem; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
-    .label { min-width:120px; color:#cfeeff; font-weight:600; }
-    .mono { font-family: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace; color:#00e5ff; }
-    .copy-btn { background:#1e90ff; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; }
-    .copy-btn:active { transform:translateY(1px); }
-    #qrCodeContainer { margin-top:12px; text-align:center; }
-    .small { font-size:0.9rem; color:#bbb; }
-    pre { background:#0f0f12; padding:10px; border-radius:8px; overflow:auto; max-height:260px; color:#dbefff; }
-    .controls { display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap; }
-    #saveLinkWidget { position: fixed; top: 18px; left: 18px; z-index: 999; }
-    #saveLinkBtn { background: #1e90ff; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; cursor:pointer; box-shadow: 0 0 10px rgba(30,144,255,0.6); }
-    #saveLinkPopup { background: rgba(0,0,0,0.95); color: #fff; border-radius:8px; padding:10px; width:320px; margin-top:8px; display:none; box-shadow:0 6px 20px rgba(0,0,0,0.6); }
-    #saveLinkPopup input { width:100%; padding:8px; border-radius:6px; border:1px solid #333; background:#0b0b0b; color:#0ff; }
-    .status-badge { padding:6px 10px; border-radius:8px; font-weight:600; display:inline-block; }
-    .status-pending { background: rgba(255,255,255,0.04); color:#ffd; border:1px solid rgba(255,255,255,0.04); }
-    .status-confirmed { background: rgba(0,200,120,0.12); color:#8ff; border:1px solid rgba(0,200,120,0.08); }
-    .status-bridged { background: rgba(30,144,255,0.12); color:#cfe; border:1px solid rgba(30,144,255,0.08); }
-    .status-expired { background: rgba(255,60,60,0.12); color:#f88; border:1px solid rgba(255,60,60,0.08); }
+h1 {
+  color: #1e90ff;
+  margin: 0 0 12px;
+  font-size: 1.4rem;
+}
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.label {
+  min-width: 120px;
+  color: #cfeeff;
+  font-weight: 600;
+}
+.mono {
+  font-family: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace;
+  color: #00e5ff;
+}
+.copy-btn {
+  background: #1e90ff;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.copy-btn:active {
+  transform: translateY(1px);
+}
+#qrCodeContainer {
+  margin-top: 12px;
+  text-align: center;
+}
+.small {
+  font-size: 0.9rem;
+  color: #bbb;
+}
+pre {
+  background: #0f0f12;
+  padding: 10px;
+  border-radius: 8px;
+  overflow: auto;
+  max-height: 260px;
+  color: #dbefff;
+}
+.controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+#saveLinkWidget {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: 999;
+}
+#saveLinkBtn {
+  background: #1e90ff;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(30,144,255,0.6);
+}
+#saveLinkPopup {
+  background: rgba(0,0,0,0.95);
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px;
+  width: 320px;
+  margin-top: 8px;
+  display: none;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+}
+#saveLinkPopup input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #0b0b0b;
+  color: #0ff;
+}
+.status-badge {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-block;
+}
+.status-pending {
+  background: rgba(255,255,255,0.04);
+  color: #ffd;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.status-confirmed {
+  background: rgba(0,200,120,0.12);
+  color: #8ff;
+  border: 1px solid rgba(0,200,120,0.08);
+}
+.status-bridged {
+  background: rgba(30,144,255,0.12);
+  color: #cfe;
+  border: 1px solid rgba(30,144,255,0.08);
+}
+.status-expired {
+  background: rgba(255,60,60,0.12);
+  color: #f88;
+  border: 1px solid rgba(255,60,60,0.08);
+}
 
-    
-    .memo-value { flex: 1 1 auto; min-width: 0; word-break: break-word; overflow-wrap: anywhere; }
-    
-  @media (max-width: 640px) {
+.memo-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Scroll behavior for deposit and recipient addresses */
+.deposit-value,
+.recipient-value {
+  max-width: 100%;
+  white-space: nowrap;                   /* no wrapping */
+  overflow-x: auto;                      /* horizontal scroll if too long */
+  -webkit-overflow-scrolling: touch;    /* smooth scrolling on iOS */
+  background-color: #111;                /* matches theme */
+  padding: 0.25em 0.5em;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace;
+  color: #00e5ff;
+}
+
+@media (max-width: 640px) {
   .deposit-row {
     flex-wrap: wrap;
     flex-direction: column;
@@ -88,19 +202,6 @@
     flex: none;
     width: auto;
   }
-    .deposit-value,
-.recipient-value {
-  max-width: 100%;
-  white-space: nowrap;       /* no wrapping */
-  overflow-x: auto;          /* horizontal scroll if too long */
-  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
-  background-color: #111;    /* optional, matches your theme */
-  padding: 0.25em 0.5em;
-  border-radius: 6px;
-  font-family: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace;
-  color: #00e5ff;
-}
-
 }
 
   </style>

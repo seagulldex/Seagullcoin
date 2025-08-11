@@ -54,6 +54,10 @@ h1 {
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: 8px;
+  min-width: 0;  /* important for flex items to shrink properly */
+  max-width: 100%;
+}
+
 }
 .label {
   min-width: 120px;
